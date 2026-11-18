@@ -52,7 +52,11 @@ def render_scene_25d(
                 found_layers.append((key, p))
 
     if not found_layers:
-        return None
+        fallback = ep_dir / "03_Visuals" / "Generated_Scenes" / f"{scene['scene_id']}.png"
+        if fallback.exists():
+            found_layers.append(("L3_midground", fallback))
+        else:
+            return None
 
     out_dir = ep_dir / "04_Video_Assembly" / "Timeline_Project" / "Rendered_Scenes"
     out_dir.mkdir(parents=True, exist_ok=True)

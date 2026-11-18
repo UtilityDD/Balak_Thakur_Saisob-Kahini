@@ -10,3 +10,7 @@ __pycache__/
 ~$*.xlsx
 .DS_Store
 Thumbs.db
+remotion_studio/node_modules/
+remotion_studio/.remotion/
+remotion_studio/public/audio/
+
