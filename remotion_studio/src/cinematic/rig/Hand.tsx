@@ -9,6 +9,7 @@ interface HandPreset {
   thumb: number; // thumb angle out from palm (rad)
   thumbCurl: number;
   view: "back" | "palm" | "side";
+  grip?: boolean; // fingers wrap around the grip centre (object held at the hand's centre)
 }
 
 const PRESETS: Record<HandShape, HandPreset> = {
@@ -16,10 +17,10 @@ const PRESETS: Record<HandShape, HandPreset> = {
   open: { curls: [0, 0, 0.02, 0.05], spread: 0.17, thumb: 0.85, thumbCurl: 0, view: "palm" },
   point: { curls: [0, 0.95, 1, 1], spread: 0.02, thumb: 0.2, thumbCurl: 0.8, view: "back" },
   fist: { curls: [1, 1, 1, 1], spread: 0, thumb: 0.15, thumbCurl: 0.9, view: "back" },
-  hold: { curls: [0.85, 0.88, 0.9, 0.92], spread: 0, thumb: 0.5, thumbCurl: 0.5, view: "side" },
+  hold: { curls: [0.85, 0.88, 0.9, 0.92], spread: 0, thumb: 0.5, thumbCurl: 0.5, view: "side", grip: true },
   pranam: { curls: [0, 0, 0, 0], spread: 0, thumb: 0.1, thumbCurl: 0, view: "side" },
   abhaya: { curls: [0, 0, 0, 0.04], spread: 0.05, thumb: 0.45, thumbCurl: 0.1, view: "palm" },
-  cup: { curls: [0.25, 0.25, 0.28, 0.3], spread: 0.03, thumb: 0.55, thumbCurl: 0.2, view: "palm" },
+  cup: { curls: [0.4, 0.42, 0.45, 0.48], spread: 0.03, thumb: 0.55, thumbCurl: 0.2, view: "palm", grip: true },
 };
 
 /** Tapered, rounded finger segment along +y (w1 at the base, w2 at the end). */
@@ -50,11 +51,43 @@ export const Hand: React.FC<{ shape: HandShape; L: number; skin: string; shade: 
   const palm = palmIn ?? mixHex(skin, "#ffd9c4", 0.22);
   const pad = mixHex(skin, "#ffe4d6", 0.3);
   const nail = mixHex(skin, "#fff0ea", 0.4);
-  const pw = L * 0.48; // palm width
+  const pw = L * 0.52; // palm width (slightly thicker)
   const pl = L * 0.47; // palm length
-  const fw = pw / 4.3; // finger width
+  const fw = pw / 5.2; // finger width (thinner than before so gaps read)
   const lens = [0.47, 0.53, 0.5, 0.4].map((k) => k * L);
   const tx = -side; // thumb side
+  // wrapped fingers follow a circle around the hand's centre, where the held object sits
+  const Rg = L * 0.12 + fw * 0.5; // centre-line radius of the wrapped fingers
+  const G = { x: 0, y: pl + L * 0.1 };
+  const wrapPath = (t0: number, sweep: number) => {
+    let d = "";
+    for (let k = 0; k <= 10; k++) {
+      const t = t0 + (sweep * k) / 10;
+      d += `${k ? "L" : "M"} ${(G.x + side * Rg * Math.sin(t)).toFixed(2)} ${(G.y - Rg * Math.cos(t)).toFixed(2)} `;
+    }
+    return d;
+  };
+  const gripFingers = (
+    <g>
+      {[3, 2, 1, 0].map((i) => {
+        const curl = Math.min(1, p.curls[i] + flex * (0.08 + i * 0.03));
+        const d = wrapPath(-0.3 + i * 0.2, 0.6 + curl * 1.8);
+        return (
+          <g key={`g${i}`}>
+            <path d={d} fill="none" stroke={shade} strokeWidth={fw * 1.3} strokeLinecap="round" strokeLinejoin="round" opacity={0.55} transform={`translate(${fw * 0.1}, ${fw * 0.12})`} />
+            <path d={d} fill="none" stroke={skin} strokeWidth={fw * 1.05} strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        );
+      })}
+    </g>
+  );
+  // filled finger segment: a shade copy offset to the lower right gives a soft shade edge
+  const fSeg = (d: string, ty: number) => (
+    <g>
+      <path d={d} transform={`translate(${fw * 0.2}, ${ty + 0.4})`} fill={shade} opacity={0.5} />
+      <path d={d} transform={`translate(0, ${ty})`} fill={skin} stroke={ink} strokeWidth={0.5} strokeOpacity={0.35} />
+    </g>
+  );
 
   if (p.view === "side") {
     // seen from the thumb side: thin palm wedge, fingers together
@@ -63,7 +96,7 @@ export const Hand: React.FC<{ shape: HandShape; L: number; skin: string; shade: 
     return (
       <g>
         <path d={`M ${-pw * 0.22} 0 L ${pw * 0.22} 0 L ${pw * 0.2} ${pl} L ${-pw * 0.25} ${pl} Z`} fill={skin} />
-        {curl < 0.4 ? (
+        {p.grip ? gripFingers : curl < 0.4 ? (
           <path
             d={`M ${-pw * 0.25} ${pl - 2} L ${-pw * 0.2} ${pl + fingerLen} Q ${0} ${pl + fingerLen + fw} ${pw * 0.18} ${pl + fingerLen - 1} L ${pw * 0.2} ${pl - 2} Z`}
             fill={skin}
@@ -116,11 +149,11 @@ export const Hand: React.FC<{ shape: HandShape; L: number; skin: string; shade: 
         </g>
       )}
       {/* fingers */}
-      {fingers.map((fg, i) => (
+      {p.grip ? gripFingers : fingers.map((fg, i) => (
         <g key={i} transform={`translate(${fg.bx}, ${pl - 1}) rotate(${(fg.ang * 180) / Math.PI})`}>
-          <path d={seg(fg.seg1 + 1.5, fw * 0.53, fw * 0.47)} transform="translate(0,-1)" fill={skin} stroke={ink} strokeWidth={0.6} strokeOpacity={0.4} />
+          {fSeg(seg(fg.seg1 + 1.5, fw * 0.53, fw * 0.47), -1)}
           <g transform={`translate(0, ${fg.seg1}) rotate(${(fg.bend * 180) / Math.PI})`}>
-            <path d={seg(fg.seg2 + fw * 0.2, fw * 0.47, fw * 0.38)} transform="translate(0,-1)" fill={skin} stroke={ink} strokeWidth={0.6} strokeOpacity={0.4} />
+            {fSeg(seg(fg.seg2 + fw * 0.2, fw * 0.47, fw * 0.38), -1)}
             {fg.curl < 0.4 &&
               (p.view === "back" ? (
                 <ellipse cx={0} cy={fg.seg2 - fw * 0.1} rx={fw * 0.26} ry={fw * 0.34} fill={nail} opacity={0.75} />
@@ -135,9 +168,9 @@ export const Hand: React.FC<{ shape: HandShape; L: number; skin: string; shade: 
       {p.view === "back" && fingers.map((fg, i) => <ellipse key={`k${i}`} cx={fg.bx} cy={pl - fw * 0.2} rx={fw * 0.32} ry={fw * 0.22} fill="#ffffff" opacity={0.12} />)}
       {/* thumb (two segments) */}
       <g transform={`translate(${tx * pw * 0.42}, ${pl * 0.28}) rotate(${(tx * p.thumb * 180) / Math.PI})`}>
-        <path d={seg(L * 0.22, fw * 0.66, fw * 0.56)} fill={skin} stroke={ink} strokeWidth={0.6} strokeOpacity={0.4} />
+        {fSeg(seg(L * 0.22, fw * 0.66, fw * 0.56), 0)}
         <g transform={`translate(0, ${L * 0.2}) rotate(${(-tx * p.thumbCurl * 1.1 * 180) / Math.PI})`}>
-          <path d={seg(L * 0.17, fw * 0.56, fw * 0.44)} transform="translate(0,-1)" fill={skin} stroke={ink} strokeWidth={0.6} strokeOpacity={0.4} />
+          {fSeg(seg(L * 0.17, fw * 0.56, fw * 0.44), -1)}
         </g>
       </g>
     </g>

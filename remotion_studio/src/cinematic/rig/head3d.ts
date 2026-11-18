@@ -28,6 +28,7 @@ export interface FaceShape {
   earY: number;
   earSize: number;
   cheekPuff: number; // baby/child fullness
+  chinRound?: number; // 0 = squarer lower jaw (adult default), 1 = fully rounded child chin
 }
 
 export const FACE_ADULT_M: FaceShape = {
@@ -88,14 +89,35 @@ export const FACE_CHILD: FaceShape = {
   cheekPuff: 0.06,
 };
 
+/** Toddler Balak Thakur (ages 3-5): luminous calm eyes, fuller cheeks, small nose, rounded chin. */
+export const FACE_TODDLER: FaceShape = {
+  ...FACE_CHILD,
+  crown: 1.0,
+  forehead: 0.97,
+  cheek: 0.9,
+  jaw: 0.8,
+  chin: 0.62,
+  faceLen: 0.8,
+  nose: 0.36,
+  noseLen: 0.62,
+  lips: 0.9,
+  chinBump: 0.3,
+  chinRound: 1,
+  eyeY: 0.05,
+  eyeSize: 0.25,
+  eyeRound: 0.9,
+  cheekPuff: 0.18,
+};
+
 export const FACE_BABY: FaceShape = {
   ...FACE_CHILD,
   crown: 1.02,
   forehead: 1.02,
   cheek: 0.96,
-  jaw: 0.8,
-  chin: 0.46,
-  faceLen: 0.6,
+  jaw: 0.9,
+  chin: 0.5,
+  chinRound: 1,
+  faceLen: 0.7,
   depthBack: 1.12,
   nose: 0.22,
   noseLen: 0.42,
@@ -104,7 +126,7 @@ export const FACE_BABY: FaceShape = {
   chinBump: 0.3,
   eyeY: 0.17,
   eyeSep: 0.45,
-  eyeSize: 0.255,
+  eyeSize: 0.3,
   eyeRound: 1,
   earY: 0.16,
   earSize: 0.8,
@@ -146,6 +168,8 @@ export function headModel(s: FaceShape): HeadModel {
   const L = (y: number) => (y < 0.05 ? y : 0.05 + (y - 0.05) * s.faceLen);
   const ys = [-1.12 - s.cheekPuff * 0.9, -1.04, -0.9, -0.72, -0.45, -0.2, 0.05, 0.3, 0.55, 0.72, 0.88, 0.98].map(L);
   const puff = s.cheekPuff;
+  const r = s.chinRound ?? 0;
+  const chinW = (s.jaw * 0.45 + s.chin * 0.55) * (1 - r) + (s.jaw * 0.2 + s.chin * 0.8) * r;
   const wv = [
     0,
     0.42,
@@ -156,10 +180,20 @@ export function headModel(s: FaceShape): HeadModel {
     s.cheek + puff * 0.4,
     s.cheek * 0.6 + s.jaw * 0.4 + puff,
     s.jaw + puff * 0.8,
-    s.jaw * 0.45 + s.chin * 0.55 + puff * 0.3,
+    chinW + puff * 0.3,
     s.chin,
     0.02,
   ];
+  // rounded chin: the lower face follows an ellipse from the jaw down to the chin tip,
+  // instead of a straight blend that stays flat and then cuts off (the boxy base)
+  if (r > 0) {
+    const c = ys[8];
+    const b = ys[11] - ys[8];
+    const ell = (y: number, a: number) => a * Math.sqrt(Math.max(0, 1 - ((y - c) / b) ** 2));
+    wv[9] = wv[9] * (1 - r) + ell(ys[9], wv[8]) * r;
+    // taper the chin toward the tip: a round chin, not a flat base that cuts off
+    wv[10] = wv[10] * (1 - r) + ell(ys[10], wv[8]) * 0.62 * r;
+  }
   const fv = [0, 0.4, 0.6, 0.76, s.depthFront + 0.06, s.depthFront + 0.04, s.depthFront, s.depthFront + 0.02 + puff * 0.3, s.depthFront, s.depthFront * 0.86, s.depthFront * 0.68, 0.05];
   const bv = [0, 0.48, 0.8, s.depthBack * 0.95, s.depthBack, s.depthBack, s.depthBack * 0.94, 0.84, 0.64, 0.5, 0.36, 0.05];
   const noseRoot = s.eyeY - 0.04;
@@ -223,10 +257,11 @@ export function project(m: HeadModel, alpha: number, y: number, yaw: number, she
   return { x: x * cy + z * sy, y, z: -x * sy + z * cy, n: Math.cos(alpha + yaw) };
 }
 
-const ALPHAS = Array.from({ length: 73 }, (_, i) => -Math.PI + (i / 72) * Math.PI * 2);
+// finer azimuth sampling: the coarse 73-step ring made the face contour wobble and jump
+const ALPHAS = Array.from({ length: 241 }, (_, i) => -Math.PI + (i / 240) * Math.PI * 2);
 
 /** Projected silhouette (closed polygon) of the head at `yaw`, optional shell inflation. */
-export function silhouette(m: HeadModel, yaw: number, shell = 1, yFrom = m.top, yTo = m.bottom, steps = 34): Array<[number, number]> {
+export function silhouette(m: HeadModel, yaw: number, shell = 1, yFrom = m.top, yTo = m.bottom, steps = 56): Array<[number, number]> {
   const left: Array<[number, number]> = [];
   const right: Array<[number, number]> = [];
   for (let i = 0; i <= steps; i++) {
@@ -280,7 +315,9 @@ export function hairline(h: HairSpec, alpha: number): number {
 /** Hair mass behind the face (full hair silhouette). */
 export function hairBack(m: HeadModel, h: HairSpec, yaw: number): Array<[number, number]> {
   const yMax = Math.max(h.back, h.side, h.front);
-  return silhouette(m, yaw, 1 + h.thick, m.top - h.thick * 0.6, Math.min(yMax, m.bottom), 30);
+  // start at the skull top, not above it: above the dome the width is 0, so the outline
+  // collapsed into a thin spike ("antenna") on loose hair styles
+  return silhouette(m, yaw, 1 + h.thick, m.top + 0.02, Math.min(yMax, m.bottom), 30);
 }
 
 /**

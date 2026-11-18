@@ -39,6 +39,11 @@ export const DivineDefs: React.FC = () => (
       <stop offset="70%" stopColor={DIVINE.mid} stopOpacity={0.2} />
       <stop offset="100%" stopColor={DIVINE.falloff} stopOpacity={0} />
     </linearGradient>
+    <linearGradient id="dv-petal-pink" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stopColor="#F2A9B8" stopOpacity={0.9} />
+      <stop offset="55%" stopColor="#FFE9EE" stopOpacity={0.95} />
+      <stop offset="100%" stopColor="#FFFFFF" stopOpacity={1} />
+    </linearGradient>
     <linearGradient id="dv-petal" x1="0" y1="1" x2="0" y2="0">
       <stop offset="0%" stopColor={DIVINE.deep} stopOpacity={0.9} />
       <stop offset="60%" stopColor={DIVINE.mid} stopOpacity={0.95} />
@@ -150,9 +155,10 @@ export const SacredLight: React.FC<{ f: number; x: number; groundY: number; inte
 };
 
 /** Lotus of light on the ground (drawn in perspective). bloom 0 = bud, 1 = open. */
-export const LotusOfLight: React.FC<{ f: number; x: number; y: number; bloom: number; s?: number }> = ({ f, x, y, bloom, s = 1 }) => {
+export const LotusOfLight: React.FC<{ f: number; x: number; y: number; bloom: number; s?: number; pink?: boolean }> = ({ f, x, y, bloom, s = 1, pink = false }) => {
   if (bloom <= 0.01) return null;
   const b = clamp(bloom);
+  const petalFill = pink ? "url(#dv-petal-pink)" : "url(#dv-petal)";
   const petals = (n: number, len: number, wid: number, spread: number, rot: number, o: number) =>
     Array.from({ length: n }, (_, i) => {
       const a = rot + (i / n) * 360;
@@ -161,7 +167,7 @@ export const LotusOfLight: React.FC<{ f: number; x: number; y: number; bloom: nu
         <path
           key={i}
           d={`M 0 0 Q ${-wid} ${-len * 0.45} 0 ${-len} Q ${wid} ${-len * 0.45} 0 0 Z`}
-          fill="url(#dv-petal)"
+          fill={petalFill}
           opacity={o}
           transform={`rotate(${a}) scale(${open}, ${open})`}
         />
@@ -246,12 +252,13 @@ export const BabyThakur: React.FC<{
   motion?: BabyMotion;
   /** head roll relative to the body: −48 lying on his back, ≈ −15 when cradled in arms */
   headRoll?: number;
-}> = ({ f, x, y, s = 1, open = 0, aura = 1, lookX = 0, lookY = 0, turn = 0, smile = 0.4, bless = 0, float = 0, rot = 0, wiggle = 1, motion, headRoll = -48 }) => {
+}> = ({ f, x, y, s = 1, open = 0, aura = 1, lookX = 0, lookY = 0, turn = 0, smile = 0.3, bless = 0, float = 0, rot = 0, wiggle = 1, motion, headRoll = -48 }) => {
   const uid = safeId(useId());
   const mv = motion ?? { dx: 0, dy: 0, drot: 0 };
-  const skin = "#F2C8A8";
-  const skinLight = "#FFE4CF";
-  const shade = "#DBA585";
+  // skin tones follow the reference portrait: warm, softly lit
+  const skin = "#EDBE98";
+  const skinLight = "#F8D6B8";
+  const shade = "#C98E68";
   const cloth = "#FFFDF7";
   const clothShade = "#E9E0D0";
   const hx = -50;
@@ -273,7 +280,7 @@ export const BabyThakur: React.FC<{
   const th = (-(tilt + bodyRot) * Math.PI) / 180; // world → head-local
   const gx = clamp(wgx * Math.cos(th) - wgy * Math.sin(th), -0.85, 0.85);
   const gy = clamp(wgx * Math.sin(th) + wgy * Math.cos(th), -0.22, 0.6); // never roll the iris under the lid
-  const bl = blink(f * 0.55, 97);
+  const bl = blink(f * 0.35, 97); // slower, calmer blinks
   const sm = clamp(smile + noise1(f * 0.02, 17) * 0.06);
   const close = clamp(1 - open * 0.9 * (1 - bl));
   const w = wiggle;
@@ -292,8 +299,8 @@ export const BabyThakur: React.FC<{
   // arms: angles in degrees, arm drawn along +y then rotated (positive = clockwise)
   const arm = (near: boolean) => {
     const sh = near ? { x: -20, y: 12 } : { x: -14, y: -12 };
-    const a1 = near ? lerp(-62 + nz(1) * 26 * w, -152, be) : -118 + nz(2) * 34 * w;
-    const a2 = near ? lerp(-42 + nz(3) * 28 * w, 26, be) : -48 + nz(4) * 36 * w;
+    const a1 = near ? lerp(-96 + nz(1) * 8 * w, -152, be) /* resting arm beside the body */ : -118 + nz(2) * 34 * w;
+    const a2 = near ? lerp(-30 + nz(3) * 6 * w, 26, be) : -48 + nz(4) * 36 * w;
     const col = near ? skin : shade;
     return (
       <g transform={`translate(${sh.x + lagX * 0.3}, ${sh.y + breath * 0.6}) rotate(${a1})`}>
@@ -391,12 +398,17 @@ export const BabyThakur: React.FC<{
         <path d="M 10 -17 Q 30 -22 52 -17 Q 62 -8 60 6" stroke="#efe6d6" strokeWidth={2.2} fill="none" />
       </g>
 
+      {/* soft neck: joins the tilted head to the shoulders, drawn behind the head */}
+      <ellipse cx={-31} cy={15} rx={12} ry={11} fill={`url(#${uid}-tor)`} />
+      <ellipse cx={-31} cy={9} rx={9} ry={4} fill={shade} opacity={0.3} />
+      {/* soft divine radiance behind the head */}
+      <circle cx={hx} cy={hy} r={96} fill="url(#dv-glow)" opacity={0.85 * aura} />
       {/* head (baby proportions, innocent face, divine eyes) */}
       <g transform={`translate(${hx + lagX}, ${hy + nod}) rotate(${tilt})`}>
         <Head
           R={34}
           shape={FACE_BABY}
-          look={{ skin, skinLight, skinShade: shade, lips: "#C77068", hair: "#2a1a12", hairLight: "#5a4030", hairStyle: "baby", age: "baby", divineEyes: true }}
+          look={{ skin, skinLight, skinShade: shade, lips: "#C77068", hair: "#1f1510", hairLight: "#4a352a", hairStyle: "baby", age: "baby", divineEyes: false }}
           uid={`${uid}hd`}
           keySide={-1}
           rim={DIVINE.core}
@@ -406,13 +418,13 @@ export const BabyThakur: React.FC<{
             eyeX: gx,
             eyeY: gy,
             close,
-            squint: clamp((sm - 0.55) * 0.6, 0, 0.12) * open,
+            squint: 0.1 * open, // calm, serene lids
             brow: 0.32,
             browTilt: -0.08,
             mouth: MOUTH_REST,
             smile: sm,
             gasp: 0,
-            cheeks: 0,
+            cheeks: 0.4,
             flush: 0,
             tears: 0,
             sway: noise1(f * 0.04, 31) * 2 - mv.dx * 0.15,

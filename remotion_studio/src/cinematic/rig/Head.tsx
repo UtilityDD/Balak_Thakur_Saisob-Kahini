@@ -85,7 +85,26 @@ export const Head: React.FC<{
   const child = look.age === "child" || look.age === "baby";
   const elder = look.age === "elder";
 
+  // newborn: egg-shaped face outline that narrows to a rounded chin (the generic silhouette ends flat)
+  const eggFace = (): Array<[number, number]> => {
+    const top = -1.02;
+    const bottom = 0.98;
+    const cyC = (top + bottom) / 2;
+    const B = (bottom - top) / 2;
+    const A = 0.93; // width that the hair cap is built to fit
+    const right: Array<[number, number]> = [];
+    for (let k = 0; k <= 40; k++) {
+      const v = -1 + (2 * k) / 40; // -1 top .. +1 chin
+      const base = Math.sqrt(Math.max(0, 1 - v * v));
+      const taper = v < 0 ? 1 : 1 - 0.3 * v;
+      right.push([A * base * taper, cyC + B * v]);
+    }
+    const left = right.slice(1, -1).reverse().map(([x, y]) => [-x, y] as [number, number]);
+    return [...right, ...left];
+  };
+  // one face model for every part (outline, hair cap, ears, eyes), so the head stays consistent
   const face = silhouette(m, yaw);
+  void eggFace;
   const facePath = P(face, R);
   // clip-path ids are unique per frame: Chrome caches clip geometry by id during sequential
   // video renders, which left stale eye/lid shapes on screen (ghost eyes, smeared lashes).
@@ -97,9 +116,10 @@ export const Head: React.FC<{
   const eye = (side: 1 | -1) => {
     const a = side * s.eyeSep;
     const p = pr(a, s.eyeY, 1, -0.03);
-    // far eye disappears behind the nose bridge cleanly (short fade, no ghost)
-    const vis = clamp((p.n - 0.36) / 0.1);
-    if (vis <= 0.02 || p.z < 0.05) return null;
+    // visibility follows depth only (true occlusion): both eyes stay equally solid while they face
+    // the camera side, and the eye fades out only at the edge where it rolls behind the head
+    const vis = clamp(p.z / 0.12);
+    if (vis <= 0.02) return null;
     const sx = clamp(p.n, 0.36, 1);
     const cid = `${uid}-e${side > 0 ? "r" : "l"}-${fk}`;
     const close = clamp(st.close);
@@ -131,6 +151,7 @@ export const Head: React.FC<{
           <ellipse cx={0} cy={-H * 0.7} rx={W * 1.1} ry={H * 0.7} fill="#cdbbae" opacity={0.45} />
           <circle cx={ix} cy={iy} r={ir} fill={`url(#${uid}-iris)`} />
           <circle cx={ix} cy={iy} r={ir * 0.48} fill="#0d0706" />
+          {look.age === "baby" && <circle cx={ix - ir * 0.32} cy={iy - ir * 0.34} r={ir * 0.27} fill="#ffffff" opacity={0.95} />}
           {look.divineEyes ? (
             <g transform={`translate(${ix + ir * 0.34}, ${iy - ir * 0.36})`}>
               <path
@@ -257,13 +278,15 @@ export const Head: React.FC<{
   const xr = X(cR.z > -0.05 ? cR.x : cM.x + 0.02);
   const cx = X(cM.x);
   const my = X(m.mouthY);
-  const cornerY = my - X(st.smile * 0.045);
+  // newborn smile is wider and lifts more (his blush setting must not flatten the mouth)
+  const sK = look.age === "baby" ? 1.7 : 1; // gentle closed smile
+  const cornerY = my - X(st.smile * 0.045 * sK);
   const oh = X(mw * 1.1 * open);
-  const midY = my + X(st.smile * 0.06);
+  const midY = my + X(st.smile * 0.06 * sK);
   const mid = `${uid}-mouth-${fk}`;
   const lipW = Math.max(1.6, R * 0.05 * (0.55 + 0.45 * Math.cos(yaw)));
   const mouthEl =
-    st.cheeks > 0.3 ? (
+    st.cheeks > 0.3 && look.age !== "baby" ? (
       <path d={`M ${cx - X(0.07)} ${my} Q ${cx} ${my - X(0.02)} ${cx + X(0.07)} ${my}`} stroke="#5a1f1c" strokeWidth={lipW} fill="none" strokeLinecap="round" />
     ) : oh < 1.4 ? (
       <g>
@@ -316,6 +339,7 @@ export const Head: React.FC<{
 
   /* ---------------- hair ---------------- */
   const hs = HAIR[look.hairStyle];
+  // newborn: thinner back-hair shell so its outline doesn't poke out past the temples
   const hairBackPath = hs ? P(hairBack(m, hs, yaw), R) : null;
   const hairFrontPts = hs ? hairFront(m, hs, yaw) : null;
   const balding = look.hairStyle === "balding" ? P(silhouette(m, yaw, 1.035, -0.32, 0.22, 14), R) : null;
@@ -414,7 +438,8 @@ export const Head: React.FC<{
       const q = project(m, a, y, yaw, shell);
       if (q.z > 0.02) pts.push({ a, x: q.x, y, n: q.n });
     }
-    const locks = pts.map((q, i) => {
+    // newborn: no hair locks (they draw as thin spikes at the temples); curls come from the outline
+    const locks = look.age === "baby" ? [] : pts.map((q, i) => {
       const dir = Math.abs(q.a - part) < 0.06 ? 0 : Math.sign(q.a - part); // flow away from the parting
       const jig = look.hairStyle === "tousled" ? (i % 2 ? 0.05 : -0.03) : 0;
       const len = lockLen * (0.7 + 0.6 * hashLike(i + 3)) * clamp(q.n + 0.3, 0.4, 1);
@@ -427,7 +452,7 @@ export const Head: React.FC<{
     });
     // tapered sideburns where the cap meets the face edge (removes the helmet corner)
     const burns: string[] = [];
-    if (look.hairStyle === "parted" || look.hairStyle === "cropped" || look.hairStyle === "tousled") {
+    if ((look.hairStyle === "parted" || look.hairStyle === "cropped" || look.hairStyle === "tousled") && look.age !== "baby") {
       for (const q of [pts[0], pts[pts.length - 1]]) {
         if (!q || Math.abs(q.a) < 1.0) continue;
         const side = Math.sign(q.a);
@@ -481,6 +506,19 @@ export const Head: React.FC<{
           <stop offset="60%" stopColor="#4a2a17" />
           <stop offset="100%" stopColor="#1e110a" />
         </radialGradient>
+        {/* soft form lighting for the newborn: forehead light, jaw shadow, blush glow */}
+        <radialGradient id={`${uid}-hi`}>
+          <stop offset="0%" stopColor="#FFF8EC" stopOpacity={0.85} />
+          <stop offset="100%" stopColor="#FFF8EC" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id={`${uid}-sh`}>
+          <stop offset="0%" stopColor={look.skinShade} stopOpacity={0.55} />
+          <stop offset="100%" stopColor={look.skinShade} stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id={`${uid}-blush`}>
+          <stop offset="0%" stopColor="#f0806e" stopOpacity={0.85} />
+          <stop offset="100%" stopColor="#f0806e" stopOpacity={0} />
+        </radialGradient>
         <linearGradient id={`${uid}-hairg`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={look.hairLight} />
           <stop offset="35%" stopColor={look.hair} />
@@ -509,7 +547,7 @@ export const Head: React.FC<{
         </g>
       )}
       {hairBackPath && <path d={hairBackPath} fill={look.hair} opacity={look.hairStyle === "baby" ? 0.55 : 1} />}
-      {hairDetail && hairDetail.tufts.map((t, i) => <circle key={`tf${i}`} cx={X(t.x)} cy={X(t.y)} r={X(look.hairStyle === "tousled" ? 0.055 : 0.04)} fill={look.hair} />)}
+      {hairDetail && look.age !== "baby" && hairDetail.tufts.map((t, i) => <circle key={`tf${i}`} cx={X(t.x)} cy={X(t.y)} r={X(look.hairStyle === "tousled" ? 0.03 : look.age === "baby" ? 0.064 : 0.04)} fill={look.hair} />)}
       {balding && <path d={balding} fill={look.hair} />}
       {look.hairStyle === "pigtails" &&
         [-1, 1].map((side) => {
@@ -534,8 +572,8 @@ export const Head: React.FC<{
       })}
       <path d={facePath} fill={`url(#${uid}-hrim)`} />
       {st.flush > 0.01 && <path d={facePath} fill="#d63a3a" opacity={st.flush * 0.33} />}
-      {/* ink contour: keeps the face shape readable against warm backgrounds and in motion */}
-      <path d={facePath} fill="none" stroke={lerpHex(look.skinShade, "#2a140c", 0.5)} strokeWidth={Math.max(1.2, R * 0.024)} opacity={0.6} strokeLinejoin="round" />
+      {/* soft edge: a faint skin-shade rim instead of a hard outline, so the head is not cut out from the body */}
+      <path d={facePath} fill="none" stroke={look.skinShade} strokeWidth={Math.max(1.2, R * 0.03)} opacity={0.2} strokeLinejoin="round" />
 
       <defs key={`d${fk}`}>
         <clipPath id={`${uid}-faceclip-${fk}`}>
@@ -543,6 +581,16 @@ export const Head: React.FC<{
         </clipPath>
       </defs>
       <g key={`g${fk}`} clipPath={`url(#${uid}-faceclip-${fk})`}>
+      {/* newborn volume: forehead light and jaw shadow */}
+      {look.age === "baby" && (
+        <g>
+          <circle cx={X(-0.3)} cy={X(-0.5)} r={X(0.5)} fill={`url(#${uid}-hi)`} />
+          <circle cx={X(0.25)} cy={X(0.85)} r={X(0.7)} fill={`url(#${uid}-sh)`} />
+          <circle cx={X(0.9)} cy={X(0.1)} r={X(0.45)} fill={`url(#${uid}-sh)`} />
+          {/* luminous skin: warm light from within across the face */}
+          <circle cx={X(-0.1)} cy={X(-0.15)} r={X(0.95)} fill={`url(#${uid}-hi)`} opacity={0.18} />
+        </g>
+      )}
       {/* cheeks */}
       {[-1, 1].map((side) => {
         const p = pr(side * 0.6, s.eyeY + 0.3 - st.smile * 0.03, 1);
@@ -552,10 +600,10 @@ export const Head: React.FC<{
             key={side}
             cx={X(p.x)}
             cy={X(p.y)}
-            rx={X(0.15 * clamp(p.n, 0.3, 1) * (1 + st.cheeks * 0.5))}
-            ry={X(0.08 * (1 + st.cheeks * 0.4))}
-            fill="#e8705f"
-            opacity={(child ? 0.3 : 0.15) + st.smile * 0.08 + st.cheeks * 0.25}
+            rx={X(0.15 * clamp(p.n, 0.3, 1) * (1 + st.cheeks * 0.5) * (look.age === "baby" ? 1.35 : 1))}
+            ry={X(0.08 * (1 + st.cheeks * 0.4) * (look.age === "baby" ? 1.5 : 1))}
+            fill={look.age === "baby" ? `url(#${uid}-blush)` : "#e8705f"}
+            opacity={((child ? 0.3 : 0.15) + st.smile * 0.08 + st.cheeks * 0.25) * (look.age === "baby" ? 1.9 : 1)}
           />
         );
       })}
@@ -633,9 +681,9 @@ export const Head: React.FC<{
             <path
               d={`M ${X(crown.x - 0.35)} ${X(crown.y + 0.08)} Q ${X(crown.x)} ${X(crown.y - 0.08)} ${X(crown.x + 0.4)} ${X(crown.y + 0.12)}`}
               stroke={look.hairLight}
-              strokeWidth={R * 0.07}
+              strokeWidth={R * (look.age === "baby" ? 0.1 : 0.07)}
               fill="none"
-              opacity={0.45}
+              opacity={look.age === "baby" ? 0.75 : 0.45}
               strokeLinecap="round"
             />
           )}
@@ -645,13 +693,8 @@ export const Head: React.FC<{
         </g>
       )}
       {look.hairStyle === "tousled" && crown.z > -0.4 && (
-        <path d={`M ${X(crown.x)} ${X(m.top - 0.1)} q ${X(0.1 + st.sway * 0.05)} ${X(-0.3)} ${X(0.32 + st.sway * 0.08)} ${X(-0.28)}`} stroke={look.hair} strokeWidth={R * 0.09} fill="none" strokeLinecap="round" />
-      )}
-      {look.hairStyle === "baby" && crown.z > -0.4 && (
-        <path d={`M ${X(crown.x - 0.05)} ${X(m.top + 0.02)} q ${X(0.04 + st.sway * 0.04)} ${X(-0.2)} ${X(0.2 + st.sway * 0.05)} ${X(-0.16)} q ${X(0.08)} ${X(0.02)} ${X(0.02)} ${X(0.09)}`} stroke={look.hair} strokeWidth={R * 0.07} fill="none" strokeLinecap="round" />
-      )}
-      {look.hairStyle === "cropped" && (
-        <path d={`M ${X(crown.x)} ${X(m.top - 0.02)} q ${X(0.06 + st.sway * 0.04)} ${X(-0.3)} ${X(0.24 + st.sway * 0.06)} ${X(-0.36)}`} stroke={look.hair} strokeWidth={R * 0.08} fill="none" strokeLinecap="round" />
+        // short wisp that sits inside the hair mass; a long upright stroke read as an antenna
+        <path d={`M ${X(crown.x - 0.02)} ${X(m.top + 0.06)} q ${X(0.05 + st.sway * 0.03)} ${X(-0.1)} ${X(0.12 + st.sway * 0.04)} ${X(-0.07)}`} stroke={look.hair} strokeWidth={R * 0.07} fill="none" strokeLinecap="round" />
       )}
       {turbanPts && (
         <g>

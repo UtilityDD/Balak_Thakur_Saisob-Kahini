@@ -4,6 +4,7 @@ import { Episode01 } from "./Episode01";
 import { EPISODE_01_TOTAL_FRAMES } from "./data/episode01Data";
 import { CastCloseup, CastLineup } from "./cinematic/CastLineup";
 import { HeadQA } from "./cinematic/HeadQA";
+import { ToddlerQA } from "./cinematic/ToddlerQA";
 import { EyeQA, EyeZoom } from "./cinematic/EyeQA";
 import { GhomtaQA } from "./cinematic/GhomtaQA";
 import { SCENE02, Scene02Demo } from "./cinematic/Scene02Demo";
@@ -50,6 +51,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="EyeZoom" component={EyeZoom} durationInFrames={120} fps={24} width={1920} height={1080} />
       <Composition id="EyeQA" component={EyeQA} durationInFrames={120} fps={24} width={1920} height={1080} />
       <Composition id="HeadQA" component={HeadQA} durationInFrames={120} fps={24} width={1920} height={1080} />
+      <Composition id="ToddlerQA" component={ToddlerQA} durationInFrames={120} fps={24} width={1920} height={1080} />
       <Composition id="CastLineup" component={CastLineup} durationInFrames={240} fps={24} width={1920} height={1080} />
       <Composition id="CastCloseup" component={CastCloseup} durationInFrames={240} fps={24} width={1920} height={1080} />
     </>

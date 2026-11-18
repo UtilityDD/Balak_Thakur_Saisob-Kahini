@@ -391,7 +391,7 @@ const ShotCloseup: React.FC = () => {
       </Layer>
       <Layer depth={1}>
         <DivineDefs />
-        <LotusOfLight f={fw} x={960} y={790} bloom={1} s={2.6} />
+        <LotusOfLight f={fw} x={960} y={790} bloom={1} s={2.6} pink />
         <ellipse cx={960} cy={760} rx={520} ry={70} fill="#FFFDF7" opacity={0.85} />
         <BabyThakur
           f={f}
