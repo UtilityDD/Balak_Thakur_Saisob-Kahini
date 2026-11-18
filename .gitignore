@@ -14,3 +14,6 @@ remotion_studio/node_modules/
 remotion_studio/.remotion/
 remotion_studio/public/audio/
 
+
+# Original (pre-normalisation) audio masters — kept locally, not versioned (like public/audio/)
+remotion_studio/audio_raw_backup/

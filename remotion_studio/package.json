@@ -6,6 +6,8 @@
   "scripts": {
     "studio": "remotion studio",
     "render:ep01": "remotion render src/index.ts Episode01 ../03_Episodes/Episode_01_Kali_Puja_Birth/04_Video_Assembly/Final_Render/Episode_01_Remotion_25D_Master.mp4 --codec=h264 --crf=16",
+    "render:scene02": "remotion render src/index.ts Scene02Demo ../03_Episodes/Episode_01_Kali_Puja_Birth/04_Video_Assembly/Final_Render/Scene02_Cinematic_Demo.mp4 --codec=h264 --crf=18",
+    "render:scene03": "remotion render src/index.ts Scene03Demo ../03_Episodes/Episode_01_Kali_Puja_Birth/04_Video_Assembly/Final_Render/Scene03_Divine_Arrival_Demo.mp4 --codec=h264 --crf=18",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
