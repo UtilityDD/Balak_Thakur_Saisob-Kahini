@@ -1,0 +1,31 @@
+{
+  "template_id": "series_intro_v1",
+  "description": "Generalized 2.5D animated series intro used at the start of every episode (Part A: shared 4.5s series bumper, Part B: dynamic episode title card).",
+  "shared_bumper": {
+    "scene_id": "00a_series_bumper",
+    "duration_sec": 4.5,
+    "lighting": "soft_golden_dawn",
+    "camera_motion": "slow_dolly_push_in",
+    "camera_easing": "cubic_in_out",
+    "visual_prompt": "2.5D cinematic sunrise over calm Padma river, glowing white-gold lotus silhouette opening into warm saffron sky, clean lineless painterly style",
+    "depth_layers": {
+      "L1_sky": "sky_dawn_coral_saffron_L1.png",
+      "L2_river": "river_padma_sunrise_L2.png",
+      "L5_vfx": "vfx_golden_sparkles_L5.png"
+    },
+    "music_cue": "Theme_Intro_Bansuri.wav",
+    "sfx": ["chime_pop.wav"]
+  },
+  "episode_title_card": {
+    "scene_id": "00_intro",
+    "lighting": "bright_orange_flat",
+    "camera_motion": "bounce_title_pop",
+    "camera_easing": "cubic_in_out",
+    "voice_speaker": "01_Narrator_Kathak",
+    "voice_style": "Cheerful, bright, welcoming Bengali children's show announcer, warm smile in voice.",
+    "speech_template_bn": "ছোটদের বালক ঠাকুরের গল্প। <short pause> পর্ব {episode_bn}: {episode_title_bn}।",
+    "audio_file": "00_Intro.wav",
+    "music_cue": "Theme_Intro_Bansuri.wav",
+    "sfx": ["chime_pop.wav"]
+  }
+}

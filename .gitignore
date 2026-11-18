@@ -1,0 +1,12 @@
+# Large media renders & intermediate caches
+*.mp4
+*.mov
+*.mkv
+Normalized_48k/
+Rendered_Scenes/
+Final_Mix/
+__pycache__/
+*.pyc
+~$*.xlsx
+.DS_Store
+Thumbs.db

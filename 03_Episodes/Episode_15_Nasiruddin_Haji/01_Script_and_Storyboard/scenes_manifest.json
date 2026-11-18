@@ -1,0 +1,87 @@
+{
+  "episode_number": 15,
+  "episode_title": "Nasiruddin Haji's Dilemma",
+  "episode_title_bn": "নাসিরুদ্দিন হাজীর অলৌকিক দর্শন",
+  "next_episode_title_bn": "মাতুলালয়ে শারদীয়া দুর্গাপূজা",
+  "target_resolution": "1920x1080",
+  "fps": 24,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D cinematic kids cartoon title card on warm saffron orange sky gradient, bold Bengali title 'নাসিরুদ্দিন হাজীর অলৌকিক দর্শন', golden sparkles",
+      "weather_vfx": "golden_sparkles",
+      "depth_layers": {
+        "L1_sky": "title_saffron_gradient_L1.png",
+        "L4_stage": "title_card_ep15_L4.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_haji_dawn_meeting",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "nasiruddin_haji",
+        "adolescent_balak_thakur"
+      ],
+      "visual_prompt": "2.5D serene Bengal dawn courtyard, dignified elderly Nasiruddin Haji in white cap bowing respectfully as radiant adolescent_balak_thakur resolves his deep inner dilemma with gentle wisdom",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_soft_golden_dawn_L1.png",
+        "L3_midground": "arch_ep15_01_haji_dawn_meeting_L3.png",
+        "L4_stage": "stage_ep15_01_haji_dawn_meeting_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "01a_Narrator_Haji.wav",
+        "01b_Haji_Gratitude.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D serene sunrise over calm Padma river, gentle white-gold glow fading into warm morning sky, next-episode preview card",
+      "weather_vfx": "gentle_river_shimmer_breeze",
+      "depth_layers": {
+        "L1_sky": "sky_dawn_coral_saffron_L1.png",
+        "L2_river": "river_padma_sunrise_L2.png",
+        "L3_midground": "arch_medinimondal_silhouette_L3.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

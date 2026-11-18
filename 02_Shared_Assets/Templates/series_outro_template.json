@@ -1,0 +1,24 @@
+{
+  "template_id": "series_outro_v1",
+  "description": "Generalized 2.5D closing moral + sequential next-episode teaser appended to every episode.",
+  "closing_scene": {
+    "scene_id": "99_closing_sequential_outro",
+    "lighting": "soft_golden_dawn",
+    "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+    "camera_easing": "cubic_in_out",
+    "depth_layers": {
+      "L1_sky": "sky_dawn_coral_saffron_L1.png",
+      "L2_river": "river_padma_sunrise_L2.png",
+      "L3_midground": "arch_medinimondal_silhouette_L3.png",
+      "L5_vfx": "vfx_golden_sparkles_L5.png"
+    },
+    "voice_speaker": "01_Narrator_Kathak",
+    "voice_style": "Serene, inspiring, gentle storyteller slowing down peacefully, then warm curiosity on the next-episode teaser.",
+    "speech_template_bn": "{moral_reflection_bn} <short pause> ছোটদের বালক ঠাকুরের গল্প—আসছে পরের পর্ব: {next_episode_title_bn}! {next_episode_hook_bn}",
+    "finale_speech_template_bn": "{moral_reflection_bn} <short pause> ছোটদের বালক ঠাকুরের গল্পের এই যাত্রা এখানেই পূর্ণ হলো—কিন্তু ঠাকুরের ভালোবাসা ও শিক্ষা চিরকাল আমাদের সাথেই থাকবে।",
+    "audio_file": "99_Outro_Sequential.wav",
+    "ambient_bed": "padma_river_day.wav",
+    "music_cue": "Theme_Intro_Bansuri.wav",
+    "sfx": ["soft_magical_shimmer.wav"]
+  }
+}

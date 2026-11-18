@@ -1,0 +1,144 @@
+{
+  "episode_number": 4,
+  "episode_title": "The Idols & The Coconut Offering",
+  "episode_title_bn": "শিবলিঙ্গ-গোবিন্দ ও নারিকেলোদক",
+  "next_episode_title_bn": "কচ্ছপ খেলা ও গাভী রক্ষা",
+  "target_resolution": "1920x1080",
+  "fps": 24,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D cinematic kids cartoon title card on warm saffron orange sky gradient, bold Bengali title 'শিবলিঙ্গ-গোবিন্দ ও নারিকেলোদক', golden sparkles",
+      "weather_vfx": "golden_sparkles",
+      "depth_layers": {
+        "L1_sky": "title_saffron_gradient_L1.png",
+        "L4_stage": "title_card_ep04_L4.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_clay_shiva_and_doll",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "charu",
+        "toddler_thakur"
+      ],
+      "visual_prompt": "2.5D indoor prayer corner, Charu bowing in prayer while cheeky 5-year-old toddler_thakur swaps the clay Shivling on the brass plate with his colorful wooden fairground doll",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_warm_indoor_amber_L1.png",
+        "L3_midground": "arch_ep04_01_clay_shiva_and_doll_L3.png",
+        "L4_stage": "stage_ep04_01_clay_shiva_and_doll_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "01a_Narrator_Shiva.wav",
+        "01b_Toddler_Thakur_Clay.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "02_gobinda_pond_and_thakurma",
+      "lighting": "golden_daytime",
+      "camera_motion": "pan_across_courtyard_vignettes",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "sundar_thakur",
+        "thakurma",
+        "toddler_thakur"
+      ],
+      "visual_prompt": "2.5D village pond under mandar tree, toddler_thakur holding brass Gobinda idol playfully while Sundar Thakur bargains gently to trade back his wooden doll, Thakurma smiling wisely",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_golden_daytime_L1.png",
+        "L3_midground": "arch_ep04_02_gobinda_pond_and_thakurma_L3.png",
+        "L4_stage": "stage_ep04_02_gobinda_pond_and_thakurma_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "02a_Narrator_Pond.wav",
+        "02b_Thakurma_Blessing.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "river_water.wav"
+      ]
+    },
+    {
+      "scene_id": "03_coconut_water_abhishek",
+      "lighting": "warm_mandap_lamps",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "bhagabati_thakur",
+        "toddler_thakur"
+      ],
+      "visual_prompt": "2.5D temple veranda on Purnima, priest Bhagabati Thakur chanting with eyes closed while toddler_thakur happily drinks sweet coconut water from the stone offering bowl",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_warm_mandap_lamps_L1.png",
+        "L3_midground": "arch_ep04_03_coconut_water_abhishek_L3.png",
+        "L4_stage": "stage_ep04_03_coconut_water_abhishek_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "03a_Bhagabati_Dhoop.wav",
+        "03b_Toddler_Coconut.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": [
+        "temple_bell_drop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D serene sunrise over calm Padma river, gentle white-gold glow fading into warm morning sky, next-episode preview card",
+      "weather_vfx": "gentle_river_shimmer_breeze",
+      "depth_layers": {
+        "L1_sky": "sky_dawn_coral_saffron_L1.png",
+        "L2_river": "river_padma_sunrise_L2.png",
+        "L3_midground": "arch_medinimondal_silhouette_L3.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

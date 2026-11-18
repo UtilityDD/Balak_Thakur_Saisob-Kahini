@@ -1,0 +1,177 @@
+{
+  "schema_version": "2.0",
+  "borderless_rule": "All character assets must be generated as borderless, lineless 32-bit RGBA PNGs with clean alpha transparency and zero outer outlines or rectangular frames.",
+  "characters": [
+    {
+      "id": "narrator",
+      "name": "Narrator (Kathak)",
+      "visual_prompt": "Offscreen storyteller",
+      "voice_design_prompt": "A warm, soothing Bengali storyteller in their early 40s with a gentle, clear, and affectionate voice, speaking with a natural Bengali accent suited for children's audiobooks.",
+      "default_style_prompt": "Warm, calm Bengali children's storybook narrator, gentle pace.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": []
+    },
+    {
+      "id": "gopal",
+      "name": "Gopal (Boy 1)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, lively 8-year-old 1920s Bengali village boy, bright expressive eyes, tousled dark hair, simple white cotton dhoti, barefoot, holding sparkler, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A lively, bright 8-year-old Bengali boy with a clear, high-pitched youthful voice and playful East Bengali energy.",
+      "default_style_prompt": "Playful young Bengali boy, teasing and energetic.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "dhoti_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "rama",
+      "name": "Rama (Boy 2)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, cheeky 9-year-old 1920s Bengali village boy, slightly taller than Gopal, warm brown skin, traditional cotton dhoti and sleeveless vest, expressive eyebrows, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A cheeky 9-year-old Bengali boy with a slightly lower youthful timbre than a younger child, energetic and expressive.",
+      "default_style_prompt": "Playful young Bengali boy, defensive and cheeky.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "dhoti_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "babukaka",
+      "name": "Babukaka (Surendra Chandra)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, kind young Bengali man in his early 30s, gentle smile, neatly trimmed mustache, traditional white cotton dhoti and cream panjabi kurta, warm earthy tones, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A kind, gentle Bengali man in his early 30s with a warm, resonant baritone voice and an affectionate, fatherly Bengali accent.",
+      "default_style_prompt": "Kind, gentle, affectionate Bengali father figure, chuckling warmly.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "kurta_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "charu",
+      "name": "Charu (Charushila Devi)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, graceful young Bengali mother in her mid-20s, soft kind eyes, traditional white cotton saree with red border, modest veil over head, warm serene expression, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A soft-spoken, gentle Bengali woman in her mid-20s with a sweet, delicate timbre and an authentic rural Bengali accent.",
+      "default_style_prompt": "Soft, gentle, slightly emotional Bengali mother.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "saree_anchal_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "manorama_devi",
+      "name": "Manorama Devi (Dharani Jethi)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, caring grounded Bengali woman in her late 30s, warm steady motherly face, traditional off-white cotton tant saree with deep maroon border, gentle protective posture, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A caring, grounded Bengali woman in her late 30s with a warm, steady, comforting motherly tone and natural Bengali accent.",
+      "default_style_prompt": "Warm, comforting, reassuring Bengali aunt.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "saree_anchal_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "bhagabati_thakur",
+      "name": "Bhagabati Thakur (Elder Priest)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, dignified Bengali elder priest in his late 50s, silver-streaked hair, sacred sandalwood tilak on forehead, traditional white dhoti and crimson prayer uttariya shawl, holding brass bell, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A dignified Bengali elder priest in his late 50s with a deep, calm, resonant voice and traditional scholarly Bengali pronunciation.",
+      "default_style_prompt": "Authoritative, traditional Bengali priest.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "uttariya_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "sundar_thakur",
+      "name": "Sundar Thakur (Astrologer)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, scholarly Bengali man in his late 40s, traditional dhoti and shawl, holding palm-leaf astrological scroll and white chalk, amazed wide eyes, clean alpha transparent background, no outline",
+      "voice_design_prompt": "An expressive, scholarly Bengali man in his late 40s with a clear, curious mid-range voice and warm Bengali accent.",
+      "default_style_prompt": "Curious, amazed, and devotional Bengali uncle.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "shawl_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "pagol_mystic",
+      "name": "Mysterious Mystic (Pagol)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, gentle wandering Bengali mystic in his late 30s, tousled hair, simple worn ochre-brown cloth, bright fearless kind eyes, soft white rain glow, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A calm, mysterious Bengali wandering mystic in his late 30s with a slightly airy, gentle, echoing baritone and fearless, joyful warmth.",
+      "default_style_prompt": "Calm, fearless, mysterious and gentle.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "cloth_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "grumpy_relative",
+      "name": "Grumpy Relative",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, fussy elderly Bengali man in his 60s, spectacles perched low on nose, furrowed eyebrows, traditional white dhoti and folded shoulder cloth, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A slightly nasal, fussy elderly Bengali man in his 60s with a dry, complaining tone and crisp Bengali accent.",
+      "default_style_prompt": "Grumpy, hushed, complaining tone.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "thakurma",
+      "name": "Thakurma (Grandmother)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, loving elderly Bengali grandmother in her late 60s, silver-white hair, warm joyful wrinkles, traditional white cotton saree, proud affectionate smile, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A spirited, loving Bengali grandmother in her late 60s with a slightly raspy, warm, wise voice full of family pride and gentle humor.",
+      "default_style_prompt": "Proud, joyful, affectionate elderly Bengali grandmother.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "saree_anchal_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "baby_thakur",
+      "name": "Newborn Balak Thakur (Ep 1-2)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, peaceful newborn baby boy wrapped in soft white cloth, calm luminous eyes, gentle golden-white glowing aura around him, not crying, serene expression, clean alpha transparent background, no outline",
+      "voice_design_prompt": "Silent in Episode 1",
+      "default_style_prompt": "Silent",
+      "voice_id": "NONE",
+      "rig_layers": ["head", "aura_glow", "eyes_blink"]
+    },
+    {
+      "id": "toddler_thakur",
+      "name": "Toddler Balak Thakur (Ages 3-5, Ep 2-5)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, radiant 4-year-old Bengali boy with soft curly dark hair, luminous calm eyes, simple white cotton dhoti, barefoot, subtle warm golden-white aura, serene joyful smile, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A clear, luminous, unusually calm 5-year-old Bengali child with gentle, fearless clarity and sweet innocent warmth.",
+      "default_style_prompt": "Serene, innocent, quietly wise.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "dhoti_sway", "aura_glow", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "young_balak_thakur",
+      "name": "Young Balak Thakur (Ages 6-9, Ep 6-12)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, luminous 8-year-old Bengali boy, shoulder-length dark wavy hair, calm penetrating eyes full of compassion, simple white dhoti and cotton uttariya, subtle white-gold aura, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A clear, luminous, unusually calm 8-year-old Bengali boy with gentle, fearless clarity and zero childish whining.",
+      "default_style_prompt": "Calm, compassionate, quietly authoritative.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "dhoti_sway", "aura_glow", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "adolescent_balak_thakur",
+      "name": "Adolescent Balak Thakur (Ages 10-12+, Ep 13-19)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, serene 11-year-old Bengali boy, radiant face, flowing dark hair, simple white dhoti, peaceful upright posture, soft divine white-gold aura, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A serene, resonant, composed 11-year-old Bengali boy with quiet spiritual authority and compassionate warmth.",
+      "default_style_prompt": "Composed, luminous, deeply compassionate.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "dhoti_sway", "aura_glow", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "ananda_master",
+      "name": "Ananda Master (Schoolteacher)",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, affectionate rural Bengali schoolteacher in his 40s, round wire-rimmed glasses, white cotton panjabi and dhoti, holding palm-leaf manuscript, warm observant smile, clean alpha transparent background, no outline",
+      "voice_design_prompt": "An affectionate, observant rural Bengali schoolteacher in his 40s with a warm, clear, slightly poetic voice.",
+      "default_style_prompt": "Warm, observant, affectionate teacher.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "fakir_mystic",
+      "name": "Fakir of Mainamati",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, soulful rural Bengali Sufi-mystic fakir in his 50s, white beard, patched ochre-white robe, prayer beads, tearful joyful devotion in eyes, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A deep, soulful, weathered rural Bengali mystic in his 50s with humble, yearning devotion.",
+      "default_style_prompt": "Deeply devoted, tearful joy, humble.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "robe_sway", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "nasiruddin_haji",
+      "name": "Nasiruddin Haji",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, dignified elderly Bengali Muslim gentleman in his 60s, neat white beard, white embroidered cap and clean cotton punjabi, kind earnest eyes, clean alpha transparent background, no outline",
+      "voice_design_prompt": "A dignified, earnest elderly Bengali gentleman in his 60s, respectful, warm, and awe-struck.",
+      "default_style_prompt": "Respectful, earnest, deeply moved.",
+      "voice_id": "PASTE_VOICE_ID_HERE",
+      "rig_layers": ["head", "torso", "arms", "visemes_7", "eyes_blink"]
+    },
+    {
+      "id": "little_goat",
+      "name": "Little Baby Goat",
+      "visual_prompt": "Borderless 2.5D painterly cartoon, cute small white-and-brown baby goat with big expressive eyes and floppy ears, joyful gentle expression, clean alpha transparent background, no outline",
+      "voice_design_prompt": "Use goat bleat SFX",
+      "default_style_prompt": "SFX_ONLY",
+      "voice_id": "SFX_ONLY",
+      "rig_layers": ["body", "head", "ears_flop", "legs_hop"]
+    }
+  ]
+}

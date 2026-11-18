@@ -1,0 +1,114 @@
+{
+  "episode_number": 5,
+  "episode_title": "The Tortoise & The Gentle Cow",
+  "episode_title_bn": "কচ্ছপ খেলা ও গাভী রক্ষা",
+  "next_episode_title_bn": "জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী",
+  "target_resolution": "1920x1080",
+  "fps": 24,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D cinematic kids cartoon title card on warm saffron orange sky gradient, bold Bengali title 'কচ্ছপ খেলা ও গাভী রক্ষা', golden sparkles",
+      "weather_vfx": "golden_sparkles",
+      "depth_layers": {
+        "L1_sky": "title_saffron_gradient_L1.png",
+        "L4_stage": "title_card_ep05_L4.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_tortoise_play",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "toddler_thakur"
+      ],
+      "visual_prompt": "2.5D Krishnanagar courtyard corner, curious 5-year-old toddler_thakur flipping tortoises gently; one tortoise playfully pinches his finger without leaving a single mark",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_golden_daytime_L1.png",
+        "L3_midground": "arch_ep05_01_tortoise_play_L3.png",
+        "L4_stage": "stage_ep05_01_tortoise_play_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "01a_Narrator_Tortoise.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Village_Peace_Loop.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "02_banana_grove_cow_rescue",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "grumpy_relative",
+        "toddler_thakur"
+      ],
+      "visual_prompt": "2.5D lush green banana grove behind courtyard, angry villager Haricharan holding bamboo stick looking for cow, calm 6-year-old toddler_thakur standing firm to protect both truth and the cow",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_golden_daytime_L1.png",
+        "L3_midground": "arch_ep05_02_banana_grove_cow_rescue_L3.png",
+        "L4_stage": "stage_ep05_02_banana_grove_cow_rescue_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "02a_Narrator_Cow.wav",
+        "02b_Haricharan.wav",
+        "02c_Thakur_Truth.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D serene sunrise over calm Padma river, gentle white-gold glow fading into warm morning sky, next-episode preview card",
+      "weather_vfx": "gentle_river_shimmer_breeze",
+      "depth_layers": {
+        "L1_sky": "sky_dawn_coral_saffron_L1.png",
+        "L2_river": "river_padma_sunrise_L2.png",
+        "L3_midground": "arch_medinimondal_silhouette_L3.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

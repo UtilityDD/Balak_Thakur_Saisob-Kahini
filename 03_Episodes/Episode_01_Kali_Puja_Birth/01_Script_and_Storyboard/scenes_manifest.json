@@ -1,0 +1,178 @@
+{
+  "episode_number": 1,
+  "episode_title": "The Night the Drums Stopped",
+  "episode_title_bn": "Je Rate Dhak Theme Gelo",
+  "target_resolution": "1920x1080",
+  "fps": 24,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "camera_easing": "cubic_in_out",
+      "characters": ["narrator"],
+      "visual_prompt": "2.5D cinematic kids cartoon title card on bright warm saffron orange sky gradient, playful bold blue Bengali title text, drifting golden sparkles",
+      "weather_vfx": "golden_sparkles",
+      "depth_layers": {
+        "L1_sky": "title_saffron_gradient_L1.png",
+        "L4_stage": "title_card_ep01_L4.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": ["00_Intro.wav"],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": ["chime_pop.wav"]
+    },
+    {
+      "scene_id": "01_medinimondal_village",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "camera_easing": "sine_in_out",
+      "characters": ["narrator"],
+      "visual_prompt": "2.5D multi-plane landscape of 1920s rural East Bengal village Medinimondal, wide flowing Padma river with small steamship at dock, dirt path along canal, lush emerald coconut and banyan trees, bustling market, large traditional brick-and-thatch estate Baidik Bari",
+      "weather_vfx": "gentle_river_shimmer_breeze",
+      "depth_layers": {
+        "L1_sky": "sky_padma_golden_day_L1.png",
+        "L2_river": "river_padma_steamship_L2.png",
+        "L3_midground": "arch_baidik_bari_village_L3.png",
+        "L4_stage": "stage_ep01_sc01_boats_trees_L4.png",
+        "L5_vfx": "vfx_sunlit_dust_motes_L5.png"
+      },
+      "audio_files": ["01_Scene1.wav"],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Village_Peace_Loop.wav",
+      "sfx": ["river_water.wav", "distant_ship_horn.wav"]
+    },
+    {
+      "scene_id": "02_diwali_celebration",
+      "lighting": "deep_indigo_warm_diyas",
+      "camera_motion": "pan_across_courtyard_vignettes",
+      "camera_easing": "sine_in_out",
+      "characters": ["narrator", "gopal", "rama", "babukaka"],
+      "visual_prompt": "2.5D multi-plane Baidik Bari courtyard at night lit by glowing clay diyas, young Bengali boy sneaking puffed rice behind a brass gong, kind Babukaka smiling and handing sparklers to borderless laughing boys Gopal and Rama",
+      "weather_vfx": "sparkler_embers_fireflies",
+      "depth_layers": {
+        "L1_sky": "sky_kartik_indigo_night_L1.png",
+        "L3_midground": "arch_courtyard_diyas_L3.png",
+        "L4_stage": "stage_ep01_sc02_babukaka_boys_L4.png",
+        "L5_vfx": "vfx_sparkler_embers_L5.png"
+      },
+      "audio_files": ["02a_Scene2_Narrator.wav", "02b_Scene2_Kids.wav", "02c_Scene2_Babukaka.wav"],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": ["sparkler_crackle.wav"]
+    },
+    {
+      "scene_id": "03_quiet_arrival",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "cubic_in_out",
+      "characters": ["bhagabati_thakur", "narrator", "charu", "manorama_devi", "baby_thakur"],
+      "visual_prompt": "2.5D inner courtyard at midnight, graceful borderless mother Charu with brass sugar platter, aunt Manorama lovingly holding calm newborn baby_thakur wrapped in white cloth surrounded by soft glowing white-gold aura, baby not crying",
+      "weather_vfx": "sacred_white_gold_aura_motes",
+      "depth_layers": {
+        "L1_sky": "sky_kartik_indigo_night_L1.png",
+        "L3_midground": "arch_inner_courtyard_night_L3.png",
+        "L4_stage": "stage_ep01_sc03_charu_manorama_baby_L4.png",
+        "L5_vfx": "vfx_sacred_gold_aura_L5.png"
+      },
+      "audio_files": ["03a_Scene3_Call.wav", "03b_Scene3_Narrator.wav", "03c_Scene3_Charu.wav"],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": ["soft_magical_shimmer.wav"]
+    },
+    {
+      "scene_id": "04_seven_uludhwani",
+      "lighting": "warm_mandap_lamps",
+      "camera_motion": "dramatic_freeze_hold",
+      "camera_easing": "cubic_out",
+      "characters": ["bhagabati_thakur", "narrator"],
+      "visual_prompt": "2.5D Kali puja mandap with borderless elder priest Bhagabati Thakur frozen in surprise holding brass bell, drummer Manmohan pausing sticks mid-air, clarinet player stopping in awe",
+      "weather_vfx": "incense_smoke_freeze",
+      "depth_layers": {
+        "L3_midground": "arch_kali_mandap_lamps_L3.png",
+        "L4_stage": "stage_ep01_sc04_bhagabati_drummers_L4.png",
+        "L5_vfx": "vfx_incense_smoke_L5.png"
+      },
+      "audio_files": ["04a_Scene4_Bhagabati.wav", "04b_Scene4_Narrator.wav"],
+      "ambient_bed": "NONE_SILENCE_ON_FREEZE",
+      "music_cue": "NONE_SILENCE_ON_FREEZE",
+      "sfx": ["uludhwani.wav", "temple_bell_drop.wav"]
+    },
+    {
+      "scene_id": "05_rain_flashback_and_mystic",
+      "lighting": "cool_slate_rain",
+      "camera_motion": "dissolve_flashback_then_pan_to_door",
+      "camera_easing": "sine_in_out",
+      "characters": ["manorama_devi", "charu", "pagol_mystic", "sundar_thakur"],
+      "visual_prompt": "2.5D split mood: rainy monsoon evening courtyard with borderless mystic Pagol bowing joyfully in rain, transitioning to warm indoor room where scholar Sundar Thakur reads palm-leaf horoscope in amazement while Pagol smiles from doorway",
+      "weather_vfx": "monsoon_rain_3layer_then_warm_lamp",
+      "depth_layers": {
+        "L1_sky": "sky_monsoon_slate_clouds_L1.png",
+        "L3_midground": "arch_courtyard_rain_and_room_L3.png",
+        "L4_stage": "stage_ep01_sc05_pagol_sundar_L4.png",
+        "L5_vfx": "vfx_monsoon_rain_diagonal_L5.png"
+      },
+      "audio_files": ["05a_Manorama.wav", "05b_Charu.wav", "05c_Pagol_Flashback.wav", "05d_Sundar.wav", "05e_Pagol_Return.wav"],
+      "ambient_bed": "monsoon_rain_courtyard.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": ["monsoon_rain.wav"]
+    },
+    {
+      "scene_id": "06_thakurma_joy",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "medium_close_up_thakurma",
+      "camera_easing": "sine_in_out",
+      "characters": ["grumpy_relative", "narrator", "thakurma", "baby_thakur"],
+      "visual_prompt": "2.5D warm family room, proud smiling borderless grandmother Thakurma gesturing lovingly toward peaceful glowing baby_thakur while family members smile in relief",
+      "weather_vfx": "warm_lamp_glow",
+      "depth_layers": {
+        "L3_midground": "arch_family_room_amber_L3.png",
+        "L4_stage": "stage_ep01_sc06_thakurma_family_L4.png",
+        "L5_vfx": "vfx_warm_lamp_motes_L5.png"
+      },
+      "audio_files": ["06a_Grumpy.wav", "06b_Narrator.wav", "06c_Thakurma.wav"],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": []
+    },
+    {
+      "scene_id": "07_flowers_and_little_goat",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "pan_to_happy_goat_and_baby",
+      "camera_easing": "sine_in_out",
+      "characters": ["sundar_thakur", "narrator", "little_goat", "baby_thakur"],
+      "visual_prompt": "2.5D dawn courtyard, brothers peacefully scattering flowers at the mandap, cute borderless little white-and-brown baby goat untied and hopping joyfully to the baby's doorway to greet the newborn",
+      "weather_vfx": "dawn_mist_flower_petals",
+      "depth_layers": {
+        "L1_sky": "sky_dawn_coral_saffron_L1.png",
+        "L3_midground": "arch_mandap_dawn_flowers_L3.png",
+        "L4_stage": "stage_ep01_sc07_sundar_goat_L4.png",
+        "L5_vfx": "vfx_dawn_mist_petals_L5.png"
+      },
+      "audio_files": ["07a_Sundar.wav", "07b_Narrator.wav"],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Village_Peace_Loop.wav",
+      "sfx": ["goat_bleat_happy.wav"]
+    },
+    {
+      "scene_id": "08_closing_moral_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "camera_easing": "cubic_in_out",
+      "characters": ["narrator", "baby_thakur"],
+      "visual_prompt": "2.5D serene sunrise over calm Padma river at Medinimondal, gentle white-gold glow fading into warm morning sky, peaceful closing moral frame",
+      "weather_vfx": "gentle_river_shimmer_breeze",
+      "depth_layers": {
+        "L1_sky": "sky_dawn_coral_saffron_L1.png",
+        "L2_river": "river_padma_sunrise_L2.png",
+        "L3_midground": "arch_medinimondal_silhouette_L3.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": ["08_Scene8_Closing.wav"],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": ["soft_magical_shimmer.wav"]
+    }
+  ]
+}

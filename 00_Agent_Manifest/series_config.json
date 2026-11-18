@@ -1,0 +1,36 @@
+{
+  "series_title": "Stories of Balak Thakur",
+  "series_title_bn": "Chhotoder Balak Thakurer Golpo",
+  "language": "bn-IN",
+  "target_audience": "Family & Children ages 5-12 (Premium Cinematic)",
+  "video_specs": {
+    "resolution": "1920x1080",
+    "master_4k_resolution": "3840x2160",
+    "aspect_ratio": "16:9",
+    "fps": 24,
+    "pixel_format": "yuv420p",
+    "codec": "libx264",
+    "crf": 16,
+    "animation_style": "2.5D multi-plane parallax animation, borderless lineless characters and props (RGBA alpha-clean), near-real subtle body/cloth/blink/lip-sync motion, atmospheric Bengali nature, Padma river, sky, and seasonal weather VFX"
+  },
+  "depth_planes": [
+    { "plane": 1, "name": "01_sky_celestial", "parallax_multiplier": 0.15 },
+    { "plane": 2, "name": "02_far_horizon_river", "parallax_multiplier": 0.35 },
+    { "plane": 3, "name": "03_midground_architecture_flora", "parallax_multiplier": 0.65 },
+    { "plane": 4, "name": "04_character_stage_rgba", "parallax_multiplier": 1.00 },
+    { "plane": 5, "name": "05_foreground_weather_particles", "parallax_multiplier": 1.35 }
+  ],
+  "audio_specs": {
+    "tts_engine": "Google AI Studio - gemini-3.8-flash-tts",
+    "tts_raw_sample_rate_hz": 24000,
+    "master_sample_rate_hz": 48000,
+    "voice_target_lufs": -16.0,
+    "master_true_peak_dbtp": -1.5,
+    "narration_volume": 1.0,
+    "ambient_bed_volume": 0.24,
+    "music_duck_volume": 0.18,
+    "music_swell_volume": 0.42,
+    "sfx_volume": 0.45,
+    "inter_line_pause_sec": 0.45
+  }
+}

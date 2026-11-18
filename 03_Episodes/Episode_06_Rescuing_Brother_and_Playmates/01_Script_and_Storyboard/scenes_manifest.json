@@ -1,0 +1,114 @@
+{
+  "episode_number": 6,
+  "episode_title": "Rescuing Brother & The Quiet Playmate",
+  "episode_title_bn": "জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী",
+  "next_episode_title_bn": "লববাবুর পাঠশালা",
+  "target_resolution": "1920x1080",
+  "fps": 24,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D cinematic kids cartoon title card on warm saffron orange sky gradient, bold Bengali title 'জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী', golden sparkles",
+      "weather_vfx": "golden_sparkles",
+      "depth_layers": {
+        "L1_sky": "title_saffron_gradient_L1.png",
+        "L4_stage": "title_card_ep06_L4.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_saving_elder_brother",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "babukaka",
+        "young_balak_thakur"
+      ],
+      "visual_prompt": "2.5D sunlit veranda, young_balak_thakur rubbing his sore back quietly, protecting hiding elder brother while Babukaka asks sternly where he went",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_golden_daytime_L1.png",
+        "L3_midground": "arch_ep06_01_saving_elder_brother_L3.png",
+        "L4_stage": "stage_ep06_01_saving_elder_brother_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "01a_Narrator_Brother.wav",
+        "01b_Young_Thakur_Forgive.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": []
+    },
+    {
+      "scene_id": "02_treasurer_and_ten_rupees",
+      "lighting": "golden_daytime",
+      "camera_motion": "pan_across_courtyard_vignettes",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "narrator",
+        "gopal",
+        "rama",
+        "young_balak_thakur"
+      ],
+      "visual_prompt": "2.5D village field under mango trees, young_balak_thakur calmly returning stolen ten-rupee note to sister-in-law and later sharing sweet lozenges with all his friends",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_golden_daytime_L1.png",
+        "L3_midground": "arch_ep06_02_treasurer_and_ten_rupees_L3.png",
+        "L4_stage": "stage_ep06_02_treasurer_and_ten_rupees_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "02a_Narrator_Friends.wav",
+        "02b_Narrator_Lozenges.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Village_Peace_Loop.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "camera_easing": "cubic_in_out",
+      "characters": [
+        "narrator"
+      ],
+      "visual_prompt": "2.5D serene sunrise over calm Padma river, gentle white-gold glow fading into warm morning sky, next-episode preview card",
+      "weather_vfx": "gentle_river_shimmer_breeze",
+      "depth_layers": {
+        "L1_sky": "sky_dawn_coral_saffron_L1.png",
+        "L2_river": "river_padma_sunrise_L2.png",
+        "L3_midground": "arch_medinimondal_silhouette_L3.png",
+        "L5_vfx": "vfx_golden_sparkles_L5.png"
+      },
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}
