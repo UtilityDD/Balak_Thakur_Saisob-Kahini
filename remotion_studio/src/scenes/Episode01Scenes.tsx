@@ -2,8 +2,10 @@ import React from "react";
 import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { Camera25D, CameraOffset, ParallaxPlane } from "../components/Camera25D";
 import { BengalCourtyardAndFlora, BengalSky, PadmaRiver, WeatherVFX } from "../components/BengalNature";
-import { BabyThakurRig, CharacterRig, Gesture, LittleGoatRig, RiggedCharacterId, headPosition } from "../components/CharacterRig";
+import { BabyThakurRig, CharacterRig, Emotion, Gesture, LittleGoatRig, RiggedCharacterId, headPosition } from "../components/CharacterRig";
 import { AtmosphereHaze, CinematicFrame, GodRays, useSvgId } from "../components/Cinematic";
+import { DawnFlowersSet, IndoorRoomSet, KaliMandapSet } from "../components/SceneSets";
+import { SourceAttribution } from "../components/SourceAttribution";
 import { CameraKeyframe, CharacterId, SceneTiming } from "../types/studio";
 import { clamp, lerp, progress } from "../lib/motion";
 import { MOOD_LIGHT, MoodContext, tintMatrix } from "../lib/mood";
@@ -14,15 +16,28 @@ import { speakerEnergy } from "../lib/speech";
 /* ------------------------------------------------------------------ */
 
 type CastMember =
-  | { kind: "rig"; id: RiggedCharacterId; x: number; y: number; flipX?: boolean; gesture?: Gesture; voice?: CharacterId; voiceScale?: number }
+  | {
+      kind: "rig";
+      id: RiggedCharacterId;
+      x: number;
+      y: number;
+      flipX?: boolean;
+      gesture?: Gesture;
+      emotion?: Emotion;
+      voice?: CharacterId;
+      voiceScale?: number;
+      /** Optional 0..1 fractional window within the speaker clip (for 2-speaker turn-taking). */
+      voiceWindow?: [number, number];
+    }
   | { kind: "baby"; x: number; y: number; scale?: number }
-  | { kind: "goat"; x: number; y: number };
+  | { kind: "goat"; x: number; y: number; toX?: number };
 
 interface Direction {
   camera: CameraKeyframe[];
   sky: boolean;
   river?: { steamship: boolean };
   courtyard?: { diyas: boolean };
+  setPiece?: "mandap" | "indoor" | "flowers";
   vfx: "rain" | "sparkles" | "fireflies" | "petals" | "none";
   cast: CastMember[];
   /** 0 = never reframe on speakers; 1 = full medium close-up on each speaker. */
@@ -42,11 +57,12 @@ const rig = (id: RiggedCharacterId, x: number, y: number, extra: Partial<Omit<Ex
 
 const DIRECTION: Record<string, (d: number) => Direction> = {
   "01_medinimondal_village": (d) => ({
-    // Establishing shot: slow crane-down reveal over the Padma, then a gentle drift.
+    // 4-beat establishing shot with rack focus: Padma steamship (0.35) -> Baidik Bari (0.65)
     camera: [
-      { frame: 0, x: -90, y: -70, zoom: 1.12 },
-      { frame: Math.round(d * 0.35), x: -20, y: 0, zoom: 1.0, ease: "inOutCubic" },
-      { frame: d, x: 90, y: -14, zoom: 1.07 },
+      { frame: 0, x: -110, y: -65, zoom: 1.14, focusDepth: 0.35 },
+      { frame: Math.round(d * 0.28), x: -55, y: 8, zoom: 1.04, focusDepth: 0.35, ease: "inOutCubic" },
+      { frame: Math.round(d * 0.62), x: 35, y: -6, zoom: 1.02, focusDepth: 0.65, ease: "inOutSine" },
+      { frame: d, x: 105, y: -18, zoom: 1.11, focusDepth: 0.65, ease: "inOutCubic" },
     ],
     sky: true,
     river: { steamship: true },
@@ -58,32 +74,35 @@ const DIRECTION: Record<string, (d: number) => Direction> = {
   }),
   "02_diwali_celebration": (d) => ({
     camera: [
-      { frame: 0, x: -60, y: 10, zoom: 1.0 },
-      { frame: d, x: 50, y: -8, zoom: 1.08 },
+      { frame: 0, x: -70, y: 12, zoom: 1.0 },
+      { frame: Math.round(d * 0.5), x: 10, y: -4, zoom: 1.05, ease: "inOutSine" },
+      { frame: d, x: 65, y: -10, zoom: 1.09, ease: "inOutCubic" },
     ],
     sky: true,
     courtyard: { diyas: true },
     vfx: "fireflies",
     cast: [
-      rig("babukaka", 720, 690, { gesture: "sparkler" }),
-      rig("gopal", 1010, 745, { flipX: true, gesture: "sparkler" }),
-      rig("rama", 1190, 735, { flipX: true, gesture: "wave", voice: "gopal", voiceScale: 0.7 }),
+      rig("babukaka", 720, 690, { gesture: "sparkler", emotion: "joyful" }),
+      // Turn-taking banter: Gopal speaks first 52% of 02b_Scene2_Kids.wav, Rama replies in last 48%
+      rig("gopal", 1010, 745, { flipX: true, gesture: "sparkler", emotion: "joyful", voiceWindow: [0, 0.52] }),
+      rig("rama", 1190, 735, { flipX: true, gesture: "wave", emotion: "joyful", voice: "gopal", voiceScale: 1.0, voiceWindow: [0.52, 1.0] }),
     ],
     speakerFocus: 0.85,
   }),
   "03_quiet_arrival": (d) => ({
     // Reverent slow push-in toward the newborn.
     camera: [
-      { frame: 0, x: 0, y: 20, zoom: 1.0 },
-      { frame: d, x: 0, y: 30, zoom: 1.2, ease: "inOutSine" },
+      { frame: 0, x: -20, y: 16, zoom: 1.0, focusDepth: 0.85 },
+      { frame: Math.round(d * 0.55), x: 0, y: 22, zoom: 1.1, focusDepth: 1.0, ease: "inOutSine" },
+      { frame: d, x: 0, y: 32, zoom: 1.22, focusDepth: 1.0, ease: "inOutCubic" },
     ],
     sky: true,
     courtyard: { diyas: true },
     vfx: "sparkles",
     cast: [
-      rig("charu", 780, 690),
-      rig("manorama_devi", 1080, 690, { flipX: true, gesture: "bless" }),
-      rig("bhagabati_thakur", 1380, 700, { flipX: true }),
+      rig("charu", 780, 690, { gesture: "platter", emotion: "worried" }),
+      rig("manorama_devi", 1080, 690, { flipX: true, gesture: "bless", emotion: "serene" }),
+      rig("bhagabati_thakur", 1380, 700, { flipX: true, emotion: "worried" }),
       { kind: "baby", x: 960, y: 775, scale: 1.15 },
     ],
     speakerFocus: 0.7,
@@ -91,66 +110,77 @@ const DIRECTION: Record<string, (d: number) => Direction> = {
   }),
   "04_seven_uludhwani": (d) => ({
     camera: [
-      { frame: 0, x: -30, y: 0, zoom: 1.0 },
-      { frame: Math.min(72, d), x: 0, y: -10, zoom: 1.12, ease: "outCubic" },
-      { frame: d, x: 0, y: -16, zoom: 1.16 },
+      { frame: 0, x: -35, y: 0, zoom: 1.0 },
+      { frame: Math.min(76, d), x: 0, y: -12, zoom: 1.14, ease: "outCubic" },
+      { frame: d, x: 0, y: -16, zoom: 1.18 },
     ],
     sky: true,
     courtyard: { diyas: true },
+    setPiece: "mandap",
     vfx: "sparkles",
-    cast: [rig("bhagabati_thakur", 920, 695, { gesture: "bell" })],
+    cast: [rig("bhagabati_thakur", 920, 695, { gesture: "bell", emotion: "amazed" })],
     speakerFocus: 0.6,
-    handheld: 0.35,
+    handheld: 0.3,
   }),
   "05_rain_flashback_and_mystic": (d) => ({
     camera: [
-      { frame: 0, x: -50, y: 0, zoom: 1.0 },
-      { frame: d, x: 45, y: -10, zoom: 1.06 },
+      { frame: 0, x: 40, y: 0, zoom: 1.02 },
+      { frame: Math.round(d * 0.48), x: -55, y: -6, zoom: 1.08, ease: "inOutCubic" },
+      { frame: d, x: 30, y: -10, zoom: 1.06, ease: "inOutSine" },
     ],
     sky: true,
     courtyard: { diyas: false },
+    setPiece: "indoor",
     vfx: "rain",
     cast: [
-      rig("pagol_mystic", 620, 700, { gesture: "bless" }),
-      rig("sundar_thakur", 1040, 700, { flipX: true }),
-      rig("charu", 1290, 705, { flipX: true }),
-      rig("manorama_devi", 1480, 705, { flipX: true }),
+      rig("pagol_mystic", 620, 700, { gesture: "bless", emotion: "ecstatic" }),
+      rig("sundar_thakur", 1040, 700, { flipX: true, gesture: "scroll", emotion: "amazed" }),
+      rig("charu", 1290, 705, { flipX: true, emotion: "serene" }),
+      rig("manorama_devi", 1480, 705, { flipX: true, emotion: "serene" }),
     ],
     speakerFocus: 0.9,
-    handheld: 1.4,
+    handheld: 1.35,
   }),
   "06_thakurma_joy": (d) => ({
     camera: [
-      { frame: 0, x: 25, y: 0, zoom: 1.02 },
-      { frame: d, x: -20, y: -10, zoom: 1.1 },
+      { frame: 0, x: 30, y: 0, zoom: 1.02 },
+      { frame: d, x: -24, y: -12, zoom: 1.12, ease: "inOutCubic" },
     ],
     sky: true,
     courtyard: { diyas: true },
+    setPiece: "indoor",
     vfx: "sparkles",
     cast: [
-      rig("grumpy_relative", 640, 705),
-      rig("thakurma", 1100, 700, { flipX: true, gesture: "wave" }),
-      { kind: "baby", x: 900, y: 800 },
+      rig("grumpy_relative", 640, 705, { emotion: "grumpy" }),
+      rig("thakurma", 1100, 700, { flipX: true, gesture: "wave", emotion: "joyful" }),
+      { kind: "baby", x: 900, y: 785 },
     ],
     speakerFocus: 0.85,
   }),
   "07_flowers_and_little_goat": (d) => ({
     camera: [
-      { frame: 0, x: -40, y: 0, zoom: 1.0 },
-      { frame: d, x: 40, y: -10, zoom: 1.07 },
+      { frame: 0, x: -55, y: 0, zoom: 1.0 },
+      { frame: Math.round(d * 0.55), x: 15, y: -6, zoom: 1.05, ease: "inOutSine" },
+      { frame: d, x: 55, y: -12, zoom: 1.09, ease: "inOutCubic" },
     ],
     sky: true,
     river: { steamship: false },
     courtyard: { diyas: false },
+    setPiece: "flowers",
     vfx: "petals",
-    cast: [rig("sundar_thakur", 740, 690, { gesture: "bless" }), { kind: "baby", x: 1020, y: 795 }, { kind: "goat", x: 1180, y: 810 }],
+    cast: [
+      rig("sundar_thakur", 740, 690, { gesture: "namaskar", emotion: "serene" }),
+      { kind: "baby", x: 1020, y: 795 },
+      { kind: "goat", x: 1360, toX: 1125, y: 810 },
+    ],
     speakerFocus: 0.7,
   }),
   "08_closing_moral_outro": (d) => ({
-    // Pull back and rise: the classic closing crane.
+    // 3-beat closing crane pull-out & rack focus from glowing newborn to Padma sunrise
     camera: [
-      { frame: 0, x: 0, y: 30, zoom: 1.22 },
-      { frame: d, x: 0, y: -20, zoom: 1.0, ease: "inOutCubic" },
+      { frame: 0, x: 0, y: 34, zoom: 1.24, focusDepth: 1.0 },
+      { frame: Math.round(d * 0.45), x: -24, y: 6, zoom: 1.1, focusDepth: 0.65, ease: "inOutSine" },
+      { frame: d, x: 18, y: -24, zoom: 1.0, focusDepth: 0.35, ease: "inOutCubic" },
     ],
     sky: true,
     river: { steamship: true },
@@ -232,7 +262,12 @@ const lookTargetAt = (scene: SceneTiming, cast: CastMember[], self: Rig, f: numb
 /* Renderers                                                           */
 /* ------------------------------------------------------------------ */
 
-const Stage: React.FC<{ scene: SceneTiming; cast: CastMember[]; f: number }> = ({ scene, cast, f }) => {
+const Stage: React.FC<{ scene: SceneTiming; cast: CastMember[]; f: number; sceneFrozen?: boolean }> = ({
+  scene,
+  cast,
+  f,
+  sceneFrozen = false,
+}) => {
   const light = MOOD_LIGHT[scene.lighting];
   const tintId = useSvgId("ambient");
   const rigs = cast.filter((c): c is Rig => c.kind === "rig");
@@ -246,15 +281,27 @@ const Stage: React.FC<{ scene: SceneTiming; cast: CastMember[]; f: number }> = (
       </defs>
       {cast.map((c, i) => (c.kind === "baby" ? <BabyThakurRig key={`b${i}`} x={c.x} y={c.y} scale={c.scale} /> : null))}
       <g filter={`url(#${tintId})`}>
-        {cast.map((c, i) => (c.kind === "goat" ? <LittleGoatRig key={`g${i}`} x={c.x} y={c.y} /> : null))}
+        {cast.map((c, i) => {
+          if (c.kind !== "goat") return null;
+          const gx = c.toX !== undefined ? lerp(c.x, c.toX, progress(f, Math.round(scene.durationFrames * 0.25), Math.round(scene.durationFrames * 0.55), "inOutSine")) : c.x;
+          return <LittleGoatRig key={`g${i}`} x={gx} y={c.y} />;
+        })}
         {rigs
           .slice()
           .sort((a, b) => a.y - b.y)
           .map((m) => {
             const v = voiceOf(m);
             const scale = m.voiceScale ?? 1;
-            const e = speakerEnergy(scene, f, v) * scale;
-            const ePrev = speakerEnergy(scene, f - 4, v) * scale;
+            let inWindow = true;
+            if (m.voiceWindow) {
+              const clip = scene.clips.find((cl) => cl.speaker === v);
+              if (clip) {
+                const rel = (f - clip.offsetFrame) / Math.max(1, clip.frames);
+                inWindow = rel >= m.voiceWindow[0] && rel <= m.voiceWindow[1];
+              }
+            }
+            const e = inWindow ? speakerEnergy(scene, f, v) * scale : 0;
+            const ePrev = inWindow ? speakerEnergy(scene, f - 4, v) * scale : 0;
             return (
               <CharacterRig
                 key={m.id}
@@ -263,6 +310,8 @@ const Stage: React.FC<{ scene: SceneTiming; cast: CastMember[]; f: number }> = (
                 y={m.y}
                 flipX={m.flipX}
                 gesture={m.gesture}
+                emotion={m.emotion}
+                frozen={sceneFrozen}
                 rms={e}
                 emphasis={clamp((e - ePrev) * 2.2, 0, 1)}
                 lookAtX={lookTargetAt(scene, cast, m, f)}
@@ -389,6 +438,7 @@ export const SceneRenderer: React.FC<{ scene: SceneTiming; frame?: number }> = (
             </ParallaxPlane>
             <ParallaxPlane parallaxFactor={1.0} zIndex={4} sharp fullBleed={false}>
               <TitleCard f={f} />
+              <SourceAttribution variant="intro" />
             </ParallaxPlane>
             <ParallaxPlane parallaxFactor={1.35} zIndex={5}>
               <WeatherVFX type="sparkles" />
@@ -401,6 +451,15 @@ export const SceneRenderer: React.FC<{ scene: SceneTiming; frame?: number }> = (
 
   const direct = (DIRECTION[scene.sceneId] ?? DIRECTION["08_closing_moral_outro"])(d);
   const offset = cameraOffsetAt(scene, direct.cast, f, direct.speakerFocus);
+
+  // Scene 04 dramatic freeze right after Bhagabati Thakur's call (04a_Scene4_Bhagabati.wav)
+  const freezeFrame = scene.sceneId === "04_seven_uludhwani" ? (scene.clips[0]?.frames ?? 72) + 6 : Infinity;
+  const sceneFrozen = f >= freezeFrame;
+
+  // Scene 05: fade indoor room out during the rainy Pagol flashback clip (05c_Pagol_Flashback.wav)
+  const fbClip = scene.sceneId === "05_rain_flashback_and_mystic" ? scene.clips.find((c) => c.file.includes("Flashback")) : undefined;
+  const isFlashback = fbClip ? f >= fbClip.offsetFrame - 10 && f <= fbClip.offsetFrame + fbClip.frames + 10 : false;
+  const indoorOpacity = scene.sceneId === "05_rain_flashback_and_mystic" ? (isFlashback ? 0.15 : 0.96) : 1;
 
   return (
     <MoodContext.Provider value={scene.lighting}>
@@ -429,10 +488,28 @@ export const SceneRenderer: React.FC<{ scene: SceneTiming; frame?: number }> = (
               <BengalCourtyardAndFlora mood={scene.lighting} showDiyas={direct.courtyard.diyas} />
             </ParallaxPlane>
           )}
+          {direct.setPiece === "mandap" && (
+            <ParallaxPlane parallaxFactor={0.78} zIndex={3} fullBleed={false}>
+              <KaliMandapSet frozen={sceneFrozen} />
+            </ParallaxPlane>
+          )}
+          {direct.setPiece === "indoor" && (
+            <ParallaxPlane parallaxFactor={0.72} zIndex={3} opacity={indoorOpacity}>
+              <IndoorRoomSet />
+            </ParallaxPlane>
+          )}
+          {direct.setPiece === "flowers" && (
+            <ParallaxPlane parallaxFactor={0.82} zIndex={3} fullBleed={false}>
+              <DawnFlowersSet />
+            </ParallaxPlane>
+          )}
           <ParallaxPlane parallaxFactor={1.0} zIndex={4} fullBleed={false}>
-            <Stage scene={scene} cast={direct.cast} f={f} />
+            <Stage scene={scene} cast={direct.cast} f={f} sceneFrozen={sceneFrozen} />
+            {(scene.sceneId === "08_closing_moral_outro" || scene.sceneId === "99_closing_sequential_outro") && (
+              <SourceAttribution variant="outro" />
+            )}
           </ParallaxPlane>
-          <ParallaxPlane parallaxFactor={1.35} zIndex={5} fullBleed={false}>
+          <ParallaxPlane parallaxFactor={1.35} zIndex={5} fullBleed={false} opacity={scene.sceneId === "05_rain_flashback_and_mystic" && !isFlashback ? 0.2 : 1}>
             <WeatherVFX type={direct.vfx} />
           </ParallaxPlane>
         </Camera25D>

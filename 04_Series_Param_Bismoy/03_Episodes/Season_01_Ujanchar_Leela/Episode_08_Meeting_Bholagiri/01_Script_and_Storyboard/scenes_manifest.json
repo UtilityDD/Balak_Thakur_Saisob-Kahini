@@ -1,0 +1,83 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 1,
+  "episode_number": 8,
+  "episode_title": "The Weightless Palanquin & Meeting Bholagiri",
+  "episode_title_bn": "ভোলাগিরির সঙ্গে সাক্ষাৎ",
+  "next_episode_title_bn": "মনাই ফকির ও রোগ নিরাময়",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_weightless_palanquin",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "skeptic_elder",
+        "thakur_child",
+        "mystic_devotee"
+      ],
+      "audio_files": [
+        "01a_Narrator_Palki.wav",
+        "01b_Gentleman_Harsh.wav",
+        "01c_Thakur_Touch_Palki.wav",
+        "01d_Bearer_Amazed.wav",
+        "01e_Thakur_Wind.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Village_Peace_Loop.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_bholagiri_and_krishna_tattwa",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "bholagiri",
+        "thakur_child"
+      ],
+      "audio_files": [
+        "02a_Bholagiri_Ask.wav",
+        "02b_Thakur_Chidakash.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

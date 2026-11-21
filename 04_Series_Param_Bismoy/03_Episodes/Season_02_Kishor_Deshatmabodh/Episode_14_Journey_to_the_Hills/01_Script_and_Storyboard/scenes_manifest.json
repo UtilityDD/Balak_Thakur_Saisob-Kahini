@@ -1,0 +1,103 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 2,
+  "episode_number": 14,
+  "episode_title": "Journey to the Hills & Compassionate Youth",
+  "episode_title_bn": "পাহাড় পরিক্রমা ও দরদী বালক",
+  "next_episode_title_bn": "হাডুডু প্রতিযোগিতা ও অলৌকিক বিভূতি",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_manna_mias_safe_key",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "mystic_devotee",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "01a_Narrator_SafeKey.wav",
+        "01b_Manna_Father_Upset.wav",
+        "01c_Thakur_Kishor_Clue.wav",
+        "01d_Manna_Father_Amazed.wav"
+      ],
+      "ambient_bed": "village_morning.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "02_storm_and_daler_bori",
+      "lighting": "cool_slate_rain",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "woman_devotee",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "02a_Narrator_Storm.wav",
+        "02b_Woman_Distressed.wav",
+        "02c_Thakur_Kishor_Help.wav"
+      ],
+      "ambient_bed": "monsoon_rain_courtyard.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "monsoon_rain.wav"
+      ]
+    },
+    {
+      "scene_id": "03_ancient_hill_sage",
+      "lighting": "misty_mountain_dawn",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "bholagiri",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "03a_Narrator_Hills.wav",
+        "03b_Ancient_Sage.wav",
+        "03c_Thakur_Kishor_Bless.wav"
+      ],
+      "ambient_bed": "wind_hills.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

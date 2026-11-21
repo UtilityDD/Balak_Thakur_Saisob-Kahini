@@ -1,0 +1,99 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 2,
+  "episode_number": 20,
+  "episode_title": "Meeting Netaji Subhas Chandra Bose (Season 2 Finale)",
+  "episode_title_bn": "নেতাজি সুভাষচন্দ্রের সঙ্গে সাক্ষাৎ",
+  "next_episode_title_bn": "ঢাকায় মহামিলন: আনন্দময়ী মা ও রামঠাকুর",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_communal_harmony_manna_mia",
+      "lighting": "warm_sunset_amber",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "mystic_devotee",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "01a_Narrator_Harmony.wav",
+        "01b_Manna_Mia_Devotion.wav",
+        "01c_Thakur_Kishor_Love.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "river_water.wav"
+      ]
+    },
+    {
+      "scene_id": "02_netaji_subhas_historic_meeting",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "netaji_subhas",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "02a_Narrator_Netaji.wav",
+        "02b_Netaji_Greeting.wav",
+        "02c_Thakur_Kishor_Netaji.wav",
+        "02d_Netaji_Moved.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "03_forest_creatures_and_infinite_love",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "03a_Narrator_S2_Close.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

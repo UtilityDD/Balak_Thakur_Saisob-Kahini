@@ -1,0 +1,101 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 2,
+  "episode_number": 12,
+  "episode_title": "The Sun of Sahasrara & Samad's Father",
+  "episode_title_bn": "সহস্রারের সূর্য ও সামাদের পিতা",
+  "next_episode_title_bn": "উপনয়ন ও নাগাসন্ন্যাসী",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_sahasrara_sun_vision",
+      "lighting": "divine_white_gold",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "ananda_master",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "01a_Narrator_Class3.wav",
+        "01b_Teacher_Awe.wav",
+        "01c_Thakur_Kishor_Gentle.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_samads_father_crisis",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "mystic_devotee",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "02a_Narrator_Samad.wav",
+        "02b_Samads_Father_Plea.wav",
+        "02c_Thakur_Kishor_Calm.wav",
+        "02d_Samads_Father_Relief.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "wooden_door_knock.wav"
+      ]
+    },
+    {
+      "scene_id": "03_practical_spiritual_balance",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "youth_friend_1",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "03a_Friend_Question.wav",
+        "03b_Thakur_Kishor_Smile.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Village_Peace_Loop.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

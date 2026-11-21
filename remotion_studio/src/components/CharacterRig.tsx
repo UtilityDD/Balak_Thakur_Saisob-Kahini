@@ -30,7 +30,8 @@ const PALETTES: Record<string, CharacterPalette> = {
   rama: { skin: "#cc8c62", hair: "#211b19", garment: "#f2ede2", accent: "#c96f3b", scale: 0.76, isChild: true },
 };
 
-export type Gesture = "idle" | "wave" | "sparkler" | "bell" | "bless" | "scroll";
+export type Gesture = "idle" | "wave" | "sparkler" | "bell" | "bless" | "scroll" | "platter" | "namaskar";
+export type Emotion = "serene" | "joyful" | "amazed" | "worried" | "grumpy" | "ecstatic";
 export type RiggedCharacterId = Exclude<CharacterId, "narrator" | "baby_thakur" | "little_goat">;
 
 /** World-space head position for a rig placed at (x, y): used by the camera to frame speakers. */
@@ -51,8 +52,23 @@ export const CharacterRig: React.FC<{
   /** World-space x the character is looking toward (speaker / point of interest). */
   lookAtX?: number;
   gesture?: Gesture;
-}> = ({ id, x, y, flipX = false, rms = 0, emphasis = 0, lookAtX, gesture = "idle" }) => {
-  const frame = useCurrentFrame();
+  emotion?: Emotion;
+  /** Freezes limbs & props mid-air (used on Scene 4's dramatic uludhwani freeze). */
+  frozen?: boolean;
+}> = ({
+  id,
+  x,
+  y,
+  flipX = false,
+  rms = 0,
+  emphasis = 0,
+  lookAtX,
+  gesture = "idle",
+  emotion = "serene",
+  frozen = false,
+}) => {
+  const rawFrame = useCurrentFrame();
+  const frame = frozen ? Math.min(rawFrame, 78) : rawFrame;
   const mood = useMood();
   const pal = PALETTES[id] ?? PALETTES.babukaka;
   const seed = seedOf(id);
@@ -78,22 +94,48 @@ export const CharacterRig: React.FC<{
 
   const breath = Math.sin(frame * 0.085 + seed);
   const weightShift = fbm1D(frame / 110, seed + 5) * 4;
+  // Emotion-driven upper-body lean & bounce (ecstatic Pagol bounces joyfully; amazed recoils slightly)
+  const torsoLean =
+    emotion === "ecstatic"
+      ? 4.5 * flipSign + Math.sin(frame * 0.24) * 3.5 + emphasis * 4
+      : emotion === "amazed"
+      ? -3.0 * flipSign
+      : emotion === "grumpy"
+      ? 2.2 * flipSign
+      : emphasis * 2.4 * flipSign;
   // Head lags the breath cycle (overlapping action) and nods on emphasis.
   const headTilt = Math.sin(frame * 0.085 + seed - 0.6) * 1.2 + fbm1D(frame / 60, seed + 9) * 2.2 + rms * 2.4 + turn * 3;
   const nod = emphasis * 3.2 + rms * 1.4;
-  const browLift = emphasis * 3.5 + (speaking ? 0.8 : 0) + (gesture === "bless" ? 1.2 : 0);
+  const emotionBrowOffset =
+    emotion === "amazed" ? 4.5 : emotion === "ecstatic" ? 3.2 : emotion === "grumpy" ? -2.8 : emotion === "worried" ? 2.2 : 0;
+  const browLift = emphasis * 3.5 + (speaking ? 0.8 : 0) + (gesture === "bless" ? 1.2 : 0) + emotionBrowOffset;
+  const browSlope = emotion === "grumpy" ? 4.2 : emotion === "worried" ? -3.0 : 0;
 
-  const armWave =
+  // 2-joint articulated arm kinematics (shoulder + 6-frame overlapping elbow lag)
+  const shoulderAt = (f: number) =>
     gesture === "wave"
-      ? -32 + Math.sin(frame * 0.18) * 14
+      ? -34 + Math.sin(f * 0.18) * 15
       : gesture === "bless"
-      ? -38 + fbm1D(frame / 40, seed) * 5
+      ? -40 + fbm1D(f / 40, seed) * 5
       : gesture === "bell"
-      ? Math.sin(frame * 0.32) * 14
+      ? -18 + Math.sin(f * 0.32) * 16
       : gesture === "sparkler"
-      ? -35 + Math.sin(frame * 0.12) * 8 + fbm1D(frame / 18, seed) * 6
-      : Math.sin(frame * 0.05 + seed) * 3 + (speaking ? fbm1D(frame / 22, seed + 3) * 9 : 0);
-  const leftArm = -Math.sin(frame * 0.05 + seed) * 4 - (speaking ? Math.abs(fbm1D(frame / 26, seed + 4)) * 8 : 0);
+      ? -36 + Math.sin(f * 0.12) * 9 + fbm1D(f / 18, seed) * 6
+      : gesture === "scroll" || gesture === "platter"
+      ? -24 + Math.sin(f * 0.07) * 3
+      : gesture === "namaskar"
+      ? -44 + Math.sin(f * 0.08) * 2
+      : Math.sin(f * 0.05 + seed) * 3 + (speaking ? fbm1D(f / 22, seed + 3) * 11 : 0);
+
+  const armWave = shoulderAt(frame);
+  const elbowLag = (shoulderAt(frame - 6) - armWave) * 0.85 + (gesture === "namaskar" ? -42 : gesture === "scroll" || gesture === "platter" ? -28 : -16);
+  const leftArm =
+    gesture === "namaskar"
+      ? 44 - Math.sin(frame * 0.08) * 2
+      : gesture === "scroll" || gesture === "platter"
+      ? 24 - Math.sin(frame * 0.07) * 3
+      : -Math.sin(frame * 0.05 + seed) * 4 - (speaking ? Math.abs(fbm1D(frame / 26, seed + 4)) * 9 : 0);
+  const leftElbowLag = gesture === "namaskar" ? 42 : gesture === "scroll" || gesture === "platter" ? 28 : 14 + Math.sin(frame * 0.07 - 0.5) * 6;
 
   /* --- mouth: continuous opening with vowel width variation --- */
   const open = clamp(rms, 0, 1);
@@ -130,7 +172,7 @@ export const CharacterRig: React.FC<{
       <ellipse cx="-16" cy="181" rx="11" ry="5" fill={skinShade} />
       <ellipse cx="18" cy="181" rx="11" ry="5" fill={pal.skin} />
 
-      <g transform={`translate(0, ${breath * 1.6}) scale(1, ${1 + breath * 0.008})`}>
+      <g transform={`translate(0, ${breath * 1.6}) rotate(${torsoLean * 0.45} 0 180) scale(1, ${1 + breath * 0.008})`}>
         {/* Torso & garment with form shading */}
         <path
           d={`M -42 35 Q -48 115 ${-54 + clothLag * 0.5} 180 L ${54 + clothLag * 0.5} 180 Q 48 115 42 35 Q 0 22 -42 35 Z`}
@@ -147,36 +189,62 @@ export const CharacterRig: React.FC<{
         {/* Rim light along the lit shoulder */}
         <path d={lightSide > 0 ? "M 26 30 Q 44 34 46 64" : "M -26 30 Q -44 34 -46 64"} stroke={mood.rim} strokeWidth={3} fill="none" opacity={mood.rimStrength * 0.7} strokeLinecap="round" />
 
-        {/* Right arm */}
+        {/* Articulated 2-joint Right Arm (Shoulder -> Elbow -> Expressive Hand/Prop) */}
         <g transform={`translate(36, 48) rotate(${armWave})`}>
-          <path d="M -8 0 Q 22 25 44 52 L 32 60 Q 10 34 -10 12 Z" fill={`url(#${uid}-skin)`} />
-          <circle cx="40" cy="57" r="9" fill={pal.skin} />
-          {gesture === "sparkler" && (
-            <g transform="translate(44, 54)">
-              <line x1="0" y1="0" x2="36" y2="-46" stroke="#80654a" strokeWidth="3" />
-              <RadialGlow cx={36} cy={-46} r={46 + noise1D(frame / 2, seed) * 16} color="#ffd36a" opacity={0.8} />
-              {Array.from({ length: 8 }).map((_, i) => {
-                const a = (i / 8) * Math.PI * 2 + frame * 0.7;
-                const len = 10 + noise1D(frame / 1.5 + i * 3, seed + i) * 18;
-                return <line key={i} x1={36} y1={-46} x2={36 + Math.cos(a) * len} y2={-46 + Math.sin(a) * len} stroke="#fff3b0" strokeWidth={1.4} strokeLinecap="round" />;
-              })}
-              <circle cx="36" cy="-46" r={4.5} fill="#ffffff" />
-            </g>
-          )}
-          {gesture === "bell" && (
-            <g transform={`translate(42, 64) rotate(${Math.sin(frame * 0.32 - 0.8) * 18})`}>
-              <path d="M -8 0 L 8 0 L 12 18 L -12 18 Z" fill="#e6b84c" />
-              <path d="M -4 2 L -6 16" stroke="#fff0b0" strokeWidth={2} opacity={0.7} />
-              <circle cx="0" cy="20" r="3" fill="#a8822e" />
-            </g>
-          )}
-          {gesture === "bless" && <RadialGlow cx={40} cy={57} r={34} color={mood.key} opacity={0.35 + 0.15 * noise1D(frame / 20, seed)} />}
+          {/* Upper arm */}
+          <path d="M -8 0 Q 12 12 22 28 L 11 35 Q 1 18 -10 10 Z" fill={`url(#${uid}-skin)`} />
+          {/* Elbow + Forearm with 6-frame overlapping follow-through */}
+          <g transform={`translate(17, 31) rotate(${elbowLag})`}>
+            <path d="M -6 -3 Q 10 10 24 25 L 15 32 Q 2 18 -8 5 Z" fill={`url(#${uid}-skin)`} />
+            {/* Expressive palm & thumb */}
+            <ellipse cx="22" cy="29" rx="8.5" ry="6.5" fill={pal.skin} transform="rotate(28 22 29)" />
+            <ellipse cx="16" cy="24" rx="4.5" ry="2.5" fill={pal.skin} transform="rotate(-25 16 24)" />
+            {gesture === "sparkler" && (
+              <g transform="translate(24, 26)">
+                <line x1="0" y1="0" x2="36" y2="-46" stroke="#80654a" strokeWidth="3" />
+                <RadialGlow cx={36} cy={-46} r={46 + noise1D(frame / 2, seed) * 16} color="#ffd36a" opacity={0.8} />
+                {Array.from({ length: 8 }).map((_, i) => {
+                  const a = (i / 8) * Math.PI * 2 + frame * 0.7;
+                  const len = 10 + noise1D(frame / 1.5 + i * 3, seed + i) * 18;
+                  return <line key={i} x1={36} y1={-46} x2={36 + Math.cos(a) * len} y2={-46 + Math.sin(a) * len} stroke="#fff3b0" strokeWidth={1.4} strokeLinecap="round" />;
+                })}
+                <circle cx="36" cy="-46" r={4.5} fill="#ffffff" />
+              </g>
+            )}
+            {gesture === "bell" && (
+              <g transform={`translate(24, 34) rotate(${frozen ? -22 : Math.sin(frame * 0.32 - 0.8) * 18})`}>
+                <path d="M -8 0 L 8 0 L 12 18 L -12 18 Z" fill="#e6b84c" />
+                <path d="M -4 2 L -6 16" stroke="#fff0b0" strokeWidth={2} opacity={0.7} />
+                <circle cx="0" cy="20" r="3" fill="#a8822e" />
+              </g>
+            )}
+            {gesture === "scroll" && (
+              <g transform="translate(18, 22) rotate(-18)">
+                <rect x="-22" y="-12" width="44" height="26" rx="3" fill="#f3dfb6" />
+                <rect x="-26" y="-15" width="7" height="32" rx="3" fill="#b88444" />
+                <rect x="19" y="-15" width="7" height="32" rx="3" fill="#b88444" />
+                <line x1="-14" y1="-4" x2="14" y2="-4" stroke="#7d532a" strokeWidth={1.6} opacity={0.7} />
+                <line x1="-14" y1="3" x2="10" y2="3" stroke="#7d532a" strokeWidth={1.6} opacity={0.7} />
+              </g>
+            )}
+            {gesture === "platter" && (
+              <g transform="translate(22, 26)">
+                <ellipse cx="0" cy="4" rx="28" ry="8" fill="#d9a441" />
+                <ellipse cx="0" cy="1" rx="22" ry="5" fill="#f7e2a8" />
+                <ellipse cx="0" cy="-3" rx="14" ry="6" fill="#ffffff" opacity={0.92} />
+              </g>
+            )}
+            {gesture === "bless" && <RadialGlow cx={22} cy={29} r={34} color={mood.key} opacity={0.35 + 0.15 * noise1D(frame / 20, seed)} />}
+          </g>
         </g>
 
-        {/* Left arm */}
+        {/* Articulated 2-joint Left Arm */}
         <g transform={`translate(-36, 48) rotate(${leftArm})`}>
-          <path d="M 8 0 Q -18 28 -30 58 L -18 62 Q -6 34 10 12 Z" fill={`url(#${uid}-skin)`} />
-          <circle cx="-24" cy="60" r="9" fill={skinShade} />
+          <path d="M 8 0 Q -10 14 -18 30 L -7 35 Q 2 18 10 10 Z" fill={`url(#${uid}-skin)`} />
+          <g transform={`translate(-13, 32) rotate(${leftElbowLag})`}>
+            <path d="M 6 -3 Q -8 12 -16 28 L -6 32 Q 2 16 8 5 Z" fill={`url(#${uid}-skin)`} />
+            <ellipse cx="-12" cy="30" rx="8" ry="6" fill={skinShade} transform="rotate(-24 -12 30)" />
+          </g>
         </g>
 
         {/* Head & neck */}
@@ -220,21 +288,24 @@ export const CharacterRig: React.FC<{
             <ellipse cx="-18" cy="-14" rx="7" ry="4" fill="#e87e6b" opacity={0.3 + (speaking ? 0.08 : 0)} />
             <ellipse cx="18" cy="-14" rx="7" ry="4" fill="#e87e6b" opacity={0.3 + (speaking ? 0.08 : 0)} />
 
-            {/* Brows */}
-            <path d={`M -20 ${-38 - browLift} Q -13 ${-42 - browLift * 1.2} -6 ${-38 - browLift * 0.6}`} stroke={pal.isElder ? pal.hair : mix(pal.hair, pal.skin, 0.15)} strokeWidth={3} fill="none" strokeLinecap="round" />
-            <path d={`M 6 ${-38 - browLift * 0.6} Q 13 ${-42 - browLift * 1.2} 20 ${-38 - browLift}`} stroke={pal.isElder ? pal.hair : mix(pal.hair, pal.skin, 0.15)} strokeWidth={3} fill="none" strokeLinecap="round" />
+            {/* Brows with emotion slope */}
+            <path d={`M -20 ${-38 - browLift - browSlope * 0.5} Q -13 ${-42 - browLift * 1.2} -6 ${-38 - browLift * 0.6 + browSlope}`} stroke={pal.isElder ? pal.hair : mix(pal.hair, pal.skin, 0.15)} strokeWidth={3} fill="none" strokeLinecap="round" />
+            <path d={`M 6 ${-38 - browLift * 0.6 + browSlope} Q 13 ${-42 - browLift * 1.2} 20 ${-38 - browLift - browSlope * 0.5}`} stroke={pal.isElder ? pal.hair : mix(pal.hair, pal.skin, 0.15)} strokeWidth={3} fill="none" strokeLinecap="round" />
 
-            {/* Eyes: blink curve, gaze, catch-light */}
-            {[-13, 13].map((ex) => (
-              <g key={ex} transform={`translate(${ex}, -27) scale(1, ${Math.max(0.06, eyeOpen)})`}>
-                <ellipse cx="0" cy="0" rx="6.5" ry="7.5" fill="#fffaf2" />
-                <circle cx={gaze * 2.6} cy={0.5} r="4.2" fill="#2a1a14" />
-                <circle cx={gaze * 2.6} cy={0.5} r="2.2" fill="#0e0806" />
-                <circle cx={gaze * 2.6 + 1.6} cy="-1.6" r="1.5" fill="#ffffff" />
-                {/* Upper lid shadow */}
-                <path d="M -6.5 -2 Q 0 -9 6.5 -2" stroke={skinShade} strokeWidth={2} fill="none" opacity={0.5} />
-              </g>
-            ))}
+            {/* Eyes: blink curve, gaze, emotion aperture, catch-light */}
+            {[-13, 13].map((ex) => {
+              const emScale = emotion === "amazed" ? 1.15 : emotion === "grumpy" ? 0.8 : 1.0;
+              return (
+                <g key={ex} transform={`translate(${ex}, -27) scale(1, ${Math.max(0.06, eyeOpen * emScale)})`}>
+                  <ellipse cx="0" cy="0" rx="6.5" ry="7.5" fill="#fffaf2" />
+                  <circle cx={gaze * 2.6} cy={0.5} r="4.2" fill="#2a1a14" />
+                  <circle cx={gaze * 2.6} cy={0.5} r="2.2" fill="#0e0806" />
+                  <circle cx={gaze * 2.6 + 1.6} cy="-1.6" r="1.5" fill="#ffffff" />
+                  {/* Upper lid shadow */}
+                  <path d="M -6.5 -2 Q 0 -9 6.5 -2" stroke={skinShade} strokeWidth={2} fill="none" opacity={0.5} />
+                </g>
+              );
+            })}
 
             {pal.isElder && (
               <>

@@ -1,0 +1,82 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 3,
+  "episode_number": 28,
+  "episode_title": "Initiation of the Baldha Zamindar & Matla River",
+  "episode_title_bn": "বলধার জমিদারের দীক্ষা",
+  "next_episode_title_bn": "দুরারোগ্য ব্যাধি নিরাময় ও অপূর্ব বিভূতি",
+  "is_series_finale": false,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_baldha_zamindar_initiation",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "scholar_gentleman",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "01a_Narrator_Baldha.wav",
+        "01b_Baldha_Zamindar.wav",
+        "01c_Thakur_Youth_Baldha.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "02_matla_crocodile_and_leprosy",
+      "lighting": "dramatic_dusk_crimson",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "mystic_devotee"
+      ],
+      "audio_files": [
+        "02a_Narrator_Matla.wav",
+        "02b_Healed_Devotee.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "river_water.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

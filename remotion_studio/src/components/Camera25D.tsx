@@ -21,10 +21,12 @@ export interface CameraOffset {
 }
 
 /** Sample keyframes with per-segment easing; zoom interpolates in log space so push-ins feel linear to the eye. */
-const sampleKeys = (keys: CameraKeyframe[], f: number) => {
-  if (keys.length === 0) return { x: 0, y: 0, zoom: 1, rot: 0 };
+const sampleKeys = (keys: CameraKeyframe[], f: number, defaultFocus: number) => {
+  if (keys.length === 0) return { x: 0, y: 0, zoom: 1, rot: 0, focusDepth: defaultFocus };
   const first = keys[0];
-  if (keys.length === 1 || f <= first.frame) return { x: first.x, y: first.y, zoom: first.zoom, rot: first.rotateDeg ?? 0 };
+  if (keys.length === 1 || f <= first.frame) {
+    return { x: first.x, y: first.y, zoom: first.zoom, rot: first.rotateDeg ?? 0, focusDepth: first.focusDepth ?? defaultFocus };
+  }
   for (let i = 0; i < keys.length - 1; i++) {
     const a = keys[i];
     const b = keys[i + 1];
@@ -35,11 +37,12 @@ const sampleKeys = (keys: CameraKeyframe[], f: number) => {
         y: lerp(a.y, b.y, t),
         zoom: Math.exp(lerp(Math.log(a.zoom), Math.log(b.zoom), t)),
         rot: lerp(a.rotateDeg ?? 0, b.rotateDeg ?? 0, t),
+        focusDepth: lerp(a.focusDepth ?? defaultFocus, b.focusDepth ?? defaultFocus, t),
       };
     }
   }
   const last = keys[keys.length - 1];
-  return { x: last.x, y: last.y, zoom: last.zoom, rot: last.rotateDeg ?? 0 };
+  return { x: last.x, y: last.y, zoom: last.zoom, rot: last.rotateDeg ?? 0, focusDepth: last.focusDepth ?? defaultFocus };
 };
 
 /**
@@ -64,7 +67,7 @@ export const Camera25D: React.FC<{
   const current = useCurrentFrame();
   const frame = frameProp ?? current;
   const amount = handheld ?? (breathingAmplitude !== undefined ? breathingAmplitude / 2.5 : 1);
-  const base = sampleKeys(keyframes, frame);
+  const base = sampleKeys(keyframes, frame, focusDepth);
 
   const shakeX = fbm1D(frame / 46, 11) * 7 * amount;
   const shakeY = fbm1D(frame / 52, 23) * 4.5 * amount;
@@ -75,7 +78,7 @@ export const Camera25D: React.FC<{
     camX: base.x + (offset?.x ?? 0) + shakeX,
     camY: base.y + (offset?.y ?? 0) + shakeY,
     zoom,
-    focusDepth,
+    focusDepth: base.focusDepth,
     dof,
   };
 

@@ -1,0 +1,104 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 2,
+  "episode_number": 13,
+  "episode_title": "Sacred Thread & The Naga Sannyasi",
+  "episode_title_bn": "উপনয়ন ও নাগাসন্ন্যাসী",
+  "next_episode_title_bn": "পাহাড় পরিক্রমা ও দরদী বালক",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_upanayan_ceremony",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "surendra",
+        "charu"
+      ],
+      "audio_files": [
+        "01a_Narrator_Upanayan.wav",
+        "01b_Surendra_Proud.wav",
+        "01c_Charu_Tears.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": [
+        "conch_shell.wav",
+        "temple_bell.wav"
+      ]
+    },
+    {
+      "scene_id": "02_naga_sannyasi_encounter",
+      "lighting": "dramatic_dusk_crimson",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "bholagiri",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "02a_Narrator_Naga.wav",
+        "02b_Naga_Fierce.wav",
+        "02c_Thakur_Kishor_Fearless.wav",
+        "02d_Naga_Humbled.wav"
+      ],
+      "ambient_bed": "wind_hills.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "03_parbatipur_train_conspiracy",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "skeptic_elder",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "03a_Narrator_Train.wav",
+        "03b_Conspirator_Rattled.wav",
+        "03c_Thakur_Kishor_Calm_End.wav"
+      ],
+      "ambient_bed": "steam_train_night.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "train_whistle.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

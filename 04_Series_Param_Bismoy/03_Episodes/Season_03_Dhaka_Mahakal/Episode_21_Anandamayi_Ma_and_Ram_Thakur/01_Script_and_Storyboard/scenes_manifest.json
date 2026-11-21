@@ -1,0 +1,102 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 3,
+  "episode_number": 21,
+  "episode_title": "Anandamayi Ma & Ram Thakur in Dhaka",
+  "episode_title_bn": "ঢাকায় মহামিলন: আনন্দময়ী মা ও রামঠাকুর",
+  "next_episode_title_bn": "মান্নামিঞার বাবা ও ঢাকার লীলা",
+  "is_series_finale": false,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_bholagiri_brahma_purush",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "bholagiri",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "01a_Narrator_Dhaka.wav",
+        "01b_Bholagiri_Ecstasy.wav",
+        "01c_Thakur_Youth_Humble.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "temple_bell.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_anandamayi_ma_meeting",
+      "lighting": "divine_white_gold",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "anandamayi_ma",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "02a_Narrator_Anandamayi.wav",
+        "02b_Anandamayi_Ma.wav",
+        "02c_Thakur_Youth_Ma.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "03_ram_thakur_recognition",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "bholagiri"
+      ],
+      "audio_files": [
+        "03a_Narrator_RamThakur.wav",
+        "03b_Ram_Thakur.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

@@ -27,6 +27,27 @@
 - **Speech Box:**
 > ষষ্ঠীপূজোর দিন সকাল থেকে এমন মুষলধারে বৃষ্টি নামল যে গাঁয়ের কেউ আসতে পারল না। <short pause> অন্নপ্রাশনের আগেই বাবা সুরেন্দ্রচন্দ্রের নতুন চাকরির খবর এল—সবাইকে নিয়ে তিনি চলে গেলেন উজানচর কৃষ্ণনগরে।
 
+## Scene `01d2_shashthi_hands_miracle` — `01d2a_Narrator_Inside.wav`
+- **Save As:** `01d2a_Narrator_Inside.wav`
+- **Speaker:** `01_Narrator_Kathak` (`Enzo`)
+- **Style Box:** `Intrigued, hushed wonder transitioning indoors from the storm.`
+- **Speech Box:**
+> গ্রামের ব্রাহ্মণরা নবজাতককে পায়ের ধুলো দিতে আসবেন বলে সব আয়োজন ছিল—অথচ এক ফোঁটা বৃষ্টিও থামছে না! <short pause> আর ঘরের ভেতর আত্মীয়রা হঠাৎ এক অদ্ভুত কাণ্ড দেখে অবাক—
+
+## Scene `01d2_shashthi_hands_miracle` — `01d2b_Thakurma_Rain.wav`
+- **Save As:** `01d2b_Thakurma_Rain.wav`
+- **Speaker:** `06_Thakurma` (`Cleo`)
+- **Style Box:** `Startled, amazed, pointing toward the cot and window in breathless wonder.`
+- **Speech Box:**
+> ওরে তোরা এদিকে এসে দ্যাখ! <short pause> খোকা যেমন ছোট্ট হাত দুটো জোরে নাড়ছে, বাইরে বৃষ্টিও অমনি মুষলধারে বাড়ছে! আবার হাত থামালেই বৃষ্টি কমে আসছে—এ কি মানুষের কাজ রে!
+
+## Scene `01d2_shashthi_hands_miracle` — `01d2c_Surendra_Awe.wav`
+- **Save As:** `01d2c_Surendra_Awe.wav`
+- **Speaker:** `04_Babukaka` (`Achird`)
+- **Style Box:** `Quiet, deeply thoughtful, reverent fatherly tone.`
+- **Speech Box:**
+> বড় আশ্চর্য মা! কারও পদধূলি যেন ও নিতে চাইল না—প্রকৃতিই যেন ওর ইশারায় খেলছে!
+
 ## Scene `02_fox_and_bagha_dog` — `02a_Narrator_Fox.wav`
 - **Save As:** `02a_Narrator_Fox.wav`
 - **Speaker:** `01_Narrator_Kathak`

@@ -160,12 +160,22 @@ export const Episode01: React.FC = () => {
                 />
               )}
 
-              {/* Bus 4: foley */}
-              {scene.sfx.map((sfxFile, idx) => (
-                <Sequence key={`${sfxFile}-${idx}`} from={idx * 36} durationInFrames={120} layout="none">
-                  <Audio src={staticFile(`audio/sfx/${sfxFile}`)} volume={AUDIO.sfx_volume} />
-                </Sequence>
-              ))}
+              {/* Bus 4: beat-synced foley */}
+              {scene.sfx.map((sfxFile, idx) => {
+                let sfxFrame = idx * 42;
+                if (sfxFile === "uludhwani.wav" && scene.clips[0]) {
+                  sfxFrame = scene.clips[0].offsetFrame + scene.clips[0].frames + 2;
+                } else if (sfxFile === "temple_bell_drop.wav" && scene.clips[0]) {
+                  sfxFrame = scene.clips[0].offsetFrame + scene.clips[0].frames + 28;
+                } else if (sfxFile === "goat_bleat_happy.wav" && scene.clips[1]) {
+                  sfxFrame = scene.clips[1].offsetFrame + Math.round(scene.clips[1].frames * 0.62);
+                }
+                return (
+                  <Sequence key={`${sfxFile}-${idx}`} from={Math.min(sfxFrame, Math.max(0, d - 24))} durationInFrames={120} layout="none">
+                    <Audio src={staticFile(`audio/sfx/${sfxFile}`)} volume={AUDIO.sfx_volume} />
+                  </Sequence>
+                );
+              })}
             </Sequence>
           </React.Fragment>
         );
