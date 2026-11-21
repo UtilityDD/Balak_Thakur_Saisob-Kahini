@@ -14,7 +14,7 @@ description: Render still frames of a Remotion composition (Episode01, Episode02
 
 ## Where to run
 Production code is in the worktree
-`C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+`C:\Dipankar\Balak_Thakur_Production`
 (branch `feat/ep01-polish-and-rules`) until it is committed into `C:\Dipankar\Balak_Thakur_AI_Studio`; use the main
 repo if `remotion_studio/src/episode02/Episode02.tsx` exists there. Run from `<root>/remotion_studio` in Git Bash.
 
@@ -22,7 +22,7 @@ repo if `remotion_studio/src/episode02/Episode02.tsx` exists there. Run from `<r
 A plain `remotion still src/index.ts ...` re-bundles the whole project every time (about 50 s). Bundle once and
 render from the bundle (about 4 s per still). Re-bundle after ANY code change, or you are looking at old code.
 ```bash
-W="/c/Users/rouma/AppData/Local/Temp/claude/8d2a3455c490787c/d453e53b-1da9-42c9-8691-a833340f8cb5/scratchpad/ep01run"
+W="/c/Dipankar/Balak_Thakur_Production"
 cd "$W/remotion_studio"
 B=../bundle_qa; QA=../check_ep3_s02; mkdir -p "$QA"
 NODE_OPTIONS=--max-old-space-size=6144 node node_modules/@remotion/cli/remotion-cli.js bundle src/index.ts --out-dir=$B > $QA/bundle_log.txt 2>&1 || tail $QA/bundle_log.txt

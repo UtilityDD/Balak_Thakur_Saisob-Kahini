@@ -12,7 +12,7 @@ under `03_Episodes` (e.g. `Episode_04_Idols_and_Coconut_Water`).
 
 ## Where
 Resources: the main repo `C:\Dipankar\Balak_Thakur_AI_Studio\03_Episodes\<EP>\` (the builder's `REPO_ROOT`). Code: the
-worktree `C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+worktree `C:\Dipankar\Balak_Thakur_Production`
 (branch `feat/ep01-polish-and-rules`) until committed; use the main repo if `remotion_studio/src/episode02/Episode02.tsx`
 exists there. Commands run from `<root>` in Git Bash unless noted.
 

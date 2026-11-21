@@ -15,7 +15,7 @@ the timing.
 The clips the composition plays are `remotion_studio/public/audio/epNN/*.wav` (copied from
 `03_Episodes/<Episode>/02_Audio/Voice_WAVs/`, plus `00a_Source_Attribution.wav`). Normalise those copies; leave the
 episode's source `Voice_WAVs` as delivered. Production code lives in the worktree
-`C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+`C:\Dipankar\Balak_Thakur_Production`
 until it is committed into `C:\Dipankar\Balak_Thakur_AI_Studio`; use the main repo if
 `remotion_studio/src/episode02/Episode02.tsx` exists there.
 

@@ -14,7 +14,7 @@ description: Render a full Balak Thakur episode (Episode01, Episode02, Episode03
 
 ## 1. Settings and bundle (once)
 ```bash
-W="/c/Users/rouma/AppData/Local/Temp/claude/8d2a3455c490787c/d453e53b-1da9-42c9-8691-a833340f8cb5/scratchpad/ep01run"
+W="/c/Dipankar/Balak_Thakur_Production"
 cd "$W/remotion_studio"
 CH="$(cygpath -m "<session scratchpad>")/render_final"; mkdir -p "$CH"
 NODE_OPTIONS=--max-old-space-size=6144 node node_modules/@remotion/cli/remotion-cli.js bundle src/index.ts --out-dir="$CH/bundle" > "$CH/bundle_log.txt" 2>&1 || tail "$CH/bundle_log.txt"

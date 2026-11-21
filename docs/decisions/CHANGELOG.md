@@ -44,3 +44,16 @@ Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as
 - Episode 2 re-rendered with the hands without outline or wrist seam (MOT-19), one baby face across newborn, go-saap and matka (BAL-25), and Balak awake through the hands miracle: 7,307 frames, 5:04.5, -16.7 LUFS, peak -2.4 dBFS. Previous cut kept in the scratchpad (`render_final2/..._previous.mp4`).
 - Episode 3 final (STO-17): the dawn flower gathering and the main scene at the shared Ujanchar village house, 12 pauses, Charu's on-screen scolding, new sound beds and the divine-motif ending; voices levelled to -16 LUFS / -1.5 dBTP (they were -24.4 to -14.4): 3,259 frames, 2:15.8, -16.4 LUFS, peak -3.4 dBFS. Previous cut kept in the scratchpad (`render_ep3_v2/..._previous.mp4`).
 - Code committed on `feat/ep01-polish-and-rules` (3f1bf72); docs on `feat/cinematic-animation` (fdc37e8); audio backed up to `_backups/2026-11-21_worktree_public/` (checksums verified).
+
+## 2026-11-22: book check, production worktree recreated, Episode 4 approved
+- The temp production worktree was deleted by a cleanup; recreated at `C:\Dipankar\Balak_Thakur_Production` from commit 3f1bf72, `npm ci`, audio restored from `_backups/` (LOC-04 closed). All guides and skills repointed.
+- Checked against the source book (`book.xlsx`): Episode 3's scold is by the girls of the house, not Charu (STO-17a), and Episode 3 happens at the Vedic house, not Ujanchar (STO-18); Babukaka is the father Surendra (the rice-pot father now uses Surendra's look).
+- Episode 4 timing generator built (`scripts/build_ep04_timing.js`, voices levelled); Episode 4 plan approved (STO-19): the Vedic house, the priest Bhagabati captioned পুরোহিত ঠাকুর, scene 3 wordless, chapter breaks. Build started.
+- episode-polish-pass skill: who speaks and where come from the book, not the voice ID.
+
+## 2026-11-22 (evening): Episodes 2, 3 and 4 final renders delivered
+- Episode 2 (7,307 frames, 5:04.5, -16.7 LUFS): the rice-pot father now uses Surendra's look (Babukaka is Surendra).
+- Episode 3 (3,259 frames, 2:15.8, -16.4 LUFS): moved to the Vedic house courtyard (STO-18); the girls of the house scold Balak, Charu absent (STO-17a); serene open eyes at the end.
+- Episode 4 (3,335 frames, 2:19.0, -16.4 LUFS), new: the clay Shiva and the doll, the Gobinda at the pond and Thakurma's prophecy, the coconut water (STO-19); chapter breaks; the big stone bowl as in the book.
+- All joins seamless, zero decode errors; previous cuts kept in `C:\Dipankar\Balak_Thakur_Production\render_final_2026-11-22\`. Final SRTs re-exported. Audio backed up to `_backups/2026-11-22_worktree_public/`.
+- Process: orphaned renders after stopped scripts caused memory exhaustion (PIT-04); render scripts now write chunks to .tmp, skip done chunks, and join with Windows paths.

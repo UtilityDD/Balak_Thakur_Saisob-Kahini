@@ -9,13 +9,12 @@ Last refreshed 2026-11-21.
 child saint Balak Thakur, based on "Sri Sri Balak Brahmachari's Childhood Stories". Animation is code: Remotion
 (React + SVG, 1920x1080, 24 fps) with a 2.5D multiplane camera. Audio and subtitles come from a Python/Node pipeline.
 
-## Episode status (2026-11-21)
-- Episode 1: final (9,705 frames, 6:44.5). Needs a re-render to pick up the shared rig fixes (hands, breathing,
-  baby face) made during Episodes 2 and 3; only after the director approves stills.
-- Episode 2: final, being re-rendered today with the hand and baby-face fixes. 7,307 frames, 5:04.5.
-- Episode 3: final rendering today. 3,259 frames, 2:15.8, set at the Ujanchar village house.
-- Episode 4: timing only, no scenes, not registered in `Root.tsx`. Its SRT is right but its hand-built timing
-  drifts from it; recommended fix: write an Episode 3-style generator (`build_ep04_timing.js`).
+## Episode status (2026-11-22)
+- Episode 1: final (9,705 frames, 6:44.5). Will need a re-render for the shared rig fixes (hands, breathing,
+  baby face); the director said "not now" (2026-11-22).
+- Episode 2: final delivered 2026-11-22 (7,307 frames, 5:04.5), with Surendra as the rice-pot father.
+- Episode 3: final delivered 2026-11-22 (3,259 frames, 2:15.8), at the Vedic house; the girls scold Balak (STO-17a, STO-18).
+- Episode 4: final delivered 2026-11-22 (3,335 frames, 2:19.0), at the Vedic house (STO-19); generator scripts/build_ep04_timing.js with pauses, action gaps and chapter breaks.
 - Episodes 5 to 19: scripts, manifests, SRTs and draft voices only.
 Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 
@@ -23,12 +22,14 @@ Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 - Main repo: `C:\Dipankar\Balak_Thakur_AI_Studio` (branch `feat/cinematic-animation`). Bible, episode scripts,
   shot-and-pause plans, voice WAVs, SRTs, final renders.
 - Production worktree (newest code):
-  `C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+  `C:\Dipankar\Balak_Thakur_Production`
   (branch `feat/ep01-polish-and-rules`). Its `remotion_studio/src` and `scripts` are newer than the main repo's.
-- Warning: most of the worktree is UNCOMMITTED and it sits in a temp folder. It must be committed into the repo
-  before it is lost (only when the director asks, LOC-04). Its `remotion_studio/public/audio/` (normalised voices,
-  pause part files, recorded SFX and their credit READMEs) is gitignored and needs a plan too; credits are versioned
-  in [docs/AUDIO_CREDITS.md](docs/AUDIO_CREDITS.md).
+- The worktree is a git worktree of this repo, recreated on 2026-11-22 at the permanent path above (the old temp
+  folder was deleted; the code survived because it was committed: 3f1bf72). Commit new work on its branch when the
+  director asks. Its `remotion_studio/public/audio/` (normalised voices, pause part files, recorded SFX and their
+  credit READMEs) is gitignored: after major audio changes refresh the backup in `_backups/` (see
+  `_backups/README.md`); credits are versioned in [docs/AUDIO_CREDITS.md](docs/AUDIO_CREDITS.md). After recreating
+  the worktree, run `npm ci` in `remotion_studio` and restore `public/audio` from `_backups/`.
 - Leave alone: `remotion_studio/src/param_bismoy_ep01/` (and `public/audio/s2_ep01/`) is the director's separate
   new series. Do not edit, move or delete it. Its type errors can fail `tsc`; judge your work by your own files.
 - Final renders: `03_Episodes/<Episode_folder>/04_Video_Assembly/Final_Render/<Episode_folder>.mp4`.

@@ -9,7 +9,7 @@ description: Start, restart or health-check the Remotion Studio for the Balak Th
 Worktree (branch `feat/ep01-polish-and-rules`) until it is committed; the main repo if
 `remotion_studio/src/episode02/Episode02.tsx` exists there. Commands run in Git Bash.
 ```bash
-W="/c/Users/rouma/AppData/Local/Temp/claude/8d2a3455c490787c/d453e53b-1da9-42c9-8691-a833340f8cb5/scratchpad/ep01run"
+W="/c/Dipankar/Balak_Thakur_Production"
 M="/c/Dipankar/Balak_Thakur_AI_Studio"
 if [ -f "$M/remotion_studio/src/episode02/Episode02.tsx" ]; then ROOT="$M"; else ROOT="$W"; fi
 cd "$ROOT/remotion_studio"

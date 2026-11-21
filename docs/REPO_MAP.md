@@ -75,7 +75,7 @@ See [../CLAUDE.md](../CLAUDE.md) for the rules and commands.
 
 ## Production worktree
 
-Path: `C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+Path: `C:\Dipankar\Balak_Thakur_Production`
 (branch `feat/ep01-polish-and-rules`). Newest code; mostly uncommitted; must be committed into the repo.
 
 ### Worktree root and `scripts/`

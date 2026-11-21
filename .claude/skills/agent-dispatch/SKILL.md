@@ -33,7 +33,7 @@ description: How to split Balak Thakur production work (scene passes, new scenes
     (process) in the main repo, same session, with date and reason. Commit only when the director asks.
 
 ## Where
-Worktree `C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+Worktree `C:\Dipankar\Balak_Thakur_Production`
 (branch `feat/ep01-polish-and-rules`) until committed into `C:\Dipankar\Balak_Thakur_AI_Studio`. Give agents
 absolute paths.
 

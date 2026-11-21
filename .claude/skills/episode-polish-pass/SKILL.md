@@ -7,7 +7,7 @@ description: The workflow that made Balak Thakur Episodes 2 and 3 - a director-a
 
 Six steps, in order; each waits for the previous one. Worked examples: Episode 2 (STO-16, 23 pauses, 7,307 frames)
 and Episode 3 (STO-17, 12 pauses, 3,259 frames). Worktree root (`W`):
-`C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+`C:\Dipankar\Balak_Thakur_Production`
 until committed into `C:\Dipankar\Balak_Thakur_AI_Studio`. Rules: CAM-13 (camera grammar), CAM-14 (pauses), MOT-19,
 MOT-20, BAL-25, TTL-10a, AUD-02/03 in `01_Series_Bible/DIRECTOR_DECISIONS.md`; TIM-INS-01, TIM-PAUSE-01..03, REN-LOCK-01,
 REN-BUNDLE-01, PIT-01..03 in `docs/PIPELINE_DECISIONS.md`.
@@ -81,6 +81,10 @@ Show the director the sheets, clips and the studio (`studio-run`). Fix what they
 explicit approval and a render request: `render-episode` (bundle, chunks, checks, final SRT, backup, changelog).
 
 ## Pitfalls met on Episodes 2 and 3
+- **Who speaks comes from the book, not the voice ID (STO-17a):** Episode 3's scolding line was voiced with Charu's
+  voice ID, and the plan wrongly put Charu on screen; in the book the GIRLS scold him and Charu is absent. Before
+  planning, find the story in `book.xlsx` (main repo; read with openpyxl via `python -I`, writing UTF-8 to a file)
+  and quote it for every speaker and every staging fact. Ask the director when the voice script and the book differ.
 - **Frozen blinks in pauses (PIT-03):** a blink or the Puppet's end-of-speech blink on the story clock holds shut for
   the whole pause. Blinks on `lifeF`; a speaker's `talk` must read silent across a pause boundary.
 - **Lip sync hidden by cheeks (PIT-01):** `cheeks` above 0.3 squeezes the mouth; keep it at or below 0.3 on a speaker.

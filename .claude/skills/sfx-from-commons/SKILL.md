@@ -19,7 +19,7 @@ description: Replace a generated placeholder sound effect (animal voices, baby c
 
 ## Where
 Production code lives in the worktree
-`C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run`
+`C:\Dipankar\Balak_Thakur_Production`
 until committed into `C:\Dipankar\Balak_Thakur_AI_Studio`; use the main repo if
 `remotion_studio/src/episode02/Episode02.tsx` exists there. Sounds: `remotion_studio/public/audio/sfx/epNN/`,
 credits: `remotion_studio/public/audio/sfx/epNN/README.md` (Episode 2's README is the model).

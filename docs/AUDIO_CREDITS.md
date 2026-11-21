@@ -75,3 +75,26 @@ No recording of several girls giggling together, and none of water poured onto s
 **Suggested credit line for the Episode 3 video description:** none required (CC0 and public domain). Optional:
 
 > Sound effects: girl's giggle by lmbubec (CC0); water pour by stephan (public domain); via Wikimedia Commons.
+
+---
+
+## Episode 4
+
+Added 2026-11-21. Files in `remotion_studio/public/audio/sfx/ep04/` (production worktree); details, trims and
+rejected candidates in that folder's `README.md`. 48 kHz mono 16-bit WAV; one-shots levelled to about -24 LUFS,
+the loop to -30 LUFS. Not yet placed in code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| brass_tap.wav | "Tibetan Singing Bowl hit 4.5inch.flac" (small metal bowl struck once) | https://commons.wikimedia.org/wiki/File:Tibetan_Singing_Bowl_hit_4.5inch.flac | 0.08 to 1.38 s (1.30 s); high-passed at 120 Hz, ring damped at 55 dB/s from 0.12 s to read as a light tap on a brass plate | דג בלי מלח (Commons user, own work) | CC BY-SA 4.0 |
+| drink_gulp.wav | "Drinking a glass of wat.ogg" ("Drinking a glass of water", PDSounds record 680) | https://commons.wikimedia.org/wiki/File:Drinking_a_glass_of_wat.ogg | 7.75 to 9.95 s (2.20 s; one long gulp and a small swallow); band-limited 80 Hz to 7 kHz, light noise reduction, -6 dBFS limiter | ezwa (transferred by Fæ) | Public domain |
+| pond_water.wav | "17650 thoschi issyk-kul.ogg" (Lake Issyk-Kul shore, originally Freesound 17650) | https://commons.wikimedia.org/wiki/File:17650_thoschi_issyk-kul.ogg | 134.5 to 144.5 s, made into a 9.50 s loop (last 0.5 s crossfaded over the start); high-passed at 80 Hz | thoschi | CC0 |
+
+No recording of a tap on a brass plate, of a child drinking in one gulp, or of a bird-free pond bank was found on
+Commons (2026-11-21); the closest clean recordings above were used.
+
+**Suggested credit line for the Episode 4 video description:**
+
+> Sound effects: 'Tibetan Singing Bowl hit 4.5inch' by דג בלי מלח (CC BY-SA 4.0), via Wikimedia Commons.
+
+Optional (no credit required): drinking water by ezwa (public domain); Issyk-Kul lake shore by thoschi (CC0).
