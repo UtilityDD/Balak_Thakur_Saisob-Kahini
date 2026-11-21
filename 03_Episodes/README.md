@@ -55,15 +55,15 @@ See [../docs/REPO_MAP.md](../docs/REPO_MAP.md).
 7. Review with stills, contact sheets and short clips; the director approves; only then render the full episode into
    `04_Video_Assembly/Final_Render/` and export the final SRT (`node scripts/export_ep02_srt.js <N>`).
 
-## Status (2026-11-21)
+## Status (2026-11-22)
 
 | Ep | Folder | Length | Last render on disk | Pending |
 |---|---|---|---|---|
 | 1 | `Episode_01_Kali_Puja_Birth` | 9,705 frames, 6:44.5 | `Episode_01_Kali_Puja_Birth.mp4`, 2026-11-19 (9,705 frames) | Re-render for the shared rig fixes (hands, breathing, baby face) after the director approves stills. No `_bn_final.srt` yet. Other MP4s in `Final_Render` are older masters and style tests |
-| 2 | `Episode_02_Shashthi_and_GoShaap` | 7,307 frames, 5:04.5 | `Episode_02_Shashthi_and_GoShaap.mp4`, 2026-11-21 (7,307 frames), with `_bn_final.srt` | Re-render in progress today with the hand and baby-face fixes; then replace the MP4 and re-export the final SRT |
-| 3 | `Episode_03_Five_Year_Old_Wisdom` | 3,259 frames, 2:15.8 | `Episode_03_Five_Year_Old_Wisdom.mp4`, 2026-11-20 draft (2,863 frames, before pauses); `_bn_final.srt` already re-exported for 3,259 frames | Final render in progress today (approved plan STO-17, Ujanchar village house); then replace the draft MP4 |
-| 4 | `Episode_04_Idols_and_Coconut_Water` | 2,210 frames planned (about 1:32) | None | Timing only, no scenes, not registered. The SRT (0.45 s gaps) is right; the hand-built timing (0.3 s gaps) drifts from it. Recommended: a `build_ep04_timing.js` generator in the Episode 3 style, then a shot-and-pause plan for approval |
-| 5 | `Episode_05_Tortoise_and_Gentle_Cow` | | None | Script stage: script, manifest, SRT, draft voice WAVs |
+| 2 | `Episode_02_Shashthi_and_GoShaap` | 7,307 frames, 5:04.5 | `Episode_02_Shashthi_and_GoShaap.mp4`, 2026-11-22 final (7,307 frames, -16.7 LUFS), with `_bn_final.srt` | None. Rice-pot father is Surendra (STO-17a) |
+| 3 | `Episode_03_Five_Year_Old_Wisdom` | 3,259 frames, 2:15.8 | `Episode_03_Five_Year_Old_Wisdom.mp4`, 2026-11-22 final (3,259 frames, -16.4 LUFS), with `_bn_final.srt` | None. Vedic house courtyard, the girls scold (STO-17a, STO-18) |
+| 4 | `Episode_04_Idols_and_Coconut_Water` | 3,335 frames, 2:19.0 | `Episode_04_Idols_and_Coconut_Water.mp4`, 2026-11-22 final (3,335 frames, -16.4 LUFS), with `_bn_final.srt` | None. Generator `scripts/build_ep04_timing.js` with pauses, action gaps and chapter breaks (STO-19) |
+| 5 | `Episode_05_Tortoise_and_Gentle_Cow` | | None | Preparation started 2026-11-22: shot-and-pause plan for approval, voices levelled, timing generator; Balak in the new reference design (BAL-26) |
 | 6 | `Episode_06_Rescuing_Brother_and_Playmates` | | None | Script stage |
 | 7 | `Episode_07_Labababus_Pathshala` | | None | Script stage |
 | 8 | `Episode_08_Ananda_Master_and_Mothers_Heart` | | None | Script stage |

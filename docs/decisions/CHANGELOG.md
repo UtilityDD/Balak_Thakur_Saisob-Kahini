@@ -57,3 +57,6 @@ Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as
 - Episode 4 (3,335 frames, 2:19.0, -16.4 LUFS), new: the clay Shiva and the doll, the Gobinda at the pond and Thakurma's prophecy, the coconut water (STO-19); chapter breaks; the big stone bowl as in the book.
 - All joins seamless, zero decode errors; previous cuts kept in `C:\Dipankar\Balak_Thakur_Production\render_final_2026-11-22\`. Final SRTs re-exported. Audio backed up to `_backups/2026-11-22_worktree_public/`.
 - Process: orphaned renders after stopped scripts caused memory exhaustion (PIT-04); render scripts now write chunks to .tmp, skip done chunks, and join with Windows paths.
+
+## 2026-11-22 (later)
+- BAL-26: the director’s reference plates (age 6 to 22) set Balak’s face and body from Episode 5 on, adapted to age; short straight black hair replaces curls for these ages. Plates copied to `01_Series_Bible/Thakur_Reference_Plates/`.
