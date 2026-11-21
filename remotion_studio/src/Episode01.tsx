@@ -31,6 +31,8 @@ const CUE_SCENES: { scene: SceneTiming; cues: { from: number; to: number; who: s
 const stagedOf = (id: string) => CUE_SCENES.find((c) => c.scene.sceneId === id);
 import { EPISODE_01_SCENES } from "./data/episode01Data";
 import { SceneRenderer } from "./scenes/Episode01Scenes";
+import { SourceCard } from "./episode/SourceCard";
+import { Audio as SourceAudio, Sequence as SourceSequence } from "remotion";
 
 export const Episode01: React.FC = () => {
   const frame = useCurrentFrame();
@@ -69,6 +71,11 @@ export const Episode01: React.FC = () => {
 
   return (
     <div style={{ position: "relative", width: 1920, height: 1080, backgroundColor: "#0a0818" }}>
+      {/* Source attribution card, right after the Episode 1 title line */}
+      <SourceSequence from={178} durationInFrames={454}>
+        <SourceCard bn={"‘শ্রীশ্রীবালক ব্রহ্মচারীর শৈশব কাহিনী’ (জননী শ্রীচারুশীলা দেবী ও ছোট মাসীমা শ্রীসরলা দেবীর স্মৃতিকথা অবলম্বনে)"} en={"Based on \"Sri Sri Balak Brahmachari's Childhood Stories\" (accounts of Mother Charushila Devi, Sarala Devi & eyewitnesses)"} frames={454} />
+        <SourceAudio src={staticFile("audio/shared/00a_Source_Attribution.wav")} volume={1} />
+      </SourceSequence>
       {EPISODE_01_SCENES.map((scene) => (
         <Sequence
           key={scene.sceneId}
@@ -137,6 +144,18 @@ export const Episode01: React.FC = () => {
           clipFrames={activeClip.frames}
         />
       )}
+      {/* Shared finishing grade: a soft vignette and a faint warm tint, so every scene sits in one look. Below the subtitles. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 40,
+          background:
+            "radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 58%, rgba(8,4,2,0.38) 100%), linear-gradient(180deg, rgba(255,190,120,0.04), rgba(255,190,120,0.04))",
+          mixBlendMode: "multiply",
+        }}
+      />
     </div>
   );
 };

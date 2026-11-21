@@ -29,10 +29,14 @@ export const Stage: React.FC<{
 }> = ({ cam, background = "#05040a", children, opacity = 1 }) => {
   const f = useCurrentFrame();
   const sh = cam.shake ?? 0;
+  const gimbalX = (noise1(f * 0.08, 3) + 0.4 * noise1(f * 0.21, 13)) * sh * 1.1 + noise1(f * 0.045, 9) * 2.2;
+  const gimbalY = (noise1(f * 0.075, 7) + 0.4 * noise1(f * 0.19, 17)) * sh * 0.95 + noise1(f * 0.038, 5) * 1.6;
+  const roll = (cam.rot ?? 0) + noise1(f * 0.035, 29) * 0.18;
   const c: Cam = {
     ...cam,
-    x: cam.x + noise1(f * 0.9, 3) * sh + noise1(f * 0.07, 9) * 1.2,
-    y: cam.y + noise1(f * 0.9, 7) * sh + noise1(f * 0.05, 5) * 0.9,
+    x: cam.x + gimbalX,
+    y: cam.y + gimbalY,
+    rot: 0,
   };
   return (
     <CamCtx.Provider value={c}>
@@ -43,9 +47,20 @@ export const Stage: React.FC<{
           overflow: "hidden",
           background,
           opacity,
+          // Clean luminous anime TV color lift (Doraemon/Shin-Ei vibrant warm clarity)
+          filter: "brightness(1.10) saturate(1.18) contrast(1.04)",
         }}
       >
-        {children}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            transformOrigin: "50% 50%",
+            transform: `rotate(${roll.toFixed(3)}deg) scale(${(1 + Math.abs(roll) * 0.012).toFixed(4)})`,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </CamCtx.Provider>
   );

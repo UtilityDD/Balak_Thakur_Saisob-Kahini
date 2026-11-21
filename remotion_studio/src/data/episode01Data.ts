@@ -1,6 +1,6 @@
 import { SceneTiming } from "../types/studio";
 
-export const EPISODE_01_TOTAL_FRAMES = 9246;
+export const EPISODE_01_TOTAL_FRAMES = 9705;
 export const EPISODE_01_SCENES: SceneTiming[] = [
   {
     "sceneId": "00_intro",
@@ -195,7 +195,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "01_medinimondal_village",
-    "startFrame": 178,
+    "startFrame": 637,
     "durationFrames": 1162,
     "lighting": "golden_daytime",
     "ambientBed": "padma_river_day.wav",
@@ -1371,7 +1371,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "02_diwali_celebration",
-    "startFrame": 1340,
+    "startFrame": 1799,
     "durationFrames": 1267,
     "lighting": "deep_indigo_warm_diyas",
     "ambientBed": "bengal_night_crickets.wav",
@@ -2651,7 +2651,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "03_quiet_arrival",
-    "startFrame": 2607,
+    "startFrame": 3066,
     "durationFrames": 1006,
     "lighting": "sacred_midnight_glow",
     "ambientBed": "bengal_night_crickets.wav",
@@ -3670,7 +3670,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "04_seven_uludhwani",
-    "startFrame": 3613,
+    "startFrame": 4072,
     "durationFrames": 678,
     "lighting": "warm_mandap_lamps",
     "ambientBed": "NONE_SILENCE_ON_FREEZE",
@@ -4362,7 +4362,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "05_rain_flashback_and_mystic",
-    "startFrame": 4291,
+    "startFrame": 4750,
     "durationFrames": 1342,
     "lighting": "cool_slate_rain",
     "ambientBed": "monsoon_rain_courtyard.wav",
@@ -5717,7 +5717,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "06_thakurma_joy",
-    "startFrame": 5633,
+    "startFrame": 6092,
     "durationFrames": 1403,
     "lighting": "warm_indoor_amber",
     "ambientBed": "bengal_night_crickets.wav",
@@ -7131,7 +7131,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "07_flowers_and_little_goat",
-    "startFrame": 7036,
+    "startFrame": 7495,
     "durationFrames": 830,
     "lighting": "soft_golden_dawn",
     "ambientBed": "dawn_birds_temple.wav",
@@ -7974,7 +7974,7 @@ export const EPISODE_01_SCENES: SceneTiming[] = [
   },
   {
     "sceneId": "08_closing_moral_outro",
-    "startFrame": 7866,
+    "startFrame": 8325,
     "durationFrames": 1380,
     "lighting": "soft_golden_dawn",
     "ambientBed": "padma_river_day.wav",

@@ -606,7 +606,15 @@ const ShotQuestion: React.FC = () => {
           }
         >
           <Puppet cast={CAST.babukaka} f={f} x={330} y={1000} scale={1.45} acting={A(kid(0, 0.3))} />
-          <Puppet cast={CAST.gopal} f={f} x={640} y={1010} scale={1.5} acting={A(kid(4, 0.2))} />
+          {/* "সবচেয়ে বেশি খুশি কে হয়েছিল জানো?" (473-585): Gopal raises a hand to ask; starts 8f before the line, back to rest 20f after it ends */}
+          <Puppet
+            cast={CAST.gopal}
+            f={f}
+            x={640}
+            y={1010}
+            scale={1.5}
+            acting={A([...kid(4, 0.2), { f: 475, rS: 66, rE: 80, rHand: "open", headTilt: 6, in: 10 }, { f: 605, rS: 6, rE: -20, rHand: "relaxed", headTilt: 0, in: 14 }])}
+          />
           <Puppet cast={CAST.madhu} f={f} x={860} y={1000} scale={1.4} acting={A(kid(8, 0.1))} />
           <Puppet cast={CAST.rama} f={f} x={1080} y={1010} scale={1.5} acting={A(kid(12, 0.3))} />
         </DawnCourtyard>

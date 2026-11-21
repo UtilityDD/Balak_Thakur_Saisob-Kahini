@@ -1,7 +1,8 @@
 import React, { useId } from "react";
-import { blink, clamp, flicker, lerp, noise1, safeId, saccade } from "../core/anim";
+import { blink, clamp, flicker, hash, lerp, noise1, safeId, saccade } from "../core/anim";
 import { Hand, HandShape } from "./Hand";
 import { Head, HeadLook } from "./Head";
+import { FACE_LOOKS, FaceLook } from "./cast";
 import { FACE_ADULT_F, FACE_ADULT_M, FACE_CHILD, FaceShape, headModel, smoothPath } from "./head3d";
 import { MOUTH_REST, MouthState } from "./lipsync";
 
@@ -268,6 +269,226 @@ export function lerpColor(a: string, b: string, t: number): string {
 /* Puppet                                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * How much a pose is a deliberate hold (0 = relaxed rest, 1 = clearly posed).
+ * The default idle layer fades out as this rises, so crying, pointing or holding a child stay readable.
+ */
+const poseHold = (q: Pose): number => {
+  const reach = Math.max(0, Math.max(Math.abs(q.rS - BASE_POSE.rS), Math.abs(q.lS - BASE_POSE.lS)) - 6) / 25;
+  const elbow = Math.max(0, Math.max(Math.abs(q.rE - BASE_POSE.rE), Math.abs(q.lE - BASE_POSE.lE)) - 8) / 40;
+  const back = Math.max(q.rBack, q.lBack);
+  const hands = q.rHand !== BASE_POSE.rHand || q.lHand !== BASE_POSE.lHand || q.rProp || q.lProp ? 1 : 0;
+  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4;
+  const emotion = Math.max(q.tears, q.gasp) * 2;
+  const moving = Math.abs(q.stride) * 2;
+  return clamp(Math.max(reach, elbow, back, hands, body, emotion, moving));
+};
+
+/* Idle-layer helpers (adults only). Deterministic in frame and seed; timings assume 24 fps. */
+
+/** Ease in and out over the unit interval. */
+const easeIO = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(t));
+
+/** Soft 0 -> 1 -> 0 envelope: eases in over `rise` frames from `start`, holds, eases out over `fall` frames ending at start + dur. */
+const bump = (t: number, start: number, dur: number, rise: number, fall: number) =>
+  easeIO((t - start) / rise) * easeIO((start + dur - t) / fall);
+
+/** Wrap an angle into [-pi, pi). */
+const wrapPh = (a: number) => a - 2 * Math.PI * Math.floor((a + Math.PI) / (2 * Math.PI));
+
+/** 0 -> 1 -> 0 over the angles a < b < e: eases up from a to the peak at b, back down by e. */
+const hump = (q: number, a: number, b: number, e: number) =>
+  q <= a || q >= e ? 0 : q < b ? easeIO((q - a) / (b - a)) : easeIO((e - q) / (e - b));
+
+/** The irregular segment containing frame f; segment lengths are drawn in [minF, maxF] from the figure's seed. */
+const segmentAt = (f: number, seed: number, ch: number, minF: number, maxF: number) => {
+  let start = 0;
+  for (let k = 0; k < 4000; k++) {
+    const len = minF + (maxF - minF) * hash(seed * 31.7 + ch * 17.3 + k * 5.9);
+    if (f < start + len) return { k, start, len };
+    start += len;
+  }
+  return { k: 4000, start, len: minF };
+};
+
+/** Weight transfer between the feet: -1 = all weight on the left foot, +1 = on the right. Changes every 3 to 5 s, eased. */
+const weightAt = (f: number, seed: number): number => {
+  const bit = hash(seed * 3.3 + 1.7) < 0.5 ? 0 : 1;
+  const target = (k: number) => ((k + bit) & 1 ? 1 : -1) * (0.8 + 0.2 * hash(seed * 9.1 + k * 2.3 + 5));
+  const s = segmentAt(f, seed, 1, 72, 120);
+  const tr = s.len * (0.35 + 0.15 * hash(seed * 4.1 + s.k * 1.7 + 9));
+  return lerp(target(s.k - 1), target(s.k), easeIO((f - s.start) / tr));
+};
+
+/** Head glance in headTurn units: every 4 to 7 s the head turns to one side, holds, then returns. */
+const glanceAt = (t: number, seed: number): number => {
+  const s = segmentAt(t, seed, 9, 96, 168);
+  const h = (j: number) => hash(seed * 6.2 + s.k * 3.7 + j);
+  const dur = 56 + 24 * h(2);
+  const start = s.start + 8 + h(4) * Math.max(0, s.len - dur - 16);
+  return (h(6) < 0.5 ? -1 : 1) * (0.22 + 0.16 * h(8)) * bump(t, start, dur, 14, 18);
+};
+
+/** Occasional hand-to-hip touch for one arm: 0..1 envelope, about 2.5 to 3.5 s, on roughly half of the 12 to 20 s segments. */
+const fidgetAt = (t: number, seed: number, side: 1 | -1): number => {
+  const s = segmentAt(t, seed, 5, 300, 480);
+  const h = (j: number) => hash(seed * 2.9 + s.k * 1.3 + j);
+  if (h(1) > 0.55) return 0;
+  if ((h(2) < 0.5 ? 1 : -1) !== side) return 0;
+  const dur = 60 + 20 * h(3);
+  const start = s.start + 30 + h(4) * (s.len - dur - 60);
+  return bump(t, start, dur, 14, 18);
+};
+
+/* Breathing (MOT-20). Every cycle is its own irregular segment: 3.5 to 5 s for adults, a little quicker for
+ * children, with its own depth. Inside a cycle the inhale is a touch quicker than the exhale and there is a
+ * short rest at the bottom. Output is a lift in [0, ~1.15] (0 = rest, 1 = a normal full inhale). */
+
+/** One breath on a fixed-rate clock tau (frames at the calm rate); child cycles are shorter. */
+const breathCycle = (tau: number, seed: number, child: boolean): number => {
+  const s = child ? segmentAt(tau, seed, 13, 80, 100) : segmentAt(tau, seed, 13, 88, 120);
+  const h = (j: number) => hash(seed * 7.3 + s.k * 2.9 + j);
+  const u = (tau - s.start) / s.len;
+  const inh = 0.34 + 0.06 * h(1); // inhale share of the cycle
+  const exh = 0.44 + 0.08 * h(2); // exhale share; the rest of the cycle is the pause at the bottom
+  const depth = 0.82 + 0.33 * h(3);
+  if (u < inh) return depth * easeIO(u / inh);
+  if (u < inh + exh) return depth * (0.5 + 0.5 * Math.cos(Math.PI * Math.pow((u - inh) / exh, 0.85)));
+  return 0;
+};
+
+/** Breathing rate levels: an animated breathRate cross-fades between two fixed-rate clocks, so the phase never races. */
+const BREATH_RATES = [0.6, 0.8, 1, 1.3, 1.6, 2, 2.5];
+
+const breathAtRate = (t: number, rate: number, seed: number, child: boolean): number => {
+  const r = clamp(rate, BREATH_RATES[0], BREATH_RATES[BREATH_RATES.length - 1]);
+  let i = 0;
+  while (i < BREATH_RATES.length - 2 && r > BREATH_RATES[i + 1]) i++;
+  const r0 = BREATH_RATES[i];
+  const r1 = BREATH_RATES[i + 1];
+  const k = easeIO((r - r0) / (r1 - r0));
+  const b0 = k < 1 ? breathCycle(t * r0, seed, child) : 0;
+  const b1 = k > 0 ? breathCycle(t * r1 + 500, seed + 0.37, child) : 0;
+  return lerp(b0, b1, k);
+};
+
+export interface BreathInput {
+  /** Life clock (frames): drives the breathing cycles. */
+  t: number;
+  /** Story clock (frames): talk and sigh are sampled on it. */
+  f: number;
+  seed: number;
+  child?: boolean;
+  stillness?: number;
+  /** 1 = calm; about 1.6 = frightened; may be animated per frame. */
+  rate?: number;
+  /** 0..1 envelope of a visible deep breath of relief. */
+  sigh?: (f: number) => number;
+  talk?: (f: number) => number;
+}
+
+/**
+ * Breath lift for a Puppet figure, in body units before the figure's scale (positive = up).
+ * `chest` raises the shoulders (and the arms, which hang from them); `head` is the smaller, slightly later
+ * share the head takes. Exported so scenes that mirror Puppet's shoulder for arm targets (a held baby) can
+ * use exactly the same numbers.
+ */
+export const puppetBreath = ({ t, f, seed, child = false, stillness = 0, rate = 1, sigh, talk }: BreathInput) => {
+  const still = clamp(stillness);
+  const amp = (child ? 1.0 : 1.3) * (1 - 0.35 * still);
+  const r = rate * (1 - 0.12 * still);
+  const ampRate = Math.min(1.3, 0.85 + 0.15 * r); // frightened breaths sit higher in the chest
+
+  // speech: shallower breathing during a passage of talk, with a small catch-breath in each phrase pause
+  let speaking = 0;
+  let pauseLift = 0;
+  if (talk) {
+    const on = (fr: number) => talk(fr) >= 0.05;
+    for (let k = -30; k <= 12; k += 2) {
+      if (on(f + k)) speaking = Math.max(speaking, 1 - Math.abs(k) / (k < 0 ? 32 : 14));
+    }
+    // the latest pause (5+ frames of silence after speech): a quick catch-breath in the gap (about 9 frames), then the
+    // air goes out slowly, through the next phrase (about 2 s) or, in a long silence, back into the calm cycle
+    const inPause = (g: number, gap: number) => clamp((gap - 3) / 10) * easeIO(g / Math.min(9, gap)) * (1 - easeIO((g - 12) / 40));
+    let back = 0;
+    while (back < 72 && on(f - back)) back++; // frames of speech since the pause ended (0 = in a pause now)
+    if (back < 72) {
+      let g0 = 0;
+      while (g0 < 60 && !on(f - back - g0)) g0++;
+      let g1 = 0;
+      if (back === 0) while (g1 < 24 && !on(f + 1 + g1)) g1++;
+      const spokeBefore = g0 < 60 && on(f - back - g0);
+      const gap = back === 0 ? g0 + g1 : g0;
+      if (spokeBefore && gap >= 5) {
+        pauseLift = back === 0 ? inPause(g0, gap) : inPause(gap, gap) * (1 - easeIO(back / 48));
+      }
+    }
+  }
+
+  // sigh of relief: a slower, deeper inhale that follows the cue, a long exhale (about 2 s) after its peak, and a small
+  // drop of the shoulders below rest as the air goes out, which then recovers
+  let sighLift = 0;
+  let sighBusy = 0;
+  if (sigh) {
+    const sv = (fr: number) => clamp(sigh(fr));
+    // held envelope: the cue, or its recent peak released slowly
+    const held = (fr: number) => {
+      let m = 0;
+      for (let k = 0; k <= 48; k += 2) m = Math.max(m, sv(fr - k) * (1 - easeIO(k / 48)));
+      return m;
+    };
+    const env = (held(f) + held(f - 2) + held(f - 4) + held(f - 6)) / 4; // smoothed, so the inhale is slow too
+    let b = 0;
+    for (let k = 12; k <= 48; k += 4) b += sv(f - k);
+    const late = b / 10;
+    sighLift = 2.2 * env - 1.0 * clamp(late - env);
+    sighBusy = clamp(Math.max(env, late) * 1.6);
+  }
+
+  const reg = breathAtRate(t, r, seed, child) * ampRate * (1 - 0.75 * speaking) * (1 - sighBusy);
+  const chest = amp * (reg + 0.55 * pauseLift + sighLift);
+  const regHead = breathAtRate(t - 3, r, seed, child) * ampRate * (1 - 0.75 * speaking) * (1 - sighBusy);
+  const head = amp * 0.38 * (regHead + 0.55 * pauseLift + sighLift);
+  return { chest, head };
+};
+
+/* Pose blending (adults). Scene poses may arrive stepped, linear or keyed; every body channel is filtered with a
+ * raised-cosine kernel, so a step becomes an ease-in-out over about 9 frames and no joint jumps faster than that. */
+
+type NumKey = { [K in keyof Pose]: Pose[K] extends number ? K : never }[keyof Pose];
+const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack"];
+const EYE_KEYS: NumKey[] = ["eyeX", "eyeY"];
+/** Raised-cosine weights for offsets -r..r (window of 2r + 2 frames, so the ends carry a little weight). */
+const kernel = (r: number) => Array.from({ length: 2 * r + 1 }, (_, i) => 0.5 + 0.5 * Math.cos((Math.PI * (i - r)) / (r + 1)));
+const BODY_W = kernel(4); // a step eases over ~9 frames
+const EYE_W = kernel(2); // eyes stay quick
+/** Position jumps bigger than this inside the window are cuts or re-entries, not motion: they are never smeared. */
+const CUT_PX = 120;
+
+const blendPose = (at: (fr: number) => Pose, t: number): Pose => {
+  const base = at(t);
+  const out: Pose = { ...base };
+  const run = (keys: NumKey[], W: number[]) => {
+    const r = (W.length - 1) / 2;
+    for (const k of keys) {
+      const b0 = base[k];
+      let s = 0;
+      let w = 0;
+      for (let i = -r; i <= r; i++) {
+        const v = at(t + i)[k];
+        if (!Number.isFinite(v)) continue;
+        if ((k === "bodyX" || k === "bodyY") && Math.abs(v - b0) > CUT_PX) continue;
+        s += v * W[i + r];
+        w += W[i + r];
+      }
+      out[k] = w > 0 ? s / w : b0;
+    }
+  };
+  run(BODY_KEYS, BODY_W);
+  run(EYE_KEYS, EYE_W);
+  return out;
+};
+
 export interface PuppetProps {
   cast: CastMember;
   f: number;
@@ -284,6 +505,15 @@ export interface PuppetProps {
   props?: Record<string, PropRenderer>;
   opacity?: number;
   stillness?: number;
+  /** Breathing rate: 1 = calm (default), about 1.6 = frightened. May be animated per frame. */
+  breathRate?: number;
+  /** 0..1 envelope (story clock) for a visible deep breath of relief: slow deeper inhale, long exhale, shoulder drop. */
+  sigh?: (f: number) => number;
+  /**
+   * Life clock. Breathing, blinks, saccades, idle sway, weight shifts and other idle life run on lifeF ?? f;
+   * poses, acting, mouth, talk and everything story-driven stay on f, so a scene can hold its story while life goes on.
+   */
+  lifeF?: number;
 }
 
 export const Puppet: React.FC<PuppetProps> = ({
@@ -302,22 +532,82 @@ export const Puppet: React.FC<PuppetProps> = ({
   opacity = 1,
   stillness = 0,
   lights: ownLights = [],
+  breathRate = 1,
+  sigh,
+  lifeF,
 }) => {
+  const life = lifeF ?? f; // life clock (idle life); f stays the story clock
   const ctxLights = React.useContext(SceneLights);
   const lights = ctxLights.length ? [...ctxLights, ...ownLights] : ownLights;
   const uid = safeId(useId()) + c.id;
   const B = bodyFor(c);
   const female = isFemale(c);
-  const at = (fr: number): Pose => ({ ...BASE_POSE, ...(acting ? acting(fr) : {}) });
-  const p = at(f);
-  const pHead = at(f - 2);
-  const pCloth = at(f - 5);
-  const pPrev = at(f - 4);
+  const adult = c.age !== "child";
+  // raw scene poses, sampled once per frame offset
+  const rawCache = new Map<number, Pose>();
+  const at = (fr: number): Pose => {
+    let q = rawCache.get(fr);
+    if (!q) {
+      q = { ...BASE_POSE, ...(acting ? acting(fr) : {}) };
+      rawCache.set(fr, q);
+    }
+    return q;
+  };
+  // adults: eased (blended) poses; children keep the scene's own timing
+  const blendCache = new Map<number, Pose>();
+  const sample = (fr: number): Pose => {
+    if (!adult || !acting) return at(fr);
+    let q = blendCache.get(fr);
+    if (!q) {
+      q = blendPose(at, fr);
+      blendCache.set(fr, q);
+    }
+    return q;
+  };
+  // overlap, follow-through and anticipation strength: off for children, scaled down by stillness so holds stay readable
+  const live = adult ? 1 - clamp(stillness) : 0;
+  const lagF = (n: number) => Math.round(n * live);
+  const p = sample(f);
+  const pHead = sample(f - 2);
+  const pEye = sample(f - 2 + lagF(3)); // the eyes lead the head by ~3 frames
+  const pCloth = sample(f - 5);
+  const pPrev = sample(f - 4);
+  // arms: the upper arm leads; the forearm follows ~3 frames behind and the hand ~2 more
+  const armLag = lagF(3);
+  const pArm = sample(f - armLag);
+  const pArm2 = sample(f - armLag - lagF(2));
+  const foreArm = (S: number, Slag: number, Elag: number) => {
+    const drag = Elag - clamp(0.35 * (S - Slag), -20, 20);
+    return Math.min(drag, Math.max(0, Elag)); // follow-through never hyperextends the elbow
+  };
+  const eR = foreArm(p.rS, pArm.rS, pArm.rE);
+  const eL = foreArm(p.lS, pArm.lS, pArm.lE);
+  const wristR = live * clamp(0.3 * (pArm2.rS + pArm2.rE - (pArm.rS + pArm.rE)), -14, 14);
+  const wristL = live * clamp(0.3 * (pArm2.lS + pArm2.lE - (pArm.lS + pArm.lE)), -14, 14);
+  // loose cloth (sari end, dhoti, scarf, hair) trails the body by ~6 frames
+  const fs = flip ? -1 : 1;
+  const pTrail = sample(f - lagF(6));
+  const clothTrail = live * clamp((pTrail.bodyX - p.bodyX) * fs * 0.12 + (pTrail.lean - p.lean) * 1.2, -7, 7);
+  // anticipation + settle: before a large change in height / lean / travel a small opposite dip (~5 frames ahead),
+  // after it a small overshoot that eases back over ~8 frames. The two terms cancel during steady motion.
+  const pAhead = adult ? sample(f + 5) : p;
+  const pBehind = adult ? sample(f - 8) : p;
+  const antic = (sig: (q: Pose) => number, gain: number, mNeg: number, mPos: number) => {
+    if (live <= 0) return 0;
+    const now = sig(p);
+    const L = gain * (-(sig(pAhead) - now) + 0.625 * (now - sig(pBehind)));
+    const M = L < 0 ? mNeg : mPos;
+    return live * M * Math.tanh(L / M);
+  };
+  const crouchPx = (B.thigh + B.shin) * 0.55;
+  const antY = antic((q) => q.bodyY + clamp(q.crouch) * crouchPx, 0.12, 2.5, 3.5); // px, up is negative
+  const antX = fs * antic((q) => q.bodyX, 0.06, 3, 3); // px, in the puppet's local frame
+  const antLean = antic((q) => q.lean, 0.15, 1.2, 1.2); // degrees (~3 px at the shoulders)
 
   const keySide = light.keySide;
   // ---- motivated lighting: nearby sources set rim colour/side, brightness and light-wrap ----
-  const headWX = x + (acting ? (acting(f).bodyX ?? 0) : 0);
-  const headWY = y + (acting ? (acting(f).bodyY ?? 0) : 0) - (c.age === "child" ? 190 : 300) * scale;
+  const headWX = x + p.bodyX;
+  const headWY = y + p.bodyY - (c.age === "child" ? 190 : 300) * scale;
   let lightSum = 0;
   let dom: { l: SceneLight; k: number } | null = null;
   for (const l of lights) {
@@ -334,15 +624,51 @@ export const Puppet: React.FC<PuppetProps> = ({
   const rimSide: 1 | -1 = useDom ? ((flip ? -domSide : domSide) as 1 | -1) : light.rimSide ?? (-keySide as 1 | -1);
   const wrap = clamp(lightSum * 0.55, 0, 0.6);
 
-  const breath = Math.sin((f / 24) * Math.PI * 2 * (0.27 - 0.1 * stillness) + c.seed) * (1 - 0.5 * stillness);
+  // breathing (MOT-20): irregular cycles on the life clock; shallower under speech, quicker in fright, sighs on cue.
+  // Only the chest and shoulders rise (the arms hang from them); the head takes a smaller, later share.
+  const breath = puppetBreath({ t: life, f, seed: c.seed, child: c.age === "child", stillness, rate: breathRate, sigh, talk });
   const level = talk ? talk(f) : 0;
   const emphasis = level * Math.sin(f * 0.55 + c.seed) * 2.2 * (1 - 0.7 * stillness);
+
+  // Idle life: default layer for adult figures only; scaled down by stillness and by any deliberate pose hold.
+  const idle = c.age === "child" ? 0 : Math.max(0, 1 - stillness) * (1 - poseHold(p));
+  // weight transfer: hips and shoulders move toward the bearing foot, eased every 3 to 5 s (seated figures keep their hips)
+  const wNow = weightAt(life, c.seed);
+  const shift = seated ? 0 : idle * 3 * wNow;
+  // slow side-to-side drift of the upper body, about 2.5 px, irregular per figure, plus the weight transfer
+  const weightX = idle * 2.5 * noise1(life / 144, c.seed + 11) + shift;
+  // shoulders tip toward the bearing side, up to about 0.9 deg
+  const tiltIdle = idle * 0.9 * wNow;
+  // head: small tilt, plus a glance toward a point of interest every 4 to 7 s; the eyes lead it by 4 frames
+  const headTiltIdle = idle * 2.5 * noise1(life / 96, c.seed + 3);
+  const headTurnIdle = idle * 0.035 * noise1(life / 112, c.seed + 7) + idle * glanceAt(life, c.seed);
+  const eyeGlance = idle * glanceAt(life + 4, c.seed) * 1.15;
+  // elbows: a soft 8 to 12 degree bend at rest, never locked straight
+  const restElbow = (n: number) => -(10 + 2 * noise1(life / 120, c.seed + n));
+  const elbowR = lerp(eR, Math.min(eR, restElbow(21)), idle);
+  const elbowL = lerp(eL, Math.min(eL, restElbow(23)), idle);
+  // resting arms: swing from the shoulder (lagging the body's weight shift, plus noise), the elbow bends with the swing,
+  // the hand closes slightly; an occasional hand-to-hip touch rides on top
+  const armIdle = (side: 1 | -1) => {
+    const lagV = wNow - weightAt(life - 6, c.seed);
+    const swing = idle * 2.2 * noise1(life / 58, c.seed + 31 + side * 4) - idle * side * 12 * lagV;
+    const touch = idle * fidgetAt(life, c.seed, side);
+    return {
+      dS: swing - 3 * touch,
+      dE: -0.6 * swing - 40 * touch,
+      flex: idle * (0.3 * (0.5 + 0.5 * noise1(life / 90, c.seed + 51 + side)) + 0.5 * touch),
+    };
+  };
+  const armR = armIdle(1);
+  const armL = armIdle(-1);
+  // cloth follows the weight shift with a short lag
+  const clothWeight = idle * 2.0 * weightAt(life - 8, c.seed);
 
   const phi = clamp(p.bodyTurn, -1, 1) * 0.95; // body yaw (rad)
   const cphi = Math.cos(phi);
   const sphi = Math.sin(phi);
   const swingVel = (p.lean - pPrev.lean) * 1.6 + (p.bodyX - pPrev.bodyX) * 0.4;
-  const clothSway = Math.sin(f * 0.07 + c.seed) * 2.2 - swingVel * 3;
+  const clothSway = Math.sin(life * 0.07 + c.seed) * 2.2 * (1 - 0.6 * idle) - swingVel * 3 + clothWeight + idle * 1.2 * noise1(life / 58, c.seed + 41) + clothTrail;
 
   /* ---------------- legs in 3D ---------------- */
   const hipX = B.hw * 0.48;
@@ -350,7 +676,9 @@ export const Puppet: React.FC<PuppetProps> = ({
   const stride = p.stride;
   const crouch = clamp(p.crouch);
   const nearSide: 1 | -1 = sphi > 0.05 ? -1 : 1; // leg nearer the camera
-  const legAngles = (side: 1 | -1) => {
+  // `plant`: the stance-leg model (no swing knee flick). Scenes match their travel speed to it, so a foot placed with
+  // it stays fixed on the floor through the stance and moves smoothly forward through the swing.
+  const legAngles = (side: 1 | -1, plant = false) => {
     if (seated) return { th: 1.42, ab: 0.95, kn: 2.7 };
     let th = 0.03;
     let kn = 0.05;
@@ -358,7 +686,7 @@ export const Puppet: React.FC<PuppetProps> = ({
     if (stride > 0) {
       const ph = phase + (side > 0 ? Math.PI : 0);
       th += Math.sin(ph) * 0.42 * stride;
-      kn += (0.12 + Math.max(0, Math.sin(ph + 1.7)) * 0.9) * stride;
+      kn += (0.12 + (plant ? 0 : Math.max(0, Math.sin(ph + 1.7)) * 0.9)) * stride;
     }
     if (crouch > 0) {
       const k = clamp(crouch / 0.6);
@@ -376,12 +704,16 @@ export const Puppet: React.FC<PuppetProps> = ({
         }
       }
     }
+    // the bearing knee takes a little bend; the free leg stays straight
+    if (!seated) kn += idle * 0.1 * Math.max(0, side > 0 ? wNow : -wNow);
     return { th, ab, kn };
   };
   const rotY = (v: V3): { x: number; y: number; z: number } => ({ x: v[0] * cphi + v[2] * sphi, y: v[1], z: -v[0] * sphi + v[2] * cphi });
-  const legGeo = (side: 1 | -1) => {
-    const { th, ab, kn } = legAngles(side);
-    const hip: V3 = [side * hipX, 0, 0];
+  const legGeo = (side: 1 | -1, plant = false) => {
+    const { th, ab: abRaw, kn } = legAngles(side, plant);
+    // the hip moves with the weight shift; abduction compensates so the foot stays planted
+    const ab = abRaw - (shift * side) / (B.thigh + 0.3 * B.shin);
+    const hip: V3 = [side * hipX + shift, 0, 0];
     const tdir: V3 = [Math.sin(ab) * side, Math.cos(th) * Math.cos(ab), Math.sin(th) * Math.cos(ab)];
     const knee = add3(hip, mul3(tdir, B.thigh));
     const sp = th - kn;
@@ -416,7 +748,15 @@ export const Puppet: React.FC<PuppetProps> = ({
   const hipY = -ground; // hips relative to the ground (feet at y = 0)
   const legsSorted = [...legs].sort((a, b) => a.z - b.z); // far first
 
-  const shY = hipY - B.torsoLen + breath * 0.9;
+  // Bare feet below the sari: standing and walking only (kneeling, squatting and sitting keep the covered look).
+  const sareeFeet = c.lower === "saree" && !seated && crouch < 0.45;
+  const feetK = sareeFeet ? clamp(1 - crouch / 0.3) : 0; // how far the hem takes its raised, foot-revealing line
+  const walkK = clamp(stride) * feetK; // step articulation (heel strike, toe-off, hem lift)
+  const plantLegs = sareeFeet && stride > 0 ? [legGeo(-1, true), legGeo(1, true)] : legs;
+
+  const shY = hipY - B.torsoLen - breath.chest;
+  // the head rides the shoulders minus the part of the breath it does not take (it follows by a fraction, later)
+  const headBreathY = breath.chest - breath.head;
   const kf = Math.sqrt(cphi * cphi + 0.3 * sphi * sphi);
   const swp = B.sw * kf;
   const hwp = B.hw * Math.sqrt(cphi * cphi + 0.45 * sphi * sphi);
@@ -432,10 +772,164 @@ export const Puppet: React.FC<PuppetProps> = ({
   /* ---------------- legs & lower garment ---------------- */
   const legW1 = B.limbW * 1.45;
   const legW2 = B.limbW * 1.05;
-  const drawLeg = (L: ReturnType<typeof legGeo>, far: boolean) => {
+
+  /* ---------------- bare feet below the sari ---------------- */
+  // Floor at y = 0. Foot frame: u forward along the foot, v outward (away from the body), w up.
+  const FT = B.foot * 0.92; // a woman's bare foot, a touch smaller than the rig's walking foot
+  const ankleH = B.foot * 0.28; // ankle height above the sole (as in legGeo)
+  const liftMax = B.foot * 0.32; // the swinging foot lifts only a little; the rest of the swing passes under the sari
+  const hemBase = B.foot * 0.06; // standing: the hem just clears the floor; only the toes peek out
+  const hemR = legW1 * 1.5 * 1.15; // half-width of the hem around each foot
+  const hemAmp = B.foot * 0.27; // walking: extra hem lift over the stepping foot (~8 px for Charu)
+  const hemSway = feetK * clothSway * 0.25 + walkK * B.foot * 0.14 * Math.sin(phase - 0.5);
+  /** Foot pitch (rad, + = toes up). q is the leg's phase: swing for cos q > 0, heel strike at q = pi/2, toe-off at -pi/2. */
+  const footPitch = (q: number) => {
+    if (walkK <= 0) return 0;
+    const H = Math.PI / 2;
+    const off = hump(q, -H - 0.95, -H + 0.15, 0.2); // late stance: the heel peels up over the ball; recovers in early swing
+    const on = hump(q, 0.45, H - 0.05, H + 0.5); // end of swing: toes rise so the heel lands first, then the foot rolls flat
+    return walkK * (0.36 * on - 0.5 * off);
+  };
+  type FootGeo = {
+    side: 1 | -1;
+    body: string;
+    ring: string;
+    toes: Array<{ x: number; y: number; r: number; z: number }>;
+    nail: [number, number, number];
+    bone: [number, number];
+    ankle: [number, number];
+    shadow: { cx: number; rx: number; ry: number; o: number };
+    hemX: number;
+    hemY: number;
+    overlay: number;
+  };
+  const footGeo = (side: 1 | -1): FootGeo => {
+    const P = plantLegs.find((l) => l.side === side) ?? legs[side > 0 ? 1 : 0];
+    const q = wrapPh(phase + (side > 0 ? Math.PI : 0));
+    // stance: flat on the floor (the planted-leg ankle travels back exactly as the body moves on); swing: a low arc
+    const swing = walkK > 0 && Math.cos(q) > 0;
+    const lift = swing ? liftMax * walkK * Math.pow(Math.sin(Math.PI * clamp((q + Math.PI / 2) / Math.PI)), 0.9) : 0;
+    const a = footPitch(q);
+    const pu = a >= 0 ? -0.16 * FT : 0.62 * FT; // pivot on the floor: the heel when the toes rise, the ball when the heel peels
+    const aToe = a >= 0 ? a : a * 0.12; // the toes bend at the ball, staying flat on the floor at push-off
+    const pitch = (u: number, w: number): [number, number] => {
+      const k = u > 0.7 * FT ? aToe : a;
+      const du = u - pu;
+      return [pu + du * Math.cos(k) - w * Math.sin(k), du * Math.sin(k) + w * Math.cos(k)];
+    };
+    type P3 = [number, number, number];
+    const pp = (u: number, v: number, w: number): P3 => {
+      const [u2, w2] = pitch(u * FT, w * FT);
+      return [u2, v * FT, w2];
+    };
+    const body: P3[] = [
+      pp(-0.21, 0.08, 0.1), pp(-0.21, -0.08, 0.1), pp(-0.16, 0.085, 0), pp(-0.16, -0.085, 0), pp(-0.2, 0, 0.26), // heel
+      pp(0, 0.12, ankleH / FT), pp(0, -0.12, ankleH / FT), // ankle bones
+      pp(0.3, 0.15, 0), pp(0.3, -0.13, 0.05), pp(0.3, 0, 0.26), pp(0.5, 0, 0.18), // midfoot, arch, instep
+      pp(0.62, 0.16, 0), pp(0.62, -0.17, 0), pp(0.62, -0.05, 0.13), // ball
+      pp(0.76, -0.15, 0.03), pp(0.74, 0.13, 0.03), pp(0.76, -0.06, 0.09), // toe roots
+    ];
+    const TOES: Array<[number, number, number]> = [
+      [-0.11, 0.075, 0.85], // big toe
+      [-0.025, 0.055, 0.84],
+      [0.04, 0.05, 0.81],
+      [0.095, 0.045, 0.77],
+      [0.14, 0.04, 0.72],
+    ];
+    const toes3 = TOES.map(([v, r, u]) => ({ c: pp(u, v, r), r: r * FT }));
+    // keep every part at or above the floor (toes drag until the swing lifts them clear)
+    const minW = Math.min(...body.map((b) => b[2]), ...toes3.map((t) => t.c[2] - t.r));
+    const up = Math.max(lift, -minW);
+    const fx = sphi;
+    const lx = side * cphi;
+    const X0 = P.ankle.x;
+    const proj = ([u, v, w]: P3): [number, number] => [X0 + u * fx + v * lx, -w - up];
+    const depth = ([u, v]: P3) => -v * side * sphi + u * cphi;
+    // ankle stub, rising into the sari (its top is always hidden by the hem); it joins the shin
+    const [au, aw] = pitch(0, ankleH);
+    const r = legW2 * 0.72;
+    const stub: P3[] = [
+      [au - r, r * 0.9, aw], [au + r, -r * 0.9, aw], [au - r, -r * 0.9, aw], [au + r, r * 0.9, aw],
+      [au - r * 0.95, 0, aw + FT * 0.5], [au + r * 0.95, 0, aw + FT * 0.5],
+    ];
+    const outline = hull([...body, ...stub].map(proj));
+    const ring: P3[] = [
+      pp(-0.21, 0, 0.03), pp(-0.15, 0.085, 0.03), pp(0.3, 0.15, 0.03), pp(0.62, 0.16, 0.03),
+      pp(0.72, 0.155, 0.03), pp(0.8, 0.11, 0.03), pp(0.86, 0.04, 0.03), pp(0.92, -0.06, 0.03), pp(0.9, -0.15, 0.03),
+      pp(0.62, -0.17, 0.03), pp(0.3, -0.13, 0.07), pp(-0.15, -0.085, 0.03),
+    ];
+    const big = toes3[0];
+    const [nx, ny] = proj([big.c[0] + big.r * 0.45, big.c[1], big.c[2] + big.r * 0.35]);
+    const liftN = clamp(up / liftMax);
+    // Facing the camera, toes that reach past the front of the hem are nearer than the sari and are drawn over it.
+    const frontZ = Math.max(...plantLegs.map((l) => l.ankle.z)) + hemR * 0.7;
+    const overlay = clamp((cphi - 0.8) / 0.12) * (1 - liftN) * feetK * clamp((P.ankle.z + 0.9 * FT * cphi - frontZ) / (0.25 * FT));
+    return {
+      side,
+      body: smoothPath(outline, 1),
+      ring: smoothPath(ring.map(proj), 1),
+      toes: toes3
+        .map((t) => {
+          const [x2, y2] = proj(t.c);
+          return { x: x2, y: y2, r: t.r, z: depth(t.c) };
+        })
+        .sort((m1, m2) => m1.z - m2.z),
+      nail: [nx, ny, big.r * 0.42],
+      bone: proj([au, 0.12 * FT, aw * 0.85]),
+      ankle: proj([au, 0, aw]),
+      shadow: {
+        cx: X0 + 0.35 * FT * fx,
+        rx: (Math.max(1.15 * FT * Math.abs(fx), 0.34 * FT * Math.abs(lx)) / 2 + FT * 0.12) * (1 - 0.3 * liftN),
+        ry: FT * 0.09 * (1 - 0.3 * liftN),
+        o: 0.3 * (1 - 0.6 * liftN),
+      },
+      // centred a little behind the ankle, so the heel stays covered and the toes come out in front
+      hemX: X0 - 0.22 * FT * fx + hemSway,
+      overlay,
+      // the hem rides up over the stepping (forward) foot and trails it slightly
+      hemY: -(hemBase + walkK * hemAmp * (0.2 + 0.8 * (0.5 + 0.5 * Math.sin(q - 0.35)))),
+    };
+  };
+  const feetMap = sareeFeet ? new Map<number, FootGeo>([[-1, footGeo(-1)], [1, footGeo(1)]]) : null;
+  const drawFoot = (g: FootGeo, far: boolean) => {
+    const skin = far ? c.skinShade : c.skin;
+    return (
+      <g key={`ft${g.side}`}>
+        <path d={g.body} fill={skin} />
+        {g.toes.map((t, i) => (
+          <circle key={i} cx={t.x} cy={t.y} r={t.r} fill={skin} stroke={c.skinShade} strokeWidth={0.6} strokeOpacity={far ? 0.3 : 0.55} />
+        ))}
+        <circle cx={g.nail[0]} cy={g.nail[1]} r={g.nail[2]} fill={c.skinLight} opacity={far ? 0.3 : 0.6} />
+        <ellipse cx={g.bone[0]} cy={g.bone[1]} rx={FT * 0.05} ry={FT * 0.04} fill={c.skinShade} opacity={0.35} />
+        {/* sole contour (it also shows the arch), and the alta line of a married woman */}
+        <path d={g.ring} fill="none" stroke={c.skinShade} strokeWidth={FT * 0.08} strokeOpacity={0.45} strokeLinejoin="round" />
+        {c.sindoor && <path d={g.ring} fill="none" stroke="#c8172c" strokeWidth={Math.max(0.9, FT * 0.04)} strokeLinejoin="round" opacity={0.9} />}
+      </g>
+    );
+  };
+  /** Toes peeking out in front of the hem (front-facing views). */
+  const toesOver = (g: FootGeo, far: boolean) =>
+    g.overlay > 0.01 ? (
+      <g key={`fo${g.side}`} opacity={g.overlay}>
+        {g.toes.map((t, i) => (
+          <circle key={i} cx={t.x} cy={t.y} r={t.r} fill={far ? c.skinShade : c.skin} stroke={c.skinShade} strokeWidth={0.6} strokeOpacity={far ? 0.3 : 0.55} />
+        ))}
+        {c.sindoor && g.toes.map((t, i) => <path key={`a${i}`} d={`M ${t.x - t.r * 0.8} ${t.y + t.r * 0.55} Q ${t.x} ${t.y + t.r * 1.05} ${t.x + t.r * 0.8} ${t.y + t.r * 0.55}`} fill="none" stroke="#c8172c" strokeWidth={Math.max(0.8, FT * 0.035)} opacity={0.85} />)}
+      </g>
+    ) : null;
+  const footShadow = (g: FootGeo) => (
+    <ellipse key={`fs${g.side}`} cx={g.shadow.cx} cy={0.6} rx={g.shadow.rx} ry={g.shadow.ry} fill="#1a0e08" opacity={g.shadow.o} />
+  );
+
+  // feetOnly: the sari covers the leg (seated, kneeling, squatting); only the foot is drawn, tucked under the hem,
+  // so no thigh, knee or shin skin can ever show past the cloth's edge
+  const drawLeg = (L: ReturnType<typeof legGeo>, far: boolean, foot?: FootGeo, feetOnly = false) => {
     const yy = (v: number) => v + hipY;
     const t1 = limb(L.hip.x, yy(L.hip.y), L.knee.x, yy(L.knee.y), legW1, legW2 * 1.08);
-    const t2 = limb(L.knee.x, yy(L.knee.y), L.ankle.x, yy(L.ankle.y), legW2 * 1.05, legW2 * 0.72);
+    // with a bare foot drawn below the sari, the (hidden) shin runs to that foot's ankle
+    const t2 = foot
+      ? limb(L.knee.x, yy(L.knee.y), foot.ankle[0], foot.ankle[1], legW2 * 1.05, legW2 * 0.72)
+      : limb(L.knee.x, yy(L.knee.y), L.ankle.x, yy(L.ankle.y), legW2 * 1.05, legW2 * 0.72);
     const footPts: Array<[number, number]> = [
       [L.ankle.x - legW2 * 0.7, yy(L.ankle.y)],
       [L.ankle.x + legW2 * 0.7, yy(L.ankle.y)],
@@ -449,16 +943,18 @@ export const Puppet: React.FC<PuppetProps> = ({
     const skin = far ? c.skinShade : c.skin;
     return (
       <g key={`leg${L.side}`}>
-        <path d={t1.d} transform={t1.t} fill={skin} />
-        <path d={t2.d} transform={t2.t} fill={skin} />
-        <ellipse cx={L.knee.x} cy={yy(L.knee.y)} rx={legW2 * 1.05} ry={legW2 * 0.95} fill={skin} />
-        <path d={footD} fill={skin} />
-        <path
-          d={`M ${lerp(L.toeL.x, L.toeTip.x, 0.4)} ${yy(L.toeL.y) - 1} L ${lerp(L.toeR.x, L.toeTip.x, 0.4)} ${yy(L.toeR.y) - 1}`}
-          stroke={c.skinShade}
-          strokeWidth={1.2}
-          opacity={0.6}
-        />
+        {!feetOnly && <path d={t1.d} transform={t1.t} fill={skin} />}
+        {!feetOnly && <path d={t2.d} transform={t2.t} fill={skin} />}
+        {!feetOnly && <ellipse cx={L.knee.x} cy={yy(L.knee.y)} rx={legW2 * 1.05} ry={legW2 * 0.95} fill={skin} />}
+        {!foot && <path d={footD} fill={skin} />}
+        {!foot && (
+          <path
+            d={`M ${lerp(L.toeL.x, L.toeTip.x, 0.4)} ${yy(L.toeL.y) - 1} L ${lerp(L.toeR.x, L.toeTip.x, 0.4)} ${yy(L.toeR.y) - 1}`}
+            stroke={c.skinShade}
+            strokeWidth={1.2}
+            opacity={0.6}
+          />
+        )}
       </g>
     );
   };
@@ -499,7 +995,7 @@ export const Puppet: React.FC<PuppetProps> = ({
     return (
       <g>
         {panels[0]}
-        <path d={bridge} fill={`url(#${uid}-lowg)`} />
+        <path d={bridge} transform={`translate(${shift}, 0)`} fill={`url(#${uid}-lowg)`} />
         {panels[1]}
         {!seated && (
           <g transform={`translate(${kx}, ${waistY + 4}) rotate(${clothSway * 0.8})`}>
@@ -510,12 +1006,202 @@ export const Puppet: React.FC<PuppetProps> = ({
             {c.lowerTrim && <path d={`M -12 ${kLen + 4} L 14 ${kLen}`} stroke={c.lowerTrim} strokeWidth={3} />}
           </g>
         )}
-        <path d={`M ${-hwp * 1.1} ${waistY + 2} Q 0 ${waistY + 8} ${hwp * 1.1} ${waistY + 2}`} stroke={c.lowerShade} strokeWidth={4} fill="none" opacity={0.65} />
+        <path d={`M ${-hwp * 1.1} ${waistY + 2} Q 0 ${waistY + 8} ${hwp * 1.1} ${waistY + 2}`} transform={`translate(${shift}, 0)`} stroke={c.lowerShade} strokeWidth={4} fill="none" opacity={0.65} />
+      </g>
+    );
+  };
+
+  /* ---------------- sari: the hem and its border follow the cloth ---------------- */
+  // 0 = hanging cloth (standing, walking), 1 = cloth draped on the floor (kneeling, sitting)
+  const drapeK = c.lower === "saree" ? (seated ? 1 : clamp((crouch - 0.35) / 0.4)) : 0;
+  const sareeSkirt = () => {
+    const yy = (v: number) => v + hipY;
+    const waistY = hipY - 10;
+    const pts: Array<[number, number]> = [
+      [-hwp * 1.05, waistY],
+      [hwp * 1.05, waistY],
+    ];
+    const footHems: Array<{ x: number; y: number; r: number }> = [];
+    for (const L of legs) {
+      const m = legW1 * 1.5;
+      pts.push([L.knee.x - m, yy(L.knee.y)], [L.knee.x + m, yy(L.knee.y)]);
+      if (drapeK > 0) {
+        // seated / kneeling: the cloth rises over the thigh and wraps round the knee in a soft mound (the lap)
+        const ky = yy(L.knee.y);
+        const mx = lerp(L.hip.x, L.knee.x, 0.55);
+        const my = yy(lerp(L.hip.y, L.knee.y, 0.55));
+        const up = legW1 * 1.25 * drapeK;
+        pts.push([L.knee.x, ky - up], [L.knee.x - m * 0.75, ky - up * 0.75], [L.knee.x + m * 0.75, ky - up * 0.75], [mx, my - up * 1.05]);
+      }
+      const fx = (L.toeTip.x + L.heelL.x) / 2;
+      const oy = yy(L.ankle.y) + 4;
+      const ft = feetMap?.get(L.side);
+      if (ft && feetK > 0) {
+        // raised hem over the bare foot: lifts and sways with each stride (blends back to the covering hem as she crouches)
+        const hy = lerp(oy, ft.hemY, feetK);
+        const x1 = lerp(fx - m * 1.35, ft.hemX - hemR, feetK);
+        const x2 = lerp(fx + m * 1.35, ft.hemX + hemR, feetK);
+        pts.push([x1, hy], [x2, hy]);
+        footHems.push({ x: (x1 + x2) / 2, y: hy, r: Math.max(1, (x2 - x1) / 2) });
+      } else {
+        pts.push([fx - m * 1.35, oy], [fx + m * 1.35, oy]);
+      }
+    }
+    const H0 = hull(pts);
+    // split the silhouette at its leftmost and rightmost points; the lower chain (x-monotone) carries the hem
+    let iL = 0;
+    H0.forEach((q, i) => {
+      if (q[0] < H0[iL][0]) iL = i;
+    });
+    const H = [...H0.slice(iL), ...H0.slice(0, iL)];
+    let iR = 0;
+    H.forEach((q, i) => {
+      if (q[0] > H[iR][0]) iR = i;
+    });
+    const chainA = H.slice(0, iR + 1);
+    const chainB = [...H.slice(iR), H[0]].reverse();
+    const meanY = (ch: Array<[number, number]>) => ch.reduce((s, q) => s + q[1], 0) / ch.length;
+    const bot = meanY(chainA) >= meanY(chainB) ? chainA : chainB;
+    const top = bot === chainA ? chainB : chainA;
+    // the hem is the part of the lower chain that runs across, not up the sides
+    const steep = (q1: [number, number], q2: [number, number]) => Math.abs(q2[1] - q1[1]) > 1.2 * Math.abs(q2[0] - q1[0]);
+    let a = 0;
+    let b = bot.length - 1;
+    while (b - a >= 2 && steep(bot[a], bot[a + 1])) a++;
+    while (b - a >= 2 && steep(bot[b - 1], bot[b])) b--;
+    const lowest = Math.max(...bot.slice(a, b + 1).map((q) => q[1]));
+    const tall = B.foot * lerp(0.55, 2, drapeK);
+    while (b - a >= 2 && bot[a][1] < lowest - tall) a++;
+    while (b - a >= 2 && bot[b][1] < lowest - tall) b--;
+    const chain = bot.slice(a, b + 1);
+    const xa = chain[0][0];
+    const xb = chain[chain.length - 1][0];
+    const span = Math.max(1, xb - xa);
+    const xm = (xa + xb) / 2;
+    const baseAt = (xv: number) => {
+      if (xv <= chain[0][0]) return chain[0][1];
+      for (let i = 0; i < chain.length - 1; i++) {
+        const [x1, y1] = chain[i];
+        const [x2, y2] = chain[i + 1];
+        if (xv <= x2) return x2 - x1 < 1e-6 ? Math.max(y1, y2) : lerp(y1, y2, (xv - x1) / (x2 - x1));
+      }
+      return chain[chain.length - 1][1];
+    };
+
+    // motion: the hem lags the body by a few frames (weight shift, travel, lean, stride); cloth on the floor barely sways
+    const hemLive = 1 - 0.8 * drapeK;
+    const pHem = sample(f - lagF(4));
+    const drag = clamp((pHem.bodyX - p.bodyX) * fs * 0.1 + (pHem.lean - p.lean) * 0.9, -5, 5);
+    const wLag = seated ? 0 : idle * weightAt(life - 6, c.seed);
+    const strideLag = walkK * Math.sin(phase - 1.2); // ~4 frames behind the step
+    const hemShift = hemLive * (clothSway * 0.4 + drag * 0.5);
+    const hemTilt = hemLive * (-1.3 * wLag + B.foot * 0.05 * strideLag); // px at the ends; the bearing side hangs higher
+    const roundK = B.foot * lerp(0.07, 0.1, drapeK); // the hem wraps round the body: its sides sit a little higher
+    const foldUp = B.foot * (0.06 + 0.04 * walkK); // hanging folds lift the edge in soft scallops
+    const foldFloor = B.foot * 0.09; // folds lying on the floor ripple both ways
+    const seedH = c.seed * 1.37;
+    const drift = (life * 0.012 * (1 - 0.6 * clamp(stillness)) + 0.9 * strideLag) * hemLive + hemShift * 0.05;
+    const fold = (xv: number) => {
+      const s = xv - hemShift;
+      return (
+        0.55 * Math.sin(s / (B.foot * 0.21) + seedH + drift) +
+        0.3 * Math.sin(s / (B.foot * 0.12) + seedH * 2.3 - drift * 1.3) +
+        0.15 * Math.sin(s / (B.foot * 0.07) + seedH * 4.1 + drift * 0.7)
+      );
+    };
+    // front pleats (kuchi): their creases reach the hem, which breaks into small V-shaped dips there
+    const pleatX = frontX * 0.6;
+    const kick = walkK * B.foot * 0.08 * Math.sin(phase - 1.0);
+    const pleats = [-8, -3, 2, 7, 12].map((px) => ({ px, x: Math.min(xb - 1, Math.max(xa + 1, pleatX + px * 1.6 + clothSway + kick)) }));
+    const wV = B.foot * 0.1;
+    const vDepth = B.foot * 0.075 * (0.4 + 0.6 * cphi);
+    const vDip = (xv: number) => pleats.reduce((s, q) => s + vDepth * Math.max(0, 1 - Math.abs(xv - q.x) / wV), 0);
+    const floorLim = B.foot * lerp(0.03, 0.3, drapeK);
+    const hemAt = (xv: number) => {
+      const u = clamp((xv - xm) / (span / 2), -1, 1);
+      let yb = baseAt(xv);
+      // soft arch over each bare foot: the hem rides up over the stepping foot
+      if (footHems.length && feetK > 0) {
+        let wsum = 0;
+        let lift = 0;
+        for (const fh of footHems) {
+          const w = easeIO((fh.r * 1.2 - Math.abs(xv - fh.x)) / (fh.r * 0.6));
+          wsum += w;
+          lift += w * Math.min(0, fh.y - yb);
+        }
+        yb += (feetK * lift) / Math.max(1, wsum);
+      }
+      yb = lerp(yb, Math.max(yb, -B.foot * 0.05), drapeK); // draped: the cloth reaches the floor and lies on it
+      const wv = fold(xv);
+      const yv =
+        yb -
+        roundK * u * u +
+        drapeK * B.foot * 0.16 * (1 - u * u) + // spread on the floor towards the camera
+        hemTilt * u +
+        lerp(-foldUp * (0.5 + 0.5 * wv), foldFloor * wv, drapeK) +
+        vDip(xv);
+      return Math.min(yv, floorLim);
+    };
+    // dense samples along the hem, plus the exact corners of every pleat V
+    const vPts: number[] = [];
+    for (const q of pleats) if (q.x > xa + wV && q.x < xb - wV) vPts.push(q.x - wV, q.x, q.x + wV);
+    const n = Math.max(6, Math.min(64, Math.ceil(span / 2.5)));
+    const xs: number[] = [...vPts];
+    for (let i = 0; i <= n; i++) {
+      const xv = xa + (span * i) / n;
+      if (i === 0 || i === n || vPts.every((v) => Math.abs(v - xv) > 0.8)) xs.push(xv);
+    }
+    xs.sort((p1, p2) => p1 - p2);
+    const hemPts: Array<[number, number]> = [];
+    for (const xv of xs) {
+      if (hemPts.length && xv - hemPts[hemPts.length - 1][0] < 0.3) continue;
+      const u = clamp((xv - xm) / (span / 2), -1, 1);
+      hemPts.push([xv + drapeK * B.foot * 0.12 * u * u * u, hemAt(xv)]); // draped ends spread out a little on the floor
+    }
+    // the dense hem and the sparse sides/top are smoothed separately (a closed spline would overshoot at the corners)
+    const rest: Array<[number, number]> = [hemPts[hemPts.length - 1], ...bot.slice(b + 1), ...top.slice(1, -1).reverse(), ...bot.slice(0, a), hemPts[0]];
+    const d = `${smoothPath(hemPts, 1, false)} ${smoothPath(rest, 1, false).replace(/^M\s+\S+\s+\S+/, "")} Z`;
+    // the border: the same curve as the edge, offset inward, clipped to the cloth
+    const bw = 6.5;
+    const last = hemPts[hemPts.length - 1];
+    const edge: Array<[number, number]> = [[hemPts[0][0] - 12, hemPts[0][1]], ...hemPts, [last[0] + 12, last[1]]];
+    const shiftY = (dy: number) => edge.map(([xv, yv]): [number, number] => [xv, yv + dy]);
+    const band = `${smoothPath(shiftY(-bw), 1, false)} ${smoothPath(shiftY(2).reverse(), 1, false).replace(/^M/, "L")} Z`;
+    const stripe = smoothPath(shiftY(-bw - 2.2), 1, false);
+    const trim = c.lowerTrim || c.topTrim ? c.lowerTrim ?? c.lowerShade : null;
+    const clipId = `${uid}-hemclip`;
+    return (
+      <g>
+        <defs>
+          <clipPath id={clipId}>
+            <path d={d} />
+          </clipPath>
+        </defs>
+        <path d={d} fill={`url(#${uid}-lowg)`} />
+        <path d={d} fill={`url(#${uid}-rim)`} />
+        {pleats.map((q) => {
+          const ye = hemAt(q.x) - 0.6;
+          return (
+            <path key={q.px} d={`M ${pleatX + q.px * 0.6} ${waistY + 10} Q ${pleatX + q.px + clothSway * 0.5} ${(waistY + ye) / 2} ${q.x} ${ye}`} stroke={c.lowerShade} strokeWidth={1.3} fill="none" opacity={0.7} />
+          );
+        })}
+        {trim && (
+          <g clipPath={`url(#${clipId})`}>
+            <path d={band} fill={trim} />
+            <path d={stripe} fill="none" stroke={trim} strokeWidth={1.1} opacity={0.85} />
+            {/* the pleat creases run on through the border */}
+            {pleats.map((q) => {
+              const ye = hemAt(q.x);
+              return <path key={`bc${q.px}`} d={`M ${q.x - wV * 0.15} ${ye - bw - 2.6} L ${q.x} ${ye}`} stroke="#000" strokeOpacity={0.22} strokeWidth={1} fill="none" />;
+            })}
+          </g>
+        )}
       </g>
     );
   };
 
   const skirt = (to: "ankle" | "knee") => {
+    if (to === "ankle") return sareeSkirt();
     const yy = (v: number) => v + hipY;
     const waistY = c.outfit === "frock" ? shY + B.torsoLen * 0.38 : hipY - 10;
     const pts: Array<[number, number]> = [
@@ -525,28 +1211,17 @@ export const Puppet: React.FC<PuppetProps> = ({
     for (const L of legs) {
       const m = legW1 * 1.5;
       pts.push([L.knee.x - m, yy(L.knee.y)], [L.knee.x + m, yy(L.knee.y)]);
-      if (to === "ankle") {
-        const fx = (L.toeTip.x + L.heelL.x) / 2;
-        pts.push([fx - m * 1.35, yy(L.ankle.y) + 4], [fx + m * 1.35, yy(L.ankle.y) + 4]);
-      } else {
-        const kx = lerp(L.knee.x, L.ankle.x, 0.12);
-        const ky = yy(lerp(L.knee.y, L.ankle.y, 0.12));
-        pts.push([kx - m * 1.5 + clothSway * 0.4, ky], [kx + m * 1.5 + clothSway * 0.4, ky]);
-      }
+      const kx = lerp(L.knee.x, L.ankle.x, 0.12);
+      const ky = yy(lerp(L.knee.y, L.ankle.y, 0.12));
+      pts.push([kx - m * 1.5 + clothSway * 0.4, ky], [kx + m * 1.5 + clothSway * 0.4, ky]);
     }
     const H = hull(pts);
     const d = smoothPath(H, 1);
     const bottom = H.filter(([, yv]) => yv > Math.max(...H.map((q) => q[1])) - 14).sort((a, b) => a[0] - b[0]);
-    const pleatX = frontX * 0.6;
-    const hemY = Math.max(...H.map((q) => q[1]));
     return (
       <g>
         <path d={d} fill={`url(#${uid}-lowg)`} />
         <path d={d} fill={`url(#${uid}-rim)`} />
-        {to === "ankle" &&
-          [-8, -3, 2, 7, 12].map((px) => (
-            <path key={px} d={`M ${pleatX + px * 0.6} ${waistY + 10} Q ${pleatX + px + clothSway * 0.5} ${(waistY + hemY) / 2} ${pleatX + px * 1.6 + clothSway} ${hemY - 4}`} stroke={c.lowerShade} strokeWidth={1.3} fill="none" opacity={0.7} />
-          ))}
         {bottom.length >= 2 && (c.lowerTrim || c.topTrim) && (
           <path
             d={`M ${bottom[0][0] + 4} ${bottom[0][1] - 4} L ${bottom[bottom.length - 1][0] - 4} ${bottom[bottom.length - 1][1] - 4}`}
@@ -563,8 +1238,11 @@ export const Puppet: React.FC<PuppetProps> = ({
     <g>
       {c.lower === "saree" ? (
         <>
-          {legsSorted.map((L) => drawLeg(L, L === legsSorted[0] && Math.abs(sphi) > 0.15))}
+          {feetMap && legsSorted.map((L) => footShadow(feetMap.get(L.side)!))}
+          {legsSorted.map((L) => drawLeg(L, L === legsSorted[0] && Math.abs(sphi) > 0.15, feetMap?.get(L.side), !feetMap || drapeK > 0))}
+          {feetMap && legsSorted.map((L) => drawFoot(feetMap.get(L.side)!, L === legsSorted[0] && Math.abs(sphi) > 0.15))}
           {skirt("ankle")}
+          {feetMap && legsSorted.map((L) => toesOver(feetMap.get(L.side)!, L === legsSorted[0] && Math.abs(sphi) > 0.15))}
         </>
       ) : c.lower === "none" ? (
         <>
@@ -688,7 +1366,7 @@ export const Puppet: React.FC<PuppetProps> = ({
     return scarfDrape(s, false);
   };
   const scarfDrape = (s: NonNullable<CastMember["scarf"]>, gamchha: boolean) => {
-    const cs = (clothSway + Math.sin(f * 0.11 + c.seed) * 1.5) * 1.2;
+    const cs = (clothSway + Math.sin(life * 0.11 + c.seed) * 1.5) * 1.2;
     const pc = pCloth.lean - p.lean;
     if (s.style === "neck") {
       return (
@@ -744,7 +1422,7 @@ export const Puppet: React.FC<PuppetProps> = ({
   };
 
   /* ---------------- arms ---------------- */
-  const arm = (side: 1 | -1, S: number, E: number, shape: HandShape, propId: string, back: boolean) => {
+  const arm = (side: 1 | -1, S: number, E: number, shape: HandShape, propId: string, back: boolean, extraFlex: number, wrist = 0) => {
     const sx = side * B.sw * 0.86 * cphi;
     const rot1 = -side * S;
     const rot2 = -side * E;
@@ -804,8 +1482,8 @@ export const Puppet: React.FC<PuppetProps> = ({
                 opacity={0.6 * bend}
               />
             ))}
-          <g transform={`translate(0, ${B.fa - 2})`}>
-            <Hand shape={shape} L={B.hand} skin={skin} shade={c.skinShade} side={side} flex={noise1(f * 0.04, c.seed + side) * 0.5 + 0.5} />
+          <g transform={`translate(0, ${B.fa - 2})${PropR ? "" : ` rotate(${-side * wrist})`}`}>
+            <Hand shape={shape} L={B.hand} skin={skin} shade={c.skinShade} side={side} flex={noise1(life * 0.04, c.seed + side) * 0.5 + 0.5 + extraFlex} />
             {PropR && <g transform={`translate(0, ${B.hand * 0.62})`}>{PropR({ f, worldRot: rot1 + rot2 + p.lean, side, scale: B.hand / 30 })}</g>}
           </g>
         </g>
@@ -816,6 +1494,7 @@ export const Puppet: React.FC<PuppetProps> = ({
   /* ---------------- head ---------------- */
   const shape = faceFor(c);
   const look: HeadLook = {
+    noBlink: true, // Puppet's own speech-aware blink is the only blink for these figures
     skin: c.skin,
     skinLight: c.skinLight,
     skinShade: c.skinShade,
@@ -831,11 +1510,16 @@ export const Puppet: React.FC<PuppetProps> = ({
     bindi: c.bindi,
     ribbon: c.ribbon,
     age: c.age,
+    // Per-character face tuning (lashes, kajal, brows, lip tint, mustache weight, age lines, grey hair) from
+    // cast.ts: a cast entry's own `look` wins, else the table entry for its id. Spread last so it takes priority.
+    ...((c as CastMember & { look?: FaceLook }).look ?? FACE_LOOKS[c.id] ?? {}),
   };
   const head = () => {
     const ph = pHead;
-    const sac0 = saccade(f, c.seed);
-    const bl = blink(f, c.seed);
+    // the eyes reach the new look direction ~3 frames before the head turn lands
+    const eyeLead = live * clamp(pEye.headTurn - ph.headTurn, -0.6, 0.6) * 1.15;
+    const sac0 = saccade(life, c.seed);
+    const bl = blink(life, c.seed);
     // speech-driven face: brows lift on stressed syllables; blink at natural pauses
     const lv = talk ? (talk(f) + talk(f - 1) + talk(f - 2)) / 3 : 0;
     const browSpeech = clamp((lv - 0.32) * 0.9, 0, 0.35);
@@ -854,11 +1538,11 @@ export const Puppet: React.FC<PuppetProps> = ({
     const mth = mouth ? mouth(f) : MOUTH_REST;
     const m = headModel(shape);
     const R = B.headR;
-    const neckTop = shY - B.neck;
+    const neckTop = shY - B.neck + headBreathY;
     const cy = neckTop - m.bottom * R * 0.92 + R * 0.06;
-    const yaw = clamp(phi + clamp(ph.headTurn, -1, 1) * 1.15, -1.45, 1.45);
+    const yaw = clamp(phi + clamp(ph.headTurn + headTurnIdle, -1, 1) * 1.15, -1.45, 1.45);
     return (
-      <g transform={`translate(${sphi * B.sw * 0.12}, ${cy + ph.headNod + Math.abs(emphasis) * 0.6}) rotate(${ph.headTilt + emphasis * 0.5})`}>
+      <g transform={`translate(${sphi * B.sw * 0.12}, ${cy + ph.headNod + Math.abs(emphasis) * 0.6}) rotate(${ph.headTilt + headTiltIdle + emphasis * 0.5})`}>
         <Head
           R={R}
           shape={shape}
@@ -869,8 +1553,8 @@ export const Puppet: React.FC<PuppetProps> = ({
           rimStrength={rimStrength}
           st={{
             yaw,
-            eyeX: clamp((ph.eyeX * 0.9 - yaw) / 0.75 + sac0.x * 0.6 * (1 - stillness), -1, 1),
-            eyeY: clamp(ph.eyeY + sac0.y * 0.6 * (1 - stillness), -1, 1),
+            eyeX: clamp((pEye.eyeX * 0.9 - yaw + eyeGlance + eyeLead) / 0.75 + sac0.x * 0.6 * (1 - stillness), -1, 1),
+            eyeY: clamp(pEye.eyeY + sac0.y * 0.6 * (1 - stillness), -1, 1),
             close: Math.max(bl, ph.lid, pauseBlink),
             squint: clamp((ph.smile - 0.55) * 1.6, 0, 0.55),
             brow: ph.brow + browSpeech,
@@ -882,7 +1566,7 @@ export const Puppet: React.FC<PuppetProps> = ({
             flush: ph.flush,
             tears: ph.tears,
             sway: clothSway,
-            f,
+            f: life, // eye drift, saccades and other face life run on the life clock
           }}
         />
       </g>
@@ -894,25 +1578,36 @@ export const Puppet: React.FC<PuppetProps> = ({
   const brightness = (light.brightness ?? 1) * (lights.length ? 0.9 + Math.min(0.35, lightSum * 0.3) : 1);
   const rFar = p.rBack > 0.5 || (sphi > 0.25 && !female) || sphi > 0.35;
   const lFar = p.lBack > 0.5 || sphi < -0.35;
-  const rDraw = arm(1, p.rS, p.rE, p.rHand, p.rProp, rFar);
-  const lDraw = arm(-1, p.lS, p.lE, p.lHand, p.lProp, lFar);
+  const rDraw = arm(1, p.rS + armR.dS, elbowR + armR.dE, p.rHand, p.rProp, rFar, armR.flex, wristR);
+  const lDraw = arm(-1, p.lS + armL.dS, elbowL + armL.dE, p.lHand, p.lProp, lFar, armL.flex, wristL);
+  const upperX = weightX + antX;
+
+  // squash with the lean only (a pose shape, story-driven); no periodic bounce: breathing never scales the figure (MOT-20)
+  const bounce = Math.min(0.032, Math.abs(p.lean) * 0.0028);
+  const sx = S * (1 + bounce);
+  const sy = scale * (1 - bounce);
+  const celFilter = `${brightness !== 1 ? `brightness(${brightness}) ` : ""}drop-shadow(0 0 1.4px rgba(59,36,28,0.52))`;
 
   return (
-    <g transform={`translate(${x + p.bodyX}, ${y + p.bodyY}) scale(${S}, ${scale})`} opacity={opacity} style={brightness !== 1 ? { filter: `brightness(${brightness})` } : undefined}>
+    <g transform={`translate(${x + p.bodyX}, ${y + p.bodyY}) scale(${sx}, ${sy})`} opacity={opacity} style={{ filter: celFilter }}>
       <defs>
+        {/* Crisp 2-tone anime cel-shading gradients */}
         <linearGradient id={`${uid}-topg`} x1={kx1} y1="0" x2={kx2} y2="0">
           <stop offset="0%" stopColor={c.topLight} />
-          <stop offset="45%" stopColor={c.top} />
+          <stop offset="56%" stopColor={c.top} />
+          <stop offset="63%" stopColor={c.topShade} />
           <stop offset="100%" stopColor={c.topShade} />
         </linearGradient>
         <linearGradient id={`${uid}-lowg`} x1={kx1} y1="0" x2={kx2} y2="0.4">
           <stop offset="0%" stopColor={lerpColor(c.lowerColor, "#ffffff", 0.25)} />
-          <stop offset="45%" stopColor={c.lowerColor} />
+          <stop offset="56%" stopColor={c.lowerColor} />
+          <stop offset="63%" stopColor={c.lowerShade} />
           <stop offset="100%" stopColor={c.lowerShade} />
         </linearGradient>
         <linearGradient id={`${uid}-skin-body`} x1={kx1} y1="0" x2={kx2} y2="0">
           <stop offset="0%" stopColor={c.skinLight} />
-          <stop offset="50%" stopColor={c.skin} />
+          <stop offset="58%" stopColor={c.skin} />
+          <stop offset="65%" stopColor={c.skinShade} />
           <stop offset="100%" stopColor={c.skinShade} />
         </linearGradient>
         <linearGradient id={`${uid}-rim`} x1={rx1} y1="0" x2={rx2} y2="0">
@@ -926,10 +1621,10 @@ export const Puppet: React.FC<PuppetProps> = ({
         </radialGradient>
       </defs>
       <ellipse cx={0} cy={2} rx={B.hw * (seated ? 3.4 : 2.4)} ry={B.hw * 0.42} fill={`url(#${uid}-ao)`} />
-      {lFar && lDraw}
-      {rFar && rDraw}
+      {lFar && <g transform={`translate(${upperX}, ${antY})`}>{lDraw}</g>}
+      {rFar && <g transform={`translate(${upperX}, ${antY})`}>{rDraw}</g>}
       {lowerBody()}
-      <g transform={`rotate(${p.lean}, 0, ${hipY})`}>
+      <g transform={`translate(${upperX}, ${antY}) rotate(${p.lean + tiltIdle + antLean}, 0, ${hipY})`}>
         {c.outfit === "frock" && skirt("knee")}
         {torso()}
         {scarf()}

@@ -29,14 +29,20 @@ export interface FaceShape {
   earSize: number;
   cheekPuff: number; // baby/child fullness
   chinRound?: number; // 0 = squarer lower jaw (adult default), 1 = fully rounded child chin
+  /**
+   * 0..1: the cheeks round out below the eyes as a child smiles (set per frame by Head for child faces only).
+   * Absent or 0 leaves the geometry exactly as before.
+   */
+  cheekSmile?: number;
 }
 
+/** Man: a slightly firmer jaw with a defined (not boxy) chin. */
 export const FACE_ADULT_M: FaceShape = {
   crown: 0.88,
   forehead: 0.84,
   cheek: 0.83,
-  jaw: 0.74,
-  chin: 0.3,
+  jaw: 0.76,
+  chin: 0.33,
   faceLen: 1.14,
   depthFront: 0.8,
   depthBack: 1.08,
@@ -54,11 +60,14 @@ export const FACE_ADULT_M: FaceShape = {
   cheekPuff: 0,
 };
 
+/** Woman: a soft oval, gently rounded jaw and chin. */
 export const FACE_ADULT_F: FaceShape = {
   ...FACE_ADULT_M,
-  jaw: 0.62,
-  chin: 0.26,
-  faceLen: 1.04,
+  cheek: 0.82,
+  jaw: 0.6,
+  chin: 0.27,
+  chinRound: 0.5,
+  faceLen: 1.05,
   nose: 0.78,
   noseWidth: 0.85,
   lips: 1.15,
@@ -73,9 +82,10 @@ export const FACE_CHILD: FaceShape = {
   // rounded chin (no flat bottom, no side bulges), lower face a little shorter than an adult's
   crown: 1.0,
   forehead: 0.97,
-  cheek: 0.87,
-  jaw: 0.7,
-  chin: 0.45,
+  cheek: 0.89,
+  jaw: 0.72,
+  chin: 0.46,
+  chinRound: 0.8,
   faceLen: 0.86,
   nose: 0.42,
   noseLen: 0.66,
@@ -86,18 +96,18 @@ export const FACE_CHILD: FaceShape = {
   eyeSize: 0.235,
   eyeRound: 0.82,
   earY: 0.1,
-  cheekPuff: 0.06,
+  cheekPuff: 0.09,
 };
 
-/** Toddler Balak Thakur (ages 3-5): luminous calm eyes, fuller cheeks, small nose, rounded chin. */
+/** Toddler Balak Thakur (about 1 year, sitting): the infant face a little older: slightly longer face, a bit more defined nose and brows, rounded chin. */
 export const FACE_TODDLER: FaceShape = {
   ...FACE_CHILD,
   crown: 1.0,
   forehead: 0.97,
-  cheek: 0.9,
+  cheek: 0.92,
   jaw: 0.8,
   chin: 0.62,
-  faceLen: 0.8,
+  faceLen: 0.82,
   nose: 0.36,
   noseLen: 0.62,
   lips: 0.9,
@@ -106,16 +116,17 @@ export const FACE_TODDLER: FaceShape = {
   eyeY: 0.05,
   eyeSize: 0.25,
   eyeRound: 0.9,
-  cheekPuff: 0.18,
+  cheekPuff: 0.2,
 };
 
+/** Crawling infant Balak Thakur (8 to 10 months): round chubby face, full cheeks, high soft forehead, small soft chin. */
 export const FACE_BABY: FaceShape = {
   ...FACE_CHILD,
   crown: 1.02,
   forehead: 1.02,
-  cheek: 0.96,
+  cheek: 0.97,
   jaw: 0.9,
-  chin: 0.5,
+  chin: 0.46,
   chinRound: 1,
   faceLen: 0.7,
   depthBack: 1.12,
@@ -126,25 +137,65 @@ export const FACE_BABY: FaceShape = {
   chinBump: 0.3,
   eyeY: 0.17,
   eyeSep: 0.45,
-  eyeSize: 0.3,
+  eyeSize: 0.28,
   eyeRound: 1,
   earY: 0.16,
   earSize: 0.8,
-  cheekPuff: 0.22,
-}
+  cheekPuff: 0.24,
+};
 
 /* ---------------- profiles ---------------- */
 
-const smoothInterp = (ys: number[], vs: number[], y: number) => {
-  if (y <= ys[0]) return vs[0];
-  for (let i = 0; i < ys.length - 1; i++) {
-    if (y <= ys[i + 1]) {
-      const t = (y - ys[i]) / (ys[i + 1] - ys[i]);
-      const u = t * t * (3 - 2 * t);
-      return vs[i] + (vs[i + 1] - vs[i]) * u;
+/**
+ * Monotone cubic (PCHIP) profile through the control heights. The old smoothstep blend
+ * flattened the outline at every control point, which left small steps along the cheek and jaw;
+ * this keeps the contour smooth (a soft oval) without overshooting. `flat` nodes keep a zero
+ * slope (the forehead joins the skull dome there); the last node gets a steeper end slope so the
+ * chin rounds under instead of ending in a narrow nub.
+ */
+const pchip = (ys: number[], vs: number[], flat: number[] = [], endK = 1.6) => {
+  const n = ys.length;
+  const h: number[] = [];
+  const d: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    h.push(Math.max(1e-6, ys[i + 1] - ys[i]));
+    d.push((vs[i + 1] - vs[i]) / Math.max(1e-6, ys[i + 1] - ys[i]));
+  }
+  const t: number[] = new Array(n).fill(0);
+  for (let i = 1; i < n - 1; i++) {
+    if (flat.includes(i) || d[i - 1] * d[i] <= 0) continue;
+    const w1 = 2 * h[i] + h[i - 1];
+    const w2 = h[i] + 2 * h[i - 1];
+    t[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
+  }
+  t[n - 1] = d[n - 2] * endK;
+  // keep every interval monotone (Fritsch-Carlson limit)
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) {
+      t[i] = 0;
+      t[i + 1] = 0;
+      continue;
+    }
+    const a = t[i] / d[i];
+    const b = t[i + 1] / d[i];
+    const q = a * a + b * b;
+    if (q > 9) {
+      const k = 3 / Math.sqrt(q);
+      t[i] = k * a * d[i];
+      t[i + 1] = k * b * d[i];
     }
   }
-  return vs[vs.length - 1];
+  return (y: number) => {
+    if (y <= ys[0]) return vs[0];
+    if (y >= ys[n - 1]) return vs[n - 1];
+    let i = 0;
+    while (i < n - 2 && y > ys[i + 1]) i++;
+    const hh = h[i];
+    const u = (y - ys[i]) / hh;
+    const u2 = u * u;
+    const u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * vs[i] + (u3 - 2 * u2 + u) * hh * t[i] + (-2 * u3 + 3 * u2) * vs[i + 1] + (u3 - u2) * hh * t[i + 1];
+  };
 };
 
 export interface HeadModel {
@@ -194,7 +245,13 @@ export function headModel(s: FaceShape): HeadModel {
     // taper the chin toward the tip: a round chin, not a flat base that cuts off
     wv[10] = wv[10] * (1 - r) + ell(ys[10], wv[8]) * 0.62 * r;
   }
-  const fv = [0, 0.4, 0.6, 0.76, s.depthFront + 0.06, s.depthFront + 0.04, s.depthFront, s.depthFront + 0.02 + puff * 0.3, s.depthFront, s.depthFront * 0.86, s.depthFront * 0.68, 0.05];
+  // a smiling child's cheeks push out and round below the eyes (the chin keeps its shape)
+  const cs = s.cheekSmile ?? 0;
+  if (cs > 0) {
+    wv[7] += cs * 0.035;
+    wv[8] += cs * 0.012;
+  }
+  const fv = [0, 0.4, 0.6, 0.76, s.depthFront + 0.06, s.depthFront + 0.04, s.depthFront, s.depthFront + 0.02 + puff * 0.3 + cs * 0.03, s.depthFront, s.depthFront * 0.86, s.depthFront * 0.68, 0.05];
   const bv = [0, 0.48, 0.8, s.depthBack * 0.95, s.depthBack, s.depthBack, s.depthBack * 0.94, 0.84, 0.64, 0.5, 0.36, 0.05];
   const noseRoot = s.eyeY - 0.04;
   const noseTipY = s.eyeY + 0.36 * s.faceLen * s.noseLen;
@@ -221,13 +278,16 @@ export function headModel(s: FaceShape): HeadModel {
   const yF = ys[4];
   const rad = yF - ys[0];
   const dome = (y: number) => Math.sqrt(Math.max(0, 1 - ((y - yF) / rad) ** 2));
+  const wF = pchip(ys, wv, [4]);
+  const fF = pchip(ys, fv, [4]);
+  const bF = pchip(ys, bv, [4]);
   const m: HeadModel = {
     s,
     top: ys[0],
     bottom: ys[11],
-    width: (y) => (y < yF ? Math.max(s.crown, s.forehead) * dome(y) : smoothInterp(ys, wv, y)),
-    front: (y) => (y < yF ? (s.depthFront + 0.06) * dome(y) : smoothInterp(ys, fv, y)),
-    back: (y) => (y < yF ? s.depthBack * dome(y) : smoothInterp(ys, bv, y)),
+    width: (y) => (y < yF ? Math.max(s.crown, s.forehead) * dome(y) : wF(y)),
+    front: (y) => (y < yF ? (s.depthFront + 0.06) * dome(y) : fF(y)),
+    back: (y) => (y < yF ? s.depthBack * dome(y) : bF(y)),
     bump,
     mouthY,
     noseTipY,

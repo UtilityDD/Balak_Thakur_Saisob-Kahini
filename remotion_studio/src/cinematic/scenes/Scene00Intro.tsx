@@ -96,7 +96,11 @@ const DhakSilhouette: React.FC<{ f: number; x: number; y: number; s: number; sti
   );
 };
 
-export const Scene00Intro: React.FC<{ scene: SceneTiming }> = () => {
+/** Episode 1 intro design. episodeLabel and episodeName let Episodes 2 and 3 reuse the same layout. */
+export const Scene00Intro: React.FC<{ scene: SceneTiming; episodeLabel?: string; episodeName?: string }> = ({
+  episodeLabel = "পর্ব এক",
+  episodeName = "যে রাতে ঢাক থেমে গেল",
+}) => {
   ensureBanglaFont();
   const f = useCurrentFrame();
   const wave = track(f, [
@@ -229,16 +233,14 @@ export const Scene00Intro: React.FC<{ scene: SceneTiming }> = () => {
                 boxShadow: "0 4px 18px rgba(0,0,0,0.45)",
               }}
             >
-              পর্ব এক
+              {episodeLabel}
             </span>
           </Word>
         </div>
         <div style={{ position: "relative", marginTop: 14, fontSize: 76, fontWeight: 700, color: "#ffd98a", textShadow: "0 3px 0 #5a2408, 0 6px 22px rgba(0,0,0,0.6)" }}>
-          <Word f={f} at={L3}>যে</Word>
-          <Word f={f} at={L3 + 6}>রাতে</Word>
-          <Word f={f} at={L3 + 13}>ঢাক</Word>
-          <Word f={f} at={L3 + 20}>থেমে</Word>
-          <Word f={f} at={L3 + 27}>গেল</Word>
+          {episodeName.split(" ").map((word, i) => (
+            <Word key={i} f={f} at={L3 + i * 7}>{word}</Word>
+          ))}
         </div>
       </div>
 

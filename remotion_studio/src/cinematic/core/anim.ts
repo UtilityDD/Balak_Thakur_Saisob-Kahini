@@ -99,6 +99,21 @@ export const saccade = (frame: number, seed: number) => {
 /** `in` = transition length in frames: the move starts at (f - in) and ARRIVES at f, holding before that (pose-to-pose). */
 export type PoseKey<P> = { f: number; ease?: EaseName; in?: number } & Partial<P>;
 
+/** Hierarchical overlapping-action frame offsets: eyes lead, shoulders & elbows follow torso. */
+const JOINT_OFFSET: Record<string, number> = {
+  eyeX: -3,
+  eyeY: -3,
+  brow: -1.5,
+  browTilt: -1.5,
+  headTurn: 2,
+  headTilt: 2.5,
+  headNod: 2,
+  rS: 2,
+  lS: 2,
+  rE: 4.5,
+  lE: 4.5,
+};
+
 export function makeActing<P extends object>(base: P, keys: PoseKey<P>[]): (frame: number) => P {
   type R = Record<string, unknown>;
   const sorted = [...keys].sort((a, b) => a.f - b.f);
@@ -107,32 +122,37 @@ export function makeActing<P extends object>(base: P, keys: PoseKey<P>[]): (fram
   for (const k of sorted) {
     const { f, ease, in: inDur, ...rest } = k as PoseKey<P> & R;
     cur = { ...cur, ...(rest as R) };
-    states.push({ f, ease: ease ?? "inOut", inDur: (inDur as number | undefined) ?? 10, p: { ...cur } });
+    states.push({ f, ease: ease ?? "backOut", inDur: (inDur as number | undefined) ?? 10, p: { ...cur } });
   }
-  return (frame: number) => {
-    if (states.length === 0) return base;
-    if (frame <= states[0].f) return states[0].p as P;
+  const sampleProp = (frame: number, key: string): unknown => {
+    if (states.length === 0) return (base as R)[key];
+    if (frame <= states[0].f) return states[0].p[key];
     for (let i = 0; i < states.length - 1; i++) {
       const a = states[i];
       const b = states[i + 1];
       if (frame <= b.f) {
         const start = Math.max(a.f, b.f - b.inDur);
-        const t = EASE[b.ease](clamp((frame - start) / Math.max(1, b.f - start)));
-        const out: R = {};
-        for (const key of Object.keys(b.p)) {
-          const va = a.p[key];
-          const vb = b.p[key];
-          out[key] =
-            typeof va === "number" && typeof vb === "number"
-              ? lerp(va, vb, t)
-              : t < 0.5
-                ? va
-                : vb;
+        const rawT = clamp((frame - start) / Math.max(1, b.f - start));
+        // Doraemon-style snappy overshoot settle + subtle anticipation dip
+        let t = EASE[b.ease](rawT);
+        if (b.inDur >= 9 && (key === "rS" || key === "lS" || key === "lean" || key === "bodyTurn")) {
+          t -= Math.sin(rawT * Math.PI) * Math.pow(1 - rawT, 2) * 0.16;
         }
-        return out as P;
+        const va = a.p[key];
+        const vb = b.p[key];
+        return typeof va === "number" && typeof vb === "number" ? lerp(va, vb, t) : rawT < 0.5 ? va : vb;
       }
     }
-    return states[states.length - 1].p as P;
+    return states[states.length - 1].p[key];
+  };
+  return (frame: number) => {
+    if (states.length === 0) return base;
+    const out: R = {};
+    for (const key of Object.keys(states[0].p)) {
+      const lag = JOINT_OFFSET[key] ?? 0;
+      out[key] = sampleProp(frame - lag, key);
+    }
+    return out as P;
   };
 }
 

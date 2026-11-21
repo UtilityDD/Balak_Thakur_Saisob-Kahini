@@ -10,8 +10,9 @@ Binding rules for every machine, episode and contributor. They apply on top of `
 ## 2. Iconography for Balak Thakur
 - No tilak or tikka on the forehead at any age.
 - No gold bangles or anklets.
-- Newborn: plain white wrap, no gold border, no curled or ringlet hair.
-- Toddler: plain white dhoti. Hair is soft and dark, not in ringlets. (The toddler entry in `characters.json` still says "curly". That needs updating to match this rule.)
+- Newborn: plain white wrap, no gold border. Hair is a light covering of soft curls, kept natural and not in tight ringlets.
+- Toddler and child (Balak at ages 3 to 5): plain white dhoti, with soft, dark, CURLY hair, as set by the series director. Keep the curls natural and gentle, not tight ringlets. Avoid a deity-style look: no ornaments, no halo ring drawn as a crown, no gold accessories.
+- Age: the narration sets the age (for Episode 3, five years). The visual may read slightly younger or older than the narration, so the age need not match exactly.
 - Divine presence comes from light, halo, stillness, expression and atmosphere, not from ornaments.
 
 ## 3. Divine light

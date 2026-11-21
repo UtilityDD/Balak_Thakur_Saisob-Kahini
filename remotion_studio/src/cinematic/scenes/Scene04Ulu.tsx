@@ -108,11 +108,10 @@ const UluWaves: React.FC<{ f: number; x: number; y: number; s?: number; o?: numb
       const t = (f - (ULU_FROM + k * ULU_GAP)) / 46;
       if (t < 0 || t > 1) return null;
       const r = 150 + t * 620;
-      const a = (1 - t) * (1 - t) * o;
+      const a = (1 - t) * (1 - t) * o * 0.4;
       return (
         <g key={k} opacity={a}>
-          <ellipse cx={0} cy={0} rx={r} ry={r * 0.55} fill="none" stroke="#ffe3a0" strokeWidth={6 * (1 - t) + 1.5} />
-          <ellipse cx={0} cy={0} rx={r * 0.96} ry={r * 0.53} fill="none" stroke="#fff6d8" strokeWidth={1.5} strokeDasharray="3 16" />
+          <ellipse cx={0} cy={0} rx={r} ry={r * 0.55} fill="none" stroke="#ffe3a0" strokeWidth={3 * (1 - t) + 1} />
         </g>
       );
     })}

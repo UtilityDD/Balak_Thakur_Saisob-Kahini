@@ -1,4 +1,5 @@
-import { CastMember } from "./Puppet";
+import type { HeadLook } from "./Head";
+import type { CastMember } from "./Puppet";
 
 /**
  * Cast sheet for Episode 01 / Scene 02 — derived from 01_Series_Bible/characters.json
@@ -9,7 +10,49 @@ const skinWarm = { skin: "#d9a07a", skinLight: "#f0c4a0", skinShade: "#b47853", 
 const skinDeep = { skin: "#b97a52", skinLight: "#d89a70", skinShade: "#8d5536", lips: "#94493f" };
 const skinFair = { skin: "#e4b18c", skinLight: "#f6d2b2", skinShade: "#c48d68", lips: "#bb6a63" };
 
-export const CAST: Record<string, CastMember> = {
+/**
+ * Face tuning per character (fed to Head as HeadLook overrides). Keyed by cast id, so cast members
+ * defined inside scenes (Thakurma, the father "surendra") pick up the same look by id.
+ * A numeric `mustache` is its weight and overrides an older colour-string mustache on the cast sheet.
+ */
+export type FaceLook = Pick<HeadLook, "lashes" | "kajal" | "browWeight" | "lipTint" | "mustache" | "ageLines" | "hairGrey">;
+
+/** The father, Surendrachandra ("Babukaka"): warm, handsome, dignified; thin neat mustache, side-parted black hair. */
+const FATHER_LOOK: FaceLook = { lashes: 0.25, kajal: 0, browWeight: 1.25, lipTint: "#a65e52", mustache: 0.6, ageLines: 0, hairGrey: 0 };
+
+export const FACE_LOOKS: Record<string, FaceLook> = {
+  // the family
+  /** Charu, the mother (mid-20s, married): full lashes, soft kajal, soft arched brows, rose-red lips. */
+  charu: { lashes: 1, kajal: 0.7, browWeight: 0.9, lipTint: "#c8475a", ageLines: 0, hairGrey: 0 },
+  babukaka: FATHER_LOOK,
+  surendra: FATHER_LOOK,
+  /** Thakurma, the widowed grandmother in white: kind lines, white hair, no kajal, muted lips. */
+  thakurma: { lashes: 0.4, kajal: 0, browWeight: 0.8, lipTint: "#9c5e57", ageLines: 0.8, hairGrey: 0.9 },
+  // household and village women (married: sindoor + bindi on the sheet, gentle kajal)
+  /** Manorama Devi, late 30s, steady and motherly. */
+  manorama: { lashes: 0.8, kajal: 0.45, browWeight: 1.0, lipTint: "#a8434c", ageLines: 0.15, hairGrey: 0 },
+  womanA: { lashes: 0.85, kajal: 0.5, browWeight: 0.95, lipTint: "#b2404d", ageLines: 0, hairGrey: 0 },
+  womanB: { lashes: 0.9, kajal: 0.55, browWeight: 0.9, lipTint: "#bf4f5b", ageLines: 0, hairGrey: 0 },
+  // village men
+  listenerA: { lashes: 0.25, kajal: 0, browWeight: 1.2, lipTint: "#8e4a40", ageLines: 0.1, hairGrey: 0 },
+  dhaki: { lashes: 0.2, kajal: 0, browWeight: 1.35, lipTint: "#8a463c", mustache: 0.85, ageLines: 0.2, hairGrey: 0 },
+  // elders
+  /** Bhagabati Thakur, the elder priest (late 50s): silver-streaked hair, white mustache. */
+  bhagabati: { lashes: 0.25, kajal: 0, browWeight: 1.2, lipTint: "#a05a50", mustache: 0.75, ageLines: 0.7, hairGrey: 0.8 },
+  kedarkaka: { lashes: 0.25, kajal: 0, browWeight: 1.1, lipTint: "#a8625a", mustache: 0.8, ageLines: 0.7, hairGrey: 0.9 },
+  listenerB: { lashes: 0.2, kajal: 0, browWeight: 1.0, lipTint: "#a0584e", mustache: 0.6, ageLines: 0.85, hairGrey: 0.9 },
+  // children: soft lashes, no kajal, no lines
+  gopal: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+  rama: { lashes: 0.5, kajal: 0, browWeight: 0.9, ageLines: 0, hairGrey: 0 },
+  madhu: { lashes: 0.55, kajal: 0, browWeight: 0.75, lipTint: "#c25e63", ageLines: 0, hairGrey: 0 },
+  listenerKid: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+  duikha: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+};
+
+/** A cast sheet entry plus its face tuning. */
+export type CastEntry = CastMember & { look?: FaceLook };
+
+export const CAST: Record<string, CastEntry> = {
   babukaka: {
     id: "babukaka",
     age: "adult",
@@ -31,6 +74,7 @@ export const CAST: Record<string, CastMember> = {
     lowerTrim: "#c79b3e",
     dhotiLength: "calf",
     mustache: "#1d1513",
+    look: FACE_LOOKS.babukaka,
     seed: 3,
   },
   gopal: {
@@ -54,6 +98,7 @@ export const CAST: Record<string, CastMember> = {
     lowerTrim: "#d9902e",
     dhotiLength: "knee",
     scarf: { color: "#e2562b", shade: "#b23d1c", trim: "#f6c34a", style: "neck" },
+    look: FACE_LOOKS.gopal,
     seed: 11,
   },
   rama: {
@@ -77,6 +122,7 @@ export const CAST: Record<string, CastMember> = {
     lowerTrim: "#2f8f86",
     dhotiLength: "knee",
     scarf: { color: "#2f9a8c", shade: "#1f6d63", trim: "#bfe7d9", style: "drape" },
+    look: FACE_LOOKS.rama,
     seed: 17,
   },
   madhu: {
@@ -99,6 +145,7 @@ export const CAST: Record<string, CastMember> = {
     lowerShade: "#a32c4a",
     ribbon: "#ffd23f",
     bindi: true,
+    look: FACE_LOOKS.madhu,
     seed: 23,
   },
   kedarkaka: {
@@ -123,6 +170,7 @@ export const CAST: Record<string, CastMember> = {
     scarf: { color: "#8a5a34", shade: "#6b4224", trim: "#d8b06a", style: "shawl" },
     mustache: "#d9d4cc",
     glasses: true,
+    look: FACE_LOOKS.kedarkaka,
     seed: 31,
   },
   listenerA: {
@@ -142,6 +190,7 @@ export const CAST: Record<string, CastMember> = {
     lower: "dhoti",
     lowerColor: "#f3eee2",
     lowerShade: "#cfc4ae",
+    look: FACE_LOOKS.listenerA,
     seed: 41,
   },
   listenerB: {
@@ -166,6 +215,7 @@ export const CAST: Record<string, CastMember> = {
     tilak: true,
     wiry: true,
     mustache: "#d9d4cc",
+    look: FACE_LOOKS.listenerB,
     seed: 47,
   },
   listenerKid: {
@@ -186,6 +236,7 @@ export const CAST: Record<string, CastMember> = {
     lowerColor: "#fbf6ea",
     lowerShade: "#d6cab4",
     dhotiLength: "knee",
+    look: FACE_LOOKS.listenerKid,
     seed: 53,
   },
   dhaki: {
@@ -210,6 +261,7 @@ export const CAST: Record<string, CastMember> = {
     scarf: { color: "#c0392b", shade: "#8f241e", trim: "#f2e4c8", style: "check" },
     mustache: "#140c0a",
     wiry: true,
+    look: FACE_LOOKS.dhaki,
     seed: 61,
   },
   duikha: {
@@ -230,6 +282,7 @@ export const CAST: Record<string, CastMember> = {
     lowerColor: "#e9dcc0",
     lowerShade: "#bfae8c",
     dhotiLength: "knee",
+    look: FACE_LOOKS.duikha,
     seed: 67,
   },
   charu: {
@@ -253,6 +306,7 @@ export const CAST: Record<string, CastMember> = {
     scarf: { color: "#fcf8f2", shade: "#e3d9ca", trim: "#b8292f", style: "drape" },
     sindoor: true,
     bindi: true,
+    look: FACE_LOOKS.charu,
     seed: 83,
   },
   manorama: {
@@ -276,6 +330,7 @@ export const CAST: Record<string, CastMember> = {
     scarf: { color: "#f5efe6", shade: "#d9cfc0", trim: "#7c1d26", style: "drape" },
     sindoor: true,
     bindi: true,
+    look: FACE_LOOKS.manorama,
     seed: 89,
   },
   bhagabati: {
@@ -301,6 +356,7 @@ export const CAST: Record<string, CastMember> = {
     mustache: "#d9d4cc",
     tilak: true,
     paita: true,
+    look: FACE_LOOKS.bhagabati,
     seed: 97,
   },
   womanA: {
@@ -324,6 +380,7 @@ export const CAST: Record<string, CastMember> = {
     scarf: { color: "#fbf5ea", shade: "#ddd1ba", trim: "#b8202c", style: "drape" },
     sindoor: true,
     bindi: true,
+    look: FACE_LOOKS.womanA,
     seed: 71,
   },
   womanB: {
@@ -347,6 +404,7 @@ export const CAST: Record<string, CastMember> = {
     scarf: { color: "#3f8a52", shade: "#2a6339", trim: "#e2b13c", style: "drape" },
     sindoor: true,
     bindi: true,
+    look: FACE_LOOKS.womanB,
     seed: 79,
   },
 };
