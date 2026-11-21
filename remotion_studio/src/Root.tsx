@@ -22,6 +22,8 @@ import { EP02_TOTAL_FRAMES } from "./episode02/timing";
 import { Episode03 } from "./episode03/Episode03";
 import { SourceAttributionQA } from "./episode/SourceAttributionQA";
 import { EP03_TOTAL_FRAMES } from "./episode03/timing";
+import { Episode04 } from "./episode04/Episode04";
+import { EP04_TOTAL_FRAMES } from "./episode04/timing";
 import { ParamBismoyEp01 } from "./param_bismoy_ep01/ParamBismoyEp01";
 import { S2_EP01_TOTAL_FRAMES } from "./param_bismoy_ep01/timing";
 import { ParamBismoyPaintedDemo, PAINTED_DEMO_FRAMES } from "./param_bismoy_ep01/ParamBismoyPaintedDemo";
@@ -40,6 +42,7 @@ export const RemotionRoot: React.FC = () => {
         height={1080}
       />
       <Composition id="SourceAttributionQA" component={SourceAttributionQA} durationInFrames={150} fps={24} width={1920} height={1080} />
+      <Composition id="Episode04" component={Episode04} durationInFrames={EP04_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode03" component={Episode03} durationInFrames={EP03_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode02" component={Episode02} durationInFrames={EP02_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       {/* Cinematic re-stage demo of Scene 02 (Diwali night) */}

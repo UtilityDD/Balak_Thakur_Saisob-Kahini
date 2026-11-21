@@ -1,5 +1,6 @@
 import React, { useId } from "react";
 import { Hand, type HandShape } from "../../cinematic/rig/Hand";
+import { STONE_BOWL_UNITS, stoneBowlArt as sharedStoneBowlArt } from "../../cinematic/sets/VedicHouseDay";
 
 /**
  * Episode 3 seated child rig. Balak Thakur at about five, sitting cross-legged on the ground, drawn
@@ -59,6 +60,39 @@ import { Hand, type HandShape } from "../../cinematic/rig/Hand";
  * derived from the pose (lookUp thoughtful; bless, bowHands and palmRaise compassionate; reaction
  * playful; everything else serene). Expressions blend over 18 frames from `prevExpression` (or the
  * previous pose's expression). Small saccades and slow blinks keep the eyes alive. All restrained.
+ *
+ * EPISODE 4 POSES (added 2026-11-22; the Episode 3 poses and frames are unchanged, checked pixel for pixel)
+ *   Seat: `kneel` 0 cross-legged (default), 1 kneeling back on the heels, 2 up on the knees (shins and soles
+ *   behind him). Animate it for a rise; the kneeling hands rest on the thighs in sitCross, idle and lookUp.
+ *   Objects: `holding` (HeldObject: clayLump, clayShiva, doll, gobinda, incense, stoneBowl) is drawn from the
+ *   drawn wrists every frame (MOT-07), between the far hand and the near hand; the shared Hand grips it (palms
+ *   toward it, thumbs toward the camera, MOT-19). Off the hands the scene draws it with `HeldObjectArt` (same
+ *   art, same origin; `HELD_OBJECT_BOTTOM` stands it on a surface).
+ *   - holdInLap    both hands, on his lap, turned gently to the light. sitCross / idle with `holding` = this.
+ *                  `watchHeld` 0 frees the head and eyes for `face` (looking up at his mother, clay in hand).
+ *   - holdToChest  hugged to the chest (the doll; the Gobinda held close, considering).
+ *   - offerUp      held out in both hands at `reachAt` (default in front of the chest): handing the Gobinda
+ *                  back to Sundar, offering the incense in at the door. Leans and bends to reach.
+ *   - kneelReach   rises to `kneel` (at least 1.5), bends forward and both hands go out to `reachAt` (default a
+ *                  plate on a low pidi, { x: 92, y: -44 }). KNEEL_REACH_T: rise 0-14, reach 4-22, grip 20-26.
+ *                  Picking up: `reachFor` the object, then `holding` from poseStart + 26 (hide the scene's copy)
+ *                  and switch to holdInLap with prevPose kneelReach and prevPoseStart. Setting down (the doll on
+ *                  the plate): `holding` until + 26, then clear it and draw it at `reachAt`. Keep `kneel` at
+ *                  1.5 or 2 afterwards to stay up, or leave it at 0 and the next pose sits him back down.
+ *   - drinkBowl    self-timed (DRINK_BOWL_T, about 3 s): reach to the big stone bowl on the floor at `reachAt`
+ *                  (default DRINK_BOWL_AT), lift it in both hands with a little effort (it is heavy: a slow heave,
+ *                  a lean back, a faint tremor while it is up), drink it all in one long draught (bowl
+ *                  tips, head back, water runs out, drinkBowlFill(t)), set it back at the same place, hands to the
+ *                  lap. The rig draws the bowl through the whole pose; before and after, the scene draws it there
+ *                  (HeldObjectArt "stoneBowl", fill 1 before, 0 after: the fopra left alone in it).
+ *   - pointIn      a gentle open palm toward `pointAt` (a doorway, the khat, the bowl at his side; asking to
+ *                  sit inside). `holding` stays in the far hand on his lap.
+ *   - rollClay     rolls the clay between his palms (near palm circling on top). With holding "clayShiva" the
+ *                  Shiva is squeezed into a ball over t 0-36; then pass "clayLump".
+ *   - toss         "...পেছনে ফেলে দাও!": the near hand flicks up and back beside the shoulder (TOSS_T), the far hand
+ *                  keeps `holding` on his lap.
+ *   All take `lifeF`, `talk`, `sigh`, expressions and `prevPose` blends like the Episode 3 poses. Facing is +x
+ *   (use `flip` to face left); targets are in figure units before the flip, ground at y = 0.
  */
 
 export type SeatedPose =
@@ -71,7 +105,27 @@ export type SeatedPose =
   | "idle"
   | "bless"
   | "palmRaise"
-  | "reaction";
+  | "reaction"
+  // Episode 4 (see "EPISODE 4 POSES" below)
+  | "kneelReach"
+  | "holdInLap"
+  | "holdToChest"
+  | "offerUp"
+  | "drinkBowl"
+  | "pointIn"
+  | "rollClay"
+  | "toss";
+
+/**
+ * Objects Balak can hold (Episode 4), drawn simply in the series style, no glow on any of them (BAL-05):
+ *   clayLump   the clay rolled into a ball (dark grey-brown field clay, finger marks), about 17 units across
+ *   clayShiva  Charu's small clay Shivalinga on its clay base with a bel leaf on top, about a hand high
+ *   doll       the gaudy painted wooden fair doll (red, yellow, green, big round eyes), about a forearm high
+ *   gobinda    the small standing brass Gobinda with the flute on a round base, about 64 units high
+ *   incense    a small brass dhoop-dani (cup on a foot, short handle) with a thin curl of smoke
+ *   stoneBowl  the wide grey stone bowl with coconut water and the whole fopra in it
+ */
+export type HeldObject = "clayLump" | "clayShiva" | "doll" | "gobinda" | "incense" | "stoneBowl";
 
 export interface SeatedChildProps {
   x: number;
@@ -140,6 +194,44 @@ export interface SeatedChildProps {
    * the breath go. `sighCurve(start)` builds a ready-made one.
    */
   sigh?: (f: number) => number;
+  /**
+   * Episode 4. How he sits: 0 = cross-legged (default, Episode 3), 1 = kneeling, sitting back on his heels,
+   * 2 = up on his knees. Fractions move between them (animate it over about 12 to 16 frames for a rise). The
+   * kneelReach pose kneels by itself (to 1.5 unless this is 1 or more).
+   */
+  kneel?: number;
+  /**
+   * Episode 4. The object in his hands (see HeldObject). Drawn by the rig only in the Episode 4 poses: in both
+   * hands in holdInLap, holdToChest, offerUp, kneelReach and rollClay; in the far hand on his lap in pointIn
+   * and toss. sitCross and idle with `holding` set become holdInLap. drinkBowl always draws the stone bowl
+   * itself (from the floor, in his hands, and back on the floor). The object is placed from the drawn hands
+   * every frame, so it never floats (MOT-07). When the rig is not holding it, the scene draws it, with
+   * HeldObjectArt at the same place.
+   */
+  holding?: HeldObject;
+  /**
+   * Episode 4, kneelReach only: the object he is reaching for, which is not yet in his hands (it sets how far
+   * apart the hands close). Set `holding` from poseStart + KNEEL_REACH_T.grip on (and hide the scene's copy).
+   */
+  reachFor?: HeldObject;
+  /**
+   * Episode 4 target (figure units, ground at y = 0, before `flip`): kneelReach, the centre of the object the
+   * hands reach to (default { x: 92, y: -44 }, a plate on a low pidi); drinkBowl, the centre of the bowl
+   * standing on the floor (default { x: 66, y: -12 }); offerUp, where the object is held out (default about
+   * { x: 80, y: -122 } in front of the chest). Keep it within reach, about 70 to 100 units from the hips;
+   * he leans and bends forward as far as he needs (up to about 40 degrees).
+   */
+  reachAt?: { x: number; y: number };
+  /** Episode 4, pointIn: what the open hand shows (figure units). Default { x: 170, y: -120 }: ahead, at chest height. */
+  pointAt?: { x: number; y: number };
+  /** Episode 4: coconut water left in the stone bowl, 1 = brimming, 0 = empty (default: drinkBowl's own timeline, else 1). */
+  heldFill?: number;
+  /**
+   * Episode 4: how much he looks at the object in his hands in holdInLap, holdToChest and rollClay, 0 to 1
+   * (default 1). Set 0 to let `face` (lookX, eyesDown) steer the head and eyes, e.g. looking up at his
+   * mother while the clay stays in his hands.
+   */
+  watchHeld?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -257,6 +349,14 @@ export const POSE_EXPRESSION: Record<SeatedPose, SeatedExpression> = {
   palmRaise: "compassionate",
   lookUp: "thoughtful",
   reaction: "playful",
+  kneelReach: "serene",
+  holdInLap: "serene",
+  holdToChest: "joyful",
+  offerUp: "compassionate",
+  drinkBowl: "serene",
+  pointIn: "playful",
+  rollClay: "serene",
+  toss: "playful",
 };
 
 /** Expression weights; serene is what is left (all zero = serene). */
@@ -292,6 +392,37 @@ interface SolveOpts {
   basketAt: V;
   /** Life clock offset (lifeF - f): the idle lean drift and the resting hands' drift run on f + lifeOff. */
   lifeOff?: number;
+  /** Episode 4 props (see SeatedChildProps). All undefined in Episode 3, so its poses are untouched. */
+  seat?: number;
+  holding?: HeldObject;
+  reachFor?: HeldObject;
+  reachAt?: V;
+  pointAt?: V;
+  heldFill?: number;
+  watchHeld?: number;
+}
+
+/**
+ * An object in the hands (Episode 4). `x, y, rot` is where the pose puts it; `ofsF` and `ofsB` are the near and
+ * far wrists relative to it (already rotated). The drawing places it from the drawn (lagged) wrists, so it stays
+ * in the hands; a `free` object (the bowl on the floor before and after drinkBowl's grip) stays at x, y.
+ */
+interface HeldPose {
+  kind: HeldObject;
+  x: number;
+  y: number;
+  rot: number;
+  /** Share of the far hand in placing the drawn object: 0.5 = both hands, 1 = the far hand alone. */
+  farW: number;
+  ofsF: V;
+  ofsB: V;
+  free?: boolean;
+  fill?: number;
+  /** rollClay: 0 = still the clay Shiva, 1 = rolled into a ball. */
+  morph?: number;
+  /** rollClay: the turn of the ball between the palms, degrees. */
+  spin?: number;
+  opacity?: number;
 }
 
 interface Solve {
@@ -323,6 +454,16 @@ interface Solve {
   pot?: { tilt: number; opacity?: number };
   leaf?: Prop;
   flower?: Prop;
+  /** Episode 4: seat (0 cross-legged, 1 on the heels, 2 up on the knees). Undefined = 0. */
+  kneel?: number;
+  /** Episode 4: forward bend toward the camera (figure units the shoulders come down by). Undefined = 0. */
+  drop?: number;
+  /** Episode 4: the object in the hands. */
+  obj?: HeldPose;
+  /** Episode 4: 0..1, how little the forearms trail while both hands carry an object. Undefined = 0. */
+  rigid?: number;
+  /** Episode 4: above 0.5 the IK keeps the elbows low (offering, gestures). Undefined = 0. */
+  elbowDown?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -924,8 +1065,595 @@ const ik = (S: V, T: V, side: number): { E: V; H: V } => {
   return { E, H: { x: S.x + dx, y: S.y + dy } };
 };
 
-/** Pose solver: lean, head angle, eyes and hand targets for each pose at frame f. */
+/* ------------------------------------------------------------------ */
+/* Episode 4: kneeling, reaching and holding objects                    */
+/* ------------------------------------------------------------------ */
+
+const addV = (a: V, b: V): V => ({ x: a.x + b.x, y: a.y + b.y });
+const subV = (a: V, b: V): V => ({ x: a.x - b.x, y: a.y - b.y });
+const rotV = (v: V, deg: number): V => {
+  const r = (deg * Math.PI) / 180;
+  const c = Math.cos(r);
+  const s = Math.sin(r);
+  return { x: v.x * c - v.y * s, y: v.x * s + v.y * c };
+};
+
+/** How far the hips rise for a seat value: a little onto the heels, about 28 units up on the knees. */
+const kneelLift = (k: number): number => 4 * smooth(clamp(k, 0, 1)) + 28 * smooth(clamp(k - 1, 0, 1));
+/** Torso height used by the forward-bend foreshortening (shoulder line to the pivot). */
+const BEND_H = 106;
+
+/**
+ * Where a body point (relative to PIVOT, as TORSO_REL) sits for a lean (deg), hip lift and forward bend, without
+ * breath or sway: the same mapping as the component's mkUp.
+ */
+const bodyPoint = (rel: V, leanDeg: number, lift: number, drop: number): V => {
+  const th = (leanDeg * Math.PI) / 180;
+  const ry = rel.y * (1 - drop / BEND_H);
+  return {
+    x: PIVOT.x + rel.x * Math.cos(th) - ry * Math.sin(th),
+    y: PIVOT.y - lift + rel.x * Math.sin(th) + ry * Math.cos(th),
+  };
+};
+
+/** Comfortable reach of a wrist from its shoulder (IK maximum is UPPER + FORE - 0.5 = 98.5). */
+const REACH_OK = 93;
+
+/**
+ * The least lean and forward bend that bring both wrists (`wF`, `wB`, figure units) within reach. Searched on a
+ * fixed grid, so it is a pure function of its inputs (steady while the target is steady).
+ */
+const reachFit = (wF: V, wB: V | null, lift: number, minLean: number, maxLean: number, maxDrop: number): { lean: number; drop: number } => {
+  let best = { lean: maxLean, drop: maxDrop, cost: Infinity, miss: Infinity };
+  for (let lean = minLean; lean <= maxLean + 1e-6; lean += 2) {
+    for (let drop = 0; drop <= maxDrop + 1e-6; drop += 4) {
+      const sF = bodyPoint(SH_FRONT, lean, lift, drop);
+      const sB = bodyPoint(SH_BACK, lean, lift, drop);
+      const mF = Math.hypot(wF.x - sF.x, wF.y - sF.y) - REACH_OK;
+      const mB = wB ? Math.hypot(wB.x - sB.x, wB.y - sB.y) - REACH_OK : -1;
+      const miss = Math.max(mF, mB, 0);
+      const cost = lean + 0.7 * drop;
+      if (miss < best.miss - 1e-6 || (miss <= best.miss + 1e-6 && cost < best.cost)) best = { lean, drop, cost, miss };
+    }
+  }
+  return { lean: best.lean, drop: best.drop };
+};
+
+interface GripSpec {
+  /** Half width at the grip: the wrists sit just outside it. */
+  hw: number;
+  /** Grip height (object units, y down from the object's origin). */
+  gy: number;
+  /** From the origin down to the bottom of the object (it stands on a surface at y + bottom). */
+  bottom: number;
+  shape: HandShape;
+  curl: number;
+  /** Drawing scale of the object (its art is authored small; hw, gy and bottom below are already scaled). */
+  k: number;
+}
+const gripOf = (k: number, hw: number, gy: number, bottom: number, shape: HandShape, curl: number): GripSpec => ({
+  hw: hw * k,
+  gy: gy * k,
+  bottom: bottom * k,
+  shape,
+  curl,
+  k,
+});
+/**
+ * Drawing scale of the big stone bowl (the shared stoneBowlArt of VedicHouseDay, the same bowl as the set's StoneBowl):
+ * about 70 figure units across the rim (wider than his head) and 38 tall, so a five-year-old needs both hands.
+ */
+const STONE_BOWL_K = 1.45;
+/** Grip of each object: hands on both sides, palms toward it, thumbs toward the camera (MOT-19). */
+const GRIP: Record<HeldObject, GripSpec> = {
+  clayLump: gripOf(1.35, 8.5, 1, 8.5, "cup", 0.55),
+  clayShiva: gripOf(1.3, 12, 4, 9.5, "cup", 0.5),
+  doll: gripOf(1.2, 9.5, 2, 21, "hold", 0.62),
+  gobinda: gripOf(1.15, 8.5, 6, 28.5, "hold", 0.62),
+  incense: gripOf(1.3, 10.5, 2, 10, "hold", 0.62),
+  // the big stone bowl: wrists on its sides just under the thick rim, fingers round the carved belly
+  stoneBowl: gripOf(STONE_BOWL_K, 23.6, 7.4, STONE_BOWL_UNITS.bottom, "cup", 0.55),
+};
+/** Grip used to size the hands when nothing is named. */
+const GRIP_DEFAULT: GripSpec = gripOf(1, 13, 2, 10, "cup", 0.5);
+/** Side view, thumb edge toward the camera: the near palm faces -x, the far palm +x (both toward the object). */
+const GRIP_TURN = -1.62;
+
+type HandSet = Pick<
+  Solve,
+  "front" | "back" | "frontDir" | "backDir" | "spread" | "curl" | "curlB" | "shapeF" | "shapeB" | "turnF" | "turnB"
+> & { ofsF: V; ofsB: V };
+
+/**
+ * Both hands on an object at O (rotated rot degrees). `under` 0 = wrists just outside its sides, fingers wrapping
+ * down and in (thumbs to the camera); 1 = cupped under it, palms up against its lower flanks, fingers rising up
+ * its sides (used once the bowl is lifted, so the far forearm stays below his chin while he drinks).
+ */
+const gripSet = (kind: HeldObject | undefined, O: V, rot: number, under = 0): HandSet => {
+  const g = kind ? GRIP[kind] : GRIP_DEFAULT;
+  const u = clamp(under, 0, 1);
+  const sF: V = { x: g.hw + 2.5, y: g.gy - 8 };
+  const sB: V = { x: -(g.hw + 2.5), y: g.gy - 8 };
+  const uF: V = { x: g.hw * 0.62, y: g.bottom + 2 };
+  const uB: V = { x: -g.hw * 0.62, y: g.bottom + 2 };
+  const ofsF = rotV(u > 0 ? lerpV(sF, uF, u) : sF, rot);
+  const ofsB = rotV(u > 0 ? lerpV(sB, uB, u) : sB, rot);
+  const dF = u > 0 ? unit(lerp(-0.42, 0.42, u), lerp(0.91, -0.91, u)) : unit(-0.42, 0.91);
+  const dB = u > 0 ? unit(lerp(0.42, -0.42, u), lerp(0.91, -0.91, u)) : unit(0.42, 0.91);
+  const turn = u > 0 ? lerpA(GRIP_TURN, -GRIP_TURN, u) : GRIP_TURN;
+  return {
+    front: addV(O, ofsF),
+    back: addV(O, ofsB),
+    frontDir: rotV(dF, rot),
+    backDir: rotV(dB, rot),
+    spread: 0.5,
+    curl: g.curl,
+    curlB: g.curl,
+    shapeF: g.shape,
+    shapeB: g.shape,
+    turnF: turn,
+    turnB: turn,
+    ofsF,
+    ofsB,
+  };
+};
+
+/** Lap surface height (figure units) for a seat value: the top of the thighs, rising with the hips. */
+const lapTop = (k: number): number => lerp(-66, -58, smooth(clamp(k, 0, 1))) - kneelLift(k);
+
+/** Hands resting on the thighs when kneeling (k = seat), instead of on the cross-legged knees. */
+const kneelRestFront = (k: number): V => ({ x: lerp(30, 22, smooth(clamp(k - 1, 0, 1))), y: -44 - 0.75 * kneelLift(k) });
+const kneelRestBack = (k: number): V => ({ x: lerp(-12, -14, smooth(clamp(k - 1, 0, 1))), y: -46 - 0.75 * kneelLift(k) });
+const KNEEL_DIR_FRONT = unit(0.32, 1);
+const KNEEL_DIR_BACK = unit(0.12, 1);
+
+/**
+ * Timeline of kneelReach (frames from poseStart): he rises (0 to 14), bends forward while the hands travel out
+ * (4 to 22) and close on the object (20 to 26). From `grip` on the object is in his hands: set `holding`.
+ */
+export const KNEEL_REACH_T = { rise: 14, reach: 22, grip: 26 };
+
+/**
+ * Timeline of drinkBowl (frames from poseStart): reach to the bowl on the floor (0 to 10), grip (10 to 13), lift
+ * it to his mouth (13 to 25), drink it all in one long draught (25 to 45: the bowl tips, his head goes back, the
+ * water runs out), lower it to the same place (45 to 57), let go (57 to 61) and bring the hands back to his lap
+ * (61 to 73). The bowl is drawn by the rig through the whole pose; from `release` on it stands where it began.
+ */
+export const DRINK_BOWL_T = { reach: 10, grip: 13, lift: 25, drinkEnd: 45, lower: 57, release: 61, back: 73 };
+/**
+ * Where drinkBowl finds the big stone bowl by default (its origin, figure units): in front of his near knee, its foot
+ * on the floor (y + HELD_OBJECT_BOTTOM.stoneBowl is about 1). A scene that draws the bowl there before and after the
+ * drink places HeldObjectArt "stoneBowl" at x + DRINK_BOWL_AT.x * s, y + DRINK_BOWL_AT.y * s (mirror x when flipped).
+ */
+export const DRINK_BOWL_AT = { x: 86, y: -28 } as const;
+
+/** Water left in the bowl at drinkBowl time t (frames from poseStart): full until he drinks, then it runs out. */
+export const drinkBowlFill = (t: number): number => 1 - smooth((t - DRINK_BOWL_T.lift - 1) / (DRINK_BOWL_T.drinkEnd - DRINK_BOWL_T.lift - 4));
+
+/** Toss timeline (frames from poseStart): the hand rises (0 to 7), flicks back over the shoulder (6 to 12), returns (16 to 30). */
+export const TOSS_T = { up: 7, flick: 12, back: 30 };
+
+/**
+ * Two-bone IK as `ik`, but the elbow is chosen by side and height: score = side * x + down * y, so with `down`
+ * about 1 the elbow stays below a forward reach instead of flipping up (Episode 4 offering and gestures).
+ */
+const ikPref = (S: V, T: V, side: number, down: number): { E: V; H: V } => {
+  const a = ik(S, T, side);
+  const b = ik(S, T, -side);
+  const sa = side * a.E.x + down * a.E.y;
+  const sb = side * b.E.x + down * b.E.y;
+  return sa >= sb ? a : b;
+};
+
+const EP4_POSES = new Set<SeatedPose>(["kneelReach", "holdInLap", "holdToChest", "offerUp", "drinkBowl", "pointIn", "rollClay", "toss"]);
+
+/**
+ * Pose solver: lean, head angle, eyes and hand targets for each pose at frame f. The Episode 3 poses go to
+ * solveCore unchanged; kneeling only moves their resting hands onto the thighs; the Episode 4 poses go to solveEp4.
+ */
 function solve(pose: SeatedPose, f: number, breath: number, poseStart: number, opts: SolveOpts): Solve {
+  const seat = clamp(opts.seat ?? 0, 0, 2);
+  const p: SeatedPose = (pose === "sitCross" || pose === "idle") && opts.holding ? "holdInLap" : pose;
+  if (EP4_POSES.has(p)) return solveEp4(p, f, breath, poseStart, opts, seat);
+  const res = solveCore(pose, f, breath, poseStart, opts);
+  if (seat > 0) {
+    const kw = smooth(clamp(seat, 0, 1));
+    if (pose === "sitCross" || pose === "idle" || pose === "lookUp") {
+      const dF = subV(kneelRestFront(seat), KNEE_REST_FRONT);
+      const dB = subV(kneelRestBack(seat), KNEE_REST_BACK);
+      res.front = { x: res.front.x + kw * dF.x, y: res.front.y + kw * dF.y };
+      res.back = { x: res.back.x + kw * dB.x, y: res.back.y + kw * dB.y };
+      res.frontDir = unit(lerp(res.frontDir.x, KNEEL_DIR_FRONT.x, kw), lerp(res.frontDir.y, KNEEL_DIR_FRONT.y, kw));
+      res.backDir = unit(lerp(res.backDir.x, KNEEL_DIR_BACK.x, kw), lerp(res.backDir.y, KNEEL_DIR_BACK.y, kw));
+    }
+    res.kneel = seat;
+  }
+  return res;
+}
+
+/** Episode 4 poses (see the header, "EPISODE 4 POSES"). */
+function solveEp4(pose: SeatedPose, f: number, breath: number, poseStart: number, opts: SolveOpts, seat: number): Solve {
+  const fl = f + (opts.lifeOff ?? 0);
+  const idleLean = 3 + 0.8 * wob(fl, 3.1);
+  const bN = clamp(breath, 0, 2.4);
+  const t = f - poseStart;
+  const kind = opts.holding;
+  const watch = clamp(opts.watchHeld ?? 1, 0, 1);
+  const lift = kneelLift(seat);
+  /** The object's centre when it rests on his lap (its base sinks a little into the cloth). */
+  const lapObj = (k: number, xo: number, kd: HeldObject | undefined): V => ({
+    x: xo,
+    y: lapTop(k) - (kd ? GRIP[kd].bottom : 8) + 4,
+  });
+  /** Both hands resting: on the knees cross-legged, on the thighs when kneeling. */
+  const rest = (k: number) => {
+    const r = restHands(fl, KNEE_REST_FRONT);
+    const w = smooth(clamp(k, 0, 1));
+    if (w <= 0) return r;
+    const dF = subV(kneelRestFront(k), KNEE_REST_FRONT);
+    const dB = subV(kneelRestBack(k), KNEE_REST_BACK);
+    return {
+      ...r,
+      front: { x: r.front.x + w * dF.x, y: r.front.y + w * dF.y },
+      back: { x: r.back.x + w * dB.x, y: r.back.y + w * dB.y },
+      frontDir: unit(lerp(r.frontDir.x, KNEEL_DIR_FRONT.x, w), lerp(r.frontDir.y, KNEEL_DIR_FRONT.y, w)),
+      backDir: unit(lerp(r.backDir.x, KNEEL_DIR_BACK.x, w), lerp(r.backDir.y, KNEEL_DIR_BACK.y, w)),
+    };
+  };
+  const heldBoth = (hs: HandSet, O: V, rot: number, extra: Partial<HeldPose> = {}): HeldPose | undefined =>
+    kind ? { kind, x: O.x, y: O.y, rot, farW: 0.5, ofsF: hs.ofsF, ofsB: hs.ofsB, ...extra } : undefined;
+  /** The far hand alone holds the object on his lap (while the near hand gestures), or rests. */
+  const farHold = (k: number): Pick<Solve, "back" | "backDir" | "shapeB" | "turnB" | "curlB" | "obj" | "joinW"> => {
+    if (!kind) {
+      const r = rest(k);
+      return { back: r.back, backDir: r.backDir, shapeB: "relaxed", turnB: r.turnB, curlB: r.curlB, joinW: 0 };
+    }
+    const rot = -6 + 2 * wob(fl, 31.3, 0.4);
+    const O = lapObj(k, 4, kind);
+    const hs = gripSet(kind, O, rot);
+    return {
+      back: hs.back,
+      backDir: hs.backDir,
+      shapeB: hs.shapeB,
+      turnB: hs.turnB,
+      curlB: hs.curlB,
+      joinW: 1,
+      obj: { kind, x: O.x, y: O.y, rot, farW: 1, ofsF: hs.ofsF, ofsB: hs.ofsB },
+    };
+  };
+
+  switch (pose) {
+    case "holdInLap": {
+      // The object in both hands on his lap, turned gently to the light; he looks at it (watchHeld).
+      const O0 = lapObj(seat, 16, kind);
+      const rot = 4 * Math.sin(f * 0.035 + 0.5) + 2 * wob(f, 3.7, 0.5);
+      const O = { x: O0.x + 1.2 * wob(fl, 14.2, 0.4), y: O0.y + 0.5 * wob(fl, 15.9, 0.4) };
+      const hs = gripSet(kind, O, rot);
+      return {
+        lean: idleLean + 4 * watch,
+        headTilt: (7 + 1.5 * wob(f, 5.9)) * watch + 1.5 * (1 - watch) * wob(f, 5.9),
+        eyeUp: 0,
+        eyeDown: 0.4 * watch,
+        ...hs,
+        joinW: 1,
+        gazeAt: O,
+        gazeW: 0.85 * watch,
+        obj: heldBoth(hs, O, rot),
+        rigid: 1,
+        kneel: seat,
+      };
+    }
+    case "holdToChest": {
+      // Hugged to the chest in both arms, tipped into the body; it rides on the breath.
+      const g = kind ? GRIP[kind] : GRIP_DEFAULT;
+      const rot = -7 + 1.5 * wob(fl, 12.7, 0.4);
+      const O = { x: 13 + 0.8 * wob(fl, 12.1, 0.4), y: -106 - lift + 0.25 * (g.bottom - 12) - 0.5 * bN };
+      const hs = gripSet(kind, O, rot);
+      return {
+        lean: 2 + 0.8 * wob(fl, 3.1),
+        headTilt: (9 + 1.5 * wob(f, 4.1)) * watch,
+        eyeUp: 0,
+        eyeDown: 0.5 * watch,
+        ...hs,
+        joinW: 1,
+        gazeAt: O,
+        gazeW: 0.6 * watch,
+        obj: heldBoth(hs, O, rot),
+        rigid: 1,
+        elbowDown: 1,
+        kneel: seat,
+      };
+    }
+    case "offerUp": {
+      // Held out in both hands (to Sundar, into the shrine room); he leans and bends as far as he must.
+      const base = opts.reachAt ?? { x: 80, y: -122 - lift };
+      const O = { x: base.x + 0.8 * wob(fl, 18.3, 0.4), y: base.y + 0.6 * wob(fl, 19.1, 0.4) - 0.3 * bN };
+      const rot = -4;
+      const hs = gripSet(kind, O, rot);
+      const fit = reachFit(hs.front, hs.back, lift, 4, 34, 28);
+      return {
+        lean: fit.lean + 0.6 * wob(fl, 3.1),
+        drop: fit.drop,
+        headTilt: clamp((O.y + 150 + lift) / 8, -6, 10) + 1.2 * wob(f, 6.6),
+        eyeUp: 0,
+        eyeDown: 0.15,
+        ...hs,
+        joinW: 1,
+        gazeAt: O,
+        gazeW: 0.6,
+        obj: heldBoth(hs, O, rot),
+        rigid: 1,
+        elbowDown: 1,
+        kneel: seat,
+      };
+    }
+    case "kneelReach": {
+      // Up off his seat (to `kneel`, at least half up), bending forward while both hands travel out to reachAt.
+      const T = KNEEL_REACH_T;
+      const kT = seat >= 1 ? seat : 1.5;
+      const k = lerp(seat, kT, smooth(t / T.rise));
+      const O = opts.reachAt ?? { x: 92, y: -44 };
+      const gk = kind ?? opts.reachFor;
+      const g = gk ? GRIP[gk] : GRIP_DEFAULT;
+      const end = gripSet(gk, O, 0);
+      const fit = reachFit(end.front, end.back, kneelLift(kT), 4, 40, 44);
+      const w = smooth((t - 4) / (T.reach - 4));
+      const bendW = smooth((t - 2) / 16);
+      const O0 = lapObj(k, 16, kind);
+      const start = kind ? gripSet(kind, O0, 0) : rest(k);
+      const arc = -10 * Math.sin(Math.PI * w); // the hands lift a little over the rim on the way
+      let curl: number;
+      let shapeF: HandShape;
+      if (kind) {
+        curl = g.curl;
+        shapeF = g.shape;
+      } else if (opts.reachFor) {
+        const close = smooth((t - (T.reach - 2)) / (T.grip - T.reach + 2));
+        curl = lerp(lerp(start.curl ?? 0.3, 0.08, w), g.curl, close);
+        shapeF = close > 0.5 ? g.shape : workShape(curl, false);
+      } else {
+        curl = lerp(start.curl ?? 0.3, 0.08, w) + 0.12 * smooth((t - T.grip) / 10);
+        shapeF = workShape(curl, false);
+      }
+      const front = { x: lerp(start.front.x, end.front.x, w), y: lerp(start.front.y, end.front.y, w) + arc };
+      const back = { x: lerp(start.back.x, end.back.x, w), y: lerp(start.back.y, end.back.y, w) + arc };
+      const objO = { x: lerp(O0.x, O.x, w), y: lerp(O0.y, O.y, w) + arc };
+      const lean = lerp(idleLean, fit.lean, bendW);
+      return {
+        lean,
+        drop: fit.drop * bendW,
+        headTilt: -0.35 * lean + 14 * w,
+        eyeUp: 0,
+        eyeDown: 0.55 * w,
+        front,
+        back,
+        frontDir: unit(lerp(start.frontDir.x, end.frontDir.x, w), lerp(start.frontDir.y, end.frontDir.y, w)),
+        backDir: unit(lerp(start.backDir.x, end.backDir.x, w), lerp(start.backDir.y, end.backDir.y, w)),
+        spread: lerp(start.spread, 0.5, w),
+        curl,
+        curlB: curl,
+        shapeF,
+        shapeB: shapeF,
+        turnF: lerpA(start.turnF ?? REST_TURN, GRIP_TURN, w),
+        turnB: lerpA(start.turnB ?? REST_TURN, GRIP_TURN, w),
+        joinW: kind ? 1 : w,
+        gazeAt: O,
+        gazeW: 0.9 * w,
+        obj: kind ? { kind, x: objO.x, y: objO.y, rot: 0, farW: 0.5, ofsF: end.ofsF, ofsB: end.ofsB } : undefined,
+        rigid: kind ? 1 : 0.5,
+        kneel: k,
+      };
+    }
+    case "drinkBowl": {
+      const T = DRINK_BOWL_T;
+      const B = opts.reachAt ?? DRINK_BOWL_AT;
+      const g = GRIP.stoneBowl;
+      const atB = gripSet("stoneBowl", B, 0);
+      const fit = reachFit(atB.front, atB.back, lift, 4, 40, 44);
+      // Bend: down to the bowl, up with it, down again to set it back, up after.
+      const bend =
+        t < T.grip
+          ? smooth(t / T.reach)
+          : t < T.lift
+            ? 1 - smooth((t - T.grip) / (T.lift - T.grip))
+            : t < T.drinkEnd
+              ? 0
+              : t < T.release
+                ? smooth((t - T.drinkEnd) / (T.lower - T.drinkEnd))
+                : 1 - smooth((t - T.release) / (T.back - T.release));
+      // Drinking weight: the bowl comes up, the head goes back while he drinks, and both come down again.
+      const upW =
+        t < T.grip ? 0 : t < T.lift ? smooth((t - T.grip) / (T.lift - T.grip)) : t < T.drinkEnd ? 1 : t < T.lower ? 1 - smooth((t - T.drinkEnd) / (T.lower - T.drinkEnd)) : 0;
+      const drinkW =
+        t < T.lift ? 0 : t < T.drinkEnd ? smooth((t - T.lift) / (T.drinkEnd - T.lift)) : t < T.lower ? 1 - smooth((t - T.drinkEnd) / ((T.lower - T.drinkEnd) * 0.6)) : 0;
+      const tip = 12 * upW + 36 * drinkW;
+      // Heavy: he leans back a little against its weight while it is up.
+      const lean = lerp(idleLean, fit.lean, bend) - 3 * upW - 3 * drinkW;
+      const drop = fit.drop * bend;
+      const headTilt = (-0.35 * lean + 14 * bend) * (1 - upW) + upW * (-5 - 11 * drinkW) + 0.8 * wob(f, 4.4);
+      // The bowl's near rim at his lips.
+      const hc = bodyPoint({ x: 0, y: HEAD_CY }, lean, lift, drop);
+      const mouth = addV(hc, rotV({ x: 10.3 * HEAD_K, y: 17.5 * HEAD_K }, headTilt));
+      const atMouth = addV(subV(mouth, rotV({ x: -21.2 * g.k, y: -6 * g.k }, -tip)), { x: 1.5, y: 0.5 });
+      // A faint tremor in the arms while the heavy bowl is up.
+      const tremor = { x: 0.35 * wob(f, 3.7, 4.2) * upW, y: 0.5 * wob(f, 8.1, 4.8) * upW };
+      let O: V;
+      if (t < T.grip) O = B;
+      else if (t < T.lift) {
+        // the heave: it comes off the floor slowly, then up to his lips
+        const u = smooth(Math.pow(clamp((t - T.grip) / (T.lift - T.grip), 0, 1), 1.45));
+        O = addV({ x: lerp(B.x, atMouth.x, u), y: lerp(B.y, atMouth.y, u) - 6 * Math.sin(Math.PI * u) }, tremor);
+      } else if (t < T.drinkEnd) O = addV(atMouth, tremor);
+      else if (t < T.lower) {
+        const u = smooth((t - T.drinkEnd) / (T.lower - T.drinkEnd));
+        O = addV({ x: lerp(atMouth.x, B.x, u), y: lerp(atMouth.y, B.y, u) - 4 * Math.sin(Math.PI * u) }, tremor);
+      } else O = B;
+      const rot = -tip;
+      // Both hands on it (MOT-07): the near hand stays on its side, sliding only a little under the belly while it is
+      // up; the far hand cups the belly from below, so its forearm stays under his chin while he drinks.
+      const sideGrip = gripSet("stoneBowl", O, rot, 0.45 * upW);
+      const farGrip = gripSet("stoneBowl", O, rot, upW);
+      const onBowl: HandSet = { ...sideGrip, back: farGrip.back, backDir: farGrip.backDir, turnB: farGrip.turnB, ofsB: farGrip.ofsB };
+      const r = rest(seat);
+      let hands: HandSet;
+      let curl: number;
+      let shape: HandShape;
+      if (t < T.reach) {
+        const w = smooth(t / T.reach);
+        hands = {
+          ...atB,
+          front: lerpV(r.front, atB.front, w),
+          back: lerpV(r.back, atB.back, w),
+          frontDir: unit(lerp(r.frontDir.x, atB.frontDir.x, w), lerp(r.frontDir.y, atB.frontDir.y, w)),
+          backDir: unit(lerp(r.backDir.x, atB.backDir.x, w), lerp(r.backDir.y, atB.backDir.y, w)),
+          turnF: lerpA(r.turnF ?? REST_TURN, GRIP_TURN, w),
+          turnB: lerpA(r.turnB ?? REST_TURN, GRIP_TURN, w),
+        };
+        curl = lerp(r.curl ?? 0.3, 0.08, w);
+        shape = workShape(curl, false);
+      } else if (t < T.release) {
+        hands = onBowl;
+        curl = t < T.grip ? lerp(0.08, g.curl, smooth((t - T.reach) / (T.grip - T.reach))) : t < T.lower ? g.curl : lerp(g.curl, 0.08, smooth((t - T.lower) / (T.release - T.lower)));
+        shape = curl > 0.3 ? g.shape : "open";
+      } else {
+        const w = smooth((t - T.release) / (T.back - T.release));
+        hands = {
+          ...atB,
+          front: lerpV(atB.front, r.front, w),
+          back: lerpV(atB.back, r.back, w),
+          frontDir: unit(lerp(atB.frontDir.x, r.frontDir.x, w), lerp(atB.frontDir.y, r.frontDir.y, w)),
+          backDir: unit(lerp(atB.backDir.x, r.backDir.x, w), lerp(atB.backDir.y, r.backDir.y, w)),
+          turnF: lerpA(GRIP_TURN, r.turnF ?? REST_TURN, w),
+          turnB: lerpA(GRIP_TURN, r.turnB ?? REST_TURN, w),
+        };
+        curl = lerp(0.08, r.curl ?? 0.3, w);
+        shape = w > 0.5 ? "relaxed" : workShape(curl, false);
+      }
+      return {
+        lean,
+        drop,
+        headTilt,
+        eyeUp: 0,
+        eyeDown: 0.5 * bend + 0.85 * drinkW,
+        ...hands,
+        curl,
+        curlB: curl,
+        shapeF: shape,
+        shapeB: shape,
+        joinW: 1,
+        gazeAt: B,
+        gazeW: 0.9 * bend * (1 - upW),
+        obj: {
+          kind: "stoneBowl",
+          x: O.x,
+          y: O.y,
+          rot,
+          farW: 0.5,
+          ofsF: onBowl.ofsF,
+          ofsB: onBowl.ofsB,
+          free: t < T.grip || t >= T.release,
+          fill: opts.heldFill ?? drinkBowlFill(t),
+        },
+        rigid: 0.5 + 0.5 * smooth((t - T.reach + 4) / 4) * (1 - smooth((t - T.release) / 6)),
+        kneel: seat,
+      };
+    }
+    case "pointIn": {
+      // A gentle open hand toward pointAt (a doorway, the khat, the bowl): palm up, fingers together.
+      const P = opts.pointAt ?? { x: 170, y: -120 - lift };
+      const lean = idleLean + 3;
+      const sN = bodyPoint(SH_FRONT, lean, lift, 0);
+      const d = unit(P.x - sN.x, P.y - sN.y);
+      const dist = Math.hypot(P.x - sN.x, P.y - sN.y);
+      const reach = clamp(dist - 18, 40, 80);
+      // The hand comes out with a small inviting dip, then settles with a slow small sway.
+      const inv = 2.5 * Math.sin(clamp(t / 22, 0, 1) * Math.PI);
+      const wrist = { x: sN.x + d.x * reach + 0.8 * wob(fl, 24.1, 0.4), y: sN.y + d.y * reach + inv + 0.6 * wob(fl, 22.2, 0.4) };
+      const far = farHold(seat);
+      return {
+        lean,
+        headTilt: clamp((P.y + 150 + lift) * 0.08, -8, 12) + 1.2 * wob(f, 7.7),
+        eyeUp: 0,
+        eyeDown: 0,
+        front: wrist,
+        frontDir: unit(d.x, d.y - 0.3),
+        spread: 0.3,
+        curl: 0.1 + 0.03 * wob(f, 13.4, 0.4),
+        shapeF: "abhaya",
+        turnF: 0.75,
+        ...far,
+        gazeAt: P,
+        gazeW: 0.85,
+        elbowDown: 1,
+        kneel: seat,
+      };
+    }
+    case "toss": {
+      // "...পেছনে ফেলে দাও!": a little toss of the near hand back over his shoulder, then back to rest.
+      const T = TOSS_T;
+      const upW = smooth(t / T.up) * (1 - smooth((t - 16) / (T.back - 16)));
+      const flick = smooth((t - 6) / (T.flick - 6));
+      const r = rest(seat);
+      // Up beside the near shoulder (clear of the face), then the wrist flicks the fingers open, up and back.
+      const top = lerpV({ x: 68, y: -144 - lift }, { x: 66, y: -158 - lift }, flick);
+      const dTop = unit(lerp(0.35, -0.45, flick), lerp(-1, -0.9, flick));
+      const curl = t < 6 ? lerp(r.curl ?? 0.3, 0.5, smooth(t / 6)) : t < 16 ? lerp(0.5, 0.05, flick) : lerp(0.05, r.curl ?? 0.3, smooth((t - 16) / 14));
+      const far = farHold(seat);
+      return {
+        lean: idleLean - 2 * upW,
+        headTilt: -4 * upW + 1.5 * wob(f, 5.1),
+        eyeUp: 0.3 * upW,
+        eyeDown: 0,
+        front: lerpV(r.front, top, upW),
+        frontDir: unit(lerp(r.frontDir.x, dTop.x, upW), lerp(r.frontDir.y, dTop.y, upW)),
+        spread: 0.8,
+        curl,
+        shapeF: upW > 0.5 && flick > 0.5 ? "open" : "relaxed",
+        turnF: lerpA(r.turnF ?? REST_TURN, 1.5, upW),
+        ...far,
+        elbowDown: 1,
+        kneel: seat,
+      };
+    }
+    case "rollClay":
+    default: {
+      // Rolling the clay between his palms ("হাতে পাকিয়ে গোল করে ফেলেছে"): the near palm on top circles over
+      // the far palm below. Holding the clay Shiva, it is squeezed into a ball over the first 36 frames.
+      const O0 = lapObj(seat, 16, "clayLump");
+      const ph = (t * 2 * Math.PI) / 14;
+      const O = { x: O0.x + 0.9 * Math.cos(ph), y: O0.y - 6 + 0.4 * Math.sin(ph) };
+      const top = { x: 8.5 + 3.4 * Math.cos(ph), y: -11.5 + 1.4 * Math.sin(ph) };
+      const bot = { x: -8.7 - 1 * Math.cos(ph), y: 10.4 - 0.5 * Math.sin(ph) };
+      const morph = kind === "clayShiva" ? smooth(t / 36) : 1;
+      return {
+        lean: idleLean + 5 * watch,
+        headTilt: (9 + 1.5 * wob(f, 3.3)) * watch,
+        eyeUp: 0,
+        eyeDown: 0.5 * watch,
+        front: addV(O, top),
+        back: addV(O, bot),
+        frontDir: unit(-0.93, 0.36),
+        backDir: unit(0.95, -0.2),
+        spread: 0.3,
+        curl: 0.42,
+        curlB: 0.48,
+        shapeF: "cup",
+        shapeB: "cup",
+        turnF: 2.0,
+        turnB: -1.15,
+        joinW: 1,
+        gazeAt: O,
+        gazeW: 0.85 * watch,
+        obj: kind ? { kind, x: O.x, y: O.y, rot: 0, farW: 0.5, ofsF: top, ofsB: bot, morph, spin: t * 26 } : undefined,
+        rigid: 1,
+        kneel: seat,
+      };
+    }
+  }
+}
+
+/** Episode 3 pose solver (unchanged). */
+function solveCore(pose: SeatedPose, f: number, breath: number, poseStart: number, opts: SolveOpts): Solve {
   // Idle drift runs on the life clock. The breath never tilts or bobs the body (MOT-20): it only
   // lifts the chest and shoulders (see mkUp), and hands held at the chest ride up with it.
   const fl = f + (opts.lifeOff ?? 0);
@@ -1259,7 +1987,38 @@ const blendSolve = (a: Solve, b: Solve, e: number): Solve => {
         : undefined,
     leaf: pickProp(a.leaf, b.leaf),
     flower: pickProp(a.flower, b.flower),
+    // Episode 4 (all undefined in Episode 3).
+    kneel: a.kneel === undefined && b.kneel === undefined ? undefined : lerp(a.kneel ?? 0, b.kneel ?? 0, e),
+    rigid: a.rigid === undefined && b.rigid === undefined ? undefined : lerp(a.rigid ?? 0, b.rigid ?? 0, e),
+    elbowDown: a.elbowDown === undefined && b.elbowDown === undefined ? undefined : lerp(a.elbowDown ?? 0, b.elbowDown ?? 0, e),
+    drop: a.drop === undefined && b.drop === undefined ? undefined : lerp(a.drop ?? 0, b.drop ?? 0, e),
+    obj: blendHeld(a.obj, b.obj, e),
   };
+};
+
+/**
+ * Blend of the held object between two poses: it moves with the hands (never fades while in both poses). An
+ * object only one side has fades over the blend, unless it is free (standing on the floor), which stays put.
+ */
+const blendHeld = (p: HeldPose | undefined, q: HeldPose | undefined, e: number): HeldPose | undefined => {
+  if (p && q)
+    return {
+      kind: e < 0.5 ? p.kind : q.kind,
+      x: lerp(p.x, q.x, e),
+      y: lerp(p.y, q.y, e),
+      rot: lerp(p.rot, q.rot, e),
+      farW: lerp(p.farW, q.farW, e),
+      ofsF: lerpV(p.ofsF, q.ofsF, e),
+      ofsB: lerpV(p.ofsB, q.ofsB, e),
+      free: e < 0.5 ? p.free : q.free,
+      fill: p.fill === undefined && q.fill === undefined ? undefined : lerp(p.fill ?? 1, q.fill ?? 1, e),
+      morph: p.morph === undefined && q.morph === undefined ? undefined : lerp(p.morph ?? 0, q.morph ?? 0, e),
+      spin: lerp(p.spin ?? 0, q.spin ?? 0, e),
+      opacity: lerp(p.opacity ?? 1, q.opacity ?? 1, e),
+    };
+  if (q) return q.free ? q : { ...q, opacity: (q.opacity ?? 1) * smooth(e / 0.5) };
+  if (p) return p.free ? p : { ...p, opacity: (p.opacity ?? 1) * (1 - smooth(e / 0.5)) };
+  return undefined;
 };
 
 /* ------------------------------------------------------------------ */
@@ -1789,6 +2548,382 @@ const hibiscus = (
 );
 
 /* ------------------------------------------------------------------ */
+/* Episode 4: kneeling legs and dhoti                                   */
+/* ------------------------------------------------------------------ */
+
+interface LegGeom {
+  nearThigh: V[];
+  farThigh: V[];
+  nearShin: V[];
+  farShin: V[];
+  ankleN: V;
+  ankleF: V;
+  toeN: number;
+  toeF: number;
+  /** Kneeling: the foot lies top-down behind him, sole up (drawn flipped). */
+  soleUp: boolean;
+  lap: V[];
+}
+const LEGS_CROSS: LegGeom = {
+  nearThigh: NEAR_THIGH_PTS,
+  farThigh: FAR_THIGH_PTS,
+  nearShin: NEAR_SHIN_PTS,
+  farShin: FAR_SHIN_PTS,
+  ankleN: ANKLE_NEAR,
+  ankleF: ANKLE_FAR,
+  toeN: 1,
+  toeF: -1,
+  soleUp: false,
+  lap: LAP_PTS,
+};
+/**
+ * Kneeling on the heels, three-quarter view facing +x: the knees come forward onto the ground, the shins run back
+ * under him (toward -x) and the feet lie behind, toes pointing back. Up on the knees the hips rise by 28.
+ */
+const KNEEL_HIP_N: V = { x: -11, y: -44 };
+const KNEEL_HIP_F: V = { x: 11, y: -44 };
+const KNEEL_KNEE_N: V = { x: -22, y: -11 };
+const KNEEL_KNEE_F: V = { x: 40, y: -11 };
+const KNEEL_ANKLE_N: V = { x: -64, y: -14 };
+const KNEEL_ANKLE_F: V = { x: -44, y: -18 };
+/** The dhoti on the heels: from the waist over the short, forward thighs to a hem at the knees (LAP_PTS order). */
+const LAP_KNEEL: V[] = [
+  { x: -31, y: -64 },
+  { x: 0, y: -66 },
+  { x: 31, y: -64 },
+  { x: 38, y: -52 },
+  { x: 46, y: -38 },
+  { x: 52, y: -24 },
+  { x: 53, y: -11 },
+  { x: 38, y: -5 },
+  { x: 9, y: -8 },
+  { x: -22, y: -5 },
+  { x: -37, y: -11 },
+  { x: -41, y: -24 },
+  { x: -39, y: -38 },
+  { x: -34, y: -52 },
+];
+const kneelLegs = (k: number): LegGeom => {
+  const a = smooth(clamp(k, 0, 1));
+  const up = 28 * smooth(clamp(k - 1, 0, 1));
+  const L = (c: V, h: V, rise: number): V => ({ x: lerp(c.x, h.x, a), y: lerp(c.y, h.y, a) - rise });
+  const hipN = L(HIP_NEAR, KNEEL_HIP_N, up);
+  const hipF = L(HIP_FAR, KNEEL_HIP_F, up);
+  const kneeN = L(KNEE_NEAR, KNEEL_KNEE_N, 0);
+  const kneeF = L(KNEE_FAR, KNEEL_KNEE_F, 0);
+  const ankleN = L(ANKLE_NEAR, KNEEL_ANKLE_N, 0);
+  const ankleF = L(ANKLE_FAR, KNEEL_ANKLE_F, 0);
+  // The near foot turns from pointing +x (under the crossed shin) to pointing back; it flips mid-move.
+  const toeN = a < 0.5 ? lerp(1, 0.3, a / 0.5) : -lerp(0.3, 1, (a - 0.5) / 0.5);
+  const lap = LAP_PTS.map((p, i) => {
+    const h = LAP_KNEEL[i];
+    const y0 = lerp(p.y, h.y, a);
+    const u = clamp((-y0 - 8) / 58, 0, 1); // 0 at the hem, 1 at the waist: the waist rises with the hips
+    return { x: lerp(p.x, h.x, a), y: y0 - up * u };
+  });
+  return {
+    nearThigh: [hipN, bulgeMid(hipN, kneeN, 2.5, true), kneeN],
+    farThigh: [hipF, bulgeMid(hipF, kneeF, 2.5, true), kneeF],
+    nearShin: [kneeN, bulgeMid(kneeN, ankleN, 1.6, false), ankleN],
+    farShin: [kneeF, bulgeMid(kneeF, ankleF, 1.6, false), ankleF],
+    ankleN,
+    ankleF,
+    toeN,
+    toeF: -1,
+    soleUp: a >= 0.5,
+    lap,
+  };
+};
+
+/** A foot lying top-down with the sole up (kneeling): the flat-foot drawing flipped about its own height. */
+const soleUpFoot = (el: React.ReactElement): React.ReactElement => <g transform="matrix(1 0 0 -1 0 -11.8)">{el}</g>;
+
+/* ------------------------------------------------------------------ */
+/* Episode 4: held objects (no glow on any of them, BAL-05)              */
+/* ------------------------------------------------------------------ */
+
+const CLAY = "#6e5a49";
+const CLAY_LIT = "#937b66";
+const CLAY_DARK = "#4a3b2f";
+const BEL = "#4f8a3a";
+const BEL_DARK = "#2f5a26";
+const DOLL_RED = "#d8352b";
+const DOLL_RED_DARK = "#9e2119";
+const DOLL_YEL = "#f4c22f";
+const DOLL_GRN = "#2e9a4c";
+const DOLL_WOOD = "#efcf9f";
+const DOLL_WOOD_SHADE = "#c89c68";
+const BRASS_LIT = "#f3cf7a";
+const SMOKE = "#ddd8d0";
+
+/** The rolled clay: a slightly lumpy ball (radius about 8.3). */
+const LUMP_PATH = smoothClosed(
+  Array.from({ length: 11 }, (_, i) => {
+    const a = (i / 11) * 2 * Math.PI;
+    const r = 8.3 + 0.55 * Math.sin(3 * a + 1) + 0.3 * Math.sin(5 * a + 0.4);
+    return { x: r * Math.cos(a), y: r * Math.sin(a) };
+  }),
+);
+
+/** A tiny white flower (five petals, yellow eye). */
+const whiteFlower = (x: number, y: number, s: number, key: string): React.ReactElement => (
+  <g key={key} transform={`translate(${x} ${y}) scale(${s})`}>
+    {[0, 72, 144, 216, 288].map((a) => (
+      <ellipse key={a} cx={0} cy={-1.3} rx={0.95} ry={1.4} fill="#fbf8ef" transform={`rotate(${a})`} />
+    ))}
+    <circle r={0.7} fill="#f2c94c" />
+  </g>
+);
+
+/** The clay lump; `spin` turns its finger marks as it rolls. */
+const clayLumpArt = (spin: number): React.ReactElement => (
+  <g>
+    <ellipse cx={0.6} cy={1.2} rx={8.9} ry={8.1} fill={CLAY_DARK} />
+    <path d={LUMP_PATH} fill={CLAY} />
+    <ellipse cx={-2.6} cy={-3.2} rx={3.8} ry={2.6} fill={CLAY_LIT} opacity={0.55} transform="rotate(-25 -2.6 -3.2)" />
+    <g transform={`rotate(${spin.toFixed(1)})`}>
+      <path d="M-5 -1.5 Q-1 1.2 4.5 -0.8 M-3.5 3.6 Q0 5 3.6 3.2" stroke={CLAY_DARK} strokeWidth={0.8} fill="none" strokeLinecap="round" opacity={0.55} />
+    </g>
+  </g>
+);
+
+/** Charu's clay Shivalinga: a rounded lingam on a small clay base with its spout, a bel leaf on top, two white flowers. */
+const clayShivaArt = (): React.ReactElement => (
+  <g>
+    <path d="M-12 4 Q-12 9.5 0 9.5 Q12 9.5 12 4 Z" fill={CLAY_DARK} />
+    <path d="M10 3 L15.5 4.4 Q16.4 5.8 14.6 6.3 L10.4 5.8 Z" fill={CLAY} />
+    <ellipse cx={0} cy={4} rx={12} ry={3.4} fill={CLAY} />
+    <path d="M-6 4.5 L-6 -6.5 Q-6 -14.5 0 -14.5 Q6 -14.5 6 -6.5 L6 4.5 Q0 6.5 -6 4.5 Z" fill={CLAY} />
+    <path d="M2.4 -13.6 Q6 -11.5 6 -6.5 L6 4.5 Q4.2 5.3 2.8 5.4 Z" fill={CLAY_DARK} opacity={0.45} />
+    <ellipse cx={-2.7} cy={-8.5} rx={1.7} ry={3.8} fill={CLAY_LIT} opacity={0.5} />
+    <path d="M-4.5 -2 Q-1 -0.8 3.4 -2.4 M-4.8 1.6 Q0 2.8 4.2 1.2" stroke={CLAY_DARK} strokeWidth={0.6} fill="none" strokeLinecap="round" opacity={0.5} />
+    {/* bel leaf: three leaflets */}
+    <g transform="translate(0 -14.2)">
+      {[-52, 0, 52].map((a) => (
+        <g key={a} transform={`rotate(${a})`}>
+          <ellipse cx={0} cy={-4.6} rx={2.3} ry={4.8} fill={BEL} />
+          <path d="M0 -0.5 L0 -8.6" stroke={BEL_DARK} strokeWidth={0.45} />
+        </g>
+      ))}
+    </g>
+    {whiteFlower(-8.5, 3.6, 1, "w1")}
+    {whiteFlower(7.8, 4.4, 0.9, "w2")}
+  </g>
+);
+
+/** The painted wooden fair doll: turned, bell-shaped, red with yellow and green bands, big round eyes, red smile. */
+const dollArt = (gid: string): React.ReactElement => {
+  const body = "M-6 -12 C-7 -4 -10.5 9 -10.5 18.5 Q0 22.5 10.5 18.5 C10.5 9 7 -4 6 -12 Z";
+  return (
+    <g>
+      <defs>
+        <clipPath id={`${gid}-doll`}>
+          <path d={body} />
+        </clipPath>
+      </defs>
+      <path d={body} fill={DOLL_RED} />
+      <g clipPath={`url(#${gid}-doll)`}>
+        <rect x={-12} y={2.5} width={24} height={4} fill={DOLL_YEL} />
+        <rect x={-12} y={13.5} width={24} height={9} fill={DOLL_GRN} />
+        <rect x={-12} y={12.4} width={24} height={1.1} fill={DOLL_YEL} />
+        <path d="M3 -12 C4 -4 7 9 7.5 22 L12 22 L12 -12 Z" fill={DOLL_RED_DARK} opacity={0.35} />
+      </g>
+      {[-4, 0, 4].map((x) => (
+        <circle key={x} cx={x} cy={9.5} r={0.9} fill="#fff3d6" />
+      ))}
+      {/* painted arms */}
+      <path d="M-5.6 -9 Q-8 -2 -3 1.5 M5.6 -9 Q8 -2 3 1.5" stroke={DOLL_YEL} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      <rect x={-4} y={-15} width={8} height={4} rx={1.5} fill={DOLL_YEL} />
+      <circle cx={0} cy={-23.5} r={9} fill={DOLL_WOOD} />
+      <path d="M3 -31.5 A9 9 0 0 1 3 -15.5 A10 10 0 0 0 3 -31.5 Z" fill={DOLL_WOOD_SHADE} opacity={0.6} />
+      <path d="M-9 -24 Q-9 -33 0 -33 Q9 -33 9 -24 Q5 -29.5 0 -29.5 Q-5 -29.5 -9 -24 Z" fill="#1d1410" />
+      {[-3.4, 3.4].map((x) => (
+        <g key={x}>
+          <circle cx={x} cy={-23} r={2.7} fill="#ffffff" />
+          <circle cx={x + 0.2} cy={-22.8} r={1.5} fill="#151010" />
+          <circle cx={x + 0.7} cy={-23.5} r={0.5} fill="#ffffff" />
+        </g>
+      ))}
+      <circle cx={-5.8} cy={-19.6} r={1.5} fill={DOLL_RED} opacity={0.55} />
+      <circle cx={5.8} cy={-19.6} r={1.5} fill={DOLL_RED} opacity={0.55} />
+      <path d="M-3.2 -18.6 Q0 -15.8 3.2 -18.6" stroke={DOLL_RED} strokeWidth={1.2} fill="none" strokeLinecap="round" />
+    </g>
+  );
+};
+
+/** The small standing brass Gobinda with the flute, on a round base: simple and dignified, no face detail, no glow. */
+const gobindaArt = (gid: string): React.ReactElement => {
+  const br = `url(#${gid}-brass)`;
+  return (
+    <g>
+      <defs>
+        <linearGradient id={`${gid}-brass`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={BRASS_LIT} />
+          <stop offset="0.45" stopColor={BRASS} />
+          <stop offset="1" stopColor={BRASS_DARK} />
+        </linearGradient>
+      </defs>
+      <path d="M-12 24 Q-12 28.5 0 28.5 Q12 28.5 12 24 Z" fill={BRASS_DARK} />
+      <ellipse cx={0} cy={24} rx={12} ry={3.2} fill={br} />
+      <ellipse cx={-2} cy={23.5} rx={7} ry={1.4} fill={BRASS_LIT} opacity={0.45} />
+      {/* dhoti and the crossed legs, a gentle tribhanga sway */}
+      <path d="M-5 0 C-6 8 -8 16 -7 23 L7 23 C6.5 16 5.5 8 5 0 Z" fill={br} />
+      <path d="M-1 3 Q1.5 12 4 22.5 M-3.5 4 Q-4.5 13 -4.5 22.5" stroke={BRASS_DARK} strokeWidth={0.7} fill="none" opacity={0.7} />
+      {/* torso, sash */}
+      <path d="M-5.5 0.5 L-6.3 -11.5 Q-6 -15 -3 -15.6 L3 -15.6 Q6 -15 6.3 -11.5 L5.5 0.5 Z" fill={br} />
+      <ellipse cx={0} cy={0.2} rx={6} ry={1.6} fill={BRASS_DARK} />
+      {/* arms raised to the flute, held across to his right */}
+      <path d="M-5.6 -13.4 Q-9.4 -10.6 -6.4 -8.6" stroke={br} strokeWidth={2.6} fill="none" strokeLinecap="round" />
+      <path d="M5.4 -13.6 Q9.6 -12.8 9.8 -11.2" stroke={br} strokeWidth={2.6} fill="none" strokeLinecap="round" />
+      <path d="M-9.5 -8.4 L16 -12.8" stroke={BRASS_DARK} strokeWidth={1.8} strokeLinecap="round" />
+      <path d="M-8.5 -8.9 L15 -13" stroke={BRASS_LIT} strokeWidth={0.5} strokeLinecap="round" opacity={0.8} />
+      {/* head, crown and the peacock feather */}
+      <rect x={-1.6} y={-17.6} width={3.2} height={2.4} fill={BRASS_DARK} />
+      <circle cx={0} cy={-21.5} r={5.6} fill={br} />
+      <path d="M-4.4 -25 L-3.2 -31 L0 -29 L3.2 -31 L4.4 -25 Z" fill={br} />
+      <path d="M2.4 -30 Q6.4 -36 4.6 -40.5 Q1.4 -36 2.4 -30 Z" fill={BRASS} />
+      <circle cx={4.4} cy={-36.6} r={1} fill={BRASS_DARK} />
+      {/* soft highlights down the lit side */}
+      <path d="M-4.6 -12 L-4.2 -1 M-4.6 2 Q-5.8 12 -5.8 22" stroke={BRASS_LIT} strokeWidth={0.9} fill="none" strokeLinecap="round" opacity={0.6} />
+      <circle cx={-2.2} cy={-23.4} r={1.4} fill={BRASS_LIT} opacity={0.55} />
+    </g>
+  );
+};
+
+/** A small brass dhoop-dani: a cup on a short foot with a handle, charcoal in it. The smoke is drawn separately. */
+const incenseArt = (gid: string): React.ReactElement => (
+  <g>
+    <defs>
+      <linearGradient id={`${gid}-brassi`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor={BRASS_LIT} />
+        <stop offset="0.45" stopColor={BRASS} />
+        <stop offset="1" stopColor={BRASS_DARK} />
+      </linearGradient>
+    </defs>
+    <path d="M8.5 0.5 L22 -4" stroke={BRASS_DARK} strokeWidth={3} strokeLinecap="round" />
+    <path d="M9 -0.3 L21.5 -4.6" stroke={BRASS_LIT} strokeWidth={0.8} strokeLinecap="round" opacity={0.7} />
+    <circle cx={22.6} cy={-4.3} r={2.1} fill={BRASS} />
+    <path d="M-3 5.5 L-2.2 8 L-6 10 L6 10 L2.2 8 L3 5.5 Z" fill={BRASS_DARK} />
+    <ellipse cx={0} cy={10} rx={6} ry={1.4} fill={BRASS} />
+    <path d="M-10 -3.5 Q-9.5 5 0 6 Q9.5 5 10 -3.5 Z" fill={`url(#${gid}-brassi)`} />
+    <ellipse cx={0} cy={-3.5} rx={10} ry={2.6} fill={BRASS_LIT} />
+    <ellipse cx={0} cy={-3.3} rx={8.4} ry={1.9} fill="#3b2c22" />
+    <circle cx={-2.5} cy={-3.6} r={0.8} fill="#8a8178" />
+    <circle cx={2.2} cy={-3.1} r={0.7} fill="#8a8178" />
+  </g>
+);
+
+/** A thin curl of incense smoke rising straight up from (x, y), drifting on the life clock L. */
+const smokeArt = (x: number, y: number, L: number, gid: string): React.ReactElement => {
+  const H = 58;
+  const wisps = [0, 1, 2].map((i) => {
+    const pts: V[] = [];
+    for (let j = 0; j <= 9; j++) {
+      const amp = 0.4 + j * 0.62;
+      pts.push({
+        x: x + (i - 1) * 0.6 + amp * Math.sin(L * 0.055 + j * 0.72 + i * 2.1) + 0.25 * j * Math.sin(L * 0.017 + i),
+        y: y - (j * H) / 9,
+      });
+    }
+    return smoothOpen(pts);
+  });
+  return (
+    <g>
+      <defs>
+        <linearGradient id={`${gid}-smoke`} gradientUnits="userSpaceOnUse" x1={0} y1={y} x2={0} y2={y - H}>
+          <stop offset="0" stopColor={SMOKE} stopOpacity={0.75} />
+          <stop offset="0.5" stopColor={SMOKE} stopOpacity={0.35} />
+          <stop offset="1" stopColor={SMOKE} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      {wisps.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke={`url(#${gid}-smoke)`} strokeWidth={[1.6, 1.1, 0.8][i]} strokeLinecap="round" />
+      ))}
+    </g>
+  );
+};
+
+/**
+ * The big carved grey-brown stone bowl with coconut water (`fill` 1 brimming .. 0 empty) and the big whole fopra in
+ * it: the one shared drawing (stoneBowlArt in src/cinematic/sets/VedicHouseDay.tsx), in its own bowl units.
+ */
+const stoneBowlArt = (gid: string, fill: number): React.ReactElement => sharedStoneBowlArt(gid, fill);
+
+/** Draw a held object in its own units (origin at its grip centre, y down). */
+const heldArt = (kind: HeldObject, gid: string, fill: number, morph: number, spin: number): React.ReactElement => (
+  <g transform={`scale(${GRIP[kind].k})`}>{heldArtRaw(kind, gid, fill, morph, spin)}</g>
+);
+const heldArtRaw = (kind: HeldObject, gid: string, fill: number, morph: number, spin: number): React.ReactElement => {
+  switch (kind) {
+    case "clayLump":
+      return clayLumpArt(spin);
+    case "clayShiva": {
+      // Being rolled: the Shiva is squeezed down and the ball takes its place.
+      const m = clamp(morph, 0, 1);
+      if (m <= 0.001) return clayShivaArt();
+      return (
+        <g>
+          {m < 0.999 && (
+            <g opacity={(1 - smooth((m - 0.35) / 0.4)).toFixed(3)} transform={`translate(0 ${(4 * m).toFixed(2)}) scale(${(1 - 0.35 * m).toFixed(3)} ${(1 - 0.6 * m).toFixed(3)})`}>
+              {clayShivaArt()}
+            </g>
+          )}
+          <g opacity={smooth((m - 0.2) / 0.5).toFixed(3)}>{clayLumpArt(spin)}</g>
+        </g>
+      );
+    }
+    case "doll":
+      return dollArt(gid);
+    case "gobinda":
+      return gobindaArt(gid);
+    case "incense":
+      return incenseArt(gid);
+    case "stoneBowl":
+    default:
+      return stoneBowlArt(gid, fill);
+  }
+};
+
+/**
+ * From an object's origin (its grip centre) down to its base, in figure units: stand one on a surface at height
+ * Y with its origin at Y - HELD_OBJECT_BOTTOM[kind] (times the rig scale).
+ */
+export const HELD_OBJECT_BOTTOM: Record<HeldObject, number> = {
+  clayLump: GRIP.clayLump.bottom,
+  clayShiva: GRIP.clayShiva.bottom,
+  doll: GRIP.doll.bottom,
+  gobinda: GRIP.gobinda.bottom,
+  incense: GRIP.incense.bottom,
+  stoneBowl: GRIP.stoneBowl.bottom,
+};
+
+/**
+ * The same objects for the scene to draw where the rig is not holding them (on Charu's plate, on the khat, in
+ * Sundar's hands, the bowl back on the floor): identical drawing, so a hand-over shows no jump. (x, y) is the
+ * object's origin (its grip centre) in the scene's units, `s` the same scale as the SeatedChild's `s`. `lifeF`
+ * drives the incense smoke; `fill` the coconut water (default 1).
+ */
+export const HeldObjectArt: React.FC<{
+  kind: HeldObject;
+  x: number;
+  y: number;
+  s?: number;
+  rot?: number;
+  fill?: number;
+  lifeF?: number;
+  flip?: boolean;
+  opacity?: number;
+}> = ({ kind, x, y, s = 1, rot = 0, fill = 1, lifeF = 0, flip = false, opacity = 1 }) => {
+  const gid = "ho" + useId().replace(/[^A-Za-z0-9_-]/g, "");
+  return (
+    <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(flip ? -s : s).toFixed(4)} ${s.toFixed(4)})`} opacity={opacity}>
+      {kind === "incense" && smokeArt(rotV({ x: 0, y: -5 * GRIP.incense.k }, rot).x, rotV({ x: 0, y: -5 * GRIP.incense.k }, rot).y, lifeF, gid)}
+      <g transform={`rotate(${rot.toFixed(2)})`}>{heldArt(kind, gid, fill, 0, 0)}</g>
+    </g>
+  );
+};
+
+/* ------------------------------------------------------------------ */
 /* Component                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -1804,6 +2939,14 @@ const CALM: Record<SeatedPose, number> = {
   palmRaise: 0,
   lookUp: 0,
   reaction: 0,
+  kneelReach: 0,
+  holdInLap: 0.6,
+  holdToChest: 0.5,
+  offerUp: 0,
+  drinkBowl: 0,
+  pointIn: 0.3,
+  rollClay: 0.3,
+  toss: 0,
 };
 
 /** React useId values contain ':' (or other punctuation), which breaks url(#...) references. */
@@ -1882,6 +3025,13 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   lifeF,
   talk,
   sigh,
+  kneel,
+  holding,
+  reachFor,
+  reachAt,
+  pointAt,
+  heldFill,
+  watchHeld,
 }) => {
   // Life clock: breathing, blinks, saccades, idle eye drift, glances and idle sway run on L.
   const lifeOff = lifeF === undefined ? 0 : lifeF - f;
@@ -1890,6 +3040,13 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
     footFlowers: footFlowers === undefined ? undefined : clamp(footFlowers, 0, FOOT_FLOWER_SLOTS.length),
     basketAt: basketAt ? { x: basketAt.x, y: basketAt.y } : BASKET_HAND,
     lifeOff,
+    seat: kneel,
+    holding,
+    reachFor,
+    reachAt: reachAt ? { x: reachAt.x, y: reachAt.y } : undefined,
+    pointAt: pointAt ? { x: pointAt.x, y: pointAt.y } : undefined,
+    heldFill,
+    watchHeld,
   };
   const uid = safeId(useId());
   const look = clamp(face?.lookX ?? 0, -1, 1);
@@ -1975,7 +3132,10 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
    * chest wall rises about 0.5 and comes forward a touch, and the head follows by about 0.35 units,
    * 4 frames late. In a sigh the shoulders settle a little below rest as he lets the breath go.
    */
-  const mkUp = (leanDeg: number, ff: number) => {
+  const mkUp = (leanDeg: number, ff: number, hipLift = 0, bendDrop = 0) => {
+    // Episode 4: the hips rise when he kneels (hipLift), and a forward bend toward the camera foreshortens the
+    // upper body (bendDrop: the shoulder line comes down by that much). Both are 0 in Episode 3.
+    const fs = 1 - bendDrop / BEND_H;
     const th = (leanDeg * Math.PI) / 180;
     const cs = Math.cos(th);
     const sn = Math.sin(th);
@@ -1995,15 +3155,15 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       const lift = 0.8 * b * shoulder + 0.5 * b * chest * (1 - shoulder) + 0.35 * bHead * head;
       const sink = 0.45 * settle * Math.max(shoulder, 0.6 * head);
       const rx = r.x + (r.x > 0 ? 0.25 * b * chest : 0);
-      const ry = r.y - lift + sink;
+      const ry = (r.y - lift + sink) * fs;
       return {
         x: PIVOT.x + rx * cs - ry * sn + (sw + sh) * h,
-        y: PIVOT.y + rx * sn + ry * cs,
+        y: PIVOT.y - hipLift + rx * sn + ry * cs,
       };
     };
   };
-  const up = mkUp(sol.lean, f);
-  const upPrev = mkUp(before.lean, f - 3);
+  const up = mkUp(sol.lean, f, kneelLift(sol.kneel ?? 0), sol.drop ?? 0);
+  const upPrev = mkUp(before.lean, f - 3, kneelLift(before.kneel ?? 0), before.drop ?? 0);
   /** A cloth point that trails the body: pulled back toward where it was 3 frames ago by k. */
   const drag = (r: V, k: number): V => {
     const a = up(r);
@@ -2054,12 +3214,17 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   };
   const shF = shoulderAt(SH_FRONT, sol.front);
   const shB = shoulderAt(SH_BACK, sol.back);
+  // Episode 4: while both hands carry an object the forearms trail much less (`rigid`), so the hands stay on it
+  // in a quick lift; `elbowDown` prefers the lower elbow for offering and gesturing. Both unset in Episode 3.
+  const lagK = sol.rigid ? 0.75 * (1 - 0.85 * clamp(sol.rigid, 0, 1)) : 0.75;
+  const elbowDown = (sol.elbowDown ?? 0) > 0.5 ? 1.2 : 0;
+  const ikA = (S: V, T: V, side: number) => (elbowDown > 0 ? ikPref(S, T, side, elbowDown) : ik(S, T, side));
   const overlapArm = (sh: V, tgt: V, lagTgt: V, side: number): { E: V; H: V } => {
-    const now = ik(sh, tgt, side);
-    const lag = ik(sh, lagTgt, side);
+    const now = ikA(sh, tgt, side);
+    const lag = ikA(sh, lagTgt, side);
     const dn = unit(now.H.x - now.E.x, now.H.y - now.E.y);
     const dl = unit(lag.H.x - lag.E.x, lag.H.y - lag.E.y);
-    const dd = unit(lerp(dn.x, dl.x, 0.75), lerp(dn.y, dl.y, 0.75));
+    const dd = unit(lerp(dn.x, dl.x, lagK), lerp(dn.y, dl.y, lagK));
     if (dd.x === 0 && dd.y === 0) return now;
     return { E: now.E, H: { x: now.E.x + dd.x * FORE, y: now.E.y + dd.y * FORE } };
   };
@@ -2125,7 +3290,11 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   ];
 
   /* ---- Dhoti ---- */
-  const lap = LAP_PTS.map((p, i) => (i >= 6 && i <= 10 ? { x: p.x, y: p.y + flut(71 + i, 0.45) } : p));
+  // Episode 4: kneeling moves the legs and the lap drape (cross-legged geometry exactly as before at 0).
+  const kneelNow = clamp(sol.kneel ?? 0, 0, 2);
+  const legs = kneelNow > 0 ? kneelLegs(kneelNow) : LEGS_CROSS;
+  const kneelW = smooth(clamp(kneelNow, 0, 1));
+  const lap = legs.lap.map((p, i) => (i >= 6 && i <= 10 ? { x: p.x, y: p.y + flut(71 + i, 0.45) } : p));
   const hipWrap = HIP_WRAP_REL.map(up);
   const knot = up({ x: 3, y: -33.5 });
 
@@ -2287,6 +3456,26 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   const belly = up({ x: -5, y: -60 });
   const chinShade = up({ x: 2, y: -112 });
 
+  // Episode 4: the held object, placed from the drawn (lagged) wrists so it stays in the hands (MOT-07); an object
+  // standing free on the floor stays where the pose puts it.
+  let heldEl: React.ReactElement | null = null;
+  const ho = sol.obj;
+  if (ho && (ho.opacity ?? 1) > 0.01) {
+    const P: V = ho.free
+      ? { x: ho.x, y: ho.y }
+      : lerpV(subV(armF.H, ho.ofsF), subV(armB.H, ho.ofsB), ho.farW);
+    const fillNow = clamp(heldFill ?? ho.fill ?? 1, 0, 1);
+    const smokeAt = addV(P, rotV({ x: 0, y: -5 * GRIP.incense.k }, ho.rot));
+    heldEl = (
+      <g opacity={(ho.opacity ?? 1).toFixed(3)}>
+        {ho.kind === "incense" && smokeArt(smokeAt.x, smokeAt.y, L, `${uid}-ho`)}
+        <g transform={`translate(${P.x.toFixed(2)} ${P.y.toFixed(2)}) rotate(${ho.rot.toFixed(2)})`}>
+          {heldArt(ho.kind, `${uid}-ho`, fillNow, ho.morph ?? 0, ho.spin ?? 0)}
+        </g>
+      </g>
+    );
+  }
+
   return (
     <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(flip ? -s : s).toFixed(4)} ${s.toFixed(4)})`}>
       {/* Balak glow: drawn by BirulGlow (src/episode03/rig/BirulGlow.tsx), placed by the scene. Nothing is drawn here. */}
@@ -2336,22 +3525,22 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       />
 
       {/* Bare shins and feet in depth order: far foot and shin, the near shin's cast shadow, near foot and shin */}
-      {foot(ANKLE_FAR, -1, SKIN_FAR, SKIN_DEEP, SOLE_FAR)}
-      {legPaint(FAR_SHIN_PTS, SHIN_R, SKIN_FAR, skinEdge(SKIN_FAR, SKIN_DEEP))}
-      <path d={limbD(NEAR_SHIN_PTS, SHIN_R, { dx: 2, dy: 3, grow: 0.8 })} fill={SKIN_UNDER} opacity={0.3} />
-      {foot(ANKLE_NEAR, 1, SKIN, SKIN_SHADE, SOLE_NEAR)}
-      {legPaint(NEAR_SHIN_PTS, SHIN_R, SKIN, skinEdge(SKIN, SKIN_SHADE))}
-      {edgeLine(NEAR_SHIN_PTS, SHIN_R)}
+      {legs.soleUp ? soleUpFoot(foot(legs.ankleF, legs.toeF, SKIN_FAR, SKIN_DEEP, SOLE_FAR)) : foot(legs.ankleF, legs.toeF, SKIN_FAR, SKIN_DEEP, SOLE_FAR)}
+      {legPaint(legs.farShin, SHIN_R, SKIN_FAR, skinEdge(SKIN_FAR, SKIN_DEEP))}
+      <path d={limbD(legs.nearShin, SHIN_R, { dx: 2, dy: 3, grow: 0.8 })} fill={SKIN_UNDER} opacity={0.3} />
+      {legs.soleUp ? soleUpFoot(foot(legs.ankleN, legs.toeN, SKIN, SKIN_SHADE, SOLE_NEAR)) : foot(legs.ankleN, legs.toeN, SKIN, SKIN_SHADE, SOLE_NEAR)}
+      {legPaint(legs.nearShin, SHIN_R, SKIN, skinEdge(SKIN, SKIN_SHADE))}
+      {edgeLine(legs.nearShin, SHIN_R)}
       {/* Round calves: a soft light on the lit side of each shin, deeper core shade below */}
-      <path d={topEdgeD(FAR_SHIN_PTS, SHIN_R, { grow: -2.6 })} fill="none" stroke={SKIN} strokeWidth={1.6} strokeLinecap="round" opacity={0.28} />
-      <path d={topEdgeD(NEAR_SHIN_PTS, SHIN_R, { grow: -2.8 })} fill="none" stroke={SKIN_LIT} strokeWidth={2} strokeLinecap="round" opacity={0.3} />
-      <path d={bottomEdgeD(NEAR_SHIN_PTS, SHIN_R, { grow: -2.6 })} fill="none" stroke={SKIN_SHADE} strokeWidth={2.6} strokeLinecap="round" opacity={0.1} />
+      <path d={topEdgeD(legs.farShin, SHIN_R, { grow: -2.6 })} fill="none" stroke={SKIN} strokeWidth={1.6} strokeLinecap="round" opacity={0.28} />
+      <path d={topEdgeD(legs.nearShin, SHIN_R, { grow: -2.8 })} fill="none" stroke={SKIN_LIT} strokeWidth={2} strokeLinecap="round" opacity={0.3} />
+      <path d={bottomEdgeD(legs.nearShin, SHIN_R, { grow: -2.6 })} fill="none" stroke={SKIN_SHADE} strokeWidth={2.6} strokeLinecap="round" opacity={0.1} />
 
       {/* Dhoti: soft contact shadow on the shins, then the cloth over each thigh down to the knee */}
-      <path d={limbD(FAR_THIGH_PTS, THIGH_R, { dx: 1.5, dy: 3.2, grow: 0.3 })} fill={SKIN_UNDER} opacity={0.24} />
-      <path d={limbD(NEAR_THIGH_PTS, THIGH_R, { dx: 1.5, dy: 3.2, grow: 0.3 })} fill={SKIN_UNDER} opacity={0.24} />
-      {thighCloth(FAR_THIGH_PTS, THIGH_R, CLOTH_MID, CLOTH_INNER, CLOTH_SHADE)}
-      {thighCloth(NEAR_THIGH_PTS, THIGH_R, CLOTH, CLOTH_SHADE, CLOTH_FOLD)}
+      <path d={limbD(legs.farThigh, THIGH_R, { dx: 1.5, dy: 3.2, grow: 0.3 })} fill={SKIN_UNDER} opacity={0.24} />
+      <path d={limbD(legs.nearThigh, THIGH_R, { dx: 1.5, dy: 3.2, grow: 0.3 })} fill={SKIN_UNDER} opacity={0.24} />
+      {thighCloth(legs.farThigh, THIGH_R, CLOTH_MID, CLOTH_INNER, CLOTH_SHADE)}
+      {thighCloth(legs.nearThigh, THIGH_R, CLOTH, CLOTH_SHADE, CLOTH_FOLD)}
 
       {/* Dhoti lap drape: over the thighs, sagging between the knees, front pleats. Follows half the hip shift. */}
       <g transform={`translate(${(shiftLag * 0.5).toFixed(2)} 0)`}>
@@ -2363,31 +3552,73 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
           fill={CLOTH_SHADE}
           opacity={0.32}
         />
-        {/* Soft shadow under the hip wrap */}
-        <ellipse cx={1} cy={-47} rx={31} ry={5} fill={CLOTH_SHADE} opacity={0.45} />
-        {/* Tension folds from the hips toward the knees, sag folds between the knees */}
-        <path
-          d="M-29 -58 Q-43 -49 -55 -40 M29 -58 Q43 -49 55 -40 M-53 -37 Q-30 -26 -5 -29 M53 -37 Q32 -26 15 -29 M-47 -28 Q-26 -22.5 -5 -23.5 M47 -28 Q29 -22.5 16 -23.5"
-          fill="none"
-          stroke={CLOTH_FOLD}
-          strokeWidth={1.25}
-          strokeLinecap="round"
-          opacity={0.85}
-        />
-        <path d="M-50 -39 Q-28 -29 -6 -31.5" fill="none" stroke={CLOTH_LIT} strokeWidth={1.1} strokeLinecap="round" opacity={0.85} />
-        {/* Front pleats (kochi): a narrow fan falling from the tuck, darker inner folds */}
-        <path
-          d={smoothClosed([
-            { x: -1, y: -56 },
-            { x: 11, y: -56 },
-            { x: 16, y: -20 + flut(81, 0.4) },
-            { x: 7, y: -18 },
-            { x: -3, y: -19.5 + flut(83, 0.4) },
-          ])}
-          fill={CLOTH_MID}
-        />
-        <path d="M3.5 -55 Q3 -37 2 -19 M7.5 -55 Q9 -37 10.5 -19" fill="none" stroke={CLOTH_INNER} strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
-        <path d="M0 -55 Q-1 -37 -2 -19.5 M5.5 -55 Q6 -37 6.2 -18.5" fill="none" stroke={CLOTH_LIT} strokeWidth={1} strokeLinecap="round" opacity={0.8} />
+        {(() => {
+          const crossFolds = (
+            <>
+              {/* Soft shadow under the hip wrap */}
+              <ellipse cx={1} cy={-47} rx={31} ry={5} fill={CLOTH_SHADE} opacity={0.45} />
+              {/* Tension folds from the hips toward the knees, sag folds between the knees */}
+              <path
+                d="M-29 -58 Q-43 -49 -55 -40 M29 -58 Q43 -49 55 -40 M-53 -37 Q-30 -26 -5 -29 M53 -37 Q32 -26 15 -29 M-47 -28 Q-26 -22.5 -5 -23.5 M47 -28 Q29 -22.5 16 -23.5"
+                fill="none"
+                stroke={CLOTH_FOLD}
+                strokeWidth={1.25}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+              <path d="M-50 -39 Q-28 -29 -6 -31.5" fill="none" stroke={CLOTH_LIT} strokeWidth={1.1} strokeLinecap="round" opacity={0.85} />
+              {/* Front pleats (kochi): a narrow fan falling from the tuck, darker inner folds */}
+              <path
+                d={smoothClosed([
+                  { x: -1, y: -56 },
+                  { x: 11, y: -56 },
+                  { x: 16, y: -20 + flut(81, 0.4) },
+                  { x: 7, y: -18 },
+                  { x: -3, y: -19.5 + flut(83, 0.4) },
+                ])}
+                fill={CLOTH_MID}
+              />
+              <path d="M3.5 -55 Q3 -37 2 -19 M7.5 -55 Q9 -37 10.5 -19" fill="none" stroke={CLOTH_INNER} strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
+              <path d="M0 -55 Q-1 -37 -2 -19.5 M5.5 -55 Q6 -37 6.2 -18.5" fill="none" stroke={CLOTH_LIT} strokeWidth={1} strokeLinecap="round" opacity={0.8} />
+            </>
+          );
+          if (kneelW <= 0) return crossFolds;
+          // Kneeling (Episode 4): the dhoti falls from the waist to the knees; long folds and the kochi pleats
+          // run down to the hem. The cross-legged folds fade out as he kneels.
+          const top = -56 - kneelLift(kneelNow) * 0.95;
+          const kneelFolds = (
+            <>
+              <ellipse cx={1} cy={top + 9} rx={30} ry={4.5} fill={CLOTH_SHADE} opacity={0.4} />
+              <path
+                d={`M-24 ${top} Q-28 ${top + 24} -27 -14 M26 ${top} Q32 ${top + 24} 38 -14 M-12 ${top + 4} Q-14 ${top + 26} -10 -9`}
+                fill="none"
+                stroke={CLOTH_FOLD}
+                strokeWidth={1.2}
+                strokeLinecap="round"
+                opacity={0.8}
+              />
+              <path d={`M-19 ${top + 2} Q-22 ${top + 24} -20 -12`} fill="none" stroke={CLOTH_LIT} strokeWidth={1.1} strokeLinecap="round" opacity={0.8} />
+              <path
+                d={smoothClosed([
+                  { x: 0, y: top },
+                  { x: 11, y: top },
+                  { x: 17, y: -8 + flut(81, 0.4) },
+                  { x: 8, y: -6 },
+                  { x: -2, y: -7.5 + flut(83, 0.4) },
+                ])}
+                fill={CLOTH_MID}
+              />
+              <path d={`M4 ${top + 1} Q4.5 ${top + 22} 4 -7 M8 ${top + 1} Q10 ${top + 22} 12 -7`} fill="none" stroke={CLOTH_INNER} strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
+              <path d={`M1 ${top + 1} Q0.5 ${top + 22} 0 -7.5`} fill="none" stroke={CLOTH_LIT} strokeWidth={1} strokeLinecap="round" opacity={0.8} />
+            </>
+          );
+          return (
+            <>
+              {kneelW < 0.999 && <g opacity={(1 - kneelW).toFixed(3)}>{crossFolds}</g>}
+              <g opacity={kneelW.toFixed(3)}>{kneelFolds}</g>
+            </>
+          );
+        })()}
       </g>
 
       {/* Red hibiscus flowers resting on his feet (footFlowers); the newest eases in with the fraction */}
@@ -2743,6 +3974,9 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
           {childHand(`${uid}-hcB2`, armB.H, backDir, shapeB, turnB, -1, SKIN_FAR, SKIN_DEEP, curlB, wristRadius(turnB), armB.E)}
         </g>
       )}
+
+      {/* Episode 4: the held object, between the far hand (behind it) and the near hand (in front) */}
+      {heldEl}
 
       {/* Near arm and hand, in front of the head so the thinking hand reads at the chin */}
       {armPaint(shF, armF.E, armF.H, 1.02, SKIN, SKIN_SHADE, 1, wristRadius(turnF))}

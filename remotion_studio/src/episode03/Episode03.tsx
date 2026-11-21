@@ -350,7 +350,9 @@ const B2 = (() => {
 /**
  * Scene cues, re-anchored to the rebuilt scenes (2026-11-21). Scene 01 acts on its REAL clock from the narration
  * phrases (its T beats: phrase start + the measured voice lag), so its cues are phrase-relative; scene 02's
- * Balak acts on the story clock (B2), and its women and Charu on the real clock from the phrases (V beats).
+ * Balak acts on the story clock (B2), and its women and the girls on the real clock from the phrases (V beats).
+ * STO-17a (2026-11-22): the GIRLS scold him (the eldest girl speaks, the others crowd round); Charu is not in
+ * scene 02, so no cue here follows her.
  * A pose key with `in: n` starts moving n frames before its frame: the sounds start with the motion.
  */
 const SFX_CUES: SfxCue[] = [
@@ -366,15 +368,20 @@ const SFX_CUES: SfxCue[] = [
   // 02A. "হঠাৎ সবাই": the women's heads turn to him (Sarala's turn starts at V.sabai - 8 = phrase + 6), a soft sari
   // rustle. The pour (B2.pour, the sound 1 frame ahead), cut to 40 story frames so it ends before the leaf reach;
   // the leaf; one soft rustle as the fingers close on each hibiscus in the dala (laid on his feet after each arc);
-  // his cloth as he bows (প্রণাম).
+  // his cloth as he bows (প্রণাম). STO-17a: the three girls set off toward him 28 frames into "হঠাৎ সবাই" (the
+  // scene's WALK_A = V.sabai + 14) and ease into their half-circle at his left over about 90 frames: their soft
+  // steps on the courtyard earth (the footsteps used for this courtyard in Episode 2), eased in and out with the
+  // walk and gone under the pour.
   { scene: S02, cue: "হঠাৎ সবাই", at: 7, file: "cloth_rustle", volume: 0.15 },
+  { scene: S02, cue: "হঠাৎ সবাই", at: 30, file: "footsteps_floor", volume: 0.15, loopFrames: 80, fadeIn: 12, fadeOut: 22 },
   { scene: S02, at: B2.pour - 1, file: POUR, volume: 0.3, loopFrames: 40, fadeIn: 3, fadeOut: 12 },
   { scene: S02, at: B2.leaf - 1, file: PICK, volume: 0.15 },
   ...B2.picks.map((p): SfxCue => ({ scene: S02, at: p - 1, file: PICK, volume: 0.15 })),
   { scene: S02, at: B2.bow, file: "cloth_rustle", volume: 0.15 },
-  // 02B. "ওমা": Charu's hand flies to her chest (key V.oma + 4, in 9 = phrase + 1). "দেখিস": she leans in (key
-  // V.dekhis + 4, in 12 = phrase + 0).
-  { scene: S02, cue: "ওমা", at: 1, file: "cloth_rustle", volume: 0.18 },
+  // 02B. "ওমা": the eldest girl's hand flies to her cheek (key V.oma + 4, in 12 = phrase - 2), a sari rustle with
+  // the motion. "দেখিস": her forefinger comes up as she leans in and the others lean in round him (key V.dekhis + 2,
+  // in 10 = phrase + 0).
+  { scene: S02, cue: "ওমা", at: -2, file: "cloth_rustle", volume: 0.18 },
   { scene: S02, cue: "দেখিস", at: 0, file: "cloth_rustle", volume: 0.15 },
   // 02C. "রাগ করতাম না": his palms join with a small bow of the head (B2.lastBow).
   { scene: S02, at: B2.lastBow, file: "cloth_rustle", volume: 0.15 },
@@ -397,21 +404,25 @@ const PAUSE_CUES: PauseCue[] = [
   // 02A P2 "…নিজের পায়ে দিচ্ছে,": his hand settles back on his knee after the third flower (the hand-back phase of
   // the last placement ends exactly as the pause begins)
   { scene: S02, pause: 1, at: -5, file: "cloth_rustle", volume: 0.15 },
-  // 02A P3 "…নিজেই নিজেকে প্রণাম করছে!": the soft shimmer as his glow lifts (key beat 1), then Charu's steps off
-  // screen in the last second, leading into "ওমা"
+  // 02A P3 "…নিজেই নিজেকে প্রণাম করছে!": the soft shimmer as his glow lifts (key beat 1); the girls, already round
+  // him (they walked over on "হঠাৎ সবাই"), only exchange a glance: no steps here any more (STO-17a).
   { scene: S02, pause: 2, at: 2, file: "sfx/soft_magical_shimmer", volume: 0.15 },
-  { scene: S02, pause: 2, at: -24, fromEnd: true, file: "footsteps_floor", volume: 0.15, loopFrames: 30, fadeIn: 6, fadeOut: 8 },
-  // 02B P1 "ওমা, একি কাণ্ড!": her hand comes down from her mouth
+  // 02B P1 "ওমা, একি কাণ্ড!": the first soft giggle as the other two lean in round him, a hand to the mouth (the
+  // middle girl's giggle window starts at P1 + 4), and the eldest girl's hand coming down from her cheek (P1 + 8)
+  { scene: S02, pause: 3, at: 4, file: GIGGLE, volume: 0.2, rate: 1.06 },
   { scene: S02, pause: 3, at: 8, file: "cloth_rustle", volume: 0.15 },
   // 02B P2 "…নিজের পায়ে দিচ্ছিস কেন রে?": the tulsi leaves stir (wind 0.12, bed); no extra sound.
-  // 02B P3 "…ভগবান শাপ দেবেন!": the girls giggle behind their hands (girls_giggle; the second giggle a touch
-  // quicker and higher, for the second girl), a rustle as Charu waits; all of it ends before Balak's line.
-  // (on the girls' giggle windows in the scene: girl A from P3 + 0, girl B from P3 + 11)
-  { scene: S02, pause: 5, at: 0, file: GIGGLE, volume: 0.4 },
+  // 02B P3 "…ভগবান শাপ দেবেন!": the two followers giggle behind their hands (girls_giggle; the second a touch
+  // quicker and higher, for the youngest), and a rustle as the eldest girl's finger comes down and she waits for
+  // his answer; all of it ends before Balak's line.
+  // (on the giggle windows in the scene: the middle girl from P3 + 4, the youngest from P3 + 11; the eldest's
+  // finger comes down from P3 + 0 over 16 frames)
+  { scene: S02, pause: 5, at: 4, file: GIGGLE, volume: 0.4 },
   { scene: S02, pause: 5, at: 11, file: GIGGLE, volume: 0.3, rate: 1.08 },
-  { scene: S02, pause: 5, at: 20, file: "cloth_rustle", volume: 0.15 },
+  { scene: S02, pause: 5, at: 6, file: "cloth_rustle", volume: 0.15 },
   // 02C P1 "…আমি বেশ টের পাই।": birds 0.18 only (bed).
-  // 02C P2 "…কিছু বোঝেও না!": the girls' last giggle fades as they glance at each other; the tulsi stirs (wind 0.12)
+  // 02C P2 "…কিছু বোঝেও না!": the middle girl's last giggle (window P2 + 0 to + 12) fades as the girls glance at
+  // each other, unsure; the tulsi stirs (wind 0.12)
   { scene: S02, pause: 7, at: 0, file: GIGGLE, volume: 0.18, rate: 1.04 },
   // 02C P3 (end): the Divine_Motif (DIVINE_MOTIF below), birds 0.15 (bed).
 ];

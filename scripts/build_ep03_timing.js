@@ -43,7 +43,8 @@
  * Note for Episode03.tsx: scene 02's open pause holds the story at frame 0 during its first 24 real frames, which
  * include the 18-frame cross-dissolve; scene 02 must drive its own fade-in from lifeF (not the story frame).
  *
- * SPEAKERS (STO-17): 02b_Girls_Tease.wav is Charu's voice (voice script speaker 05_Charu): caption চারুশীলা.
+ * SPEAKERS (STO-17a, 2026-11-22): in the book the GIRLS scold Balak; 02b_Girls_Tease.wav was voiced with Charu's voice ID
+ * ("elder sisterly"), but the speaker is the girls: caption মেয়েরা.
  *
  * Exports for scene code (helpers in src/episode/storyClock.ts: useStory3, cueLocalStory3, clipSpan3 ...):
  *   EP03_PAUSES      { sceneId, atStory, frames, startFrame }: atStory is the scene-local STORY frame (the scene's
@@ -155,8 +156,8 @@ const sceneAt = (frame) => {
   return id;
 };
 
-// ---- speakers (STO-17: the scolding voice 02b is Charu's; the file name says "Girls") ----
-const SPEAKER_BY_FILE = { "02b_Girls_Tease.wav": "চারুশীলা" };
+// ---- speakers (STO-17a: the girls scold Balak, as in the book) ----
+const SPEAKER_BY_FILE = { "02b_Girls_Tease.wav": "মেয়েরা" };
 const speakerFor = (file) => {
   if (SPEAKER_BY_FILE[file] !== undefined) return SPEAKER_BY_FILE[file];
   if (/Narrator|Intro|Outro|Sequential|Motki/i.test(file)) return "";

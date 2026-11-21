@@ -32,6 +32,15 @@
  *       pausesFor3(sceneId), absToStory3(absFrame, sceneId); or EP03_CLOCK for all of them.
  *   Scene 02's open pause holds story frame 0 during its first 24 real frames, which include the 18-frame
  *   cross-dissolve from scene 01: drive scene 02's own fade-in from lifeF, not from f.
+ * Episode 4 (added 2026-11-21; scripts/build_ep04_timing.js, EP04_PAUSES / EP04_CLIP_PARTS; the approved pause
+ * table STO-19 went in on 2026-11-22): the same helpers with a "4" suffix (useStory4, cueLocalStory4, clipSpan4,
+ * clipLocalStory4, pausesFor4, absToStory4) or EP04_CLOCK. Episode 4 also has ACTION GAPS (EP04_GAPS, TIM-GAP-01):
+ * picture time with no narration in which the story clock KEEPS RUNNING (scene 03: AG1 at the open, AG2 between
+ * "ধুপ! ধুপ কই?" and "ঠাকুরমশায়,"). Story frames include the gaps, so f runs straight through them; key the gap's
+ * action on f with gapState4(sceneId, f) (or useStory4(sceneId).gap): { inGap, index, t, frames, elapsed,
+ * fromStory, beat }, beat = the named sub-step (AG2: a_dhoop, b_ask, c_inside, d_drink) with its own t / elapsed.
+ * gapsFor4(sceneId) lists a scene's gaps. Chapter breaks (black, no scene mounted) are EP04_BREAKS in
+ * ../episode04/timing; breakState4(absFrame) says whether an absolute frame is inside one.
  * Any other episode: makeStoryClock({ scenes, pauses, cues, audio, clipParts }) from its generated timing.
  */
 import { useCurrentFrame } from "remotion";
@@ -39,6 +48,9 @@ import { EP02_AUDIO, EP02_CLIP_PARTS, EP02_PAUSES, EP02_SCENES } from "../episod
 import { EP02_CUES } from "../episode02/subtitles";
 import { EP03_AUDIO, EP03_CLIP_PARTS, EP03_PAUSES, EP03_SCENES } from "../episode03/timing";
 import { EP03_CUES } from "../episode03/subtitles";
+import { EP04_AUDIO, EP04_BREAKS, EP04_CLIP_PARTS, EP04_GAPS, EP04_PAUSES, EP04_SCENES } from "../episode04/timing";
+import type { Ep04Break, Ep04Gap } from "../episode04/timing";
+import { EP04_CUES } from "../episode04/subtitles";
 
 /* ------------------------------------------------------------------ */
 /* Generic helpers (any episode): they take the pause list of one scene */
@@ -102,6 +114,67 @@ export function pauseState(realLocal: number, pausesForScene: readonly StoryPaus
     held += p.frames;
   }
   return { inPause: false, index: -1, t: 0, frames: 0, elapsed: 0 };
+}
+
+/** One action gap of a scene: story frames [fromStory, fromStory + frames) with no narration; the story keeps running. */
+export interface StoryGap {
+  fromStory: number;
+  frames: number;
+  beats?: readonly { id: string; fromStory: number; frames: number }[];
+}
+
+export interface GapBeatState {
+  /** The beat's id (e.g. "a_dhoop"). */
+  id: string;
+  /** Index of the beat inside its gap. */
+  index: number;
+  /** Progress through the beat, 0..1. */
+  t: number;
+  /** Length of the beat in frames. */
+  frames: number;
+  /** Story frames since the beat began. */
+  elapsed: number;
+}
+
+export interface GapState {
+  /** True while the story frame lies inside an action gap. */
+  inGap: boolean;
+  /** Index of the current gap in the scene's gaps (sorted by fromStory), or -1 outside a gap. */
+  index: number;
+  /** Progress through the current gap, 0..1 (0 outside a gap). */
+  t: number;
+  /** Length of the current gap in frames (0 outside a gap). */
+  frames: number;
+  /** Story frames since the current gap began (0 outside a gap). */
+  elapsed: number;
+  /** Story frame where the current gap begins (-1 outside a gap). */
+  fromStory: number;
+  /** The named beat of the gap at this frame, or null (no beats, or outside a gap). */
+  beat: GapBeatState | null;
+}
+
+const NO_GAP: GapState = { inGap: false, index: -1, t: 0, frames: 0, elapsed: 0, fromStory: -1, beat: null };
+
+/** Whether a STORY frame (f from useStory) lies inside one of the scene's action gaps, and where in it. */
+export function gapState(story: number, gapsForScene: readonly StoryGap[]): GapState {
+  const sorted = [...gapsForScene].sort((a, b) => a.fromStory - b.fromStory);
+  for (let i = 0; i < sorted.length; i++) {
+    const g = sorted[i];
+    if (story < g.fromStory || story >= g.fromStory + g.frames) continue;
+    const elapsed = story - g.fromStory;
+    let beat: GapBeatState | null = null;
+    const beats = g.beats ?? [];
+    for (let k = 0; k < beats.length; k++) {
+      const b = beats[k];
+      if (story >= b.fromStory && story < b.fromStory + b.frames) {
+        const be = story - b.fromStory;
+        beat = { id: b.id, index: k, t: b.frames > 0 ? be / b.frames : 0, frames: b.frames, elapsed: be };
+        break;
+      }
+    }
+    return { inGap: true, index: i, t: g.frames > 0 ? elapsed / g.frames : 0, frames: g.frames, elapsed, fromStory: g.fromStory, beat };
+  }
+  return NO_GAP;
 }
 
 /* ------------------------------------------------------------------ */
@@ -242,3 +315,54 @@ export const clipSpan3 = EP03_CLOCK.clipSpan;
 export const clipLocalStory3 = EP03_CLOCK.clipLocalStory;
 /** Episode 3 scene hook: { f: story frame, lifeF: real local frame, pause: PauseState }. */
 export const useStory3 = EP03_CLOCK.useStory;
+
+/* Episode 4 (scripts/build_ep04_timing.js; STO-19 pauses, action gaps, chapter breaks; Episode 2 and 3 exports above
+   unchanged) */
+export const EP04_CLOCK = makeStoryClock({
+  scenes: EP04_SCENES,
+  pauses: EP04_PAUSES,
+  cues: EP04_CUES,
+  audio: EP04_AUDIO,
+  clipParts: EP04_CLIP_PARTS,
+});
+/** Episode 4: the pauses of one scene, sorted by atStory. */
+export const pausesFor4 = EP04_CLOCK.pausesFor;
+/** Episode 4: story frame (scene-local, authored timing) of an absolute real frame. */
+export const absToStory4 = EP04_CLOCK.absToStory;
+/** Episode 4: a subtitle phrase's start and end in the scene's story frames. */
+export const cueLocalStory4 = EP04_CLOCK.cueLocalStory;
+/** Episode 4: an original voice clip's whole window in absolute real frames (first part start, last part end). */
+export const clipSpan4 = EP04_CLOCK.clipSpan;
+/** Episode 4: an original voice clip's window in a scene's story frames. */
+export const clipLocalStory4 = EP04_CLOCK.clipLocalStory;
+const gapCache4: Record<string, Ep04Gap[]> = {};
+/** Episode 4: the action gaps of one scene (story frames, sorted by fromStory). */
+export const gapsFor4 = (sceneId: string): Ep04Gap[] =>
+  (gapCache4[sceneId] ??= EP04_GAPS.filter((g) => g.sceneId === sceneId).sort((a, b) => a.fromStory - b.fromStory));
+/** Episode 4: whether story frame `f` of a scene lies inside an action gap (and which beat). */
+export const gapState4 = (sceneId: string, f: number): GapState => gapState(f, gapsFor4(sceneId));
+/**
+ * Episode 4 scene hook: { f: story frame (runs through action gaps, holds in pauses), lifeF: real local frame,
+ * pause: PauseState, gap: GapState }.
+ */
+export const useStory4 = (sceneId: string): { f: number; lifeF: number; pause: PauseState; gap: GapState } => {
+  const s = EP04_CLOCK.useStory(sceneId);
+  return { ...s, gap: gapState4(sceneId, s.f) };
+};
+export interface BreakState {
+  /** True while the absolute frame lies inside a chapter break (black, no scene mounted). */
+  inBreak: boolean;
+  /** The break at this frame, or null. */
+  brk: Ep04Break | null;
+  /** Progress through the break, 0..1 (0 outside). */
+  t: number;
+  /** Frames since the break began (0 outside). */
+  elapsed: number;
+}
+/** Episode 4: whether an ABSOLUTE frame lies inside a chapter break (EP04_BREAKS). */
+export const breakState4 = (absFrame: number): BreakState => {
+  const b = EP04_BREAKS.find((x) => absFrame >= x.startFrame && absFrame < x.startFrame + x.frames);
+  if (!b) return { inBreak: false, brk: null, t: 0, elapsed: 0 };
+  const elapsed = absFrame - b.startFrame;
+  return { inBreak: true, brk: b, t: b.frames > 0 ? elapsed / b.frames : 0, elapsed };
+};

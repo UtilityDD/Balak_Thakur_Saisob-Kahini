@@ -4,7 +4,7 @@ You are one of ten agents working in parallel on Episode 2 of "Stories of Balak 
 devotional children's animated series (Remotion, React + SVG, 1920x1080, 24 fps, 2.5D multiplane camera).
 Each agent owns exactly ONE file (named in your prompt). Never edit any other file.
 
-Working copy: `C:\Users\rouma\AppData\Local\Temp\claude\8d2a3455c490787c\d453e53b-1da9-42c9-8691-a833340f8cb5\scratchpad\ep01run\remotion_studio`
+Working copy: `C:\Dipankar\Balak_Thakur_Production\remotion_studio`
 
 ## Read first
 - `C:\Dipankar\Balak_Thakur_AI_Studio\CLAUDE.md` (golden rules).

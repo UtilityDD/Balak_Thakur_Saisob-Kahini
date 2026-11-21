@@ -14,6 +14,8 @@ import { smoothPath } from "../../cinematic/rig/head3d";
 import { MOUTH_REST, MouthState, visemeChatter } from "../../cinematic/rig/lipsync";
 import { BASE_POSE, CastMember, Pose, Puppet, SceneLight, SceneLights } from "../../cinematic/rig/Puppet";
 import { Matka } from "../rig/Matka";
+/* The father is Surendra (the family calls him বাবুকাকা, STO-17a): the same figure as in every other Episode 2 scene. */
+import { SURENDRA as FATHER } from "./Scene01eFather";
 
 /**
  * Episode 2 scene 04_rice_pot_miracle (682 frames of content, starts at absolute 3367). The scene's real
@@ -1792,7 +1794,7 @@ const rigOf = (c: CastMember, scale: number): RigBody => {
     limbW: 8.8 * h * (c.wiry ? 0.82 : 1) * (0.9 + g * 0.1),
   };
 };
-const BABU_RIG = rigOf(CAST.babukaka, BABU_SCALE);
+const BABU_RIG = rigOf(FATHER, BABU_SCALE);
 const CHARU_RIG = rigOf(CAST.charu, CHARU_SCALE);
 
 /** Hip height above the feet for a crouch (0..1, above 0.6 is a kneel), as legGeo in Puppet.tsx. */
@@ -2137,7 +2139,7 @@ const headOf = (c: CastMember, b: RigBody, x0: number, p: Pose): V2 => {
 };
 const babuHead = (f: number): V2 => {
   const k = babuAct(f);
-  return headOf(CAST.babukaka, BABU_RIG, BABU_X, { ...k, bodyX: k.bodyX + babuBodyX(f), crouch: Math.max(k.crouch, babuKneelAt(f)) });
+  return headOf(FATHER, BABU_RIG, BABU_X, { ...k, bodyX: k.bodyX + babuBodyX(f), crouch: Math.max(k.crouch, babuKneelAt(f)) });
 };
 
 /** A camera state: centre offset (x, y) and zoom (Stage convention: screen = 960/540 + zoom * (world - 960/540 - x/y)). */
@@ -2572,7 +2574,7 @@ export const Scene04RicePot: React.FC = () => {
               light={{ keySide: 1, rim: "#ffd98a", rimStrength: 0.4 }}
             />
             <Puppet
-              cast={CAST.babukaka}
+              cast={FATHER}
               f={f}
               lifeF={R}
               x={BABU_X}

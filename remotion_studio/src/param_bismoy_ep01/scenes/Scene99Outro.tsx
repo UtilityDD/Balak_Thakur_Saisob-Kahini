@@ -1,51 +1,57 @@
 import React from "react";
-import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
-import { clamp, EASE } from "../../cinematic/core/anim";
+import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { clamp, EASE, track } from "../../cinematic/core/anim";
 import { BN_FONT, ensureBanglaFont } from "../../cinematic/fonts";
 import { CARD_PALETTE } from "../../episode/SeriesCards";
 
-/** Series 2 Episode 1 Closing Dawn Card + Next Episode Teaser ("পর্ব দুই: মহা আবির্ভাব"). */
+/**
+ * Series 2 Episode 1 Closing Dawn Card + Next Episode Teaser ("পর্ব দুই: মহা আবির্ভাব").
+ * Upgraded with the Studio Ghibli painted golden sunrise lotus pond (`plate_99_sunrise_lotus.jpg`) + 2.5D parallax.
+ */
 export const Scene99Outro: React.FC = () => {
   ensureBanglaFont();
   const f = useCurrentFrame();
-  const total = 950;
+  const total = 784;
   const fadeIn = interpolate(f, [0, 30], [0, 1], { extrapolateRight: "clamp" });
   const fadeOut = interpolate(f, [total - 40, total], [1, 0], { extrapolateLeft: "clamp" });
-  const teaserIn = EASE.out(clamp((f - 340) / 36));
+  const teaserIn = EASE.out(clamp((f - 280) / 36));
+
+  const camScale = track(f, [[0, 1.03], [total, 1.14]]);
+  const camX = track(f, [[0, -24], [total, 24]]);
 
   return (
     <AbsoluteFill
       style={{
-        background: "linear-gradient(180deg, #2a1428 0%, #7d3648 36%, #db7b42 70%, #f5be6b 100%)",
+        backgroundColor: "#1a0d18",
         opacity: Math.min(fadeIn, fadeOut),
         overflow: "hidden",
       }}
     >
-      {/* Rising Sun & Padma Horizon */}
-      <svg width={1920} height={1080} style={{ position: "absolute", inset: 0 }}>
-        <defs>
-          <radialGradient id="s2-outro-sun" cx="50%" cy="62%" r="40%">
-            <stop offset="0%" stopColor="#fff6d6" stopOpacity={0.95} />
-            <stop offset="45%" stopColor="#f7b963" stopOpacity={0.45} />
-            <stop offset="100%" stopColor="#f2964b" stopOpacity={0} />
-          </radialGradient>
-        </defs>
-        <circle cx={960} cy={650 - f * 0.04} r={420} fill="url(#s2-outro-sun)" />
-        <circle cx={960} cy={650 - f * 0.04} r={74} fill="#fff3cc" opacity={0.92} />
-        <rect x={0} y={660} width={1920} height={420} fill="#4a1e2e" opacity={0.62} />
-        {/* Shimmering Padma reflection */}
-        {Array.from({ length: 12 }, (_, i) => (
-          <ellipse
-            key={i}
-            cx={960 + Math.sin(f * 0.06 + i * 1.4) * (18 + i * 3)}
-            cy={690 + i * 26}
-            rx={110 - i * 5}
-            ry={4.5}
-            fill="#ffd996"
-            opacity={0.45 - i * 0.025}
-          />
-        ))}
-      </svg>
+      {/* Painted Studio Ghibli Golden Sunrise Lotus Pond with slow push-in */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transform: `translate(${camX}px, 0px) scale(${camScale})`,
+          transformOrigin: "50% 55%",
+        }}
+      >
+        <Img
+          src={staticFile("images/s2_ep01/plate_99_sunrise_lotus.jpg")}
+          style={{ width: 1920, height: 1080, objectFit: "cover" }}
+        />
+      </div>
+
+      {/* Warm readable gradient wash behind typography */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(28,10,20,0.62) 0%, rgba(42,16,24,0.28) 48%, rgba(24,10,16,0.58) 100%)",
+          pointerEvents: "none",
+        }}
+      />
 
       {/* Series Title & Next Episode Teaser */}
       <div
@@ -55,27 +61,27 @@ export const Scene99Outro: React.FC = () => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 140,
+          paddingTop: 130,
           fontFamily: BN_FONT,
           textAlign: "center",
         }}
       >
         <div
           style={{
-            fontSize: 64,
+            fontSize: 66,
             fontWeight: 700,
             color: CARD_PALETTE.cream,
-            textShadow: "0 4px 20px rgba(38, 12, 24, 0.78)",
+            textShadow: "0 4px 22px rgba(28, 8, 18, 0.88)",
           }}
         >
           পরম বিস্ময় বালক ঠাকুর
         </div>
         <div
           style={{
-            marginTop: 8,
-            fontSize: 26,
+            marginTop: 10,
+            fontSize: 27,
             color: CARD_PALETTE.goldSoft,
-            textShadow: "0 2px 10px rgba(38, 12, 24, 0.75)",
+            textShadow: "0 2px 12px rgba(28, 8, 18, 0.85)",
           }}
         >
           অধ্যাপক পি. কে. রায় (রায়দা) রচিত অবিস্মরণীয় গ্রন্থ অবলম্বনে
@@ -83,14 +89,15 @@ export const Scene99Outro: React.FC = () => {
 
         <div
           style={{
-            marginTop: 150,
-            padding: "28px 54px",
+            marginTop: 140,
+            padding: "28px 56px",
             borderRadius: 18,
-            background: "rgba(38, 12, 24, 0.56)",
-            border: "1.5px solid rgba(243, 210, 122, 0.55)",
-            backdropFilter: "blur(6px)",
+            background: "rgba(32, 10, 20, 0.68)",
+            border: "1.5px solid rgba(243, 210, 122, 0.62)",
+            backdropFilter: "blur(8px)",
             opacity: teaserIn,
             transform: `translateY(${(1 - teaserIn) * 20}px)`,
+            boxShadow: "0 14px 40px rgba(0,0,0,0.45)",
           }}
         >
           <div style={{ fontSize: 26, color: CARD_PALETTE.goldSoft, fontWeight: 600 }}>
@@ -99,10 +106,10 @@ export const Scene99Outro: React.FC = () => {
           <div
             style={{
               marginTop: 8,
-              fontSize: 48,
+              fontSize: 50,
               fontWeight: 700,
               color: "#ffffff",
-              textShadow: "0 2px 14px rgba(0, 0, 0, 0.6)",
+              textShadow: "0 2px 14px rgba(0, 0, 0, 0.7)",
             }}
           >
             মহা আবির্ভাব

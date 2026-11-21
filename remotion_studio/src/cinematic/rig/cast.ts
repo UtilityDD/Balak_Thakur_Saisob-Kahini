@@ -39,6 +39,12 @@ export const FACE_LOOKS: Record<string, FaceLook> = {
   // elders
   /** Bhagabati Thakur, the elder priest (late 50s): silver-streaked hair, white mustache. */
   bhagabati: { lashes: 0.25, kajal: 0, browWeight: 1.2, lipTint: "#a05a50", mustache: 0.75, ageLines: 0.7, hairGrey: 0.8 },
+  /** Harendra Thakur, an elder of the Vedic house (Ep 4): heavy brows, thick salt-and-pepper mustache. New id: no older scene uses it. */
+  harendra: { lashes: 0.2, kajal: 0, browWeight: 1.45, lipTint: "#8e4d42", mustache: 0.95, ageLines: 0.6, hairGrey: 0.55 },
+  /** The jyethi, Bhagabati Thakur's wife (Ep 4), early 60s and married: light kajal, grey-streaked hair, kind lines. New id. */
+  jyethi: { lashes: 0.55, kajal: 0.2, browWeight: 0.85, lipTint: "#94524a", ageLines: 0.5, hairGrey: 0.5 },
+  // Sundar Thakur has NO entry here on purpose: Episode 1 draws its own SUNDAR with id "sundar", and an entry keyed
+  // "sundar" would change Episode 1's faces. CAST.sundar below keeps Episode 1's look exactly (Head defaults).
   kedarkaka: { lashes: 0.25, kajal: 0, browWeight: 1.1, lipTint: "#a8625a", mustache: 0.8, ageLines: 0.7, hairGrey: 0.9 },
   listenerB: { lashes: 0.2, kajal: 0, browWeight: 1.0, lipTint: "#a0584e", mustache: 0.6, ageLines: 0.85, hairGrey: 0.9 },
   // children: soft lashes, no kajal, no lines
@@ -407,4 +413,132 @@ export const CAST: Record<string, CastEntry> = {
     look: FACE_LOOKS.womanB,
     seed: 79,
   },
+
+  /* ---- shared Vedic house cast (Episode 4 on). Appended last: CastLineup shows only the first 12 entries. ---- */
+
+  /**
+   * Sundar Thakur (Sundar jyetha), family elder who does the Gobinda puja: spectacles, white kurta, brown shawl.
+   * Copied unchanged from Episode 1's `SUNDAR` (cinematic/scenes/Scene05Rain.tsx), which still draws its own copy.
+   */
+  sundar: {
+    id: "sundar",
+    age: "elder",
+    height: 1.0,
+    girth: 1.0,
+    ...skinWarm,
+    hair: "#d6cfc4",
+    hairLight: "#ffffff",
+    hairStyle: "balding",
+    outfit: "kurta",
+    top: "#f2ead8",
+    topLight: "#fffaf0",
+    topShade: "#cbbda2",
+    topTrim: "#b08a3a",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#faf5eb",
+    lowerShade: "#d8cdb9",
+    lowerTrim: "#8a2a1a",
+    dhotiLength: "calf",
+    scarf: { color: "#7a5236", shade: "#5a3a24", trim: "#c9a04a", style: "shawl" },
+    mustache: "#d6cfc4",
+    glasses: true,
+    tilak: true,
+    seed: 151,
+  },
+  /**
+   * Thakurma, the widowed grandmother: white saree and blouse, light shawl, white hair (CHR-04). Copied unchanged
+   * from Episode 2's `THAKURMA` (episode02/scenes/Scene01eFather.tsx); her face look is FACE_LOOKS.thakurma by id.
+   */
+  thakurma: {
+    id: "thakurma",
+    age: "elder",
+    sex: "f",
+    height: 0.95,
+    girth: 1.05,
+    skin: "#b07a52",
+    skinLight: "#cc9468",
+    skinShade: "#84573a",
+    lips: "#8a4f43",
+    hair: "#e4e0d8",
+    hairLight: "#f6f3ec",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#f3efe6",
+    topLight: "#ffffff",
+    topShade: "#cfc6b2",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#fbf8f1",
+    lowerShade: "#d9d0bc",
+    scarf: { color: "#ece6d8", shade: "#bfb59f", trim: "#d8cdb4", style: "shawl" },
+    look: FACE_LOOKS.thakurma,
+    seed: 131,
+  },
+  /**
+   * Harendra Thakur, an elder of the house (Ep 4, silent: a head shake and open palms). Distinct from Bhagabati
+   * (bare-chested, white hair), Sundar (balding, spectacles, white kurta, brown shawl) and Kedarkaka: tall, darker,
+   * salt-and-pepper parted hair, thick grey-black mustache, beige khadi fatua with an olive uttariya, no spectacles.
+   */
+  harendra: {
+    id: "harendra",
+    age: "elder",
+    height: 1.06,
+    girth: 0.98,
+    ...skinDeep,
+    hair: "#857d74",
+    hairLight: "#bdb5aa",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#e3d4b2",
+    topLight: "#f4ead2",
+    topShade: "#b9a77f",
+    topTrim: "#7a5a2a",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#f7f1e3",
+    lowerShade: "#d3c7ae",
+    lowerTrim: "#4a5a3a",
+    dhotiLength: "calf",
+    scarf: { color: "#5f6b48", shade: "#434d31", trim: "#d6c27e", style: "drape" },
+    mustache: "#6f675f",
+    face: { faceLen: 1.1 },
+    look: FACE_LOOKS.harendra,
+    seed: 173,
+  },
+  /**
+   * The jyethi, Bhagabati Thakur's wife (Ep 4): an elderly MARRIED woman, so sindoor and bindi and a bordered sari
+   * (Thakurma is a widow in plain white). Fuller figure, grey-streaked hair, cream sari with a deep maroon border,
+   * ochre-brown blouse.
+   */
+  jyethi: {
+    id: "jyethi",
+    age: "elder",
+    sex: "f",
+    height: 0.93,
+    girth: 1.15,
+    ...skinWarm,
+    hair: "#6b625a",
+    hairLight: "#a8a098",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#9a6a3a",
+    topLight: "#b88452",
+    topShade: "#6e4824",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#f1e6cc",
+    lowerShade: "#d2c3a2",
+    lowerTrim: "#6e1f1f",
+    scarf: { color: "#f1e6cc", shade: "#d2c3a2", trim: "#6e1f1f", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.jyethi,
+    seed: 181,
+  },
 };
+
+/*
+ * The house priest in Episode 4 (STO-19) is CAST.bhagabati as it stands: bare-chested elder in a red-bordered dhoti
+ * with an uttariya over the shoulder and the sacred thread (paita: right for HIM; Balak never wears one, BAL-03).
+ */

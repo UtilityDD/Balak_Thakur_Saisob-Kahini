@@ -1,62 +1,68 @@
 import React from "react";
 import { EP03_SCENES } from "../timing";
 import { EP03_CUES } from "../subtitles";
-import { clamp, EASE, lerp, makeActing, noise1, PoseKey, track, windowed } from "../../cinematic/core/anim";
+import { clamp, EASE, hash, lerp, makeActing, noise1, PoseKey, track, windowed } from "../../cinematic/core/anim";
 import { Cam } from "../../cinematic/core/Stage";
 import { DivineDefs } from "../../cinematic/divine/Divine";
 import { GlowDefs } from "../../cinematic/fx/Fx";
-import { CAST, FACE_LOOKS } from "../../cinematic/rig/cast";
+import { FACE_LOOKS } from "../../cinematic/rig/cast";
 import { MOUTH_REST, MouthState, speechLevel, visemeFromEnvelope } from "../../cinematic/rig/lipsync";
 import { BASE_POSE, CastMember, Lighting, Pose, PropRenderer, Puppet, SceneLight, SceneLights } from "../../cinematic/rig/Puppet";
-import { Stage } from "../../cinematic/core/Stage";
-import {
-  UJANCHAR_BG,
-  UJANCHAR_JABA,
-  UjancharBackdrop,
-  UjancharFloorLayer,
-  UjancharForegroundLayer,
-  UjancharLightLayer,
-  ujancharGrade,
-  ujancharKeepInSet,
-} from "../../cinematic/sets/UjancharHouse";
+import { Layer, Stage } from "../../cinematic/core/Stage";
+import { CourtyardBack, CourtyardFloor, TulsiMancha } from "../../cinematic/sets/Interiors";
+import { DaySky } from "../../cinematic/sets/S01_DaySets";
 import { Grade } from "../../cinematic/core/Stage";
 import { clipSpan3, cueLocalStory3, pausesFor3, storyToReal, useStory3 } from "../../episode/storyClock";
 import { SeatedChild } from "../rig/SeatedChild";
-import { S01_MINA, S01_REKHA, S01_SARALA, S01_TUNI } from "./Scene01SharadFlowerGathering";
+import { S01_MINA, S01_REKHA, S01_SARALA, S01_TUNI, VEDIC_COURTYARD } from "./Scene01SharadFlowerGathering";
 import { BirulGlow } from "../rig/BirulGlow";
 
 /**
- * Episode 3, scene 02 (02_flowers_on_own_feet): the main story, at the family's Ujanchar village house in the
- * morning (the shared set src/cinematic/sets/UjancharHouse.tsx, the same courtyard as Episode 2's go-saap scene;
- * STO-17). Five-year-old Balak sits at the foot of the tulsi mancha, waters it, lays three red hibiscus from his dala
- * on his OWN feet and bows to himself; Charu scolds him (she speaks, lip-synced to her voice clip; the two girls behind
- * her only giggle); he answers with simple divine wisdom. Approved plan: 03_Episodes/Episode_03_Five_Year_Old_Wisdom/
- * 01_Script_and_Storyboard/Ep03_Shots_and_Pauses_DRAFT.md (Scene 02, beats 02A, 02B, 02C).
+ * Episode 3, scene 02 (02_flowers_on_own_feet): the main story, at the VEDIC HOUSE (Bhagabati Thakur's big joint
+ * family, STO-18, book chapter 5), in its established inner courtyard (CourtyardBack and CourtyardFloor from
+ * src/cinematic/sets/Interiors.tsx, untouched) in morning light, laid out exactly as scene 01 lays it out
+ * (VEDIC_COURTYARD, exported by Scene01SharadFlowerGathering.tsx): the shiuli, jhumko and big jaba trees, the tulsi
+ * mancha (Interiors TulsiMancha) and the full sajis the young girls of the house have set down at the tulsi-tala.
+ * Five-year-old Balak sits at the foot of the tulsi mancha, waters it, lays three red hibiscus from the girls' dala
+ * on his OWN feet and bows to himself; the girls who came to pick flowers gather round him and scold him, half
+ * shocked and half teasing (STO-17a: the eldest girl speaks the recorded line, lip-synced, while the others nod and
+ * giggle behind their hands; Charu is NOT in this scene); he answers THEM with simple divine wisdom. Approved plan:
+ * 03_Episodes/Episode_03_Five_Year_Old_Wisdom/01_Script_and_Storyboard/Ep03_Shots_and_Pauses_DRAFT.md (Scene 02,
+ * beats 02A, 02B, 02C), with the scolding re-assigned to the girls by STO-17a.
  *
  * Clocks (src/episode/storyClock.ts, EP03_PAUSES): `f` is the story clock (it holds in the nine pauses) and drives
  * Balak's choreography; `lifeF` is the real local frame and drives breathing, blinks, the glow, the fade, the
- * camera (whose cuts sit on narration cues, never inside a pause) and the standing figures (Charu, the girls and the
+ * camera (whose cuts sit on narration cues, never inside a pause) and the standing figures (the three girls and the
  * scene 01 women), whose pause reactions are keyed on the real frames of each pause. Every key is tied to a subtitle
  * cue (cueReal / cueStory) plus the measured voice onset inside that phrase (V below), or to a pause.
  *
+ * Staging: the three girls start at the left of the courtyard; on "হঠাৎ সবাই দেখে" they turn to him and walk over,
+ * gathering in a gentle half-circle at his left (the eldest in front and nearest him, the middle girl behind her,
+ * the youngest at the left) before the medium; they watch him from there and scold him on the line.
+ *
  * Shots (CAM-13; hard cuts, held frames, one motivated move at most per line; real frames from the cue data):
  *   1 wide             open pause and "হঠাৎ সবাই দেখে…": the courtyard, Balak at the tulsi mancha, the girls at the
- *                      left, the scene 01 women at the right with their full sajhis; their heads turn on "সবাই"
+ *                      left, the scene 01 women at the right with their full sajhis; heads turn on "সবাই" and the
+ *                      girls walk over to him
  *   2 medium           cut on "তুলসীতলায়": the pour, the fallen leaf, the flowers from the dala; one slow push in
- *                      (x1.31) on "নিজের পায়ে" to his hands, the basket and his feet; held through 02A P2
+ *                      (x1.31) on "নিজের পায়ে" to his hands, the basket and his feet; held through 02A P2 (the girls
+ *                      exchange a glance)
  *   3 MCU              cut on "আর নিজেই": palms join, the bow (প্রণাম), his head rises; held through 02A P3 while his
- *                      glow brightens gently (key beat 1) and Charu's steps approach off screen
- *   4 Charu MCU        cut 7 f before "ওমা": hand to her mouth; 02B P1 her hand comes down, the girls turn
- *   5 two-shot         cut on "তুই": Charu at the left, Balak at the right with the three hibiscus on his feet (above
- *                      y 820); he glances down at them on "নিজের পায়ে" and back up at her in 02B P2
- *   6 group            cut on "দেখিস": Charu leaning in, the two girls behind her giggling; held through 02B P3
+ *                      glow brightens gently (key beat 1) and the girls glance at each other, wide-eyed
+ *   4 eldest girl MCU  cut 7 f before "ওমা": hand to her cheek; 02B P1 a small shake of the head, the hand comes down,
+ *                      the others lean in and giggle behind their hands
+ *   5 two-shot         cut on "তুই": the eldest at the left, Balak at the right with the three hibiscus on his feet
+ *                      (above y 820); she points gently at them on "নিজের পায়ে"; he glances down at them and back up
+ *                      at her in 02B P2 while she waits, brows up
+ *   6 group            cut on "দেখিস": the girls round him, the eldest wagging a finger, the others nodding; held
+ *                      through 02B P3 (they giggle, the eldest waits for his answer)
  *   7 Balak MCU        cut 7 f before "তোদের ভগবান…": open palm, eyes to his feet, palms to his chest; 02C P1
- *   8 reverse          cut on "তোমাদের": Charu and the girls listening, smiles fading; 02C P2 they glance, unsure
+ *   8 reverse          cut on "তোমাদের": the girls listening, smiles fading; 02C P2 they glance at each other, unsure
  *   9 Balak MCU        cut 7 f before "আমি ভগবান হলে": then one slow push in on "গাছ কেটে" (x1.35, on lifeF) held
  *                      through his last line and the end pause as his glow brightens gently (key beat 2)
- * No handheld, no rack focus, no letterbox. Every cam goes through ujancharKeepInSet (no background edge).
+ * No handheld, no rack focus, no letterbox. Every cam goes through courtyardKeepInSet (no background edge).
  *
- * Balak is drawn by SeatedChild; Charu, the girls and the women by Puppet.
+ * Balak is drawn by SeatedChild; the girls and the women by Puppet.
  */
 
 const SCENE_ID = "02_flowers_on_own_feet";
@@ -152,33 +158,36 @@ const TEXT: Record<string, string> = {
   "02c_Toddler_Thakur_p2.wav": "তোমাদের মাটির মূর্তি তো নড়েও না, কিছু বোঝেও না!",
   "02c_Toddler_Thakur_p3.wav": "আমি ভগবান হলে কিন্তু ফুল কেন, গাছ কেটে নিলেও কাউকে রাগ করতাম না!",
 };
-/** Charu's clip (the file is called 02b_Girls_Tease, the voice is hers: STO-17) and Balak's, from the timing data. */
-const CHARU_PARTS = clipSpan3("02b_Girls_Tease.wav")?.parts ?? [];
+/**
+ * The girls' clip (02b_Girls_Tease, caption মেয়েরা; spoken on screen by the eldest girl, STO-17a) and Balak's, from
+ * the timing data.
+ */
+const GIRLS_PARTS = clipSpan3("02b_Girls_Tease.wav")?.parts ?? [];
 const BALAK_PARTS = clipSpan3("02c_Toddler_Thakur.wav")?.parts ?? [];
 
-const voiceAt = (parts: typeof CHARU_PARTS, realLocal: number) => {
+const voiceAt = (parts: typeof GIRLS_PARTS, realLocal: number) => {
   const abs = SCENE.startFrame + realLocal;
   for (const p of parts) {
     if (abs >= p.startFrame && abs < p.startFrame + p.frames) return { env: ENV[p.file], rel: abs - p.startFrame, text: TEXT[p.file] };
   }
   return null;
 };
-/** Charu's mouth at real local frame fr (only Charu moves her lips to this clip; the girls never do). */
-const charuMouth = (fr: number): MouthState => {
-  const v = voiceAt(CHARU_PARTS, fr);
+/** The eldest girl's mouth at real local frame fr (only she moves her lips to this clip; the other girls never do). */
+const eldestMouth = (fr: number): MouthState => {
+  const v = voiceAt(GIRLS_PARTS, fr);
   return v ? visemeFromEnvelope(v.env, v.rel, 13, v.text) : MOUTH_REST;
 };
 /**
- * Charu's speech envelope for the rig, phrase-level: on while any frame within 6 of fr is voiced, so the dips between
- * syllables do not read as pauses (the rig blinks at every speech pause; per-syllable gaps made her blink almost
- * continuously and look asleep). It runs on the real clock, so it is silent across every pause boundary.
+ * Her speech envelope for the rig, phrase-level: on while any frame within 6 of fr is voiced, so the dips between
+ * syllables do not read as pauses (the rig blinks at every speech pause; per-syllable gaps made a speaker blink almost
+ * continuously and look asleep). It runs on the real clock, so it is silent across every pause boundary (PIT-03).
  */
-const charuVoiced = (fr: number): boolean => {
-  const v = voiceAt(CHARU_PARTS, fr);
+const eldestVoiced = (fr: number): boolean => {
+  const v = voiceAt(GIRLS_PARTS, fr);
   return !!v && speechLevel(v.env, v.rel) > 0.06;
 };
-const charuTalk = (fr: number): number => {
-  for (let k = -6; k <= 6; k++) if (charuVoiced(fr + k)) return 0.6;
+const eldestTalk = (fr: number): number => {
+  for (let k = -6; k <= 6; k++) if (eldestVoiced(fr + k)) return 0.6;
   return 0;
 };
 /** Balak's mouth openness (0..0.9) at real local frame fr. */
@@ -187,14 +196,35 @@ const balakMouth = (fr: number): number => {
   return v ? clamp(visemeFromEnvelope(v.env, v.rel, 17, v.text).open * 0.9, 0, 0.9) : 0;
 };
 
-/* ---------------- layout (world px; the Ujanchar set's coordinates, ground line about y 900) ---------------- */
+/* ---------------- layout ---------------- */
 
-const BALAK_POS = { x: 930, y: 950, s: 1.25 };
-/** The tulsi mancha just past his front: the water from the rig's kolsi lands at its foot (figure x 120). */
-const TULSI = { x: BALAK_POS.x + 215, y: 946, s: 0.85 };
-/** The mancha's niche lamp (lit): the diya of the scene. */
-const LAMP = { x: TULSI.x, y: TULSI.y - 40 * TULSI.s - 10 };
-const KOLSI_REST = { x: BALAK_POS.x + 148, y: TULSI.y - 26 * TULSI.s - 9 };
+/*
+ * Two coordinate systems.
+ *  WORLD: the Vedic house inner courtyard's own coordinates (CourtyardFloor on depth 1, floor from y 784), shared with
+ *    scene 01 (its header "SHARED LAYOUT FOR SCENES 01 AND 02"): the trees, the tulsi mancha at (1700, 842, s 1.1),
+ *    the sajis at its foot, and the camera.
+ *  STAGING: the coordinates Balak's choreography, the girls and every shot were built in (Balak at (930, 950), s 1.25).
+ *    One group transform places the staging in the world: Balak sits at the mancha's foot (W0) and everything in the
+ *    staging is scaled by STAGE_K (he is that much further back on the floor), so every composition is unchanged.
+ */
+const S0 = { x: 930, y: 950 };
+const W0 = { x: 1487, y: 858 };
+const STAGE_K = 0.85;
+const toWorld = (x: number, y: number) => ({ x: W0.x + STAGE_K * (x - S0.x), y: W0.y + STAGE_K * (y - S0.y) });
+const toStage = (x: number, y: number) => ({ x: S0.x + (x - W0.x) / STAGE_K, y: S0.y + (y - W0.y) / STAGE_K });
+const STAGING_TRANSFORM = `translate(${W0.x} ${W0.y}) scale(${STAGE_K}) translate(${-S0.x} ${-S0.y})`;
+
+const BALAK_POS = { x: S0.x, y: S0.y, s: 1.25 };
+/**
+ * The tulsi mancha where scene 01 has it (world (1700, 842), Interiors TulsiMancha at s 1.1), in staging units. The
+ * water from the rig's kolsi lands at the left corner of its step (figure x 120).
+ */
+const TULSI_WORLD = VEDIC_COURTYARD.tulsi;
+const TULSI = { ...toStage(TULSI_WORLD.x, TULSI_WORLD.y), s: TULSI_WORLD.s / STAGE_K };
+/** The mancha's niche lamp (lit): the diya of the scene (Interiors TulsiMancha's niche diya at (0, -62)). */
+const LAMP = { x: TULSI.x, y: TULSI.y - 62 * TULSI.s };
+/** The kolsi rests on a low wooden pidi beside him, where the rig's hand takes it up for the pour. */
+const KOLSI_REST = { x: BALAK_POS.x + 148, y: 946 - 26 * 0.85 - 9 };
 /**
  * Where Balak's hand picks a hibiscus (SeatedChild `basketAt`, figure units, ground at y = 0): just past his far
  * knee, inside reach. The scene's single basket is drawn around this point, so the rig hand always dips into the
@@ -216,32 +246,106 @@ const FLOOR_LEAVES = [
   { dx: 80, dy: 44, rot: 110, s: 0.8, c: "#8f7a3a" },
 ];
 
-/** Charu's spot at the left of Balak, and the two girls behind her (nearer the hut). */
-const CHARU_X = 520;
-const CHARU_Y = 962;
-const GIRL_A = { x: 345, y: 924, s: 1.0 };
-const GIRL_B = { x: 205, y: 916, s: 0.96 };
-/** The scene 01 women at the right, by the fence and the hibiscus shrubs, with their full sajhis. */
+/**
+ * The three girls: where they stand at the start (by the big jaba tree, in front of its bed) and their places in the
+ * half-circle at Balak's left once they have walked over (the eldest in front and nearest him, the middle girl
+ * behind her, the youngest at the left), a step nearer the camera than Balak at the mancha. The scale grows a touch
+ * as they come forward.
+ */
+interface Spot {
+  x: number;
+  y: number;
+  s: number;
+}
+const ELDEST_FROM: Spot = { x: 345, y: 1000, s: 1.04 };
+const ELDEST_TO: Spot = { x: 560, y: 1035, s: 1.1 };
+const YOUNG_FROM: Spot = { x: 205, y: 990, s: 1.0 };
+const YOUNG_TO: Spot = { x: 350, y: 1022, s: 1.05 };
+const MIDDLE_FROM: Spot = { x: 275, y: 980, s: 0.97 };
+const MIDDLE_TO: Spot = { x: 460, y: 1010, s: 1.0 };
+/**
+ * The scene 01 girls of the house, at the right past the tulsi mancha, their full sajis set down at the tulsi-tala
+ * (STO-18): world spots, drawn in staging units.
+ */
 const WOMEN_S = 0.9;
-const WOMEN_Y = 906;
+const WOMEN_AT = [
+  toStage(1880, 866),
+  toStage(1972, 860),
+  toStage(2058, 870),
+  toStage(2146, 863),
+];
+
+/* ---------------- the Vedic house's inner courtyard (STO-18) ---------------- */
+
+/**
+ * Planes, back to front: the morning sky above the balcony (0.12); the back building of the inner courtyard, with
+ * its balcony, arches and plinth (CourtyardBack, 0.55, as Episode 1 stages it); the courtyard floor with its flagstones
+ * and alpona (CourtyardFloor, 1), on which the big trees, the tulsi mancha, the sajis and every figure stand.
+ */
+const CY = { sky: 0.12, back: 0.55, floor: 1 } as const;
+/** Stage background (only seen through soft layer edges). */
+const CY_BG = "#e9d2a8";
+/** Horizontal extents per plane [depth, x0, x1] (stage px) and the floor's bottom edge. */
+const CY_SET_X: Array<[number, number, number]> = [
+  [CY.floor, -400, 2320],
+  [CY.back, -300, 2220],
+  [CY.sky, -1200, 3200],
+];
+const CY_FLOOR_TOP = 784;
+const CY_FLOOR_BOTTOM = 1384;
+
+const smax = (a: number, b: number, k: number) => 0.5 * (a + b + Math.sqrt((a - b) * (a - b) + k * k));
+const smin = (a: number, b: number, k: number) => 0.5 * (a + b - Math.sqrt((a - b) * (a - b) + k * k));
+
+/**
+ * Clamps a Stage cam so no plane's edge comes into frame (soft corners): left and right edges of every plane, the
+ * floor's bottom, and the seam between the back building's plinth (0.55) and the floor's front (1), which must stay
+ * covered by the floor.
+ */
+const courtyardKeepInSet = (c: Cam): Cam => {
+  const EDGE = 16;
+  const z = Math.max(1, c.zoom);
+  let lo = -Infinity;
+  let hi = Infinity;
+  for (const [d, x0, x1] of CY_SET_X) {
+    const s = Math.pow(z, d);
+    lo = Math.max(lo, (x0 + EDGE - 960 + 960 / s) / d);
+    hi = Math.min(hi, (x1 - EDGE - 960 - 960 / s) / d);
+  }
+  const w = Math.pow(z, CY.back);
+  const yLo = z > 1.0001 ? ((CY_FLOOR_TOP - 540) * (z - w) + 6) / (z - CY.back * w) : 6;
+  const yHi = CY_FLOOR_BOTTOM - EDGE - 540 - 540 / z;
+  return { ...c, x: smin(smax(c.x, lo, 24), hi, 24), y: smin(smax(c.y, yLo, 24), yHi, 24) };
+};
 
 /* ---------------- camera ---------------- */
 
+/** A camera frame: centre and zoom in STAGING units (world: true for a frame given in WORLD units). */
 interface Frame {
   cx: number;
   cy: number;
   z: number;
+  world?: boolean;
 }
-const WIDE: Frame = { cx: 1075, cy: 690, z: 1.0 };
+/**
+ * The establishing wide, in WORLD units: the whole inner courtyard as scene 01 shows it (the shiuli, jhumko and big
+ * jaba trees, the arches), Balak small at the tulsi mancha on the right, the girls under the jaba tree.
+ */
+const WIDE: Frame = { cx: 1200, cy: 600, z: 1.0, world: true };
 const MED: Frame = { cx: 990, cy: 832, z: 1.8 };
 /** The medium after its push (x1.31): hands, basket and feet, the feet and flowers above y 820. */
-const MED_CLOSE: Frame = { cx: 990, cy: 872, z: 2.3 };
-const BOW_MCU: Frame = { cx: 960, cy: 800, z: 2.6 };
-const CHARU_MCU: Frame = { cx: 470, cy: 650, z: 2.6 };
-const TWO_SHOT: Frame = { cx: 860, cy: 800, z: 1.6 };
-const GROUP: Frame = { cx: 360, cy: 700, z: 2.0 };
-const BALAK_MCU: Frame = { cx: 985, cy: 795, z: 2.5 };
-const REVERSE: Frame = { cx: 395, cy: 660, z: 2.3 };
+const MED_CLOSE: Frame = { cx: 1050, cy: 872, z: 2.3 };
+const BOW_MCU: Frame = { cx: 1000, cy: 800, z: 2.6 };
+/** The eldest girl's close-up: her face right of centre, Balak just off frame at the right (his soft halo at the edge). */
+const ELDEST_MCU: Frame = { cx: 455, cy: 780, z: 3.0 };
+/** The eldest and Balak, the three hibiscus on his feet in view (above y 820). */
+const TWO_SHOT: Frame = { cx: 770, cy: 822, z: 2.4 };
+/** The girls round him, Balak at the right. */
+const GROUP: Frame = { cx: 660, cy: 790, z: 1.7 };
+/** His close-ups keep the eldest girl (x 560) fully out of frame on the left (no half figure at the edge). */
+const BALAK_MCU: Frame = { cx: 1020, cy: 795, z: 2.5 };
+/** The girls listening, Balak just off frame at the right. */
+const REVERSE: Frame = { cx: 420, cy: 780, z: 2.5 };
 /** Where the last push lands: about x1.35 on his face. */
 const FINAL_CU: Frame = { cx: 950, cy: 772, z: 3.38 };
 
@@ -250,7 +354,7 @@ const SHOTS: Array<{ from: number; fr: Frame }> = [
   { from: -Infinity, fr: WIDE },
   { from: V.tulsi - 2, fr: MED },
   { from: V.ar - 2, fr: BOW_MCU },
-  { from: V.oma - 7, fr: CHARU_MCU },
+  { from: V.oma - 7, fr: ELDEST_MCU },
   { from: V.tui - 2, fr: TWO_SHOT },
   { from: V.dekhis - 2, fr: GROUP },
   { from: V.toder - 7, fr: BALAK_MCU },
@@ -275,7 +379,10 @@ const cameraAt = (lf: number): Cam => {
   let fr = SHOTS[k].fr;
   if (fr === MED && lf >= PUSH_FEET.a) fr = mixFrame(MED, MED_CLOSE, EASE.inOut(clamp((lf - PUSH_FEET.a) / (PUSH_FEET.b - PUSH_FEET.a))));
   if (k === SHOTS.length - 1 && lf >= PUSH_END.a) fr = mixFrame(BALAK_MCU, FINAL_CU, EASE.inOut(clamp((lf - PUSH_END.a) / (PUSH_END.b - PUSH_END.a))));
-  return ujancharKeepInSet({ x: fr.cx - 960, y: fr.cy - 540, zoom: fr.z, focus: 1, dof: 0.8, shake: 0 });
+  // staging frames go through the staging transform, so each shot frames exactly what it was built to frame
+  const p = fr.world ? { x: fr.cx, y: fr.cy } : toWorld(fr.cx, fr.cy);
+  const z = fr.world ? fr.z : fr.z / STAGE_K;
+  return courtyardKeepInSet({ x: p.x - 960, y: p.y - 540, zoom: z, focus: 1, dof: 0.8, shake: 0 });
 };
 
 /* ---------------- Balak (SeatedChild) ---------------- */
@@ -355,7 +462,7 @@ const BALAK_BEATS: Array<{ from: number; pose: ChildPose; place?: boolean }> = [
   { from: PALMS_AT, pose: "bless" }, // "আর নিজেই নিজেকে": palms join at his chest
   { from: BOW_AT, pose: "bowHands" }, // "প্রণাম করছে": the bow to himself
   { from: RISE_AT, pose: "bless" }, // head rises, palms still joined: held through 02A P3
-  { from: pauseStory(2, 328) + 1, pose: "sitCross" }, // hands back to his knees as Charu arrives
+  { from: pauseStory(2, 328) + 1, pose: "sitCross" }, // hands back to his knees as the eldest girl gasps
   // 02C, his answer: full poses only (a part-way blend reads as a hand on the hip), the gaze carries the phrasing.
   { from: ST.toder - 1, pose: "palmRaise" }, // "তোদের ভগবান তোদের শাপ দেবে!": an open blessing palm
   { from: ST.toder + 54, pose: "sitCross" }, // hand back to his knee; on "আমার পায়ে" he looks down at his feet
@@ -421,7 +528,7 @@ const balakRig = (f: number): BalakRig => {
 const BALAK_EXPR: Array<{ from: number; e: ExprName }> = [
   { from: -999, e: "serene" },
   { from: ST.ar + 10, e: "compassionate" }, // the pranam
-  { from: pauseStory(2, 328) + 1, e: "serene" }, // calm while he is scolded
+  { from: pauseStory(2, 328) + 1, e: "serene" }, // calm while the girls scold him
   { from: ST.amar + 50, e: "compassionate" }, // "আমি বেশ টের পাই"
   { from: ST.tomader + 15, e: "serene" },
   // "কিছু বোঝেও না!" and "আমি ভগবান হলে": serene (playful and thoughtful read sly: lopsided smile, heavy lids)
@@ -441,12 +548,12 @@ const balakExpr = (f: number) => {
 };
 
 /**
- * Gaze (story frames). lookX < 0 turns toward Charu and the girls at his left (-0.75 Charu, -0.85 the group: enough to read as looking at them, never a side-eye), > 0 toward the tulsi in front of him.
+ * Gaze (story frames). lookX < 0 turns toward the girls at his left (-0.75 the eldest, -0.85 the group: enough to read as looking at them, never a side-eye), > 0 toward the tulsi in front of him.
  * While he works the rig points his eyes at the water, the leaf and each flower itself. While he answers he looks at
  * the people he speaks to (no lookUp), except where his words name his feet or the flowers.
  */
 const balakFaceAt = (f: number): Required<ChildFace> => {
-  const seeFlowers = ST.tui + 46; // Charu's "নিজের পায়ে" (voice)
+  const seeFlowers = ST.tui + 46; // the eldest girl's "নিজের পায়ে" (voice)
   const amar = ST.amar + 20; // his "আমার পায়ে" (voice)
   const keno = ST.ami + 43; // "কিন্তু ফুল কেন" (voice)
   const kauke = ST.gach + 36; // "কাউকে"
@@ -454,27 +561,27 @@ const balakFaceAt = (f: number): Required<ChildFace> => {
     lookX: track(f, [
       [0, 0.1],
       [ST.oma - 4, 0.1],
-      [ST.oma + 8, -0.75, "inOut"], // Charu arrives at his left
+      [ST.oma + 8, -0.75, "inOut"], // the eldest girl gasps at his left
       [seeFlowers, -0.75],
       [seeFlowers + 12, -0.12, "inOut"], // glances down at the flowers on his feet
       [pauseStory(4, 494), -0.12],
-      [pauseStory(4, 494) + 1, -0.75], // (02B P2 brings his eyes back up to her: balakPauseFace)
+      [pauseStory(4, 494) + 1, -0.75], // (02B P2 brings his eyes back up to the eldest: balakPauseFace)
       [pauseStory(4, 494) + 26, -0.75],
       [pauseStory(4, 494) + 40, -0.85, "inOut"], // the girls giggle
       [ST.toder - 6, -0.85],
-      [ST.toder + 4, -0.75, "inOut"], // answers Charu and the girls
+      [ST.toder + 4, -0.75, "inOut"], // answers the girls (the eldest first)
       [amar - 2, -0.75],
       [amar + 10, -0.18, "inOut"], // "আমার পায়ে": his feet
       [amar + 26, -0.18],
-      [amar + 38, -0.75, "inOut"], // "আমি বেশ টের পাই", to Charu
+      [amar + 38, -0.75, "inOut"], // "আমি বেশ টের পাই", to the eldest
       [ST.tomader + 6, -0.75],
       [ST.tomader + 16, -0.85, "inOut"], // "তোমাদের মাটির মূর্তি", to all of them
       [ST.ami - 6, -0.85],
-      [ST.ami + 2, -0.75, "inOut"], // "আমি ভগবান হলে", to Charu
+      [ST.ami + 2, -0.75, "inOut"], // "আমি ভগবান হলে", to the eldest
       [keno - 4, -0.75],
       [keno + 8, -0.14, "inOut"], // "কিন্তু ফুল কেন": the flowers on his feet
       [keno + 16, -0.14],
-      [keno + 28, -0.75, "inOut"], // the key line, to Charu
+      [keno + 28, -0.75, "inOut"], // the key line, to the eldest
       [kauke - 6, -0.75],
       [kauke + 8, -0.85, "inOut"], // "কাউকে": across to the girls
       [ST.gach + 62, -0.85],
@@ -514,7 +621,7 @@ const bump = (t: number, a: number, b: number, c: number, d: number) =>
 /**
  * The pause moments on his face (the story clock is held, so these run on the pause's own progress t):
  *  02A P2: he looks down at the three red flowers on his feet with a serene, faint smile.
- *  02B P2: his eyes come back up from the flowers to Charu, unbothered, with a faint smile.
+ *  02B P2: his eyes come back up from the flowers to the eldest girl, unbothered, with a faint smile.
  *  02C P3 (end): the smile settles, serene.
  */
 const balakPauseFace = (base: Required<ChildFace>, pause: ReturnType<typeof useStory3>["pause"]): Required<ChildFace> => {
@@ -549,6 +656,17 @@ const glowBeat = (lf: number): number => {
   return Math.max(beat1, beat2);
 };
 
+/**
+ * End-of-scene blink placement (BAL serene eyes, PIT-03). The rig's seeded blink schedule put a slow blink at the very
+ * end of 02C P3 (from about 2382 global), so the shot faded out on lids half-way down: sleepy, even sly. The rig's life
+ * clock is eased 20 frames ahead between his last blink during "গাছ কেটে…" and the end pause (at most about 1.27x for a
+ * few seconds, unnoticeable in breath and sway), which lands that blink inside the pause (about 2362 to 2377): one
+ * short natural blink while the story waits, and his eyes are softly open for the rest of the pause and the fade.
+ */
+const END_BLINK_SHIFT = 20;
+const rigLifeShift = (lf: number): number =>
+  END_BLINK_SHIFT * EASE.inOut(clamp((lf - (P_END[0] - 97)) / 111));
+
 /* ---------------- standing cast: acting on real frames ---------------- */
 
 const A = (keys: PoseKey<Pose>[]) => makeActing<Pose>(BASE_POSE, keys);
@@ -579,55 +697,45 @@ const giggleAt = (fr: number, windows: Array<[number, number]>, period: number, 
   return { nod, dx };
 };
 
-/* Charu (the mother, mid-20s): walks in during 02A P3 (her steps are heard off screen), scolds, listens. */
-
-/** She arrives as the camera cuts to her, a beat before "ওমা". */
-const CH_ARRIVE = V.oma - 2;
-const CH_FROM = CH_ARRIVE - 60;
-const charuXAt = (lf: number) => track(lf, [[CH_FROM, -320], [CH_ARRIVE, CHARU_X, "inOut"]]);
-/** Step amplitude follows her travel speed (about 15 px a frame at stride 1), so the feet never slide. */
-const charuStride = (lf: number) => clamp(Math.abs(charuXAt(lf + 1) - charuXAt(lf - 1)) / 2 / 15, 0, 1);
-
-const CHARU_KEYS: PoseKey<Pose>[] = [
-  { f: 0, bodyTurn: 0.35, headTurn: 0.3, smile: 0.4, rS: 8, rE: -10, lS: 8, lE: -10, lean: 2 },
-  // "ওমা": her hand flies to her chest (the frontal arm rig cannot bring a hand to the mouth)
-  { f: V.oma + 4, in: 9, ease: "out", lean: 0, rS: 16, rE: -150, rHand: "relaxed", gasp: 0.3, brow: 0.7, smile: 0.1, headTurn: 0.42 },
-  // "একি কাণ্ড!": still at her mouth, eyes wide, a small shake of the head
-  { f: V.eki + 10, in: 10, ease: "inOut", headTilt: 3 },
-  { f: V.eki + 20, in: 10, ease: "inOut", headTilt: -2 },
-  // 02B P1: her hand comes down, brows still up
-  { f: P_KANDO[0] + 22, in: 14, ease: "inOut", rS: 10, rE: -14, rHand: "relaxed", gasp: 0, brow: 0.5, headTilt: 0, smile: 0.15 },
-  // "তুই ঠাকুরের ফুল…": an open palm toward him (charuGesture lifts the forearm on "নিজের পায়ে দিচ্ছিস কেন রে?")
-  { f: V.tui + 2, in: 10, ease: "out", rS: 32, rE: -8, rHand: "open", headTurn: 0.46, bodyTurn: 0.42, brow: 0.4, smile: 0.28, lid: 0, lean: 2 },
-  // 02B P2: waits, palm still open, brows knit
-  { f: P_KENO[0] + 12, in: 12, ease: "inOut", headTilt: 4, brow: 0.45, smile: 0.3, lean: 3 },
-  // "দেখিস তোর পাপ হবে": leans in, palm lowered, half a tease
-  { f: V.dekhis + 4, in: 12, ease: "inOut", lean: 6, headTilt: -3, rS: 22, rE: -22, smile: 0.25, brow: 0.45 },
-  // "ভগবান শাপ দেবেন!": a touch more, a small nod
-  { f: V.shap + 6, in: 12, ease: "inOut", lean: 8, headNod: 4, brow: 0.55 },
-  // 02B P3: waits for his answer with a half-scolding look
-  { f: P_SHAP[0] + 14, in: 16, ease: "inOut", lean: 3, headNod: 0, smile: 0.3, brow: 0.4, rS: 10, rE: -14, rHand: "relaxed" },
-  // 02C: listens
-  { f: V.amar + 30, in: 30, ease: "inOut", brow: 0.3, smile: 0.25, headTilt: 3 },
-  // "তোমাদের মাটির মূর্তি…": the smile fades, a little puzzled
-  { f: V.tomader + 40, in: 40, ease: "inOut", smile: 0.12, brow: 0.38, headTilt: -2 },
-  // 02C P2: her brow softens
-  { f: P_BOJHE[0] + 28, in: 26, ease: "inOut", brow: 0.05, smile: 0.3, headTilt: 4, lid: 0.12 },
-];
-const charuBase = sway(A(CHARU_KEYS), 83, 0.6);
-/** Small forearm lift while the open palm scolds; no pointing, no flailing. */
-const charuGesture = (fr: number) => windowed(fr, V.tuiPaye - 6, V.tuiPaye + 62, 12) * 6 * Math.sin((fr - V.tuiPaye + 6) * 0.3);
-const charuAct = (fr: number): Partial<Pose> => {
-  const k = charuBase(fr);
-  return { ...k, rE: (k.rE ?? 0) + charuGesture(fr), stride: charuStride(fr) };
+/** Slow agreeing nods inside each window (headNod degrees, downward only), each girl with her own period and phase. */
+const nodsAt = (fr: number, windows: Array<[number, number]>, period: number, phase: number, amp = 3.4) => {
+  let nod = 0;
+  for (const [a, b] of windows) {
+    const env = windowed(fr, a, b, 8);
+    if (env <= 0) continue;
+    nod += Math.max(0, Math.sin(((fr - a) / period) * Math.PI * 2 + phase)) * amp * env;
+  }
+  return nod;
 };
 
-/* The two girls (Charu's young relatives), behind her at the left. They never speak: they only giggle. */
+/*
+ * The three girls who came to pick flowers (STO-17a). On "হঠাৎ সবাই দেখে" they turn to him and walk over, gathering
+ * in a gentle half-circle at his left; the eldest speaks the scolding line (lip sync), the other two nod, lean in and
+ * giggle behind their hands. Charu is not in this scene: the girls even threaten to tell his mother.
+ */
 
+/** Each girl eases from her start spot to her place in the half-circle. */
+const walkSpot = (from: Spot, to: Spot, a: number, b: number) => (lf: number): Spot => {
+  const t = EASE.inOut(clamp((lf - a) / (b - a)));
+  return { x: lerp(from.x, to.x, t), y: lerp(from.y, to.y, t), s: lerp(from.s, to.s, t) };
+};
+/** Step amplitude follows the travel speed (about 13 px a frame at stride 1 for a girl at scale 1): no sliding feet. */
+const strideOf = (spot: (lf: number) => Spot) => (lf: number): number => {
+  const a = spot(lf - 1);
+  const b = spot(lf + 1);
+  return clamp(Math.hypot(b.x - a.x, b.y - a.y) / 2 / (13 * spot(lf).s), 0, 1);
+};
+/** The eldest sets off a beat after the heads turn on "সবাই"; all three are in place soon after the cut to the medium. */
+const WALK_A = V.sabai + 14;
+const ELDEST_AT = walkSpot(ELDEST_FROM, ELDEST_TO, WALK_A, WALK_A + 86);
+const MIDDLE_AT = walkSpot(MIDDLE_FROM, MIDDLE_TO, WALK_A + 4, WALK_A + 96);
+const YOUNG_AT = walkSpot(YOUNG_FROM, YOUNG_TO, WALK_A + 10, WALK_A + 94);
+
+const skinMid = { skin: "#c98d63", skinLight: "#e6b088", skinShade: "#a0663f", lips: "#a35448" };
 const skinWarm = { skin: "#d9a07a", skinLight: "#f0c4a0", skinShade: "#b47853", lips: "#b0605a" };
 const skinDeep = { skin: "#b97a52", skinLight: "#d89a70", skinShade: "#8d5536", lips: "#94493f" };
 
-/** Older girl, teen-sized, cotton saree with a teal blouse, long plaits. */
+/** The eldest girl (about thirteen, the speaker), teen-sized, cotton saree with a teal blouse, long plaits. */
 const GIRL_A_CAST: CastMember & { look?: (typeof FACE_LOOKS)[string] } = {
   id: "cousin_a",
   age: "adult",
@@ -652,7 +760,7 @@ const GIRL_A_CAST: CastMember & { look?: (typeof FACE_LOOKS)[string] } = {
   seed: 53,
 };
 
-/** Younger girl, a rose frock and plaits. */
+/** The youngest girl, a rose frock and plaits. */
 const GIRL_B_CAST: CastMember & { look?: (typeof FACE_LOOKS)[string] } = {
   id: "cousin_b",
   age: "child",
@@ -675,49 +783,187 @@ const GIRL_B_CAST: CastMember & { look?: (typeof FACE_LOOKS)[string] } = {
   seed: 61,
 };
 
-/** Girl keys; `d` staggers the second girl so they move one after the other. */
-const girlKeys = (d: number, chatTurn: number): PoseKey<Pose>[] => [
-  { f: 0, bodyTurn: 0.3, headTurn: chatTurn, smile: 0.5, rS: 8, rE: -10, lS: 8, lE: -10, rHand: "relaxed", lHand: "relaxed" },
-  // "সবাই দেখে": they turn to him
-  { f: V.sabai + 6 + d, in: 12, ease: "inOut", headTurn: 0.42, eyeX: 0.3, smile: 0.4 },
-  // "ওমা": a glance at Charu
-  { f: V.oma + 6 + d, in: 10, ease: "inOut", headTurn: 0.18, eyeX: 0.1, brow: 0.3, smile: 0.3 },
-  // 02B P1: one after the other they turn back to him, a teasing smile growing
-  { f: P_KANDO[0] + 10 + d, in: 12, ease: "inOut", headTurn: 0.45, eyeX: 0.3, brow: 0.1, smile: 0.62 },
-  // "দেখিস তোর পাপ হবে": a giggle, a hand up at the chest
-  { f: V.dekhis + 10 + d, in: 10, ease: "out", rS: 16, rE: -152, rHand: "open", lean: 3, smile: 0.95, lid: 0.3, headTilt: 6 },
-  { f: V.dekhis + 40 + d, in: 14, ease: "inOut", rS: 10, rE: -40, rHand: "relaxed", lean: 1, lid: 0, smile: 0.7, headTilt: 2 },
-  // 02B P3: the giggle (girls_giggle at the pause start, the second girl 11 frames later)
-  { f: P_SHAP[0] + 6 + d, in: 8, ease: "out", rS: 16, rE: -152, rHand: "open", lean: 4, smile: 0.95, lid: 0.3, headTilt: 7 },
-  { f: P_SHAP[0] + 30 + d * 0.6, in: 12, ease: "inOut", rS: 8, rE: -10, rHand: "relaxed", lean: 0, lid: 0, smile: 0.62, headTilt: 1 },
-  // "তোমাদের মাটির মূর্তি…": their smiles slowly fade
-  { f: V.tomader + 60 + d, in: 50, ease: "inOut", smile: 0.28, brow: 0.2 },
-  // 02C P2: the last giggle fades; they glance at each other, unsure, and back to him
-  { f: P_BOJHE[0] + 18, in: 10, ease: "inOut", headTurn: d ? 0.62 : -0.1, brow: 0.38, smile: 0.22 },
-  { f: P_BOJHE[0] + 34, in: 12, ease: "inOut", headTurn: 0.42, brow: 0.15, smile: 0.32 },
+/** A middle girl, about ten, a marigold frock and plaits. */
+const GIRL_C_CAST: CastMember & { look?: (typeof FACE_LOOKS)[string] } = {
+  id: "cousin_c",
+  age: "child",
+  sex: "f",
+  height: 1.1,
+  girth: 1.0,
+  ...skinMid,
+  hair: "#1a1110",
+  hairLight: "#47362d",
+  hairStyle: "pigtails",
+  outfit: "frock",
+  top: "#e0a32c",
+  topLight: "#f0c25e",
+  topShade: "#a87616",
+  sleeve: "half",
+  lower: "none",
+  lowerColor: "#4f8f5a",
+  lowerShade: "#356b40",
+  ribbon: "#d0587a",
+  look: FACE_LOOKS.madhu,
+  seed: 71,
+};
+
+/*
+ * The eldest girl ("elder sisterly", half shocked, half teasing). Keys reach their pose at `f` after `in` frames, so a
+ * gesture keyed at cue + in - 8 starts 8 frames before its word.
+ */
+const ELDEST_KEYS: PoseKey<Pose>[] = [
+  { f: 0, bodyTurn: 0.3, headTurn: -0.35, smile: 0.5, rS: 8, rE: -10, lS: 8, lE: -10, rHand: "relaxed", lHand: "relaxed" },
+  // "সবাই দেখে": she turns to him, then walks over (body turned to her travel)
+  { f: V.sabai + 6, in: 12, ease: "inOut", headTurn: 0.42, eyeX: 0.3, smile: 0.4 },
+  { f: WALK_A + 18, in: 16, ease: "inOut", bodyTurn: 0.45, headTurn: 0.34 },
+  // in her place, facing him, curious
+  { f: WALK_A + 94, in: 16, ease: "inOut", bodyTurn: 0.38, headTurn: 0.42, brow: 0.25, smile: 0.4, lean: 1 },
+  // "নিজের পায়ে": her brows go up (on his own feet?)
+  { f: V.nijerPaye + 6, in: 12, ease: "inOut", brow: 0.55, smile: 0.25, headTilt: 4 },
+  // 02A P2: a quick wide-eyed glance at the youngest beside her, then back to him
+  { f: P_FLOWERS[0] + 6, in: 7, ease: "inOut", headTurn: -0.18, eyeX: -0.35 },
+  { f: P_FLOWERS[0] + 20, in: 8, ease: "inOut", headTurn: 0.42, eyeX: 0.3 },
+  // "প্রণাম করছে": he bows to himself; she straightens, eyes wide
+  { f: V.ar + 40, in: 14, ease: "inOut", brow: 0.65, smile: 0.15, lean: -1, headTilt: 0 },
+  // 02A P3: she glances back at the other two, wide-eyed; a breath in before she speaks
+  { f: P_PRANAM[0] + 14, in: 8, ease: "inOut", headTurn: -0.2, eyeX: -0.4 },
+  { f: P_PRANAM[0] + 34, in: 10, ease: "inOut", headTurn: 0.42, eyeX: 0.3, gasp: 0.12 },
+  // "ওমা": her hand flies up to her cheek and chin (8 frames before the voice; the frontal arm rig stops at the jaw)
+  { f: V.oma + 4, in: 12, ease: "out", lS: 32, lE: -170, lHand: "relaxed", gasp: 0.3, brow: 0.75, smile: 0.2, headTurn: 0.45, lean: -1 },
+  // "একি কাণ্ড!": a small shake of the head, the hand still at her cheek
+  { f: V.eki + 10, in: 10, ease: "inOut", headTilt: 4 },
+  { f: V.eki + 20, in: 10, ease: "inOut", headTilt: -3 },
+  // 02B P1: one more little shake, then the hand comes down and a teasing smile grows
+  { f: P_KANDO[0] + 8, in: 8, ease: "inOut", headTilt: 2 },
+  { f: P_KANDO[0] + 22, in: 14, ease: "inOut", lS: 8, lE: -10, gasp: 0, brow: 0.5, headTilt: 0, smile: 0.38 },
+  // "তুই ঠাকুরের ফুল…": the elder-sister tone, she leans toward him
+  { f: V.tui + 4, in: 12, ease: "inOut", bodyTurn: 0.44, headTurn: 0.48, lean: 3, brow: 0.45, smile: 0.3, headTilt: 3 },
+  // "নিজের পায়ে": she points gently at the flowers on his feet (8 frames before the words), eyes on them
+  { f: V.tuiPaye + 2, in: 10, ease: "out", rS: 55, rE: -6, rHand: "point", eyeY: 0.35, headNod: 3 },
+  // "দিচ্ছিস কেন রে?": the point opens into a questioning palm, the head tilts
+  { f: V.tuiPaye + 40, in: 12, ease: "inOut", rS: 30, rE: -42, rHand: "open", eyeY: 0, headNod: 0, headTilt: 6, brow: 0.6 },
+  // 02B P2: she waits for an answer, brows up, a playful tilt; the palm drops
+  { f: P_KENO[0] + 22, in: 14, ease: "inOut", rS: 12, rE: -16, rHand: "relaxed", headTilt: 7, brow: 0.55, smile: 0.4, lean: 2 },
+  // "দেখিস তোর পাপ হবে": the forefinger comes up (eldestWag wags it), she leans in
+  { f: V.dekhis + 2, in: 10, ease: "out", rS: 32, rE: 125, rHand: "point", lean: 5, headTilt: -3, smile: 0.3, brow: 0.5 },
+  // "ভগবান শাপ দেবেন!": a little nod with it
+  { f: V.shap + 6, in: 12, ease: "inOut", lean: 6, headNod: 4, brow: 0.6, smile: 0.35 },
+  // 02B P3: the finger comes down; she waits for his answer, half scolding, half smiling
+  { f: P_SHAP[0] + 16, in: 16, ease: "inOut", lean: 2, headNod: 0, headTilt: 4, rS: 10, rE: -14, rHand: "relaxed", smile: 0.42, brow: 0.4 },
+  // 02C: she listens
+  { f: V.toder + 10, in: 12, ease: "inOut", brow: 0.55, smile: 0.3, headTilt: 1 },
+  { f: V.amar + 30, in: 30, ease: "inOut", brow: 0.3, smile: 0.28, headTilt: 3 },
+  // "তোমাদের মাটির মূর্তি…": the smile fades, a little puzzled
+  { f: V.tomader + 40, in: 40, ease: "inOut", smile: 0.12, brow: 0.38, headTilt: -2 },
+  // 02C P2: a glance at the youngest, unsure; back to him, her brow softening
+  { f: P_BOJHE[0] + 12, in: 9, ease: "inOut", headTurn: -0.18, eyeX: -0.35, brow: 0.3 },
+  { f: P_BOJHE[0] + 30, in: 12, ease: "inOut", headTurn: 0.45, eyeX: 0.3, brow: 0.05, smile: 0.3, lid: 0.1, headTilt: 4 },
 ];
-const girlAct = (keys: PoseKey<Pose>[], seed: number, period: number, phase: number, windows: Array<[number, number]>) => {
-  const base = sway(A(keys), seed, 1);
-  return (fr: number): Partial<Pose> => {
-    const k = base(fr);
-    const g = giggleAt(fr, windows, period, phase);
-    // the open pause: a few nods as they chat, before they turn to him
-    const chat = windowed(fr, -20, V.sabai + 6, 8) * 2.5 * Math.sin(fr * 0.33 + seed);
-    return { ...k, headNod: (k.headNod ?? 0) + g.nod + chat, bodyX: (k.bodyX ?? 0) + g.dx };
+const eldestBase = sway(A(ELDEST_KEYS), 53, 0.8);
+const ELDEST_STRIDE = strideOf(ELDEST_AT);
+/** The finger wag on "দেখিস তোর পাপ হবে, ভগবান শাপ দেবেন!": small, quick, playful. */
+const eldestWag = (fr: number) => windowed(fr, V.dekhis + 6, V.shap + 34, 8) * Math.sin((fr - V.dekhis) * 0.62);
+const ELDEST_ACT = (fr: number): Partial<Pose> => {
+  const k = eldestBase(fr);
+  const chat = windowed(fr, -20, V.sabai + 6, 8) * 2.5 * Math.sin(fr * 0.33 + 53);
+  const wag = eldestWag(fr);
+  return {
+    ...k,
+    headNod: (k.headNod ?? 0) + chat,
+    rE: (k.rE ?? 0) + 13 * wag,
+    rS: (k.rS ?? 0) + 3 * wag,
+    stride: ELDEST_STRIDE(fr),
   };
 };
-const GIRL_A_ACT = girlAct(girlKeys(0, -0.35), 53, 19, 0, [
-  [V.dekhis + 8, V.dekhis + 42],
-  [P_SHAP[0], P_SHAP[0] + 28],
-  [P_BOJHE[0], P_BOJHE[0] + 12],
-]);
-const GIRL_B_ACT = girlAct(girlKeys(10, 0.55), 61, 14, 2, [
-  [V.dekhis + 18, V.dekhis + 50],
-  [P_SHAP[0] + 11, P_SHAP[0] + 36],
-]);
 
-/* The scene 01 women (STO-17 default): back from the flower gathering with their full sajhis, by the fence at the
- * right. They chat in the open pause and turn to him on "সবাই দেখে", one after another. */
+/**
+ * The other two girls (they never speak). `d` staggers them; `toEldest` is the head turn that looks at the eldest;
+ * `toOther` the turn that looks at the other follower (02C P2).
+ */
+const followerKeys = (d: number, chatTurn: number, toEldest: number, toOther: number): PoseKey<Pose>[] => [
+  { f: 0, bodyTurn: 0.3, headTurn: chatTurn, smile: 0.5, rS: 8, rE: -10, lS: 8, lE: -10, rHand: "relaxed", lHand: "relaxed" },
+  // "সবাই দেখে": they turn to him and follow the eldest over
+  { f: V.sabai + 6 + d, in: 12, ease: "inOut", headTurn: 0.42, eyeX: 0.3, smile: 0.4 },
+  { f: WALK_A + 22 + d, in: 16, ease: "inOut", bodyTurn: 0.45, headTurn: 0.34 },
+  { f: WALK_A + 98 + d, in: 16, ease: "inOut", bodyTurn: 0.36, headTurn: 0.42, brow: 0.2, smile: 0.45 },
+  // "নিজের পায়ে": eyes wide
+  { f: V.nijerPaye + 10 + d, in: 12, ease: "inOut", brow: 0.5, smile: 0.3 },
+  // 02A P2: a glance at the eldest, back to him
+  { f: P_FLOWERS[0] + 6 + d * 0.5, in: 7, ease: "inOut", headTurn: toEldest, eyeX: toEldest * 0.6 },
+  { f: P_FLOWERS[0] + 20 + d * 0.5, in: 8, ease: "inOut", headTurn: 0.42, eyeX: 0.3 },
+  // 02A P3: the glance again, brows up
+  { f: P_PRANAM[0] + 12 + d, in: 8, ease: "inOut", headTurn: toEldest, eyeX: toEldest * 0.6, brow: 0.6 },
+  { f: P_PRANAM[0] + 32 + d, in: 10, ease: "inOut", headTurn: 0.42, eyeX: 0.3 },
+  // "ওমা": they look at the eldest as she gasps
+  { f: V.oma + 8 + d, in: 10, ease: "inOut", headTurn: toEldest, eyeX: toEldest * 0.6, brow: 0.3, smile: 0.45 },
+  // 02B P1: back to him, leaning in, a giggle behind the hand
+  { f: P_KANDO[0] + 6 + d, in: 9, ease: "out", headTurn: 0.45, eyeX: 0.3, lS: 14, lE: -166, lHand: "open", lean: 4, smile: 0.9, lid: 0.3, headTilt: 6 },
+  { f: P_KANDO[0] + 26 + d * 0.6, in: 12, ease: "inOut", lS: 8, lE: -10, lHand: "relaxed", lean: 3, lid: 0, smile: 0.6, headTilt: 2, brow: 0.1 },
+  // "দেখিস তোর পাপ হবে": they lean in, nodding along (nodsAt)
+  { f: V.dekhis + 10 + d, in: 12, ease: "inOut", lean: 5, smile: 0.55 },
+  // 02B P3: the giggle behind the hand
+  { f: P_SHAP[0] + 6 + d, in: 8, ease: "out", lS: 14, lE: -166, lHand: "open", lean: 5, smile: 0.95, lid: 0.3, headTilt: 7 },
+  { f: P_SHAP[0] + 30 + d * 0.6, in: 12, ease: "inOut", lS: 8, lE: -10, lHand: "relaxed", lean: 2, lid: 0, smile: 0.6, headTilt: 1 },
+  // "তোমাদের মাটির মূর্তি…": their smiles slowly fade
+  { f: V.tomader + 60 + d, in: 50, ease: "inOut", smile: 0.28, brow: 0.2, lean: 0 },
+  // 02C P2: the last giggle fades; they glance at each other, unsure, and back to him
+  { f: P_BOJHE[0] + 18 + d * 0.3, in: 10, ease: "inOut", headTurn: toOther, eyeX: toOther * 0.6, brow: 0.38, smile: 0.22 },
+  { f: P_BOJHE[0] + 34 + d * 0.3, in: 12, ease: "inOut", headTurn: 0.42, eyeX: 0.3, brow: 0.15, smile: 0.32 },
+];
+const followerAct = (
+  keys: PoseKey<Pose>[],
+  seed: number,
+  spot: (lf: number) => Spot,
+  period: number,
+  phase: number,
+  giggles: Array<[number, number]>,
+  nods: Array<[number, number]>,
+) => {
+  const base = sway(A(keys), seed, 1);
+  const strideAt = strideOf(spot);
+  return (fr: number): Partial<Pose> => {
+    const k = base(fr);
+    const g = giggleAt(fr, giggles, period, phase);
+    // the open pause: a few nods as they chat, before they turn to him
+    const chat = windowed(fr, -20, V.sabai + 6, 8) * 2.5 * Math.sin(fr * 0.33 + seed);
+    const nod = nodsAt(fr, nods, period + 4, phase);
+    return { ...k, headNod: (k.headNod ?? 0) + g.nod + chat + nod, bodyX: (k.bodyX ?? 0) + g.dx, stride: strideAt(fr) };
+  };
+};
+const MIDDLE_ACT = followerAct(
+  followerKeys(4, 0.55, 0.62, -0.3),
+  71,
+  MIDDLE_AT,
+  16,
+  1,
+  [
+    [P_KANDO[0] + 4, P_KANDO[0] + 28],
+    [P_SHAP[0] + 4, P_SHAP[0] + 30],
+    [P_BOJHE[0], P_BOJHE[0] + 12],
+  ],
+  [
+    [V.tuiPaye - 4, V.tuiPaye + 50],
+    [V.dekhis + 12, V.shap + 30],
+  ],
+);
+const YOUNG_ACT = followerAct(
+  followerKeys(10, 0.55, 0.62, 0.2),
+  61,
+  YOUNG_AT,
+  14,
+  2,
+  [
+    [P_KANDO[0] + 10, P_KANDO[0] + 34],
+    [P_SHAP[0] + 11, P_SHAP[0] + 36],
+  ],
+  [
+    [V.tuiPaye + 2, V.tuiPaye + 56],
+    [V.dekhis + 18, V.shap + 34],
+  ],
+);
+
+/* The scene 01 girls of the house (STO-18): their full sajis set down at the tulsi-tala, they stand past the mancha
+ * at the right, chat in the open pause and turn to him on "সবাই দেখে", one after another. */
 
 const SPOTS: Array<[number, number]> = [
   [-16, -12],
@@ -752,22 +998,6 @@ const Bloom: React.FC<{ x: number; y: number; r: number; kind: FlowerKind; rot?:
     </g>
   );
 };
-/** A full sajhi basket hanging from its handle (the grip point), as in scene 01. */
-const sajhi =
-  (mix: FlowerKind[]): PropRenderer =>
-  ({ scale }) => (
-    <g transform={`scale(${scale * 0.9})`}>
-      <path d="M -24 17 Q 0 -17 24 17" stroke="#8c5f30" strokeWidth={3} fill="none" />
-      <path d="M -26 19 Q -28 43 0 46 Q 28 43 26 19 Z" fill="#b8844a" />
-      {[27, 34, 41].map((y) => (
-        <path key={y} d={`M ${-25 + (y - 19) * 0.05} ${y} Q 0 ${y + 6} ${25 - (y - 19) * 0.05} ${y}`} stroke="#7a5227" strokeWidth={1.2} fill="none" opacity={0.6} />
-      ))}
-      <ellipse cx={0} cy={19} rx={26} ry={5.5} fill="#d6a867" stroke="#7a5227" strokeWidth={1.1} />
-      {SPOTS.map(([x, y], i) => (
-        <Bloom key={i} x={x} y={19 + y * 0.6} r={6.5} kind={mix[i % mix.length]} rot={i * 23} />
-      ))}
-    </g>
-  );
 const Sprig: PropRenderer = ({ scale }) => (
   <g transform={`scale(${scale * 0.9}) translate(0, -18)`}>
     <path d="M 0 0 Q 6 -18 12 -34" stroke="#7a5a2c" strokeWidth={2} fill="none" strokeLinecap="round" />
@@ -837,12 +1067,12 @@ const womanAct = (seed: number, d: number, chatTurn: number, hold: Partial<Pose>
     return { ...k, headNod: (k.headNod ?? 0) + chat };
   };
 };
-/** Sarala, Mina, Tuni and Rekha, exactly as scene 01 dresses them (loose damp hair on the three women). */
+/** Sarala, Mina, Tuni and Rekha, exactly as scene 01 dresses them (loose damp hair on the three elder girls). */
 const WOMEN: Array<{ cast: CastMember; x: number; y: number; act: (fr: number) => Partial<Pose>; props: Record<string, PropRenderer>; hair?: boolean }> = [
-  { cast: S01_SARALA, x: 1600, y: WOMEN_Y + 2, act: womanAct(101, 0, 0.3, { lS: 4, lE: 0, lHand: "hold", lProp: "basket" }), props: { basket: sajhi(["jaba", "jhumko", "shiuli"]) }, hair: true },
-  { cast: S01_MINA, x: 1722, y: WOMEN_Y - 2, act: womanAct(207, 6, -0.3, { rS: 6, rE: -2, rHand: "hold", rProp: "basket" }), props: { basket: sajhi(["jhumko", "jhumko", "shiuli"]) }, hair: true },
-  { cast: S01_TUNI, x: 1835, y: WOMEN_Y + 6, act: womanAct(311, 10, 0.25, { rS: 80, rE: -84, rHand: "hold", rProp: "sprig" }), props: { sprig: Sprig } },
-  { cast: S01_REKHA, x: 1945, y: WOMEN_Y, act: womanAct(419, 3, -0.3, { rS: 2, rE: 1, rHand: "hold", rProp: "basket" }), props: { basket: sajhi(["jaba", "shiuli"]) }, hair: true },
+  { cast: S01_SARALA, ...WOMEN_AT[0], act: womanAct(101, 0, 0.3, { lHand: "relaxed", rHand: "relaxed" }), props: {}, hair: true },
+  { cast: S01_MINA, ...WOMEN_AT[1], act: womanAct(207, 6, -0.3, { lHand: "relaxed", rHand: "relaxed" }), props: {}, hair: true },
+  { cast: S01_TUNI, ...WOMEN_AT[2], act: womanAct(311, 10, 0.25, { rS: 80, rE: -84, rHand: "hold", rProp: "sprig" }), props: { sprig: Sprig } },
+  { cast: S01_REKHA, ...WOMEN_AT[3], act: womanAct(419, 3, -0.3, { lHand: "relaxed", rHand: "relaxed" }), props: {}, hair: true },
 ];
 
 /* ---------------- drawn pieces ---------------- */
@@ -916,6 +1146,267 @@ const GroundGlow: React.FC<{ level: number }> = ({ level }) => (
   </g>
 );
 
+/* ---------------- courtyard pieces (the same courtyard as scene 01) ---------------- */
+
+/*
+ * The trees, tree beds and sajis are drawn as scene 01 draws them (copied from Scene01SharadFlowerGathering.tsx, whose
+ * layout VEDIC_COURTYARD both scenes share), in WORLD units on the floor plane: the shiuli tree with its carpet of
+ * fallen flowers, the big jhumko tree and the big jaba tree in their brick-rimmed earthen beds, and at the foot of the
+ * tulsi mancha the full sajis the girls set down (the first of them, nearest Balak, is the dala he takes flowers from:
+ * the Basket below, drawn where the rig's hand reaches).
+ */
+const VC = VEDIC_COURTYARD;
+
+/** A big open jaba (hibiscus) with its long stamen column. */
+const JabaBlossom: React.FC<{ x: number; y: number; r: number; rot?: number }> = ({ x, y, r, rot = 0 }) => (
+  <g transform={`translate(${x}, ${y}) rotate(${rot})`}>
+    <Bloom x={0} y={0} r={r} kind="jaba" />
+    <circle r={r * 0.62} fill="#b0141f" opacity={0.35} />
+    <path d={`M 0 0 L ${r * 0.95} ${r * 0.55}`} stroke="#f2c14a" strokeWidth={Math.max(1.2, r * 0.1)} strokeLinecap="round" />
+    <circle cx={r * 0.98} cy={r * 0.57} r={r * 0.13} fill="#ffd54a" />
+  </g>
+);
+
+/** A hanging jhumko bloom (earring-like bell of orange-red frilled petals and a dangling stamen); (0, 0) is its top. */
+const JhumkoBell: React.FC<{ x: number; y: number; s?: number; rot?: number }> = ({ x, y, s = 1, rot = 0 }) => (
+  <g transform={`translate(${x}, ${y}) rotate(${rot}) scale(${s})`}>
+    <path d="M -9 2 Q 0 -6 9 2 Q 12 13 6 18 L 3 14 L 0 19 L -3 14 L -6 18 Q -12 13 -9 2 Z" fill="#ec5b2a" />
+    <path d="M -5 3 Q 0 -1 5 3 Q 6 9 0 12 Q -6 9 -5 3 Z" fill="#f79a3e" opacity={0.85} />
+    <path d="M 0 12 L 1 28" stroke="#f3c24a" strokeWidth={1.4} />
+    <circle cx={1} cy={29} r={2.2} fill="#ffd24a" />
+  </g>
+);
+
+/** Raised earthen ring bed with a brick rim round a tree's foot. */
+const TreeBed: React.FC<{ x: number; y: number; rx: number }> = ({ x, y, rx }) => (
+  <g>
+    <ellipse cx={x} cy={y + 4} rx={rx + 10} ry={rx * 0.22 + 4} fill="#1a0e08" opacity={0.28} />
+    <ellipse cx={x} cy={y} rx={rx} ry={rx * 0.22} fill="#8a5a3a" />
+    <ellipse cx={x} cy={y - 3} rx={rx - 7} ry={rx * 0.22 - 3} fill="#5a3a26" />
+    <ellipse cx={x + rx * 0.3} cy={y - 4} rx={rx * 0.35} ry={rx * 0.06} fill="#7a5236" opacity={0.6} />
+  </g>
+);
+
+/** Shiuli (night jasmine) tree: sways from the trunk base, white flowers, orange stems. */
+const ShiuliTree: React.FC<{ x: number; y: number; seed: number; f: number }> = ({ x, y, seed, f }) => {
+  const angle = 0.6 * Math.sin(f * 0.026 + seed) + 0.45 * noise1(f * 0.016, seed + 4);
+  return (
+    <g transform={`translate(${x}, ${y}) rotate(${angle})`}>
+      <path d="M -16 0 Q -6 -180 -2 -330 L 10 -330 Q 8 -180 18 0 Z" fill="#6e4b30" />
+      <path d="M 0 -280 L -120 -420" stroke="#6e4b30" strokeWidth={8} strokeLinecap="round" />
+      <path d="M 10 -300 L 130 -440" stroke="#6e4b30" strokeWidth={8} strokeLinecap="round" />
+      <path d="M 0 -330 L -20 -500" stroke="#6e4b30" strokeWidth={7} strokeLinecap="round" />
+      {Array.from({ length: 10 }, (_, i) => (
+        <circle
+          key={`c${i}`}
+          cx={(hash(seed * 17 + i) - 0.5) * 360}
+          cy={-470 + (hash(seed * 29 + i) - 0.5) * 190}
+          r={86 + hash(seed * 41 + i) * 40}
+          fill={i % 3 === 0 ? "#2f5a31" : i % 3 === 1 ? "#3d6b3a" : "#4d7f45"}
+        />
+      ))}
+      <ellipse cx={110} cy={-500} rx={120} ry={90} fill="#ffd89a" opacity={0.14} />
+      {Array.from({ length: 80 }, (_, i) => {
+        const cx = (hash(seed * 100 + i * 3.7) - 0.5) * 400;
+        const cy = -490 + (hash(seed * 100 + i * 5.1) - 0.5) * 260;
+        return (
+          <g key={`f${i}`}>
+            <circle cx={cx} cy={cy} r={3.6} fill="#fbf7f0" />
+            <circle cx={cx} cy={cy + 1.2} r={1.3} fill="#f0962c" />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+/** The carpet of fallen shiuli on the flagstones under the tree. */
+const FallenShiuli: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <g>
+    {Array.from({ length: 60 }, (_, i) => {
+      const a = hash(i * 3.9 + 2) * Math.PI * 2;
+      const r = Math.sqrt(hash(i * 5.3 + 1));
+      return <Bloom key={i} x={x + Math.cos(a) * 240 * r} y={y + 40 + Math.sin(a) * 44 * r + 12} r={5} kind="shiuli" rot={i * 37} />;
+    })}
+  </g>
+);
+
+/** Leafy crown made of overlapping clusters, darker below and warm-lit on the sun side (right). */
+const Crown: React.FC<{ cx: number; cy: number; rx: number; ry: number; seed: number; tones: [string, string, string] }> = ({ cx, cy, rx, ry, seed, tones }) => (
+  <g>
+    {Array.from({ length: 20 }, (_, i) => {
+      const a = hash(seed * 13 + i * 2.7) * Math.PI * 2;
+      const r = Math.sqrt(hash(seed * 7 + i * 4.1)) * 0.78;
+      const x = cx + Math.cos(a) * rx * r;
+      const y = cy + Math.sin(a) * ry * r;
+      return <circle key={i} cx={x} cy={y} r={(0.34 + hash(seed * 3 + i) * 0.16) * rx} fill={tones[i % 3]} />;
+    })}
+    <ellipse cx={cx} cy={cy + ry * 0.55} rx={rx * 0.8} ry={ry * 0.32} fill="#1c3a1c" opacity={0.28} />
+    <ellipse cx={cx + rx * 0.45} cy={cy - ry * 0.3} rx={rx * 0.5} ry={ry * 0.45} fill="#ffd89a" opacity={0.13} />
+    {Array.from({ length: 34 }, (_, i) => {
+      const a = hash(seed * 31 + i * 1.9) * Math.PI * 2;
+      const r = 0.55 + hash(seed * 37 + i) * 0.45;
+      const x = cx + Math.cos(a) * rx * r;
+      const y = cy + Math.sin(a) * ry * r;
+      return <ellipse key={`l${i}`} cx={x} cy={y} rx={13} ry={6} fill={i % 2 ? "#4e8a44" : "#2e5e2c"} transform={`rotate(${a * 57 + 20} ${x} ${y})`} />;
+    })}
+  </g>
+);
+
+/** Big jaba tree (taller than the girls): trunk, forks, a broad crown dotted with big red jaba. */
+const JabaTree: React.FC<{ f: number }> = ({ f }) => {
+  const { x, y, crown } = VC.jaba;
+  const sway = 0.25 * noise1(f * 0.014, 61);
+  return (
+    <g transform={`rotate(${sway} ${x} ${y})`}>
+      <path d={`M ${x - 18} ${y} Q ${x - 10} ${y - 200} ${x - 24} ${y - 330} L ${x - 4} ${y - 334} Q ${x + 8} ${y - 200} ${x + 18} ${y} Z`} fill="#6a4a32" />
+      <path d={`M ${x - 4} ${y - 30} Q ${x + 2} ${y - 200} ${x - 8} ${y - 320}`} stroke="#8a6446" strokeWidth={4} fill="none" opacity={0.6} />
+      <path d={`M ${x - 14} ${y - 300} Q ${x - 90} ${y - 380} ${x - 170} ${y - 420}`} stroke="#6a4a32" strokeWidth={10} fill="none" strokeLinecap="round" />
+      <path d={`M ${x - 10} ${y - 310} Q ${x + 10} ${y - 380} ${x + 40} ${y - 470}`} stroke="#6a4a32" strokeWidth={9} fill="none" strokeLinecap="round" />
+      <path d={`M ${x - 6} ${y - 320} Q ${x + 10} ${y - 380} ${x + 30} ${y - 410}`} stroke="#6a4a32" strokeWidth={12} fill="none" strokeLinecap="round" />
+      <Crown cx={crown.x} cy={crown.y} rx={210} ry={170} seed={11} tones={["#2c5a2a", "#3a6c34", "#467a3c"]} />
+      {Array.from({ length: 22 }, (_, i) => {
+        const a = hash(i * 6.1 + 3) * Math.PI * 2;
+        const r = 0.45 + hash(i * 4.3 + 8) * 0.5;
+        return <JabaBlossom key={i} x={crown.x + Math.cos(a) * 200 * r} y={crown.y + Math.sin(a) * 160 * r} r={12 + hash(i * 2.2) * 4} rot={i * 47} />;
+      })}
+    </g>
+  );
+};
+
+/**
+ * The jaba tree's long low branch reaching right toward the tulsi (scene 01's girls held it down to pick from it);
+ * released now, it rests a little higher and sways gently, with the flowers the girls left on it.
+ */
+const BRANCH_REST: Array<{ x: number; y: number }> = [
+  { x: 1100, y: 455 },
+  { x: 1186, y: 526 },
+  { x: 1274, y: 526 },
+  { x: 1468, y: 528 },
+  { x: 1550, y: 530 },
+  { x: 1662, y: 552 },
+];
+const JabaBranch: React.FC<{ f: number }> = ({ f }) => {
+  const breeze = 2.4 * noise1(f * 0.018, 77) + 1.2 * noise1(f * 0.041, 78);
+  const pts = BRANCH_REST.map((p, i) => ({ x: p.x, y: p.y + (i / (BRANCH_REST.length - 1)) * breeze }));
+  const d = pts.map((p, i) => `${i ? "L" : "M"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+  return (
+    <g>
+      <path d={d} stroke="#6a4a32" strokeWidth={6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.slice(1).map((p, i) => {
+        const q = pts[i];
+        return [0.25, 0.6, 0.9].map((u, k) => {
+          const x = q.x + (p.x - q.x) * u;
+          const y = q.y + (p.y - q.y) * u;
+          const side = (i + k) % 2 ? 1 : -1;
+          return <ellipse key={`l${i}-${k}`} cx={x + side * 4} cy={y + side * 9} rx={16} ry={6} fill={(i + k) % 3 ? "#3a6c34" : "#2c5a2a"} transform={`rotate(${side * 18} ${x} ${y})`} />;
+        });
+      })}
+      {[1, 3, 4].map((i, k) => (
+        <JabaBlossom key={`b${k}`} x={pts[i].x + 4} y={pts[i].y + 12} r={12} rot={k * 61 + 15} />
+      ))}
+    </g>
+  );
+};
+
+/** Big jhumko tree: trunk, a lighter crown, and orange-red bells hanging on long stalks. */
+const JhumkoTree: React.FC<{ f: number }> = ({ f }) => {
+  const { x, y, crown } = VC.jhumko;
+  const sway = 0.3 * noise1(f * 0.015, 63);
+  return (
+    <g transform={`rotate(${sway} ${x} ${y})`}>
+      <path d={`M ${x - 15} ${y} Q ${x - 6} ${y - 180} ${x - 16} ${y - 300} L ${x + 2} ${y - 302} Q ${x + 6} ${y - 180} ${x + 15} ${y} Z`} fill="#6e4e34" />
+      <path d={`M ${x - 8} ${y - 280} Q ${x - 70} ${y - 340} ${x - 130} ${y - 380}`} stroke="#6e4e34" strokeWidth={8} fill="none" strokeLinecap="round" />
+      <path d={`M ${x - 4} ${y - 290} Q ${x + 40} ${y - 340} ${x + 110} ${y - 360}`} stroke="#6e4e34" strokeWidth={8} fill="none" strokeLinecap="round" />
+      <path d={`M ${x - 6} ${y - 300} Q ${x - 20} ${y - 250} ${x - 50} ${y - 236}`} stroke="#6e4e34" strokeWidth={6} fill="none" strokeLinecap="round" />
+      <Crown cx={crown.x} cy={crown.y} rx={185} ry={155} seed={23} tones={["#33632e", "#447a3a", "#52894a"]} />
+      {Array.from({ length: 18 }, (_, i) => {
+        const bx = crown.x + (hash(i * 5.9 + 1) - 0.5) * 330;
+        const top = crown.y + 70 + hash(i * 3.1 + 2) * 70 - Math.abs(bx - crown.x) * 0.35;
+        const len = 18 + hash(i * 2.7 + 5) * 26;
+        const sw = 2.5 * noise1(f * 0.03, i * 3 + 9);
+        return (
+          <g key={i}>
+            <path d={`M ${bx} ${top} Q ${bx + sw * 0.5} ${top + len * 0.5} ${bx + sw} ${top + len}`} stroke="#3f6b35" strokeWidth={1.4} fill="none" />
+            <JhumkoBell x={bx + sw} y={top + len} s={0.95} rot={-sw * 3} />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+const MIX_JABA: FlowerKind[] = ["jaba", "jaba", "shiuli"];
+const MIX_JHUMKO: FlowerKind[] = ["jhumko", "jhumko", "jaba"];
+const MIX_MIXED: FlowerKind[] = ["jaba", "jhumko", "shiuli"];
+/** Scene 01's eleven flower spots in a full saji. */
+const SAJI_SPOTS: Array<[number, number]> = [...SPOTS, [-12, -20], [8, -22]];
+
+/** A full saji standing on the ground (bottom at y), as scene 01 draws it. */
+const GroundSaji: React.FC<{ x: number; y: number; s?: number; mix: FlowerKind[] }> = ({ x, y, s = 1.06, mix }) => (
+  <g transform={`translate(${x}, ${y}) scale(${s}) translate(0, -46)`}>
+    <ellipse cx={0} cy={46} rx={30} ry={6} fill="#1a0e08" opacity={0.3} />
+    <path d="M -24 17 Q 0 -17 24 17" stroke="#8c5f30" strokeWidth={3} fill="none" />
+    <path d="M -26 19 Q -28 43 0 46 Q 28 43 26 19 Z" fill="#b8844a" />
+    {[27, 34, 41].map((yy) => (
+      <path key={yy} d={`M ${-25 + (yy - 19) * 0.05} ${yy} Q 0 ${yy + 6} ${25 - (yy - 19) * 0.05} ${yy}`} stroke="#7a5227" strokeWidth={1.2} fill="none" opacity={0.6} />
+    ))}
+    <ellipse cx={0} cy={19} rx={26} ry={5.5} fill="#d6a867" stroke="#7a5227" strokeWidth={1.1} />
+    {SAJI_SPOTS.map(([fx, fy], i) => (
+      <Bloom key={i} x={fx} y={19 + fy * 0.6} r={6.5} kind={mix[i % mix.length]} rot={i * 23} />
+    ))}
+  </g>
+);
+
+/**
+ * The girls' sajis at the tulsi-tala, where scene 01 sets them down (WORLD units). The first one, nearest Balak, is
+ * the dala he picks from (Basket), drawn where the rig's hand reaches.
+ */
+const SAJIS = VC.sajisAtTulsi.map((x, i) => ({ x, y: VC.tulsi.y + 16 + (i % 2) * 6, mix: [MIX_JABA, MIX_JHUMKO, MIX_MIXED, MIX_JABA][i] })).slice(1);
+
+/** The low wooden pidi the kolsi rests on beside him (staging units). */
+const Pidi: React.FC = () => (
+  <g transform={`translate(${KOLSI_REST.x}, ${BALAK_POS.y})`}>
+    <ellipse cx={0} cy={2} rx={26} ry={5} fill="#1a0e08" opacity={0.3} />
+    <rect x={-22} y={-24} width={44} height={8} rx={2} fill="#8a5a34" />
+    <rect x={-22} y={-24} width={44} height={2.5} fill="#b07a4a" />
+    <rect x={-19} y={-16} width={6} height={16} fill="#6a4226" />
+    <rect x={13} y={-16} width={6} height={16} fill="#6a4226" />
+  </g>
+);
+
+/** Morning light on the back building (a night-dressed set): a warm wash and the sun from the upper right. */
+const MorningBackWash: React.FC = () => (
+  <g>
+    <defs>
+      <linearGradient id="s02-back-sun" x1="1" y1="0" x2="0" y2="0.6">
+        <stop offset="0%" stopColor="#fff0c8" stopOpacity={0.5} />
+        <stop offset="55%" stopColor="#ffe2a8" stopOpacity={0.24} />
+        <stop offset="100%" stopColor="#ffd9a0" stopOpacity={0.12} />
+      </linearGradient>
+    </defs>
+    <rect x={-400} y={150} width={2720} height={640} fill="url(#s02-back-sun)" style={{ mixBlendMode: "screen" }} />
+  </g>
+);
+
+/** Morning light on the flagstones: a warm wash, brightest at the back, and a soft pool of sun around the tulsi. */
+const MorningFloorWash: React.FC = () => (
+  <g>
+    <defs>
+      <linearGradient id="s02-floor-sun" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ffe6b8" stopOpacity={0.42} />
+        <stop offset="100%" stopColor="#ffd9a0" stopOpacity={0.2} />
+      </linearGradient>
+      <radialGradient id="s02-floor-pool">
+        <stop offset="0%" stopColor="#ffe9bf" stopOpacity={0.45} />
+        <stop offset="100%" stopColor="#ffe9bf" stopOpacity={0} />
+      </radialGradient>
+    </defs>
+    <rect x={-400} y={784} width={2720} height={600} fill="url(#s02-floor-sun)" style={{ mixBlendMode: "screen" }} />
+    <ellipse cx={1150} cy={950} rx={900} ry={140} fill="url(#s02-floor-pool)" style={{ mixBlendMode: "screen" }} />
+  </g>
+);
+
 /* ---------------- scene ---------------- */
 
 const DAY_LIGHTS: SceneLight[] = [
@@ -949,41 +1440,70 @@ export const Scene02FlowersOnOwnFeet: React.FC = () => {
   // Scene 02's open pause holds through the dissolve from scene 01: the fade-in runs on the real clock.
   const fade = clamp(lifeF / 10) * clamp((DUR - lifeF) / 12);
 
-  const charuX = charuXAt(lifeF);
+  // The girls walk over on "হঠাৎ সবাই দেখে" and stand round him in a half-circle.
+  const eldest = ELDEST_AT(lifeF);
+  const middle = MIDDLE_AT(lifeF);
+  const young = YOUNG_AT(lifeF);
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: UJANCHAR_BG.morning, overflow: "hidden" }}>
-      <Stage cam={cam} background={UJANCHAR_BG.morning} opacity={fade}>
+    <div style={{ position: "absolute", inset: 0, background: CY_BG, overflow: "hidden" }}>
+      <Stage cam={cam} background={CY_BG} opacity={fade}>
         <SceneLights.Provider value={DAY_LIGHTS}>
-          <UjancharBackdrop f={lifeF} time="morning" cam={cam} cow={false} />
-          <UjancharFloorLayer f={lifeF} time="morning" tulsi={{ x: TULSI.x, y: TULSI.y, s: TULSI.s, lamp: "lit" }} jaba={UJANCHAR_JABA}>
+          {/* the morning sky above the balcony */}
+          <Layer depth={CY.sky} extraBlur={2}>
+            <DaySky f={lifeF} sunX={1650} sunY={-40} />
+          </Layer>
+          {/* the Vedic house's inner courtyard: the back building (calmer than the subjects, CAM-11) */}
+          <Layer depth={CY.back} extraBlur={1.2}>
+            <GlowDefs />
+            <CourtyardBack f={lifeF} />
+            <MorningBackWash />
+          </Layer>
+          <Layer depth={CY.floor}>
             <GlowDefs />
             <DivineDefs />
-            {/* the scene 01 women at the right, by the fence */}
+            <CourtyardFloor f={lifeF} />
+            <MorningFloorWash />
+            {/* the courtyard as scene 01 shows it: tree beds, the shiuli carpet, the three trees, the released jaba branch */}
+            <TreeBed x={VC.shiuli.x} y={VC.shiuli.y + 2} rx={70} />
+            <TreeBed x={VC.jhumko.x} y={VC.jhumko.y + 2} rx={64} />
+            <TreeBed x={VC.jaba.x} y={VC.jaba.y + 2} rx={76} />
+            <FallenShiuli x={VC.shiuli.x + 40} y={VC.shiuli.y - 12} />
+            <ShiuliTree x={VC.shiuli.x} y={VC.shiuli.y} seed={1} f={lifeF} />
+            <JhumkoTree f={lifeF} />
+            <JabaTree f={lifeF} />
+            <JabaBranch f={lifeF} />
+            {/* the tulsi mancha where scene 01 has it, and the girls' full sajis set down at its foot */}
+            <TulsiMancha x={VC.tulsi.x} y={VC.tulsi.y} f={lifeF} s={VC.tulsi.s} />
+            {SAJIS.map((sj) => (
+              <GroundSaji key={sj.x} x={sj.x} y={sj.y} mix={sj.mix} />
+            ))}
+            {/* Balak, the girls and the scene 01 girls of the house, in staging units */}
+            <g transform={STAGING_TRANSFORM}>
+            {/* the scene 01 girls of the house at the right, past the mancha */}
             {WOMEN.map((w) => (
               <React.Fragment key={w.cast.id}>
                 {w.hair && <LooseHair cast={w.cast} pose={w.act(lifeF)} lifeF={lifeF} x={w.x} y={w.y} scale={WOMEN_S} />}
                 <Puppet cast={w.cast} f={lifeF} lifeF={lifeF} x={w.x} y={w.y} scale={WOMEN_S} acting={w.act} props={w.props} light={SUN} stillness={0.2} />
               </React.Fragment>
             ))}
-            {/* the two girls behind Charu's spot, at the left */}
-            <Puppet cast={GIRL_B_CAST} f={lifeF} lifeF={lifeF} x={GIRL_B.x} y={GIRL_B.y} scale={GIRL_B.s} acting={GIRL_B_ACT} light={SUN} />
-            <Puppet cast={GIRL_A_CAST} f={lifeF} lifeF={lifeF} x={GIRL_A.x} y={GIRL_A.y} scale={GIRL_A.s} acting={GIRL_A_ACT} light={SUN} />
+            {/* the middle girl (behind, nearest him) and the youngest (at the left); they never speak */}
+            <Puppet cast={GIRL_C_CAST} f={lifeF} lifeF={lifeF} x={middle.x} y={middle.y} scale={middle.s} acting={MIDDLE_ACT} light={SUN} />
+            <Puppet cast={GIRL_B_CAST} f={lifeF} lifeF={lifeF} x={young.x} y={young.y} scale={young.s} acting={YOUNG_ACT} light={SUN} />
             {/* fallen tulsi leaves, the dala, the leaf he picks and the resting kolsi */}
             {FLOOR_LEAVES.map((l, i) => (
               <Leaf key={i} x={BALAK_POS.x + l.dx} y={BALAK_POS.y + l.dy} rot={l.rot} s={l.s} c={l.c} />
             ))}
             <Basket />
+            <Pidi />
             {pickLeafOp > 0.01 && <PickLeaf opacity={pickLeafOp} />}
             {kolsiRestOp > 0.01 && (
               <g opacity={kolsiRestOp} transform={`translate(${KOLSI_REST.x}, ${KOLSI_REST.y})`}>
                 <KolsiShape />
               </g>
             )}
-            {/* Charu (walks in from the left during 02A P3) */}
-            {charuX > -300 && (
-              <Puppet cast={CAST.charu} f={lifeF} lifeF={lifeF} x={charuX} y={CHARU_Y} scale={1.12} acting={charuAct} mouth={charuMouth} talk={charuTalk} light={SUN} />
-            )}
+            {/* the eldest girl, in front at his left: she speaks the scolding line (the only mouth that moves to it) */}
+            <Puppet cast={GIRL_A_CAST} f={lifeF} lifeF={lifeF} x={eldest.x} y={eldest.y} scale={eldest.s} acting={ELDEST_ACT} mouth={eldestMouth} talk={eldestTalk} light={SUN} />
             {/* Balak's restrained divine light: a soft warm halo behind his head and a faint ground glow */}
             <GroundGlow level={0.55 + 0.45 * beat} />
             <BirulGlow cx={BALAK_POS.x} cy={BALAK_POS.y - 150 * BALAK_POS.s} r={haloR} glow={glow} f={lifeF} />
@@ -992,7 +1512,7 @@ export const Scene02FlowersOnOwnFeet: React.FC = () => {
               y={BALAK_POS.y}
               s={BALAK_POS.s}
               f={f + RIG_PHASE}
-              lifeF={lifeF + RIG_PHASE}
+              lifeF={lifeF + RIG_PHASE + rigLifeShift(lifeF)}
               pose={rig.pose}
               prevPose={rig.prevPose}
               poseStart={rig.poseStart}
@@ -1007,10 +1527,9 @@ export const Scene02FlowersOnOwnFeet: React.FC = () => {
               mouth={mouth}
               glow={glow}
             />
-          </UjancharFloorLayer>
-          <UjancharLightLayer f={lifeF} time="morning" level={0.85} />
-          <UjancharForegroundLayer f={lifeF} time="morning" grass={false} bokeh />
-          <Grade {...ujancharGrade("morning")} />
+            </g>
+          </Layer>
+          <Grade warmth={0.45} vignette={0.5} grain={0.04} bloomAt={[66, 30]} />
         </SceneLights.Provider>
       </Stage>
     </div>

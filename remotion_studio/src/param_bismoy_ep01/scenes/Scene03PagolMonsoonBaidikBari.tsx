@@ -1,219 +1,329 @@
 import React from "react";
-import { useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
 import { clamp, EASE, flicker, hash, track } from "../../cinematic/core/anim";
-import { Grade, Layer, Stage } from "../../cinematic/core/Stage";
-import { Flame, Glow, GlowDefs } from "../../cinematic/fx/Fx";
-import { CAST } from "../../cinematic/rig/cast";
-import { BASE_POSE, CastMember, Lighting, Pose, Puppet } from "../../cinematic/rig/Puppet";
-import { BaidikBariDay } from "../../cinematic/sets/S01_DaySets";
-import { Bolt, Rain, Splashes } from "../../cinematic/sets/S05_Sets";
+import { Glow, GlowDefs } from "../../cinematic/fx/Fx";
+import { Rain } from "../../cinematic/sets/S05_Sets";
 
 /**
- * Series 2 · Episode 1 · Scene 03 — Manasa Puja Monsoon Evening at Baidik Bari.
- * Reuses the detailed Rig v2 `BaidikBariDay` exterior (regraded to cool slate storm)
- * + `Rain`, `Bolt`, `Splashes`, `CAST.charu`, and the Rig v2 `PAGOL` wandering mystic.
- * Local timeline (1140 frames):
- *   12..495   03a_Narrator_Charu.wav (Rain-swept Baidik Bari courtyard, Charushila in the arched doorway)
- *  511..788   03b_Pagol_Omen.wav (Lightning strike; ecstatic Pagol enters, raising arms & laughing)
- *  805..1105  03c_Charu_Wonder.wav (Pagol fades into the rain mist; slow push-in on Charushila in awe)
+ * Series 2 · Episode 1 · Scene 03 — Manasa Puja Monsoon Evening at Baidik Bari (1246 frames = 51.9s @ 24fps).
+ * Broadcast 2D Studio Ghibli Painted Multi-Angle Plates + Local RTX 4060 JoyVASA 24.000fps Neural Lip-Sync + 4-Plane 2.5D Depth Parallax:
+ *   - Shot 3A (0..310f): Wide establishing shot of Baidik Bari & the sacred Tulsi Mancha on a slate-indigo Manasa Puja monsoon evening
+ *     (`plate_3a_baidik_monsoon.jpg`) with glowing warm veranda diyas, 3-plane rain, lightning flashes, thunder camera-shake,
+ *     and foreground thrashing palm-frond parallax while Lady Narrator (`Sola`) narrates the family's arrival at Dogachi / Medinimandal.
+ *   - Shot 3C-1 (290..615f): Cross-dissolves to Mother Charushila Devi in the lamp-lit arched brick veranda of Baidik Bari
+ *     (`p3c_charu_idle_24.mp4` — living, breathing, blinking 24fps JoyVASA stream of `plate_3c_charu_veranda.jpg`), with three luminous
+ *     golden dream-vision motes drifting across the mid-foreground parallax plane as `Sola` describes her three miraculous dreams.
+ *   - Shot 3B (615..908f): Lightning strike & thunder camera-shake cut to the ecstatic wandering mystic (`Pagol`) in the monsoon night courtyard
+ *     (`p3b_pagol_03b_24.mp4` — 24fps JoyVASA neural lip-sync on `03b_Pagol_Omen.wav`), framed on the left by a 2.5D foreground Baidik Bari
+ *     veranda arch pillar (`Plane 3` at `1.75x` parallax) + heavy monsoon rain & lightning illumination!
+ *   - Shot 3C-2 (908..1246f): Cut back to Mother Charushila Devi in the lamp-lit Baidik Bari veranda (`p3c_charu_03c_24.mp4` — 24fps JoyVASA
+ *     neural lip-sync on `03c_Charu_Wonder.wav`) as the camera slowly dollies in through 4-plane 2.5D depth parallax while she whispers in awe.
  */
-
-const PAGOL: CastMember = {
-  id: "pagol",
-  age: "adult",
-  sex: "m",
-  height: 1.0,
-  girth: 0.86,
-  skin: "#b97a52",
-  skinLight: "#d89a70",
-  skinShade: "#8d5536",
-  lips: "#94493f",
-  hair: "#2a2420",
-  hairLight: "#6a5a50",
-  hairStyle: "tousled",
-  outfit: "bare",
-  top: "#b97a52",
-  topLight: "#d89a70",
-  topShade: "#8d5536",
-  sleeve: "none",
-  lower: "dhoti",
-  lowerColor: "#c8712c",
-  lowerShade: "#8a4818",
-  lowerTrim: "#5a2b0d",
-  dhotiLength: "knee",
-  scarf: { color: "#b85c22", shade: "#7a3b14", trim: "#d68c4a", style: "drape" },
-  seed: 73,
-};
-
-const STRIKES = [518, 650];
-const flashAt = (f: number) => {
-  let maxFlash = 0;
-  for (const s of STRIKES) {
-    const d = f - s;
-    if (d >= 0 && d <= 12) {
-      const v = d === 0 ? 0.6 : d === 1 ? 1 : 0.9 * Math.pow(clamp(1 - (d - 1) / 11), 2);
-      maxFlash = Math.max(maxFlash, v);
-    }
-  }
-  return maxFlash;
-};
 
 export const Scene03PagolMonsoonBaidikBari: React.FC = () => {
   const f = useCurrentFrame();
   const fl = flicker(f, 15);
-  const flash = flashAt(f);
 
-  const camZoom = track(f, [
-    [0, 0.96],
-    [495, 1.04],
-    [790, 1.08],
-    [1140, 1.22],
-  ]);
-  const camX = track(f, [
-    [0, -40],
-    [510, 0],
-    [790, 70],
-    [1140, 185],
-  ]);
-  const camY = track(f, [
-    [0, -25],
-    [510, 10],
-    [1140, 35],
-  ]);
+  // Lightning strikes & damped physical thunder camera-shake
+  const strikes = [95, 235, 618, 760];
+  let stormFlash = 0;
+  let shakeX = 0;
+  let shakeY = 0;
+  let shakeRot = 0;
 
-  const pagolIn = EASE.out(clamp((f - 495) / 36));
-  const pagolOut = 1 - EASE.inOut(clamp((f - 795) / 70));
-  const pagolOpacity = Math.min(pagolIn, pagolOut);
-  const pagolDance = f >= 510 && f <= 800 ? Math.sin(f * 0.22) : 0;
+  for (const s of strikes) {
+    const d = f - s;
+    if (d >= 0 && d <= 14) {
+      stormFlash = Math.max(stormFlash, d <= 2 ? 1.0 : Math.pow(clamp(1 - (d - 2) / 11), 2));
+    }
+    if (d >= 1 && d <= 26) {
+      const env = Math.exp(-d * 0.16);
+      shakeX += Math.sin(d * 2.5 + s) * 12 * env;
+      shakeY += Math.cos(d * 2.9 + s) * 8 * env;
+      shakeRot += Math.sin(d * 2.1) * 0.4 * env;
+    }
+  }
 
-  const pagolPose: Pose = {
-    ...BASE_POSE,
-    bodyTurn: 0.35,
-    headTurn: 0.25,
-    lean: pagolDance * 8,
-    headTilt: -8 + pagolDance * 6,
-    headNod: pagolDance * 3,
-    rS: -135 + pagolDance * 22,
-    rE: -20,
-    lS: -125 - pagolDance * 22,
-    lE: -18,
-    smile: 0.95,
-  };
+  const fadeCharuIntro = EASE.inOut(clamp((f - 290) / 22));
+  const isExteriorOrPagol = f < 305 || (f >= 615 && f < 908);
 
-  const wonderT = EASE.inOut(clamp((f - 805) / 45));
-  const charuPose: Pose = {
-    ...BASE_POSE,
-    bodyTurn: -0.35,
-    headTurn: -0.3,
-    lean: -3 * wonderT,
-    headTilt: -2,
-    headNod: Math.sin(f * 0.05) * 1.2,
-    rS: -28 - 25 * wonderT,
-    rE: -42 - 30 * wonderT,
-    lS: -22,
-    lE: -35,
-    smile: 0.25 + 0.35 * wonderT,
-  };
+  // Camera pan & dolly trajectory driving all 4 parallax depth planes
+  let camX = 0;
+  let camY = 0;
+  let camScale = 1.05;
 
-  const lampLight: Lighting = { keySide: -1, rim: "#ffba66", rimStrength: 0.72 * fl, rimSide: -1 };
-  const stormLight: Lighting = { keySide: 1, rim: "#9eb8d8", rimStrength: 0.4 + 0.5 * flash, rimSide: 1 };
+  if (f < 305) {
+    camScale = track(f, [[0, 1.05], [305, 1.15]]);
+    camX = track(f, [[0, -30], [305, 28]]);
+    camY = track(f, [[0, -8], [305, 8]]);
+  } else if (f < 615) {
+    camScale = track(f, [[305, 1.03], [615, 1.13]]);
+    camX = track(f, [[305, 22], [615, -20]]);
+    camY = track(f, [[305, 6], [615, -6]]);
+  } else if (f < 908) {
+    camScale = track(f, [[615, 1.05], [908, 1.16]]);
+    camX = track(f, [[615, -24], [908, 26]]);
+    camY = track(f, [[615, 8], [908, -8]]);
+  } else {
+    camScale = track(f, [[908, 1.03], [1246, 1.15]]);
+    camX = track(f, [[908, -18], [1246, 18]]);
+    camY = track(f, [[908, 6], [1246, -8]]);
+  }
+
+  const totalX = camX + shakeX;
+  const totalY = camY + shakeY;
 
   return (
-    <Stage cam={{ x: camX, y: camY, zoom: camZoom }}>
-      <GlowDefs />
-      <defs>
-        <filter id="s2ep1-storm-grade">
-          <feColorMatrix
-            type="matrix"
-            values="0.52 0.08 0.08 0 -0.04
-                    0.06 0.58 0.14 0 -0.02
-                    0.08 0.14 0.74 0  0.04
-                    0    0    0    1  0"
-          />
-        </filter>
-      </defs>
+    <AbsoluteFill style={{ backgroundColor: "#0c0a18", overflow: "hidden" }}>
+      {/* PLANE 0 (0.45x Parallax): Deep Monsoon Night Sky */}
+      <div
+        style={{
+          position: "absolute",
+          inset: -60,
+          transform: `translate(${totalX * 0.45}px, ${totalY * 0.45}px) scale(${1 + (camScale - 1) * 0.45})`,
+          background: "radial-gradient(circle at 55% 24%, #1e273a 0%, #0a0915 75%)",
+          pointerEvents: "none",
+        }}
+      />
 
-      {/* Storm Sky */}
-      <Layer depth={0.1}>
-        <rect x={-1000} y={-800} width={3920} height={1900} fill="#1b2432" />
-        {Array.from({ length: 18 }, (_, i) => (
-          <ellipse
-            key={i}
-            cx={-600 + hash(i * 2.3) * 3200 + f * 0.35}
-            cy={-80 + hash(i * 4.1) * 360}
-            rx={280 + hash(i * 6.7) * 320}
-            ry={68 + hash(i * 8.1) * 45}
-            fill={i % 2 ? "#283447" : "#3a4960"}
-            opacity={0.78}
-          />
-        ))}
-        {STRIKES.map((s, idx) => (
-          <Bolt key={s} f={f} at={s} x={640 + idx * 280} seed={idx + 3} />
-        ))}
-      </Layer>
-
-      {/* Reused Detailed Baidik Bari Exterior (regraded to cool slate storm) */}
-      <Layer depth={0.45}>
-        <defs>
-          <filter id="s2ep1-storm-grade-layer">
-            <feColorMatrix
-              type="matrix"
-              values="0.52 0.08 0.08 0 -0.04
-                      0.06 0.58 0.14 0 -0.02
-                      0.08 0.14 0.74 0  0.04
-                      0    0    0    1  0"
+      {/* PLANE 1 (1.00x Parallax): Painted Studio Ghibli Plates & 24.000fps Time-Locked JoyVASA Neural Streams */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transform: `translate(${totalX}px, ${totalY}px) scale(${camScale}) rotate(${shakeRot}deg)`,
+          transformOrigin: "50% 50%",
+        }}
+      >
+        {/* SHOT 3A (0..312): Wide Baidik Bari Courtyard & Tulsi Mancha on a Monsoon Storm Evening */}
+        {f < 312 && (
+          <AbsoluteFill>
+            <Img
+              src={staticFile("images/s2_ep01/plate_3a_baidik_monsoon.jpg")}
+              style={{
+                width: 1920,
+                height: 1080,
+                objectFit: "cover",
+                filter: stormFlash > 0.02 ? `brightness(${1 + stormFlash * 0.45})` : undefined,
+              }}
             />
-          </filter>
-        </defs>
-        <g filter="url(#s2ep1-storm-grade-layer)">
-          <BaidikBariDay f={f} />
-          <rect x={-700} y={740} width={3300} height={460} fill="#5c493a" />
-        </g>
-
-        {/* Warm flickering veranda lamp near Charushila */}
-        <Glow x={1365} y={705} r={190} kind="warm" o={0.55 * fl} />
-        <Flame x={1365} y={718} s={1.2} f={f} seed={21} />
-      </Layer>
-
-      {/* Characters in Courtyard & Veranda */}
-      <Layer depth={0.76}>
-        {pagolOpacity > 0.01 && (
-          <g opacity={pagolOpacity}>
-            <Puppet
-              cast={PAGOL}
-              x={810 + pagolIn * 85 + pagolDance * 14}
-              y={895}
-              scale={0.98}
-              acting={() => pagolPose}
-              talk={(fr) => (fr >= 511 && fr <= 788 ? 0.78 : 0)}
-              light={stormLight}
-              f={f}
-            />
-          </g>
+          </AbsoluteFill>
         )}
 
-        <Puppet
-          cast={CAST.charu}
-          x={1435}
-          y={805}
-          scale={0.92}
-          flip
-          acting={() => charuPose}
-          talk={(fr) => (fr >= 805 && fr <= 1105 ? 0.52 : 0)}
-          light={lampLight}
-          f={f}
-        />
-      </Layer>
-
-      {/* Heavy Monsoon Rain & Courtyard Splashes */}
-      <Layer depth={0.94}>
-        <Rain f={f} n={170} wind={-0.28} o={0.72} area={[-400, -300, 2720, 1500]} />
-        <Splashes f={f} n={40} y0={810} y1={910} x0={200} x1={1720} o={0.75} />
-        {flash > 0.02 && (
-          <rect x={-600} y={-400} width={3120} height={1880} fill="#d8e8ff" opacity={flash * 0.35} />
+        {/* SHOT 3C-1 (290..615): Mother Charushila Devi in the Lamp-Lit Baidik Bari Veranda (Three Divine Dreams) */}
+        {f >= 290 && f < 615 && (
+          <AbsoluteFill style={{ opacity: fadeCharuIntro }}>
+            <Sequence from={290} durationInFrames={330}>
+              <OffthreadVideo
+                src={staticFile("video/s2_ep01/p3c_charu_idle_24.mp4")}
+                muted
+                style={{ width: 1920, height: 1080, objectFit: "cover" }}
+              />
+            </Sequence>
+          </AbsoluteFill>
         )}
-      </Layer>
-      <Grade vignette={0.44} />
-    </Stage>
+
+        {/* SHOT 3B (615..908): Ecstatic Wandering Mystic (Pagol) in the Monsoon Rain Courtyard (03b_Pagol_Omen.wav) */}
+        {f >= 615 && f < 908 && (
+          <Sequence from={615} durationInFrames={293}>
+            <OffthreadVideo
+              src={staticFile("video/s2_ep01/p3b_pagol_03b_24.mp4")}
+              muted
+              style={{
+                width: 1920,
+                height: 1080,
+                objectFit: "cover",
+                filter: stormFlash > 0.02 ? `brightness(${1 + stormFlash * 0.4})` : undefined,
+              }}
+            />
+          </Sequence>
+        )}
+
+        {/* SHOT 3C-2 (908..1246): Mother Charushila Devi Speaking in Hushed Wonder (03c_Charu_Wonder.wav) */}
+        {f >= 908 && (
+          <Sequence from={908} durationInFrames={338}>
+            <OffthreadVideo
+              src={staticFile("video/s2_ep01/p3c_charu_03c_24.mp4")}
+              muted
+              style={{ width: 1920, height: 1080, objectFit: "cover" }}
+            />
+          </Sequence>
+        )}
+
+        {/* Far-Plane Monsoon Rain & Lightning Illumination */}
+        <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+          <GlowDefs />
+          <Rain
+            f={f}
+            n={isExteriorOrPagol ? 150 : 75}
+            wind={-0.30}
+            o={isExteriorOrPagol ? 0.62 : 0.28}
+            area={isExteriorOrPagol ? [-200, -100, 2320, 1280] : [-100, -100, 620, 1280]}
+          />
+          {stormFlash > 0.02 && (
+            <rect x={0} y={0} width={1920} height={1080} fill="#dcecff" opacity={stormFlash * 0.26} />
+          )}
+          {!isExteriorOrPagol && <Glow x={1420} y={520} r={280} kind="warm" o={0.22 * fl} />}
+        </svg>
+      </div>
+
+      {/* PLANE 2 (1.38x Parallax): Mid-Foreground Monsoon Mist, Wind-Blown Rain & Three Golden Dream-Vision Motes */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          transform: `translate(${totalX * 1.38}px, ${totalY * 1.38}px) scale(${1 + (camScale - 1) * 1.25})`,
+          transformOrigin: "50% 50%",
+        }}
+      >
+        <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+          <defs>
+            <filter id="s2-sc03-mist-blur" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="26" />
+            </filter>
+            <filter id="s2-sc03-dream-glow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="8" />
+            </filter>
+          </defs>
+
+          {/* Rolling monsoon night mist */}
+          {[0, 1].map((i) => {
+            const mx = 420 + i * 980 + Math.sin(f * 0.02 + i * 2) * 150;
+            return (
+              <ellipse
+                key={`sc03-mist-${i}`}
+                cx={mx}
+                cy={860 + i * 55}
+                rx={580}
+                ry={72}
+                fill={isExteriorOrPagol ? "#8ca6c4" : "#d4b48c"}
+                opacity={0.12}
+                filter="url(#s2-sc03-mist-blur)"
+              />
+            );
+          })}
+
+          {isExteriorOrPagol && <Rain f={f + 43} n={110} wind={-0.36} o={0.48} area={[-240, -120, 2400, 1320]} />}
+
+          {/* Three Luminous Golden Dream-Vision Orbs floating gently in the veranda arch periphery during Charushila's shots */}
+          {!isExteriorOrPagol &&
+            [0, 1, 2].map((k) => {
+              const dx = 220 + k * 145 + Math.sin(f * 0.03 + k * 2.1) * 28;
+              const dy = 260 + k * 150 + Math.cos(f * 0.025 + k * 1.7) * 24;
+              const pulse = 0.35 + 0.55 * Math.sin(f * 0.07 + k * 2.0) ** 2;
+              return (
+                <g key={`dream-orb-${k}`} opacity={pulse}>
+                  <circle cx={dx} cy={dy} r={18} fill="#ffbe55" filter="url(#s2-sc03-dream-glow)" />
+                  <circle cx={dx} cy={dy} r={4} fill="#fff6dc" />
+                </g>
+              );
+            })}
+        </svg>
+      </div>
+
+      {/* PLANE 3 (1.75x Parallax, Blurred DOF): Out-of-Focus Foreground Baidik Bari Veranda Arch Pillars & Storm Foliage */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          transform: `translate(${totalX * 1.75}px, ${totalY * 1.75}px) scale(${1 + (camScale - 1) * 1.55})`,
+          transformOrigin: "50% 50%",
+          filter: "blur(8px)",
+        }}
+      >
+        {f < 305 ? (
+          /* Shot 3A Exterior: Thrashing foreground monsoon palm fronds */
+          <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+            {[0, 1, 2].map((i) => {
+              const whip = Math.sin(f * 0.22 + i * 1.4) * 14;
+              return (
+                <path
+                  key={`sc03-palm-l-${i}`}
+                  d={`M -140 ${70 + i * 130} Q ${130 + whip} ${30 + i * 120 + whip} ${290 + whip} ${
+                    135 + i * 135 + whip
+                  } Q ${110 + whip} ${130 + i * 130} -140 ${155 + i * 130} Z`}
+                  fill="#060b12"
+                  opacity={0.82}
+                />
+              );
+            })}
+          </svg>
+        ) : f >= 615 && f < 908 ? (
+          /* Shot 3B Pagol in Monsoon Courtyard: Soft foreground banana leaf / veranda edge silhouette on far edges */
+          <>
+            <div
+              style={{
+                position: "absolute",
+                left: -120,
+                top: -50,
+                width: 140,
+                height: 1180,
+                background: "linear-gradient(90deg, rgba(8,6,14,0.90) 0%, rgba(18,12,24,0.40) 70%, transparent 100%)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                right: -120,
+                top: -50,
+                width: 140,
+                height: 1180,
+                background: "linear-gradient(270deg, rgba(8,6,14,0.88) 0%, rgba(18,12,24,0.35) 70%, transparent 100%)",
+              }}
+            />
+          </>
+        ) : (
+          /* Shot 3C-1 & 3C-2 Charushila Veranda: Soft foreground veranda pillar on the left & warm diya bokeh */
+          <div
+            style={{
+              position: "absolute",
+              left: -110,
+              top: -50,
+              width: 165,
+              height: 1180,
+              background: "linear-gradient(90deg, rgba(10,7,18,0.90) 0%, rgba(24,16,38,0.45) 70%, transparent 100%)",
+            }}
+          />
+        )}
+
+        {[0, 1, 2].map((i) => (
+          <div
+            key={`sc03-bokeh-${i}`}
+            style={{
+              position: "absolute",
+              left: 240 + i * 660 + Math.sin(f * 0.025 + i * 2) * 30,
+              top: 160 + (i % 2) * 560,
+              width: 68 + i * 18,
+              height: 68 + i * 18,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(255,204,116,0.20) 0%, rgba(255,165,70,0) 72%)",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Soft cinematic vignette */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "radial-gradient(ellipse at 50% 50%, transparent 56%, rgba(6, 4, 14, 0.46) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* FOLEY: Monsoon Rain & Thunder Accents */}
+      <Sequence from={0} durationInFrames={1246}>
+        <Audio src={staticFile("audio/sfx/monsoon_rain.wav")} loop volume={0.24} />
+      </Sequence>
+      <Sequence from={95} durationInFrames={110}>
+        <Audio src={staticFile("audio/sfx/ep02/thunder_roll.wav")} volume={0.30} />
+      </Sequence>
+      <Sequence from={618} durationInFrames={120}>
+        <Audio src={staticFile("audio/sfx/ep02/thunder_roll.wav")} volume={0.38} />
+      </Sequence>
+    </AbsoluteFill>
   );
 };

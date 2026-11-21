@@ -88,6 +88,25 @@ export interface Pose {
   stride: number;
   rBack: number;
   lBack: number;
+  /**
+   * 0 = legs as before (standing, crouch or `seated`); 1 = kneeling on both knees, sitting back on the heels (a
+   * woman's puja seat, vajrasana). Blends from standing, from a crouch or from the `seated` prop. A sari covers the
+   * legs completely while kneeling (only the soles show behind). Key it with ease "inOut" over 18 to 30 frames.
+   */
+  kneel: number;
+  /**
+   * 0..1 the kneeling bow (pranam, "matite upur hoye pranam"); use with kneel = 1 and bodyTurn about +-0.8 to 1 (the
+   * bow goes toward the side the figure faces). The hips rise a little off the heels, the upper body folds forward
+   * from the hips until the forehead is near the floor, and over the second half of the bow both arms reach the floor
+   * on their own (solved every frame, so the hands always touch it): the joined hands lie on the floor in front of
+   * the head. Breathing goes on. See `kneelingPranam` below for a ready-made down, hold and rise timeline.
+   */
+  bow: number;
+  /**
+   * 0..1 both hands joined in front of the breastbone (namaskar, with rHand / lHand "pranam"): the wrists are solved
+   * every frame for any body turn, so the palms always meet. Overrides rS / rE / lS / lE by its weight.
+   */
+  join: number;
 }
 
 export const BASE_POSE: Pose = {
@@ -120,6 +139,9 @@ export const BASE_POSE: Pose = {
   stride: 0,
   rBack: 0,
   lBack: 0,
+  kneel: 0,
+  bow: 0,
+  join: 0,
 };
 
 export interface PropCtx {
@@ -278,7 +300,7 @@ const poseHold = (q: Pose): number => {
   const elbow = Math.max(0, Math.max(Math.abs(q.rE - BASE_POSE.rE), Math.abs(q.lE - BASE_POSE.lE)) - 8) / 40;
   const back = Math.max(q.rBack, q.lBack);
   const hands = q.rHand !== BASE_POSE.rHand || q.lHand !== BASE_POSE.lHand || q.rProp || q.lProp ? 1 : 0;
-  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4;
+  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4 + q.kneel + q.bow + q.join;
   const emotion = Math.max(q.tears, q.gasp) * 2;
   const moving = Math.abs(q.stride) * 2;
   return clamp(Math.max(reach, elbow, back, hands, body, emotion, moving));
@@ -456,7 +478,7 @@ export const puppetBreath = ({ t, f, seed, child = false, stillness = 0, rate = 
  * raised-cosine kernel, so a step becomes an ease-in-out over about 9 frames and no joint jumps faster than that. */
 
 type NumKey = { [K in keyof Pose]: Pose[K] extends number ? K : never }[keyof Pose];
-const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack"];
+const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack", "kneel", "bow", "join"];
 const EYE_KEYS: NumKey[] = ["eyeX", "eyeY"];
 /** Raised-cosine weights for offsets -r..r (window of 2r + 2 frames, so the ends carry a little weight). */
 const kernel = (r: number) => Array.from({ length: 2 * r + 1 }, (_, i) => 0.5 + 0.5 * Math.cos((Math.PI * (i - r)) / (r + 1)));
@@ -634,7 +656,9 @@ export const Puppet: React.FC<PuppetProps> = ({
   const idle = c.age === "child" ? 0 : Math.max(0, 1 - stillness) * (1 - poseHold(p));
   // weight transfer: hips and shoulders move toward the bearing foot, eased every 3 to 5 s (seated figures keep their hips)
   const wNow = weightAt(life, c.seed);
-  const shift = seated ? 0 : idle * 3 * wNow;
+  const kneelK = clamp(p.kneel); // kneeling on both knees (see Pose.kneel)
+  const bowK = clamp(p.bow); // the kneeling bow (see Pose.bow)
+  const shift = seated ? 0 : idle * 3 * wNow * (1 - kneelK);
   // slow side-to-side drift of the upper body, about 2.5 px, irregular per figure, plus the weight transfer
   const weightX = idle * 2.5 * noise1(life / 144, c.seed + 11) + shift;
   // shoulders tip toward the bearing side, up to about 0.9 deg
@@ -675,10 +699,20 @@ export const Puppet: React.FC<PuppetProps> = ({
   const phase = f * 0.3 + c.seed;
   const stride = p.stride;
   const crouch = clamp(p.crouch);
+  // how low the figure is for the sari's drape: a crouch or a kneel (identical to crouch when not kneeling)
+  const lowK = Math.max(crouch, kneelK);
   const nearSide: 1 | -1 = sphi > 0.05 ? -1 : 1; // leg nearer the camera
   // `plant`: the stance-leg model (no swing knee flick). Scenes match their travel speed to it, so a foot placed with
   // it stays fixed on the floor through the stance and moves smoothly forward through the swing.
+  // kneeling (Pose.kneel): thighs forward and down to the knees on the floor, shins straight back along the floor
+  // (sp = th - kn stays at -1.5); as she bows the hips rise a little off the heels (the thigh stands up)
+  const KNEEL_TH = lerp(1.3, 0.92, bowK);
   const legAngles = (side: 1 | -1, plant = false) => {
+    const a = legAnglesBase(side, plant);
+    if (kneelK <= 0) return a;
+    return { th: lerp(a.th, KNEEL_TH, kneelK), ab: lerp(a.ab, 0.1, kneelK), kn: lerp(a.kn, KNEEL_TH + 1.5, kneelK) };
+  };
+  function legAnglesBase(side: 1 | -1, plant = false) {
     if (seated) return { th: 1.42, ab: 0.95, kn: 2.7 };
     let th = 0.03;
     let kn = 0.05;
@@ -707,7 +741,7 @@ export const Puppet: React.FC<PuppetProps> = ({
     // the bearing knee takes a little bend; the free leg stays straight
     if (!seated) kn += idle * 0.1 * Math.max(0, side > 0 ? wNow : -wNow);
     return { th, ab, kn };
-  };
+  }
   const rotY = (v: V3): { x: number; y: number; z: number } => ({ x: v[0] * cphi + v[2] * sphi, y: v[1], z: -v[0] * sphi + v[2] * cphi });
   const legGeo = (side: 1 | -1, plant = false) => {
     const { th, ab: abRaw, kn } = legAngles(side, plant);
@@ -717,11 +751,17 @@ export const Puppet: React.FC<PuppetProps> = ({
     const tdir: V3 = [Math.sin(ab) * side, Math.cos(th) * Math.cos(ab), Math.sin(th) * Math.cos(ab)];
     const knee = add3(hip, mul3(tdir, B.thigh));
     const sp = th - kn;
-    const sdir: V3 = [Math.sin(ab) * side * (seated ? -1.2 : 0.3), Math.cos(sp), Math.sin(sp)];
+    const sdir: V3 = [Math.sin(ab) * side * (kneelK > 0 ? lerp(seated ? -1.2 : 0.3, 0.3, kneelK) : seated ? -1.2 : 0.3), Math.cos(sp), Math.sin(sp)];
     const ankle = add3(knee, mul3(sdir, B.shin));
     let fv: V3 = [0, 0, 1];
     if (seated) fv = [-side * 0.9, 0, 0.45];
     else if (sp < -1.0) fv = [0, 0.25, -1];
+    if (kneelK > 0 && (seated || sp < -1.0)) {
+      // kneeling: the top of the foot lies on the floor, toes pointing back
+      const kv: V3 = [lerp(fv[0], 0, kneelK), lerp(fv[1], 0.05, kneelK), lerp(fv[2], -1, kneelK)];
+      const n = Math.hypot(kv[0], kv[1], kv[2]) || 1;
+      fv = [kv[0] / n, kv[1] / n, kv[2] / n];
+    }
     const fh = B.foot * 0.28;
     const sole = add3(ankle, [0, fh, 0]);
     const perp: V3 = [fv[2], 0, -fv[0]];
@@ -749,8 +789,8 @@ export const Puppet: React.FC<PuppetProps> = ({
   const legsSorted = [...legs].sort((a, b) => a.z - b.z); // far first
 
   // Bare feet below the sari: standing and walking only (kneeling, squatting and sitting keep the covered look).
-  const sareeFeet = c.lower === "saree" && !seated && crouch < 0.45;
-  const feetK = sareeFeet ? clamp(1 - crouch / 0.3) : 0; // how far the hem takes its raised, foot-revealing line
+  const sareeFeet = c.lower === "saree" && !seated && lowK < 0.45;
+  const feetK = sareeFeet ? clamp(1 - lowK / 0.3) : 0; // how far the hem takes its raised, foot-revealing line
   const walkK = clamp(stride) * feetK; // step articulation (heel strike, toe-off, hem lift)
   const plantLegs = sareeFeet && stride > 0 ? [legGeo(-1, true), legGeo(1, true)] : legs;
 
@@ -1013,7 +1053,7 @@ export const Puppet: React.FC<PuppetProps> = ({
 
   /* ---------------- sari: the hem and its border follow the cloth ---------------- */
   // 0 = hanging cloth (standing, walking), 1 = cloth draped on the floor (kneeling, sitting)
-  const drapeK = c.lower === "saree" ? (seated ? 1 : clamp((crouch - 0.35) / 0.4)) : 0;
+  const drapeK = c.lower === "saree" ? (seated ? 1 : clamp((lowK - 0.35) / 0.4)) : 0;
   const sareeSkirt = () => {
     const yy = (v: number) => v + hipY;
     const waistY = hipY - 10;
@@ -1578,9 +1618,129 @@ export const Puppet: React.FC<PuppetProps> = ({
   const brightness = (light.brightness ?? 1) * (lights.length ? 0.9 + Math.min(0.35, lightSum * 0.3) : 1);
   const rFar = p.rBack > 0.5 || (sphi > 0.25 && !female) || sphi > 0.35;
   const lFar = p.lBack > 0.5 || sphi < -0.35;
-  const rDraw = arm(1, p.rS + armR.dS, elbowR + armR.dE, p.rHand, p.rProp, rFar, armR.flex, wristR);
-  const lDraw = arm(-1, p.lS + armL.dS, elbowL + armL.dE, p.lHand, p.lProp, lFar, armL.flex, wristL);
   const upperX = weightX + antX;
+  // the kneeling bow (Pose.bow): the upper body folds forward from the hips, toward the side the figure faces
+  const fwd: 1 | -1 = sphi >= 0 ? 1 : -1;
+  const upperRot = p.lean + tiltIdle + antLean;
+  // group (torso) coordinates <-> figure coordinates for an upper-body rotation r (rad) about the hip
+  const toFig = (lx: number, ly: number, r: number): [number, number] => [
+    upperX + lx * Math.cos(r) - (ly - hipY) * Math.sin(r),
+    antY + hipY + lx * Math.sin(r) + (ly - hipY) * Math.cos(r),
+  ];
+  const toLocal = (X: number, Y: number, r: number): [number, number] => {
+    const dx = X - upperX;
+    const dy = Y - antY - hipY;
+    return [dx * Math.cos(-r) - dy * Math.sin(-r), hipY + dx * Math.sin(-r) + dy * Math.cos(-r)];
+  };
+  // the head centre in the torso frame (as head() places it, without the nod)
+  const headLocal = (): [number, number] => {
+    const mH = headModel(shape);
+    return [sphi * B.sw * 0.12, shY - B.neck + headBreathY - mH.bottom * B.headR * 0.92 + B.headR * 0.06];
+  };
+  // the full bow angle: the upper body turns about the hip until the forehead rests just above the floor (on the
+  // joined hands), so the head never sinks into the floor whatever the figure's size or hip lift
+  let bowDeg = 0;
+  if (bowK > 0) {
+    const [hx, hy] = headLocal();
+    const px = fwd * hx;
+    const py = hy - hipY;
+    const clear = B.headR * 1.1 + B.hand * 0.22;
+    const A = Math.hypot(px, py);
+    const target = clamp((-(antY + hipY) - clear) / A, -1, 1);
+    const phi0 = Math.atan2(px, py);
+    const wrapR = (v: number) => v - 2 * Math.PI * Math.floor((v + Math.PI) / (2 * Math.PI));
+    const cands = [wrapR(phi0 - Math.acos(target)), wrapR(phi0 + Math.acos(target))].filter((v) => v > 0.5 && v < 2.3);
+    const full = cands.length ? Math.min(...cands) : 1.6;
+    bowDeg = fwd * bowK * ((full * 180) / Math.PI);
+  }
+  const Rnear = ((upperRot + bowDeg) * Math.PI) / 180;
+  const wrapDeg = (v: number) => v - 360 * Math.floor((v + 180) / 360);
+  /**
+   * Two-bone arm solve: the shoulder and elbow angles (S, E, in this rig's convention) that put the wrist on the figure
+   * point (tx, ty), taking the elbow solution `pref` asks for; returned near the given S and E so blends never wrap.
+   */
+  const solveArm = (side: 1 | -1, far: boolean, tx: number, ty: number, S: number, E: number, lowK = 1): [number, number] => {
+    const R = far ? (bowDeg * Math.PI) / 180 : Rnear;
+    const sx0 = side * B.sw * 0.86 * cphi;
+    const sy0 = shY + B.limbW;
+    const [lx, ly] = toLocal(tx, ty, R);
+    const vx = lx - sx0;
+    const vy = ly - sy0;
+    const ua = B.ua;
+    const fa = B.fa - 2;
+    const d = clamp(Math.hypot(vx, vy), Math.abs(ua - fa) + 1, ua + fa - 0.5);
+    const alpha = Math.atan2(-vx, vy);
+    const beta = Math.acos(clamp((ua * ua + d * d - fa * fa) / (2 * ua * d), -1, 1));
+    const bend = Math.PI - Math.acos(clamp((ua * ua + fa * fa - d * d) / (2 * ua * fa), -1, 1));
+    // lowK 1: the elbow nearer the floor; 0: the elbow tucked back beside the body (away from the facing side)
+    const elbowK = (r1: number) => {
+      const [ex, ey] = toFig(sx0 - Math.sin(r1) * ua, sy0 + Math.cos(r1) * ua, R);
+      return lowK * ey - (1 - lowK) * fwd * ex;
+    };
+    const sgn = elbowK(alpha + beta) >= elbowK(alpha - beta) ? 1 : -1;
+    const r1 = alpha + sgn * beta;
+    const r2 = -sgn * bend;
+    return [S + wrapDeg((-side * r1 * 180) / Math.PI - S), E + wrapDeg((-side * r2 * 180) / Math.PI - E)];
+  };
+  // Pose.join: both wrists meet in front of the breastbone (namaskar), solved for any body turn
+  const joinK = clamp(p.join);
+  const joinPt = (): [number, number] => toFig(frontX + fwd * B.sw * 0.3 * Math.abs(sphi), shY + B.torsoLen * 0.3, Rnear);
+  // over the second half of the bow both arms reach the floor, solved every frame so the hands never float: each
+  // elbow comes down onto the floor in front of its shoulder and the forearm lies flat on the floor, pointing forward,
+  // so the joined hands rest on the floor by the bowed head
+  const reachK = bowK > 0 ? easeIO((bowK - 0.42) / 0.5) : 0;
+  const floorY = -B.limbW * 0.95;
+  const floorPt = (side: 1 | -1, far: boolean): [number, number] => {
+    const R = far ? (bowDeg * Math.PI) / 180 : Rnear;
+    const [shx, shy] = toFig(side * B.sw * 0.86 * cphi, shY + B.limbW, R);
+    const dy = floorY - shy;
+    // the elbow on the floor in front of the shoulder, or (shoulder too high) straight below it
+    const ex = dy <= B.ua ? shx + fwd * Math.sqrt(Math.max(0, B.ua * B.ua - dy * dy)) : shx;
+    const ey = dy <= B.ua ? floorY : shy + B.ua;
+    const fa = (B.fa - 2) * 0.97;
+    const fdy = floorY - ey;
+    return [ex + fwd * Math.sqrt(Math.max(0, fa * fa - fdy * fdy)), floorY];
+  };
+  /**
+   * The wrist turn that aims a solved hand: fingers up (slightly forward) for joined hands at the chest, flat along the
+   * floor pointing forward in the bow. Blended with the pose's own wrist by the join and reach weights.
+   */
+  const handAim = (side: 1 | -1, far: boolean, S: number, E: number, wrist: number): number => {
+    const w = Math.max(joinK, reachK);
+    if (w <= 0) return wrist;
+    const R = far ? (bowDeg * Math.PI) / 180 : Rnear;
+    const tot = R + ((-side * S - side * E) * Math.PI) / 180; // the forearm's rotation in figure space
+    const aUp = Math.PI + fwd * 0.3;
+    const aFloor = -fwd * (Math.PI / 2 - 0.06);
+    const wrapR = (v: number) => v - 2 * Math.PI * Math.floor((v + Math.PI) / (2 * Math.PI));
+    const aim = aUp + wrapR(aFloor - aUp) * (joinK > 0 ? reachK : 1);
+    const want = (-side * (wrapR(aim - tot) * 180)) / Math.PI;
+    return lerp(wrist, clamp(want, -80, 80), w);
+  };
+  const armSolve = (side: 1 | -1, far: boolean, S0: number, E0: number): [number, number] => {
+    if (joinK <= 0 && reachK <= 0) return [S0, E0];
+    if (joinK > 0) {
+      // joined hands: the wrists travel in a straight blend from the chest to the floor, solved as one target
+      const [jx, jy] = joinPt();
+      let tx = jx;
+      let ty = jy;
+      if (reachK > 0) {
+        const [fx, fy] = floorPt(side, far);
+        tx = lerp(jx, fx, reachK);
+        ty = lerp(jy, fy, reachK);
+      }
+      const [js, je] = solveArm(side, far, tx, ty, S0, E0, reachK);
+      return [lerp(S0, js, joinK), lerp(E0, je, joinK)];
+    }
+    const [fx, fy] = floorPt(side, far);
+    const [fs2, fe2] = solveArm(side, far, fx, fy, S0, E0, 1);
+    return [lerp(S0, fs2, reachK), lerp(E0, fe2, reachK)];
+  };
+  const [rS1, rE1] = armSolve(1, rFar, p.rS + armR.dS, elbowR + armR.dE);
+  const [lS1, lE1] = armSolve(-1, lFar, p.lS + armL.dS, elbowL + armL.dE);
+  const rDraw = arm(1, rS1, rE1, p.rHand, p.rProp, rFar, armR.flex, handAim(1, rFar, rS1, rE1, wristR));
+  const lDraw = arm(-1, lS1, lE1, p.lHand, p.lProp, lFar, armL.flex, handAim(-1, lFar, lS1, lE1, wristL));
+  const farT = `translate(${upperX}, ${antY})${bowDeg ? ` rotate(${bowDeg}, 0, ${hipY})` : ""}`;
 
   // squash with the lean only (a pose shape, story-driven); no periodic bounce: breathing never scales the figure (MOT-20)
   const bounce = Math.min(0.032, Math.abs(p.lean) * 0.0028);
@@ -1621,10 +1781,10 @@ export const Puppet: React.FC<PuppetProps> = ({
         </radialGradient>
       </defs>
       <ellipse cx={0} cy={2} rx={B.hw * (seated ? 3.4 : 2.4)} ry={B.hw * 0.42} fill={`url(#${uid}-ao)`} />
-      {lFar && <g transform={`translate(${upperX}, ${antY})`}>{lDraw}</g>}
-      {rFar && <g transform={`translate(${upperX}, ${antY})`}>{rDraw}</g>}
+      {lFar && <g transform={farT}>{lDraw}</g>}
+      {rFar && <g transform={farT}>{rDraw}</g>}
       {lowerBody()}
-      <g transform={`translate(${upperX}, ${antY}) rotate(${p.lean + tiltIdle + antLean}, 0, ${hipY})`}>
+      <g transform={`translate(${upperX}, ${antY}) rotate(${bowDeg ? upperRot + bowDeg : upperRot}, 0, ${hipY})`}>
         {c.outfit === "frock" && skirt("knee")}
         {torso()}
         {scarf()}
@@ -1647,4 +1807,134 @@ export const Puppet: React.FC<PuppetProps> = ({
       </g>
     </g>
   );
+};
+
+/* ------------------------------------------------------------------ */
+/* Adult gestures (Episode 4 on). Pure helpers on the story clock: add their output to a scene's keyed pose.       */
+/* ------------------------------------------------------------------ */
+
+/** Soft 0 -> 1 -> 0 envelope over [start, start + dur] with eased ends of `ramp` frames. */
+export const gestureEnv = (f: number, start: number, dur: number, ramp = 8) => bump(f, start, dur, Math.min(ramp, dur / 2), Math.min(ramp, dur / 2));
+
+/** A side-to-side oscillation inside the envelope (amp at the peak, `period` frames per full swing). */
+export const wobble = (f: number, start: number, dur: number, amp: number, period: number, ramp = 8) =>
+  gestureEnv(f, start, dur, ramp) * amp * Math.sin((2 * Math.PI * (f - start)) / period);
+
+/**
+ * Head shake ("no", or a grumbling "what has come into our house"): add to headTurn. About 2.5 slow swings in `dur`,
+ * a touch of tilt with it (add `headShakeTilt` to headTilt).
+ */
+export const headShake = (f: number, start: number, dur: number, amp = 0.26, swings = 2.5) => wobble(f, start, dur, amp, dur / swings, 10);
+export const headShakeTilt = (f: number, start: number, dur: number, amp = 2.5, swings = 2.5) => wobble(f, start + 3, dur, amp, dur / swings, 10);
+
+/** Small nods ("hun hun"): add to headNod (px, down is positive). `count` dips, `period` frames each. */
+export const headNods = (f: number, start: number, count = 2, period = 12, depth = 6) => {
+  const u = (f - start) / period;
+  if (u <= 0 || u >= count) return 0;
+  return depth * Math.pow(Math.sin(Math.PI * (u - Math.floor(u))), 1.5);
+};
+
+/** Coaxing open hand (Sundar: "give it to me"): a gentle repeated curl of the forearm toward the body. Add to that arm's elbow (E). */
+export const beckon = (f: number, start: number, dur: number, amp = 12, period = 26) =>
+  -gestureEnv(f, start, dur, 10) * amp * (0.5 - 0.5 * Math.cos((2 * Math.PI * (f - start)) / period));
+
+/** Arati: the lamp hand circles slowly (clockwise on screen). Add dS and dE to that arm's S and E. */
+export const aratiCircle = (f: number, start: number, dur: number, radius = 9, period = 40) => {
+  const env = gestureEnv(f, start, dur, 12);
+  const a = (2 * Math.PI * (f - start)) / period;
+  return { dS: env * radius * Math.sin(a), dE: env * radius * 1.2 * Math.cos(a) };
+};
+
+/** Ringing a small hand bell: quick small shakes of the forearm. Add to that arm's elbow (E). */
+export const ringBell = (f: number, start: number, dur: number, amp = 5) => wobble(f, start, dur, amp, 5, 3);
+
+/**
+ * Offering a flower or sprinkling water ("ete gandhe pushpe"): the hand lifts a little, then flicks forward and down
+ * once per `period`. Returns dS / dE for that arm.
+ */
+export const offerFlick = (f: number, start: number, count = 1, period = 22, amp = 14) => {
+  const u = (f - start) / period;
+  if (u <= 0 || u >= count) return { dS: 0, dE: 0 };
+  const ph = u - Math.floor(u);
+  const lift = Math.sin(Math.PI * Math.min(1, ph / 0.6));
+  const flick = ph > 0.55 ? Math.sin((Math.PI * (ph - 0.55)) / 0.45) : 0;
+  return { dS: amp * (0.6 * lift + 0.5 * flick), dE: -amp * (0.8 * lift - 1.4 * flick) };
+};
+
+/**
+ * Arm presets (right arm, or both), checked on figures turned about +-0.4 (three-quarter front). Spread into a pose key
+ * and adjust per shot. The right arm is the NEAR arm only when bodyTurn < 0; for a figure turned the other way use
+ * the same numbers on lS / lE / lHand (the face-touching ones hide behind the head on the far arm).
+ */
+export const GESTURES = {
+  /** Both palms open and turned out at the waist: "what is to be done?" (Harendra, with `headShake`). */
+  palmsUp: { rS: 10, rE: 48, lS: 10, lE: 48, rHand: "open", lHand: "open" } as Partial<Pose>,
+  /** One open hand held out toward a child, the other relaxed (Sundar; works crouching too). Add `beckon` to rE. */
+  coaxHand: { rS: 40, rE: 30, rHand: "open", lS: 8, lE: -40, lHand: "relaxed" } as Partial<Pose>,
+  /** A hand raised to quiet the others, palm out (Thakurma: "tora oke jotoi..."). */
+  hushHand: { rS: 38, rE: 105, rHand: "abhaya" } as Partial<Pose>,
+  /** The priest calling, one hand held out toward the door. */
+  callOut: { rS: 70, rE: 18, rHand: "open" } as Partial<Pose>,
+  /** Palm raised to the temple and forehead (speechless dismay). */
+  palmToForehead: { rS: -100, rE: -130, rHand: "open" } as Partial<Pose>,
+  /** Fingers to the mouth (shock). */
+  handToMouth: { rS: -45, rE: -125, rHand: "relaxed" } as Partial<Pose>,
+};
+
+export interface PranamTiming {
+  /** Story frame the pranam starts (she is upright or seated before it). */
+  start: number;
+  /** Frames to go down onto the knees from the pose before (0 = already kneeling, e.g. at her puja). */
+  kneelIn?: number;
+  /** Frames to join the hands at the chest (default 14). */
+  join?: number;
+  /** Frames to bow down until the forehead is near the floor (default 30). */
+  down?: number;
+  /** Frames held in the bow (default 48). */
+  hold?: number;
+  /** Frames to rise back to kneeling upright (default 30). */
+  up?: number;
+  /** Frames after rising to release the hands to the lap (default 16). */
+  release?: number;
+}
+
+/**
+ * A woman's kneeling pranam (Charu after her clay-Shiva puja): she kneels (if not already), joins her hands at the
+ * chest, bows down with her forehead near the floor and her joined hands on the floor in front of it, holds, rises,
+ * and lowers her hands to her lap. Returns the pose channels for frame f; spread it over the scene's own keys
+ * (bodyTurn about 0.85 to face the plate; flip the Puppet to face left). All phases ease in and out; outside
+ * [start, end] it returns kneel only (or nothing if kneelIn > 0 and f < start).
+ */
+export const kneelingPranam = (f: number, t: PranamTiming): Partial<Pose> => {
+  const kIn = t.kneelIn ?? 0;
+  const join = t.join ?? 14;
+  const down = t.down ?? 30;
+  const hold = t.hold ?? 48;
+  const up = t.up ?? 30;
+  const release = t.release ?? 16;
+  const t0 = t.start;
+  const tJ = t0 + kIn;
+  const tD = tJ + join;
+  const tH = tD + down;
+  const tU = tH + hold;
+  const tR = tU + up;
+  const kneel = kIn > 0 ? easeIO((f - t0) / kIn) : 1;
+  const joinK = easeIO((f - tJ) / join) * (1 - easeIO((f - tR) / release));
+  const bow = easeIO((f - tD) / down) * (1 - easeIO((f - tU) / up));
+  // hands: resting on the thighs -> joined at the chest (Pose.join); the floor reach during the bow is solved by the Puppet
+  const handsJoined = joinK > 0.3;
+  return {
+    kneel,
+    bow,
+    join: joinK,
+    rS: 4,
+    rE: -38,
+    lS: -4,
+    lE: -38,
+    rHand: handsJoined ? "pranam" : "relaxed",
+    lHand: handsJoined ? "pranam" : "relaxed",
+    lid: 0.15 + 0.6 * Math.max(bow, 0.5 * joinK),
+    headTilt: 7 * bow,
+    smile: 0.25,
+  };
 };

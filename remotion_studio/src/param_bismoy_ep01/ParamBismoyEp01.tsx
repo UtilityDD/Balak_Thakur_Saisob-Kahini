@@ -116,10 +116,10 @@ export const ParamBismoyEp01: React.FC = () => (
     })}
 
     {/* Thunder & water-spurt accents synced to scene moments */}
-    <Sequence from={2210 + 422} durationInFrames={24}>
+    <Sequence from={2210 + 637} durationInFrames={24}>
       <Audio src={staticFile("audio/sfx/ep02/water_splash.wav")} volume={0.32} />
     </Sequence>
-    <Sequence from={3375 + 522} durationInFrames={120}>
+    <Sequence from={3590 + 628} durationInFrames={120}>
       <Audio src={staticFile("audio/sfx/ep02/thunder_roll.wav")} volume={0.38} />
     </Sequence>
 
