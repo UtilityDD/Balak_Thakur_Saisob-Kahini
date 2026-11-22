@@ -21,7 +21,7 @@ import {
 import { BrassBell, VEDIC_COURTYARD_BG, VedicCourtyardDay, vedicCourtyardKeepInSet } from "../../cinematic/sets/VedicHouseDay";
 import { clipLocalStory4, clipSpan4, cueLocalStory4, pausesFor4, storyToReal, useStory4 } from "../../episode/storyClock";
 import { BirulGlow } from "../../episode03/rig/BirulGlow";
-import { HELD_OBJECT_BOTTOM, HeldObject, HeldObjectArt, SeatedChild } from "../../episode03/rig/SeatedChild";
+import { HELD_OBJECT_BOTTOM, HeldObject, HeldObjectArt, SeatedChild, seatedChildHands } from "../../episode03/rig/SeatedChild";
 import { EP04_SCENES } from "../timing";
 
 /**
@@ -392,15 +392,6 @@ const balakFace = (lf: number): NonNullable<ChildProps["face"]> => {
   return { lookX: look, smile: 0.5, eyesDown: 0 };
 };
 
-/** Approximate head centre for the halo (figure units at scale 1): follows the seat and the forward lean. */
-const haloLean = (st: BalakState, lf: number): number => {
-  const t = lf - st.poseStart;
-  if (st.pose === "kneelReach") return 30 * EASE.inOut(clamp((t - 2) / 16));
-  if (st.pose === "offerUp") return 22;
-  if (st.pose === "rollClay" || st.pose === "holdInLap") return 6;
-  return 3;
-};
-
 /* ------------------------------------------------------------------ */
 /* Charu (Puppet on the real clock)                                     */
 /* ------------------------------------------------------------------ */
@@ -683,19 +674,42 @@ export const Scene01ClayShivaAndDoll: React.FC = () => {
   const dollRot = -4 * (1 - EASE.out(clamp((lf - R(DOLL_PLACE_REL)) / 5)));
   const leafOffered = lf >= LEAF.land;
 
-  // Balak's halo follows his head (soft falloff, steady)
-  const k = kneel;
-  const lift = 4 * EASE.inOut(clamp(k)) + 28 * EASE.inOut(clamp(k - 1));
-  const lean = (haloLean(st, lf) * Math.PI) / 180;
-  const hx = pos.x + pos.s * 142 * Math.sin(lean);
-  const hy = pos.y - pos.s * (40 + lift + 112 * Math.cos(lean));
-
   const lights: SceneLight[] = [
     { x: 200, y: -200, color: "#ffe6b0", intensity: 0.35, radius: 1600 },
     { x: W(PLATE.x + PLATE.r * 0.55, PLATE.surf).x, y: W(0, PLATE.surf).y - 10, color: "#ffb04a", intensity: 0.3, radius: 220, flicker: 41 },
   ];
 
   const objS = pos.s; // the objects use Balak's scale at the pidi (he is there whenever he touches them)
+  // BAL-26b (2026-11-22): Balak in the reference-plate design at five (shared ThakurHeadPlate). Poses, timing, lip
+  // sync, blinks and expressions are the delivered ones; only the design changes.
+  const balakProps: ChildProps = {
+    x: pos.x,
+    y: pos.y,
+    s: objS,
+    f: lf,
+    lifeF: lf,
+    pose: st.pose,
+    prevPose: st.prevPose,
+    poseStart: st.poseStart,
+    prevPoseStart: st.prevPoseStart,
+    holding: st.holding,
+    reachFor: st.reachFor,
+    reachAt: st.reachAt,
+    pointAt: st.pointAt,
+    kneel,
+    watchHeld: balakWatch(lf),
+    face: balakFace(lf),
+    expression: st.expression,
+    prevExpression: st.prevExpression,
+    expressionStart: st.expressionStart,
+    mouth,
+    talk,
+    glow: GLOW,
+    design: "plate",
+    age: 5,
+  };
+  // The halo is centred behind the plate head, from the rig's own solve this frame (glow anchor).
+  const glowAt = seatedChildHands(balakProps).glowAnchor;
   const plate = (o: { x: number; y: number }) => ({ x: BX + o.x * BS, y: BY + o.y * BS });
   const pS = plate(AT_PLATE_SHIVA);
   const pD = plate(AT_PLATE_DOLL);
@@ -715,31 +729,8 @@ export const Scene01ClayShivaAndDoll: React.FC = () => {
       {shivaAside && <HeldObjectArt kind="clayShiva" x={sS.x} y={sS.y} s={BS} />}
       {dollOnSpot && <HeldObjectArt kind="doll" x={sD.x} y={sD.y} s={BS} />}
       {dollOnPlate && <HeldObjectArt kind="doll" x={pD.x} y={pD.y + 0} s={BS} rot={dollRot} />}
-      <BirulGlow cx={hx} cy={hy} r={175 * pos.s * 0.8} glow={GLOW} f={lf} />
-      <SeatedChild
-        x={pos.x}
-        y={pos.y}
-        s={objS}
-        f={lf}
-        lifeF={lf}
-        pose={st.pose}
-        prevPose={st.prevPose}
-        poseStart={st.poseStart}
-        prevPoseStart={st.prevPoseStart}
-        holding={st.holding}
-        reachFor={st.reachFor}
-        reachAt={st.reachAt}
-        pointAt={st.pointAt}
-        kneel={kneel}
-        watchHeld={balakWatch(lf)}
-        face={balakFace(lf)}
-        expression={st.expression}
-        prevExpression={st.prevExpression}
-        expressionStart={st.expressionStart}
-        mouth={mouth}
-        talk={talk}
-        glow={GLOW}
-      />
+      <BirulGlow cx={glowAt.cx} cy={glowAt.cy} r={glowAt.r} glow={GLOW} f={lf} />
+      <SeatedChild {...balakProps} />
       {bellDown && <BrassBell x={CHARU.x + 95} y={CHARU.y - 14} s={0.62} />}
       <Puppet
         cast={CHARU_CAST}

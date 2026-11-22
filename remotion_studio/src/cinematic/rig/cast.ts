@@ -53,6 +53,11 @@ export const FACE_LOOKS: Record<string, FaceLook> = {
   madhu: { lashes: 0.55, kajal: 0, browWeight: 0.75, lipTint: "#c25e63", ageLines: 0, hairGrey: 0 },
   listenerKid: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
   duikha: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+  // Episode 5 (Krishnanagar kachari). New ids: no older scene uses them.
+  /** Binoy, the neighbour's son (14 or 15): a boy's soft face, no mustache, clear brows. */
+  binoy: { lashes: 0.4, kajal: 0, browWeight: 1.0, lipTint: "#9a544a", mustache: 0, ageLines: 0, hairGrey: 0 },
+  /** Haricharan, the kachari hand (about 30): heavy dark brows, a thin mustache, a few sun lines. */
+  haricharan: { lashes: 0.2, kajal: 0, browWeight: 1.45, lipTint: "#7c4036", mustache: 0.5, ageLines: 0.15, hairGrey: 0 },
 };
 
 /** A cast sheet entry plus its face tuning. */
@@ -536,9 +541,110 @@ export const CAST: Record<string, CastEntry> = {
     look: FACE_LOOKS.jyethi,
     seed: 181,
   },
+
+  /* ---- Episode 5 (the Krishnanagar kachari, STO-20). Appended last. ---- */
+
+  /**
+   * Surendra, Balak's father: the shared copy of Episode 2's `SURENDRA` (episode02/scenes/Scene01eFather.tsx, which
+   * still draws its own copy): white kurta, calf-length dhoti, brown shawl, parted black hair, FATHER_LOOK face.
+   */
+  surendra: {
+    id: "surendra",
+    age: "adult",
+    sex: "m",
+    height: 1.0,
+    girth: 0.95,
+    skin: "#c98f63",
+    skinLight: "#e8b48a",
+    skinShade: "#a86d46",
+    lips: "#9c5a4e",
+    hair: "#1a1210",
+    hairLight: "#4e3a2e",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#fbf8f0",
+    topLight: "#ffffff",
+    topShade: "#d4cab6",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#f7f3e8",
+    lowerShade: "#d2c7b0",
+    dhotiLength: "calf",
+    scarf: { color: "#7a5230", shade: "#5a3a20", trim: "#c99a5a", style: "shawl" },
+    look: FACE_LOOKS.surendra,
+    seed: 47,
+  },
+  /**
+   * Binoy, the neighbour's son (about 14 or 15, he calls Surendra "Suren kaka"), coming home from outside: short dark
+   * hair, a plain unbleached cotton fatua (short half-sleeved kurta), a knee-length dhoti, a jute cloth bag over his
+   * shoulder. Youth-sized: shorter and slimmer than the men, a softer jaw and rounder eyes than an adult's.
+   */
+  binoy: {
+    id: "binoy",
+    age: "adult",
+    sex: "m",
+    height: 0.86,
+    girth: 0.84,
+    ...skinWarm,
+    hair: "#17100e",
+    hairLight: "#4a3830",
+    hairStyle: "cropped",
+    outfit: "kurta",
+    top: "#e9dfc6",
+    topLight: "#f7f0de",
+    topShade: "#c4b694",
+    topTrim: "#9a8a68",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#faf6ec",
+    lowerShade: "#d5cab3",
+    dhotiLength: "knee",
+    bag: { color: "#b08a58", shade: "#86663c", strap: "#8e6d42", side: -1 },
+    face: { faceLen: 1.0, jaw: 0.7, chin: 0.36, chinRound: 0.45, eyeSize: 0.19, eyeRound: 0.42, nose: 0.82, cheekPuff: 0.03 },
+    look: FACE_LOOKS.binoy,
+    seed: 191,
+  },
+  /**
+   * Haricharan, a kachari hand who grows the vegetables (about 30; not a relative, Balak calls him "Haricharan-da"):
+   * lean and wiry, dark-skinned, short black hair, a thin mustache, bare-chested, a coarse dhoti hitched up for work
+   * (malkochha), a red-and-white checked gamchha over his left shoulder. His bamboo is the Puppet's built-in
+   * rProp "bamboo" (see GESTURES5.bambooUpright / bambooCarried in Puppet.tsx).
+   */
+  haricharan: {
+    id: "haricharan",
+    age: "adult",
+    sex: "m",
+    height: 1.0,
+    girth: 0.86,
+    skin: "#9a5f3c",
+    skinLight: "#b9794f",
+    skinShade: "#74432a",
+    lips: "#7c4036",
+    hair: "#110a08",
+    hairLight: "#3a2a22",
+    hairStyle: "cropped",
+    outfit: "bare",
+    top: "#9a5f3c",
+    topLight: "#b9794f",
+    topShade: "#74432a",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#ebe1c9",
+    lowerShade: "#c2b392",
+    lowerTrim: "#6e5a3a",
+    dhotiLength: "hitched",
+    scarf: { color: "#c3442f", shade: "#8e2c1d", trim: "#f2e3c6", style: "gamchha" },
+    mustache: "#110a08",
+    wiry: true,
+    look: FACE_LOOKS.haricharan,
+    seed: 197,
+  },
 };
 
 /*
+ * Binoy's mother (Episode 5) is CAST.womanA as it stands (married: sindoor, maroon blouse, red-bordered sari), with
+ * GESTURES5.handAtMouth from Puppet.tsx.
+ *
  * The house priest in Episode 4 (STO-19) is CAST.bhagabati as it stands: bare-chested elder in a red-bordered dhoti
  * with an uttariya over the shoulder and the sacred thread (paita: right for HIM; Balak never wears one, BAL-03).
  */

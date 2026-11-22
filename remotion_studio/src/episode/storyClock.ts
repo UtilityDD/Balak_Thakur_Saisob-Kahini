@@ -51,6 +51,9 @@ import { EP03_CUES } from "../episode03/subtitles";
 import { EP04_AUDIO, EP04_BREAKS, EP04_CLIP_PARTS, EP04_GAPS, EP04_PAUSES, EP04_SCENES } from "../episode04/timing";
 import type { Ep04Break, Ep04Gap } from "../episode04/timing";
 import { EP04_CUES } from "../episode04/subtitles";
+import { EP05_AUDIO, EP05_BREAKS, EP05_CLIP_PARTS, EP05_GAPS, EP05_PAUSES, EP05_SCENES } from "../episode05/timing";
+import type { Ep05Gap } from "../episode05/timing";
+import { EP05_CUES } from "../episode05/subtitles";
 
 /* ------------------------------------------------------------------ */
 /* Generic helpers (any episode): they take the pause list of one scene */
@@ -362,6 +365,63 @@ export interface BreakState {
 /** Episode 4: whether an ABSOLUTE frame lies inside a chapter break (EP04_BREAKS). */
 export const breakState4 = (absFrame: number): BreakState => {
   const b = EP04_BREAKS.find((x) => absFrame >= x.startFrame && absFrame < x.startFrame + x.frames);
+  if (!b) return { inBreak: false, brk: null, t: 0, elapsed: 0 };
+  const elapsed = absFrame - b.startFrame;
+  return { inBreak: true, brk: b, t: b.frames > 0 ? elapsed / b.frames : 0, elapsed };
+};
+
+/* Episode 5 (added 2026-11-22; scripts/build_ep05_timing.js, EP05_* in ../episode05/timing; the approved table STO-20:
+   6 pauses, 2 action gaps, 1 chapter break). The same helpers with a "5" suffix (useStory5, cueLocalStory5, clipSpan5,
+   clipLocalStory5, pausesFor5, absToStory5, gapsFor5, gapState5, breakState5) or EP05_CLOCK. Episode 2, 3 and 4
+   exports above unchanged.
+   Action gaps come in three kinds (Ep05Gap.kind): "open", "after" (scene 02 AG1, at the 02a/02b boundary, beats
+   a_cow_hides and b_haricharan_arrives) and, new in Episode 5, "end" (scene 02 AG2, after the scene's last line, beat
+   a_haricharan_leaves): an end gap runs FIRST at the scene's end-pause point and the end pause (P3) holds right after
+   it, so in scene 02 the story frames run ... last line, AG2 [791, 851), then P3 holds at story 851. Story frames
+   include every gap (f runs through them), so gapState5 / useStory5(...).gap report an end gap like any other, with
+   its kind; key the gap's action on f and its beats, and the P3 tableau on pause (index 2 of scene 02). */
+export const EP05_CLOCK = makeStoryClock({
+  scenes: EP05_SCENES,
+  pauses: EP05_PAUSES,
+  cues: EP05_CUES,
+  audio: EP05_AUDIO,
+  clipParts: EP05_CLIP_PARTS,
+});
+/** Episode 5: the pauses of one scene, sorted by atStory. */
+export const pausesFor5 = EP05_CLOCK.pausesFor;
+/** Episode 5: story frame (scene-local, authored timing) of an absolute real frame. */
+export const absToStory5 = EP05_CLOCK.absToStory;
+/** Episode 5: a subtitle phrase's start and end in the scene's story frames. */
+export const cueLocalStory5 = EP05_CLOCK.cueLocalStory;
+/** Episode 5: an original voice clip's whole window in absolute real frames (first part start, last part end). */
+export const clipSpan5 = EP05_CLOCK.clipSpan;
+/** Episode 5: an original voice clip's window in a scene's story frames. */
+export const clipLocalStory5 = EP05_CLOCK.clipLocalStory;
+const gapCache5: Record<string, Ep05Gap[]> = {};
+/** Episode 5: the action gaps of one scene (story frames, sorted by fromStory; open, after and end kinds). */
+export const gapsFor5 = (sceneId: string): Ep05Gap[] =>
+  (gapCache5[sceneId] ??= EP05_GAPS.filter((g) => g.sceneId === sceneId).sort((a, b) => a.fromStory - b.fromStory));
+/** Episode 5 gap state: the generic GapState plus the current gap's kind ("open" | "after" | "end"; null outside). */
+export interface GapState5 extends GapState {
+  kind: Ep05Gap["kind"] | null;
+}
+/** Episode 5: whether story frame `f` of a scene lies inside an action gap (which beat, and the gap's kind). */
+export const gapState5 = (sceneId: string, f: number): GapState5 => {
+  const gaps = gapsFor5(sceneId);
+  const g = gapState(f, gaps);
+  return { ...g, kind: g.inGap ? gaps[g.index].kind : null };
+};
+/**
+ * Episode 5 scene hook: { f: story frame (runs through action gaps, end gaps included; holds in pauses), lifeF: real
+ * local frame, pause: PauseState, gap: GapState5 }.
+ */
+export const useStory5 = (sceneId: string): { f: number; lifeF: number; pause: PauseState; gap: GapState5 } => {
+  const s = EP05_CLOCK.useStory(sceneId);
+  return { ...s, gap: gapState5(sceneId, s.f) };
+};
+/** Episode 5: whether an ABSOLUTE frame lies inside a chapter break (EP05_BREAKS; same shape as Episode 4's). */
+export const breakState5 = (absFrame: number): BreakState => {
+  const b = EP05_BREAKS.find((x) => absFrame >= x.startFrame && absFrame < x.startFrame + x.frames);
   if (!b) return { inBreak: false, brk: null, t: 0, elapsed: 0 };
   const elapsed = absFrame - b.startFrame;
   return { inBreak: true, brk: b, t: b.frames > 0 ? elapsed / b.frames : 0, elapsed };

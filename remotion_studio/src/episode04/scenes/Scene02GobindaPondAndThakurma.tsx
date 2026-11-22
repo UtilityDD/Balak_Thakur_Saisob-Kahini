@@ -15,7 +15,7 @@ import {
 } from "../../cinematic/sets/VedicHouseDay";
 import { clipLocalStory4, clipSpan4, pausesFor4, storyToReal, useStory4 } from "../../episode/storyClock";
 import { BirulGlow } from "../../episode03/rig/BirulGlow";
-import { HELD_OBJECT_BOTTOM, HeldObjectArt, KNEEL_REACH_T, SeatedChild } from "../../episode03/rig/SeatedChild";
+import { HELD_OBJECT_BOTTOM, HeldObjectArt, KNEEL_REACH_T, SeatedChild, seatedChildHands } from "../../episode03/rig/SeatedChild";
 import { EP04_SCENES } from "../timing";
 
 /**
@@ -97,7 +97,15 @@ const DIS_A = P2[1] - DISSOLVE;
 /* ---------------- 02A: the pond ---------------- */
 
 const SP = POND.SPOTS;
-const BALAK_A = { x: SP.balak.x, y: SP.balak.y, s: SP.balak.s };
+/**
+ * BAL-26b (2026-11-22): in the plate design his head was about 62% of Sundar's (adult Puppet, scale 2) at the spot's
+ * s 1.3; at 1.65 it is about 80% (a five-year-old beside an adult). He moves right so that the world points where his
+ * hands meet Sundar's (the hand-back) and where the doll stands on the grass stay the delivered ones (OFFER_FIG,
+ * DOLL_FIG_X below are re-derived from the old s 1.3 figure points: offer (76, -74), doll x 94, at x 1430).
+ */
+const BALAK_A_OLD = { x: SP.balak.x, y: SP.balak.y, s: SP.balak.s };
+const BALAK_A_S = 1.65;
+const BALAK_A = { x: BALAK_A_OLD.x - 76 * BALAK_A_OLD.s + 76 * BALAK_A_S, y: SP.balak.y, s: BALAK_A_S };
 const ADULT_S = 2;
 const SUNDAR_AT = { x: SP.sundar.x + 10, y: pondBankY(SP.sundar.x + 10) + 22 };
 const CHARU_A = { x: 220, y: 862, s: 1.32 };
@@ -121,8 +129,8 @@ const GRIP_DOLL = REACH_AT + KNEEL_REACH_T.grip;
 const HUG_AT = GRIP_DOLL + 2;
 
 /** Where Balak holds the Gobinda out (figure units, before the flip) and where the doll stands on the grass. */
-const OFFER_FIG = { x: 76, y: -74 };
-const DOLL_FIG_X = 94;
+const OFFER_FIG = { x: 76, y: (-74 * BALAK_A_OLD.s) / BALAK_A.s };
+const DOLL_FIG_X = (BALAK_A.x - (BALAK_A_OLD.x - 94 * BALAK_A_OLD.s)) / BALAK_A.s;
 const DOLL_FIG = { x: DOLL_FIG_X, y: -HELD_OBJECT_BOTTOM.doll };
 const figToWorld = (p: { x: number; y: number }) => ({ x: BALAK_A.x - p.x * BALAK_A.s, y: BALAK_A.y + p.y * BALAK_A.s });
 const DOLL_GROUND = figToWorld(DOLL_FIG);
@@ -274,7 +282,8 @@ const THAKURMA_AT = { x: 1140, y: 1000 };
 const HARENDRA_AT = { x: 590, y: 1018 };
 const JYETHI_AT = { x: 270, y: 1032 };
 const CHARU_B = { x: 862, y: 1030 };
-const BALAK_B = { x: 1630, y: 862, s: 1.1 };
+/** BAL-26b: s 1.4 (was 1.1, the same 1.27x as at the pond for the plate head), a little left to keep clear of the mancha. */
+const BALAK_B = { x: 1615, y: 862, s: 1.4 };
 
 /** Thakurma's voice: per-frame RMS (24 fps, 0..1) of public/audio/ep04/02b_Thakurma_Blessing.wav. */
 const THAKURMA_ENV = [
@@ -427,6 +436,27 @@ export const Scene02GobindaPondAndThakurma: React.FC = () => {
   const camY = yardCam(lifeF);
   const lookUp = track(lifeF, [[P3[0] + 2, 0], [P3[0] + 18, 1, "inOut"]]);
 
+  // BAL-26b (2026-11-22): Balak in the reference-plate design at five (shared ThakurHeadPlate). Poses, timing, blinks
+  // and expressions are the delivered ones; the halo is centred behind the plate head from the rig's own solve.
+  const balakAProps: ChildProps = { x: BALAK_A.x, y: BALAK_A.y, s: BALAK_A.s, f: pc, lifeF, flip: true, ...rigA, design: "plate", age: 5 };
+  const glowA = seatedChildHands(balakAProps).glowAnchor;
+  const balakBProps: ChildProps = {
+    x: BALAK_B.x,
+    y: BALAK_B.y,
+    s: BALAK_B.s,
+    f: lifeF,
+    lifeF,
+    flip: true,
+    pose: "holdInLap",
+    holding: "doll",
+    poseStart: -400,
+    watchHeld: 1 - lookUp,
+    face: { lookX: 0.4 * lookUp, eyesDown: 0, smile: 0.55 + 0.1 * lookUp },
+    design: "plate",
+    age: 5,
+  };
+  const glowB = seatedChildHands(balakBProps).glowAnchor;
+
   return (
     <div style={{ position: "absolute", inset: 0, background: "#000", overflow: "hidden" }}>
       {showPond && (
@@ -447,9 +477,9 @@ export const Scene02GobindaPondAndThakurma: React.FC = () => {
                   {peopleIn && <Puppet cast={CAST.sundar} f={pc} lifeF={lifeF} x={SUNDAR_AT.x} y={SUNDAR_AT.y} scale={ADULT_S} acting={sundarAct} props={PROPS_SUNDAR} light={POND_SUN} />}
                   {runnerIn && pc < T.handTo + 44 && <Puppet cast={RUNNER} f={pc} lifeF={lifeF} x={rp.x} y={rp.y} scale={RUNNER_S} acting={RUNNER_ACT} props={PROPS_RUNNER} light={POND_SUN} />}
                   {dollOnGrass && <HeldObjectArt kind="doll" x={DOLL_GROUND.x} y={DOLL_GROUND.y} s={BALAK_A.s} />}
-                  <GroundGlow id="s02-pond-gg" x={BALAK_A.x} y={BALAK_A.y + 4} w={140} level={0.5} />
-                  <BirulGlow cx={BALAK_A.x} cy={BALAK_A.y - 150 * BALAK_A.s} r={150 * BALAK_A.s} glow={GLOW_BASE} f={lifeF} />
-                  <SeatedChild x={BALAK_A.x} y={BALAK_A.y} s={BALAK_A.s} f={pc} lifeF={lifeF} flip {...rigA} />
+                  <GroundGlow id="s02-pond-gg" x={BALAK_A.x} y={BALAK_A.y + 4} w={108 * BALAK_A.s} level={0.5} />
+                  <BirulGlow cx={glowA.cx} cy={glowA.cy} r={150 * BALAK_A.s} glow={GLOW_BASE} f={lifeF} />
+                  <SeatedChild {...balakAProps} />
                 </>
               }
             />
@@ -475,21 +505,9 @@ export const Scene02GobindaPondAndThakurma: React.FC = () => {
               nearVeranda
               yard={
                 <>
-                  <GroundGlow id="s02-yard-gg" x={BALAK_B.x} y={BALAK_B.y + 3} w={120} level={0.5 + 0.5 * beat} />
-                  <BirulGlow cx={BALAK_B.x} cy={BALAK_B.y - 150 * BALAK_B.s} r={150 * BALAK_B.s * (1 + 0.15 * beat)} glow={glow} f={lifeF} />
-                  <SeatedChild
-                    x={BALAK_B.x}
-                    y={BALAK_B.y}
-                    s={BALAK_B.s}
-                    f={lifeF}
-                    lifeF={lifeF}
-                    flip
-                    pose="holdInLap"
-                    holding="doll"
-                    poseStart={-400}
-                    watchHeld={1 - lookUp}
-                    face={{ lookX: 0.4 * lookUp, eyesDown: 0, smile: 0.55 + 0.1 * lookUp }}
-                  />
+                  <GroundGlow id="s02-yard-gg" x={BALAK_B.x} y={BALAK_B.y + 3} w={109 * BALAK_B.s} level={0.5 + 0.5 * beat} />
+                  <BirulGlow cx={glowB.cx} cy={glowB.cy} r={150 * BALAK_B.s * (1 + 0.15 * beat)} glow={glow} f={lifeF} />
+                  <SeatedChild {...balakBProps} />
                 </>
               }
               floor={

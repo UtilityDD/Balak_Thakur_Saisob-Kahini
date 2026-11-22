@@ -1,0 +1,112 @@
+# Episode 5 voice clips: silences (ffmpeg silencedetect -45 dB / 0.12 s) on the played, levelled files in
+# remotion_studio/public/audio/ep05. Written by scripts/build_ep05_timing.js on every run; do not edit by hand.
+# Times are in the clip's OWN seconds (use them as `silence: [a, b]` with `clip` in a PAUSES / GAPS entry).
+# lead / trail = room tone at the clip's start / end (a pause there is a clip-boundary hold, no cut).
+# SENTENCE = interior silence >= 0.2 s (a cut candidate); short = a breath or word gap (not for a cut).
+# 'near' = the subtitle phrase whose estimated end (character share of the cue) is closest to the silence,
+# and how far its estimated end is from the silence (the generator accepts <= 0.5 s, PAUSE_TOL, else name it).
+# 'abs' = the silence's middle on the timeline WITHOUT pauses (seconds, frame at 24 fps).
+
+00_Intro.wav  (7.065 s; on the timeline at 0.000 s = frame 0)
+  SENTENCE start 2.511  len 0.572  [2.511, 3.083]  near "ছোটদের বালক ঠাকুরের গল্প।" (estimate inside) abs 2.80 s f67
+  short    start 3.466  len 0.122  [3.466, 3.588]  near "ছোটদের বালক ঠাকুরের গল্প।" (estimate 0.52 s off) abs 3.53 s f85
+  short    start 4.002  len 0.168  [4.002, 4.170]  near "ছোটদের বালক ঠাকুরের গল্প।" (estimate 1.06 s off) abs 4.09 s f98
+  SENTENCE start 4.171  len 0.352  [4.171, 4.522]  near "ছোটদের বালক ঠাকুরের গল্প।" (estimate 1.23 s off) abs 4.35 s f104
+  short    start 5.493  len 0.176  [5.493, 5.669]  near "পর্ব পাঁচ: কচ্ছপ খেলা ও গাভী রক্ষা।" (estimate 1.40 s off) abs 5.58 s f134
+  short    start 6.383  len 0.125  [6.383, 6.508]  near "পর্ব পাঁচ: কচ্ছপ খেলা ও গাভী রক্ষা।" (estimate 0.56 s off) abs 6.45 s f155
+  trail    start 6.729  len 0.336  [6.729, 7.065]  near "পর্ব পাঁচ: কচ্ছপ খেলা ও গাভী রক্ষা।" (estimate inside) abs 6.90 s f166
+  phrases (estimated, clip seconds):
+    0.00-2.94  ছোটদের বালক ঠাকুরের গল্প।
+    2.94-7.07  পর্ব পাঁচ: কচ্ছপ খেলা ও গাভী রক্ষা।
+
+00a_Source_Attribution.wav  (18.600 s; on the timeline at 7.365 s = frame 177)
+  lead     start 0.000  len 0.334  [0.000, 0.334]
+  SENTENCE start 2.300  len 0.299  [2.300, 2.598]
+  SENTENCE start 6.814  len 0.626  [6.814, 7.440]
+  SENTENCE start 12.278  len 0.278  [12.278, 12.556]
+  SENTENCE start 15.193  len 0.244  [15.193, 15.437]
+  short    start 15.954  len 0.141  [15.954, 16.095]
+  trail    start 18.389  len 0.211  [18.389, 18.600]
+
+01a_Narrator_Tortoise.wav  (19.693 s; on the timeline at 26.615 s = frame 639)
+  SENTENCE start 2.870  len 0.226  [2.870, 3.096]  near "কৃষ্ণনগরের কাছারি বাড়িতে একদিন" (estimate 0.00 s off) abs 29.60 s f710
+  short    start 3.875  len 0.148  [3.875, 4.022]  near "কৃষ্ণনগরের কাছারি বাড়িতে একদিন" (estimate 0.77 s off) abs 30.56 s f734
+  short    start 5.722  len 0.127  [5.722, 5.849]  near "ছোট্ট বীরু কচ্ছপদের সাথে খেলা করছিল।" (estimate 0.61 s off) abs 32.40 s f778
+  SENTENCE start 5.878  len 0.583  [5.878, 6.460]  near "ছোট্ট বীরু কচ্ছপদের সাথে খেলা করছিল।" (estimate inside) abs 32.78 s f787
+  SENTENCE start 9.630  len 0.421  [9.630, 10.051]  near "হঠাৎ একটা কচ্ছপ তার হাত কামড়ে ধরল!" (estimate inside) abs 36.46 s f875
+  short    start 12.713  len 0.163  [12.713, 12.876]  near "সবাই তো 'গেল গেল' বলে ছুটে এল—" (estimate 0.00 s off) abs 39.41 s f946
+  short    start 14.110  len 0.155  [14.110, 14.265]  near "সবাই তো 'গেল গেল' বলে ছুটে এল—" (estimate 1.23 s off) abs 40.80 s f979
+  short    start 14.265  len 0.124  [14.265, 14.389]  near "সবাই তো 'গেল গেল' বলে ছুটে এল—" (estimate 1.38 s off) abs 40.94 s f983
+  short    start 15.115  len 0.123  [15.115, 15.237]  near "কিন্তু দেখা গেল হাতে একটুও দাগ নেই," (estimate 1.29 s off) abs 41.79 s f1003
+  SENTENCE start 16.142  len 0.387  [16.142, 16.529]  near "কিন্তু দেখা গেল হাতে একটুও দাগ নেই," (estimate 0.00 s off) abs 42.95 s f1031
+  short    start 17.942  len 0.127  [17.942, 18.069]  near "কিন্তু দেখা গেল হাতে একটুও দাগ নেই," (estimate 1.41 s off) abs 44.62 s f1071
+  trail    start 19.435  len 0.257  [19.435, 19.693]  near "আর কচ্ছপও চুপচাপ হাত ছেড়ে দিয়েছে!" (estimate 0.00 s off) abs 46.18 s f1108
+  phrases (estimated, clip seconds):
+    0.00-3.10  কৃষ্ণনগরের কাছারি বাড়িতে একদিন
+    3.10-6.46  ছোট্ট বীরু কচ্ছপদের সাথে খেলা করছিল।
+    6.46-10.05  হঠাৎ একটা কচ্ছপ তার হাত কামড়ে ধরল!
+    10.05-12.88  সবাই তো 'গেল গেল' বলে ছুটে এল—
+    12.88-16.53  কিন্তু দেখা গেল হাতে একটুও দাগ নেই,
+    16.53-19.69  আর কচ্ছপও চুপচাপ হাত ছেড়ে দিয়েছে!
+
+02a_Narrator_Cow.wav  (13.003 s; on the timeline at 46.758 s = frame 1122)
+  short    start 1.583  len 0.141  [1.583, 1.724]  near "ছয় বছরের বীরু তখন কলাবাগিচায়" (estimate 1.78 s off) abs 48.41 s f1162
+  short    start 2.187  len 0.177  [2.187, 2.364]  near "ছয় বছরের বীরু তখন কলাবাগিচায়" (estimate 1.14 s off) abs 49.03 s f1177
+  short    start 3.243  len 0.152  [3.243, 3.395]  near "ছয় বছরের বীরু তখন কলাবাগিচায়" (estimate 0.10 s off) abs 50.08 s f1202
+  short    start 4.101  len 0.159  [4.101, 4.260]  near "ছয় বছরের বীরু তখন কলাবাগিচায়" (estimate 0.60 s off) abs 50.94 s f1223
+  SENTENCE start 6.339  len 0.355  [6.339, 6.694]  near "চুপচাপ বসে থাকতে ভালোবাসত।" (estimate 0.44 s off) abs 53.27 s f1279
+  SENTENCE start 6.782  len 0.251  [6.782, 7.033]  near "চুপচাপ বসে থাকতে ভালোবাসত।" (estimate 0.10 s off) abs 53.67 s f1288
+  trail    start 12.616  len 0.388  [12.616, 13.003]  near "হরিচরণ বাঁশ হাতে গরুটিকে মারতে ছুটে এল।" (estimate inside) abs 59.57 s f1430
+  phrases (estimated, clip seconds):
+    0.00-3.50  ছয় বছরের বীরু তখন কলাবাগিচায়
+    3.50-7.13  চুপচাপ বসে থাকতে ভালোবাসত।
+    7.13-9.32  একদিন শশা গাছ খেয়ে ফেলায়
+    9.32-13.00  হরিচরণ বাঁশ হাতে গরুটিকে মারতে ছুটে এল।
+
+02b_Haricharan.wav  (3.308 s; on the timeline at 60.211 s = frame 1445)
+  short    start 1.020  len 0.120  [1.020, 1.140]  near "এই বীরু!" (estimate 0.00 s off) abs 61.29 s f1471
+  trail    start 2.999  len 0.309  [2.999, 3.308]  near "গরুটা কোন দিকে গেছে?" (estimate 0.00 s off) abs 63.36 s f1521
+  phrases (estimated, clip seconds):
+    0.00-1.14  হরিচরণ: এই বীরু!
+    1.14-1.90  হরিচরণ: তাড়াতাড়ি বল তো,
+    1.90-3.31  হরিচরণ: গরুটা কোন দিকে গেছে?
+
+02c_Thakur_Truth.wav  (12.843 s; on the timeline at 63.969 s = frame 1535)
+  SENTENCE start 1.892  len 0.343  [1.892, 2.235]  near "দেখলেও বলব না হরিচরণদা!" (estimate 0.00 s off) abs 66.03 s f1585
+  SENTENCE start 4.361  len 0.516  [4.361, 4.877]  near "বলে দিলে তো আপনি ওকে মারবেন।" (estimate 0.00 s off) abs 68.59 s f1646
+  SENTENCE start 7.068  len 0.212  [7.068, 7.280]  near "তাই খেয়েছে—" (estimate 0.00 s off) abs 71.14 s f1707
+  SENTENCE start 10.116  len 0.230  [10.116, 10.346]  near "ও কি আর বুঝেছে আপনার গাছ না আমার গাছ?" (estimate 0.00 s off) abs 74.20 s f1781
+  trail    start 12.550  len 0.293  [12.550, 12.843]  near "আমি ওর খবর বলতে পারব না!" (estimate 0.00 s off) abs 76.67 s f1840
+  phrases (estimated, clip seconds):
+    0.00-2.24  বীরু: দেখলেও বলব না হরিচরণদা!
+    2.24-4.88  বীরু: বলে দিলে তো আপনি ওকে মারবেন।
+    4.88-6.29  বীরু: ওর খিদে পেয়েছিল,
+    6.29-7.28  বীরু: তাই খেয়েছে—
+    7.28-10.35  বীরু: ও কি আর বুঝেছে আপনার গাছ না আমার গাছ?
+    10.35-12.84  বীরু: আমি ওর খবর বলতে পারব না!
+
+99_Outro_Sequential.wav  (24.945 s; on the timeline at 77.262 s = frame 1854)
+  short    start 0.409  len 0.188  [0.409, 0.597]  near "সত্য বলা আর অসহায় প্রাণীকে রক্ষা করা—" (estimate 3.40 s off) abs 77.77 s f1866
+  SENTENCE start 1.753  len 0.215  [1.753, 1.967]  near "সত্য বলা আর অসহায় প্রাণীকে রক্ষা করা—" (estimate 2.03 s off) abs 79.12 s f1899
+  short    start 2.542  len 0.169  [2.542, 2.711]  near "সত্য বলা আর অসহায় প্রাণীকে রক্ষা করা—" (estimate 1.29 s off) abs 79.89 s f1917
+  SENTENCE start 3.935  len 0.389  [3.935, 4.323]  near "সত্য বলা আর অসহায় প্রাণীকে রক্ষা করা—" (estimate inside) abs 81.39 s f1953
+  SENTENCE start 7.955  len 0.815  [7.955, 8.770]  near "এই দুটোই মানুষের সবচেয়ে বড় ধর্ম।" (estimate 0.38 s off) abs 85.62 s f2055
+  short    start 8.930  len 0.121  [8.930, 9.051]  near "ছোটদের বালক ঠাকুরের গল্প—" (estimate 1.16 s off) abs 86.25 s f2070
+  SENTENCE start 11.124  len 0.316  [11.124, 11.440]  near "ছোটদের বালক ঠাকুরের গল্প—" (estimate 0.91 s off) abs 88.54 s f2125
+  short    start 13.040  len 0.121  [13.040, 13.161]  near "আসছে পরের পর্ব: জ্যেষ্ঠ ভ্রাতাকে" (estimate 0.42 s off) abs 90.36 s f2169
+  short    start 15.205  len 0.154  [15.205, 15.359]  near "উদ্ধার ও খেলার সাথী!" (estimate 0.32 s off) abs 92.54 s f2221
+  short    start 15.485  len 0.145  [15.485, 15.629]  near "উদ্ধার ও খেলার সাথী!" (estimate 0.05 s off) abs 92.82 s f2228
+  SENTENCE start 16.534  len 0.229  [16.534, 16.763]  near "উদ্ধার ও খেলার সাথী!" (estimate 0.85 s off) abs 93.91 s f2254
+  SENTENCE start 22.689  len 0.508  [22.689, 23.197]  near "ঠাকুর ভাইকে বাবার হাত থেকে বাঁচালেন," (estimate inside) abs 100.20 s f2405
+  SENTENCE start 23.649  len 0.285  [23.649, 23.934]  near "ঠাকুর ভাইকে বাবার হাত থেকে বাঁচালেন," (estimate 0.49 s off) abs 101.05 s f2425
+  trail    start 24.579  len 0.365  [24.579, 24.945]  near "দেখুন পরের পর্বে!" (estimate 0.00 s off) abs 102.02 s f2449
+  phrases (estimated, clip seconds):
+    0.00-4.00  সত্য বলা আর অসহায় প্রাণীকে রক্ষা করা—
+    4.00-7.58  এই দুটোই মানুষের সবচেয়ে বড় ধর্ম।
+    7.58-10.21  ছোটদের বালক ঠাকুরের গল্প—
+    10.21-13.58  আসছে পরের পর্ব: জ্যেষ্ঠ ভ্রাতাকে
+    13.58-15.68  উদ্ধার ও খেলার সাথী!
+    15.68-19.37  বড় ভাইয়ের মার খেয়েও কীভাবে ছোট্ট
+    19.37-23.16  ঠাকুর ভাইকে বাবার হাত থেকে বাঁচালেন,
+    23.16-24.94  দেখুন পরের পর্বে!
+

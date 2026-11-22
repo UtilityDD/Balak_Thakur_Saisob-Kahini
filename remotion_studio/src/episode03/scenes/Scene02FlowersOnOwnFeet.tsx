@@ -13,7 +13,7 @@ import { CourtyardBack, CourtyardFloor, TulsiMancha } from "../../cinematic/sets
 import { DaySky } from "../../cinematic/sets/S01_DaySets";
 import { Grade } from "../../cinematic/core/Stage";
 import { clipSpan3, cueLocalStory3, pausesFor3, storyToReal, useStory3 } from "../../episode/storyClock";
-import { SeatedChild } from "../rig/SeatedChild";
+import { SeatedChild, seatedChildHands } from "../rig/SeatedChild";
 import { S01_MINA, S01_REKHA, S01_SARALA, S01_TUNI, VEDIC_COURTYARD } from "./Scene01SharadFlowerGathering";
 import { BirulGlow } from "../rig/BirulGlow";
 
@@ -1437,6 +1437,33 @@ export const Scene02FlowersOnOwnFeet: React.FC = () => {
   const glow = GLOW_BASE + (1 - GLOW_BASE) * beat;
   const haloR = 190 * (1 + 0.1 * beat);
 
+  // BAL-26 (2026-11-22): Balak is drawn in the reference-plate design at five (shared ThakurHeadPlate). Poses, timing,
+  // lip sync, blinks and expressions are the delivered ones; only the design changes.
+  const balakProps: React.ComponentProps<typeof SeatedChild> = {
+    x: BALAK_POS.x,
+    y: BALAK_POS.y,
+    s: BALAK_POS.s,
+    f: f + RIG_PHASE,
+    lifeF: lifeF + RIG_PHASE + rigLifeShift(lifeF),
+    pose: rig.pose,
+    prevPose: rig.prevPose,
+    poseStart: rig.poseStart,
+    prevPoseStart: rig.prevPoseStart,
+    basketAt: rig.basketAt,
+    showBasket: false,
+    footFlowers: footFlowersAt(f),
+    expression: expr.expression,
+    prevExpression: expr.prevExpression,
+    expressionStart: expr.expressionStart,
+    face,
+    mouth,
+    glow,
+    design: "plate",
+    age: 5,
+  };
+  // The halo is centred behind the plate head, from the rig's own solve this frame (glow anchor).
+  const glowAt = seatedChildHands(balakProps).glowAnchor;
+
   // Scene 02's open pause holds through the dissolve from scene 01: the fade-in runs on the real clock.
   const fade = clamp(lifeF / 10) * clamp((DUR - lifeF) / 12);
 
@@ -1506,27 +1533,8 @@ export const Scene02FlowersOnOwnFeet: React.FC = () => {
             <Puppet cast={GIRL_A_CAST} f={lifeF} lifeF={lifeF} x={eldest.x} y={eldest.y} scale={eldest.s} acting={ELDEST_ACT} mouth={eldestMouth} talk={eldestTalk} light={SUN} />
             {/* Balak's restrained divine light: a soft warm halo behind his head and a faint ground glow */}
             <GroundGlow level={0.55 + 0.45 * beat} />
-            <BirulGlow cx={BALAK_POS.x} cy={BALAK_POS.y - 150 * BALAK_POS.s} r={haloR} glow={glow} f={lifeF} />
-            <SeatedChild
-              x={BALAK_POS.x}
-              y={BALAK_POS.y}
-              s={BALAK_POS.s}
-              f={f + RIG_PHASE}
-              lifeF={lifeF + RIG_PHASE + rigLifeShift(lifeF)}
-              pose={rig.pose}
-              prevPose={rig.prevPose}
-              poseStart={rig.poseStart}
-              prevPoseStart={rig.prevPoseStart}
-              basketAt={rig.basketAt}
-              showBasket={false}
-              footFlowers={footFlowersAt(f)}
-              expression={expr.expression}
-              prevExpression={expr.prevExpression}
-              expressionStart={expr.expressionStart}
-              face={face}
-              mouth={mouth}
-              glow={glow}
-            />
+            <BirulGlow cx={glowAt.cx} cy={glowAt.cy} r={haloR} glow={glow} f={lifeF} />
+            <SeatedChild {...balakProps} />
             </g>
           </Layer>
           <Grade warmth={0.45} vignette={0.5} grain={0.04} bloomAt={[66, 30]} />

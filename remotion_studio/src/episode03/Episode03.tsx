@@ -1,6 +1,6 @@
 import React from "react";
 import { SeriesSubtitles } from "../episode/SeriesSubtitles";
-import { cueLocalStory3, pausesFor3, storyToReal } from "../episode/storyClock";
+import { clipSpan3, cueLocalStory3, pausesFor3, storyToReal } from "../episode/storyClock";
 import { Audio, Freeze, Sequence, staticFile, useCurrentFrame } from "remotion";
 import { EP03_AUDIO, EP03_SCENES, EP03_TOTAL_FRAMES } from "./timing";
 import { EP03_CUES } from "./subtitles";
@@ -193,8 +193,10 @@ const ducked = (open: number, under: number, frame: number) => open + (under - o
  * Bed layers (plan "Sound beds this plan needs", STO-17 answer 8). Each layer loops for its bed's window at
  * `under` under a voice and `open` in the quiet; `pauseOpen` overrides the open level inside one pause of
  * `pauseScene` (the levels named in the plan's Pauses tables). Levels (AUD-02, AUD-03, STO-16 answer 9): no bed
- * above 0.25 in a pause; music never above 0.25 (here at most 0.15). `out` fades a layer to silence from an
- * absolute frame (the courtyard flute gives way to the Divine_Motif on the last line).
+ * above 0.25 in a pause. `out` fades a layer to silence from an absolute frame.
+ * AUD-07 (2026-11-22): the scenes' music (Village_Peace_Loop, Warm_Family_Flute, the Divine_Motif) moved out of the
+ * beds into MUSIC_CUES below (the cue sheet); the beds keep the ambience. The intro and outro beds are the series
+ * template and keep their music.
  */
 interface BedLayer {
   file: string;
@@ -213,7 +215,7 @@ interface Bed {
   layers: BedLayer[];
 }
 
-/** The Divine_Motif enters softly on "গাছ কেটে" (Balak's last line, STO-17), so the flute bows out there. */
+/** The Divine_Motif enters softly on "গাছ কেটে" (Balak's last line, STO-17; MUSIC_CUES M8). */
 const MOTIF_IN = sceneStart(S02) + (phraseLocal(S02, "গাছ কেটে") ?? storyReal(S02, 905));
 
 const BEDS: Bed[] = [
@@ -227,8 +229,8 @@ const BEDS: Bed[] = [
     fadeOut: 24,
     layers: [{ file: "music/Theme_Intro_Bansuri.wav", under: 0.08, open: 0.14 }],
   },
-  // 01 the autumn dawn garden: dawn birds, the river breeze in the kaash, Village_Peace_Loop. P1 birds 0.22,
-  // P2 wind 0.15, P3 the music rises to 0.15 and birds 0.20. Fades out over the cross-dissolve into 02.
+  // 01 the autumn dawn garden: dawn birds, the river breeze in the kaash (the music is MUSIC_CUES M1). P1 birds
+  // 0.22, P2 wind 0.15, P3 birds 0.20. Fades out over the cross-dissolve into 02.
   {
     name: "01 dawn garden",
     from: sceneStart(S01),
@@ -239,12 +241,11 @@ const BEDS: Bed[] = [
     layers: [
       { file: "ambient/dawn_birds_temple.wav", under: 0.1, open: 0.22, pauseOpen: { 2: 0.2 } },
       { file: "sfx/ep02/wind_soft.wav", under: 0.1, open: 0.15 },
-      { file: "music/Village_Peace_Loop.wav", under: 0.08, open: 0.15 },
     ],
   },
-  // 02 the tulsi courtyard (Ujanchar village house, morning): day birds (STO-17 default), a soft breeze that
-  // stirs the tulsi (0.12 in 02B P2 and 02C P2), Warm_Family_Flute. Pause indices: 0 = 02A P1 (open), 1 = 02A P2,
-  // 2 = 02A P3, 3-5 = 02B P1-P3, 6-8 = 02C P1-P3. Fades in over the dissolve, out as the outro starts.
+  // 02 the tulsi courtyard (the Vedic house, STO-18): day birds (STO-17 default), a soft breeze that stirs the
+  // tulsi (0.12 in 02B P2 and 02C P2); the music is MUSIC_CUES M2 to M8. Pause indices: 0 = 02A P1 (open),
+  // 1 = 02A P2, 2 = 02A P3, 3-5 = 02B P1-P3, 6-8 = 02C P1-P3. Fades in over the dissolve, out as the outro starts.
   {
     name: "02 tulsi courtyard",
     from: sceneStart(S02),
@@ -255,7 +256,6 @@ const BEDS: Bed[] = [
     layers: [
       { file: "sfx/ep02/birds_village.wav", under: 0.1, open: 0.2, pauseOpen: { 1: 0.18, 2: 0.18, 3: 0.18, 6: 0.18, 8: 0.15 } },
       { file: "sfx/ep02/wind_soft.wav", under: 0.06, open: 0.08, pauseOpen: { 4: 0.12, 7: 0.12 } },
-      { file: "music/Warm_Family_Flute.wav", under: 0.08, open: 0.14, out: { from: MOTIF_IN, frames: 36 } },
     ],
   },
   // Outro (99) and the next-episode glimpse (98): the series template (Episode 2's outro bed), one pass to the end.
@@ -471,24 +471,201 @@ const cueVolume = (c: PlacedSfx) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* The Divine_Motif (STO-17 answer 4)                                  */
+/* Music (AUD-07): the cue sheet, beat by beat                           */
 /* ------------------------------------------------------------------ */
 
 /**
- * The ending holds on Balak's serene face as his glow brightens gently: the Divine_Motif enters softly on
- * "গাছ কেটে" (fading in over 36 frames, 0.12 under his voice), rises to 0.18 in the end pause (02C P3), and
- * fades out over the first second of the outro, under the outro's own music.
+ * Cue sheet: 03_Episodes/Episode_03_Five_Year_Old_Wisdom/02_Audio/Ep03_Music_Cue_Sheet.md (beats M1 to M8, 2026-11-22;
+ * modelled on Episode 5's MUSIC_CUES). The Episode 5 recordings (public/audio/music/ep05, README there: Sa = C, the
+ * tanpura_drone_cs in C# for under the Divine_Motif) with the series music. Every beat is a row of MUSIC_CUES, anchored
+ * to narration phrases (phraseLocal), voice clips (clipSpan3), Balak's beats (B2) and the pauses, never hard frames.
+ *
+ * LEVELS are LOUDNESS TARGETS (LUFS), turned into a volume per file from its measured unit-gain loudness (MUSIC_LIB,
+ * ffmpeg ebur128 integrated). With the voices at -16 LUFS, music under a voice sits 18 to 24 dB lower (about -34 to
+ * -40) and rises in the quiet to 12 to 16 dB lower (about -28 to -32); the tanpura drones sit lower still, a floor.
+ * Looped cues never exceed volume 0.25 (AUD-03), one-shots 0.45 (AUD-02). Every looped cue ducks under every voice
+ * (the same SPEECH / speechAmount as the beds) and rises in the pauses (AUD-06). Two drones a semitone apart (C and
+ * C#) never overlap: the C tanpura is out before the C# one comes in with the Divine_Motif.
  */
-const DIVINE_MOTIF = (() => {
-  const endPause = pauseWindow(S02, 8);
-  const pauseEnd = sceneStart(S02) + endPause.end;
-  const fadeOut = 30;
-  return { from: MOTIF_IN, frames: pauseEnd + fadeOut - 6 - MOTIF_IN, fadeIn: 36, fadeOut, open: 0.18, under: 0.12 };
-})();
-const motifVolume = (f: number) =>
-  ducked(DIVINE_MOTIF.open, DIVINE_MOTIF.under, DIVINE_MOTIF.from + f) *
-  ease(f / DIVINE_MOTIF.fadeIn) *
-  ease((DIVINE_MOTIF.frames - f) / DIVINE_MOTIF.fadeOut);
+interface MusicFile {
+  /** Integrated loudness at volume 1 (LUFS). */
+  lufs: number;
+  seconds: number;
+  /** Loops seamlessly (a bed); otherwise it plays once from the cue's start. */
+  loop: boolean;
+}
+const MUSIC_LIB: Record<string, MusicFile> = {
+  // series music (measured 2026-11-22)
+  "music/Village_Peace_Loop": { lufs: -8.5, seconds: 15.2, loop: true },
+  "music/Warm_Family_Flute": { lufs: -8.1, seconds: 13.2, loop: true },
+  "music/Divine_Motif": { lufs: -15.0, seconds: 36, loop: false },
+  // music/ep05 (real recordings; loops levelled to -24 LUFS, the low drone to -28, one-shots to -20)
+  "music/ep05/tanpura_drone": { lufs: -24.0, seconds: 33.714, loop: true },
+  "music/ep05/tanpura_drone_low": { lufs: -28.0, seconds: 33.714, loop: true },
+  "music/ep05/tanpura_drone_cs": { lufs: -24.0, seconds: 31.825, loop: true },
+  "music/ep05/play_plucks": { lufs: -24.0, seconds: 8.211, loop: true },
+  "music/ep05/tabla_soft": { lufs: -24.0, seconds: 9.87, loop: true },
+  "music/ep05/cheeky_pluck_1": { lufs: -20.0, seconds: 2.511, loop: false },
+  "music/ep05/cheeky_pluck_3": { lufs: -20.0, seconds: 1.382, loop: false },
+  "music/ep05/bansuri_compassion": { lufs: -20.0, seconds: 9.529, loop: false },
+};
+const MUSIC_LOOP_MAX = 0.25;
+const MUSIC_HIT_MAX = 0.45;
+
+/** One beat's layer. `under` / `open` / pause levels are LUFS targets (see above); `shape` is a gain curve in dB. */
+interface MusicCue {
+  beat: string;
+  file: string;
+  from: number; // absolute
+  to: number; // absolute (exclusive)
+  fadeIn: number;
+  fadeOut: number;
+  under: number;
+  open: number;
+  /** Open level inside a pause of `scene` (index sorted by atStory), ramped over DUCK_RAMP. */
+  pause?: { scene: string; index: number; lufs: number }[];
+  /** Keyframes [absolute frame, dB], linear, held before the first and after the last (a dip under another layer). */
+  shape?: [number, number][];
+  /** A one-shot accent: played once at `open`, not ducked. */
+  hit?: boolean;
+}
+
+const lufsToVol = (target: number, file: string) => Math.pow(10, (target - (MUSIC_LIB[file]?.lufs ?? -12)) / 20);
+const dbGain = (db: number) => Math.pow(10, db / 20);
+const musicSeconds = (file: string) => MUSIC_LIB[file]?.seconds ?? 2;
+
+/** Absolute anchors: narration phrases, voice clips, Balak's beats, pauses (each with a fallback). */
+const phraseAbs = (scene: string, snippet: string, fallbackLocal: number) => sceneStart(scene) + (phraseLocal(scene, snippet) ?? fallbackLocal);
+const pauseAbs = (scene: string, index: number) => {
+  const w = pauseWindow(scene, index);
+  return { start: sceneStart(scene) + w.start, end: sceneStart(scene) + w.end };
+};
+const A01 = {
+  start: sceneStart(S01),
+  /** scene 01's sound ends over the cross-dissolve into 02 */
+  end: sceneStart(S02) + S02_DISSOLVE,
+};
+const A02 = {
+  start: sceneStart(S02),
+  /** the pour starts 4 story frames into "তুলসীতলায়" (B2.pour) */
+  pour: sceneStart(S02) + storyReal(S02, B2.pour),
+  ownFeetP: pauseAbs(S02, 1), // 02A P2, the three flowers on his feet
+  aarNijei: phraseAbs(S02, "আর নিজেই", 316),
+  pranamP: pauseAbs(S02, 2), // 02A P3, glow beat 1
+  oma: phraseAbs(S02, "ওমা", 429),
+  omaP: pauseAbs(S02, 3), // 02B P1
+  tui: phraseAbs(S02, "তুই ঠাকুরের", 500),
+  heldP: pauseAbs(S02, 5), // 02B P3, the held pause before his answer
+  balak: clipSpan3("02c_Toddler_Thakur.wav")?.startFrame ?? sceneStart(S02) + 789,
+  amarPaye: phraseAbs(S02, "আমার পায়ে", 848),
+  murtiP: pauseAbs(S02, 7), // 02C P2, the girls glance at each other, unsure
+  /** "গাছ কেটে" as heard: the phrase start + the voice lag the scene measured (its V.gach = phrase + 17); his glow
+   * (beat 2) starts lifting 4 frames before it */
+  gachVoice: MOTIF_IN + 17,
+  endP: pauseAbs(S02, 8), // 02C P3 (end)
+};
+/** The cut to the eldest girl's close-up (the scene's ELDEST_MCU at V.oma - 7 = the "ওমা" phrase start - 1). */
+const OMA_CUT = A02.oma - 1;
+/** The Divine_Motif and the C# tanpura come in with the glow, 6 frames before "গাছ কেটে" is heard. */
+const MOTIF_AT = A02.gachVoice - 6;
+/** bansuri_compassion (9.53 s) is placed so its last note settles on Sa about 18 frames into 02C P2, but never
+ * starts before "আমার" is heard (the scene's V.amar = phrase + 20; it fades in from 4 frames before). */
+const BANSURI_FRAMES = Math.floor(musicSeconds("music/ep05/bansuri_compassion") * 24);
+const BANSURI_AT = Math.max(A02.amarPaye + 16, A02.murtiP.start + 18 - BANSURI_FRAMES);
+
+/** Tanpura drone levels: a quiet floor under the melody (-37 is 0.22 of the -24 LUFS loop, under the 0.25 cap). */
+const DRONE = { under: -44, open: -37 };
+
+const MUSIC_CUES: MusicCue[] = [
+  /* ---------- Scene 01: the autumn dawn, the flower gathering ---------- */
+  // M1 calm dawn: Village_Peace_Loop over the soft tanpura (C); the loop rises in the end pause (P3) and fades over the
+  // cross-dissolve, where the tanpura carries straight on into the courtyard (one drone from the dawn to the scolding)
+  { beat: "M1", file: "music/Village_Peace_Loop", from: A01.start, to: A01.end, fadeIn: 24, fadeOut: S02_DISSOLVE, under: -37, open: -31,
+    pause: [{ scene: S01, index: 2, lufs: -30 }] },
+  { beat: "M1-M4", file: "music/ep05/tanpura_drone", from: A01.start, to: A02.tui + 18, fadeIn: 30, fadeOut: 30, ...DRONE,
+    pause: [{ scene: S02, index: 2, lufs: -36 }] },
+
+  /* ---------- Scene 02A: the ritual at the tulsi ---------- */
+  // M2 a child at peace: Warm_Family_Flute fades in over the dissolve and the open pause; it dips 5 dB under the M3
+  // plucks and comes back for the pranam pause; it bows out just before "ওমা"
+  { beat: "M2", file: "music/Warm_Family_Flute", from: A02.start, to: A02.oma - 6, fadeIn: S02_DISSOLVE, fadeOut: 30, under: -38, open: -31,
+    pause: [{ scene: S02, index: 2, lufs: -30 }],
+    shape: [[A02.pour - 10, 0], [A02.pour + 12, -5], [A02.aarNijei, -5], [A02.aarNijei + 24, 0]] },
+  // M3 innocent ritual: light, tender swarmandal plucks from the pour through the three flowers laid on his own feet,
+  // brightest in 02A P2 as he looks down at them; they fall away on "আর নিজেই" (the bow is still)
+  { beat: "M3", file: "music/ep05/play_plucks", from: A02.pour - 6, to: A02.aarNijei + 10, fadeIn: 18, fadeOut: 16, under: -41, open: -37,
+    pause: [{ scene: S02, index: 1, lufs: -36 }] },
+  // M4 the pranam (glow beat 1): the flute and the tanpura bloom a little in 02A P3 (rows above); the shimmer is an SFX
+
+  /* ---------- Scene 02B: the girls scold him (light, never scary) ---------- */
+  // M5 cheeky: a quick swarmandal flurry on the cut to the eldest girl's surprise ("ওমা"), and four whimsical notes
+  // with the first giggle in 02B P1; gone by "তুই"
+  { beat: "M5", file: "music/ep05/cheeky_pluck_1", from: OMA_CUT, to: A02.omaP.start + 4, fadeIn: 1, fadeOut: 10, under: -38, open: -38, hit: true },
+  { beat: "M5", file: "music/ep05/cheeky_pluck_3", from: A02.omaP.start - 2, to: A02.tui + 6, fadeIn: 1, fadeOut: 8, under: -37, open: -37, hit: true },
+  // M6 stern: from "তুই ঠাকুরের ফুল…" the tanpura darkens (the low drone crossfades in) and a soft tabla figure walks
+  // under the scolding; the tabla stops as 02B P3 begins, leaving the low drone alone in the held pause (the giggles
+  // are SFX); the low drone gives way to the warm tanpura as Balak starts to answer
+  { beat: "M6", file: "music/ep05/tanpura_drone_low", from: A02.tui - 12, to: A02.balak + 18, fadeIn: 30, fadeOut: 30, under: -44, open: -41,
+    pause: [{ scene: S02, index: 5, lufs: -40 }] },
+  { beat: "M6", file: "music/ep05/tabla_soft", from: A02.tui - 4, to: A02.heldP.start + 8, fadeIn: 30, fadeOut: 12, under: -43, open: -39,
+    pause: [{ scene: S02, index: 4, lufs: -38 }] },
+
+  /* ---------- Scene 02C: Balak's calm, wise answer ---------- */
+  // M7 compassion: the warm tanpura (C) returns under his first words; a tender bansuri swells in softly under
+  // "আমার পায়ে ফুল দিলে…", rises in 02C P1 and settles on Sa in 02C P2; the tanpura is out by "গাছ কেটে"
+  { beat: "M7", file: "music/ep05/tanpura_drone", from: A02.balak - 12, to: MOTIF_AT, fadeIn: 36, fadeOut: 24, ...DRONE,
+    pause: [{ scene: S02, index: 6, lufs: -36 }, { scene: S02, index: 7, lufs: -36 }] },
+  { beat: "M7", file: "music/ep05/bansuri_compassion", from: BANSURI_AT, to: BANSURI_AT + BANSURI_FRAMES, fadeIn: 30, fadeOut: 20, under: -40, open: -34,
+    pause: [{ scene: S02, index: 6, lufs: -33 }, { scene: S02, index: 7, lufs: -33 }] },
+  // M8 grace (glow beat 2, STO-17 answer 4): the Divine_Motif (C#) over the C# tanpura enters softly on "গাছ কেটে",
+  // rises in the end pause and fades out over the first second of the outro, under the outro's own music
+  { beat: "M8", file: "music/Divine_Motif", from: MOTIF_AT, to: A02.endP.end + 24, fadeIn: 36, fadeOut: 30, under: -36, open: -30,
+    pause: [{ scene: S02, index: 8, lufs: -30 }] },
+  { beat: "M8", file: "music/ep05/tanpura_drone_cs", from: MOTIF_AT, to: A02.endP.end + 24, fadeIn: 36, fadeOut: 30, ...DRONE,
+    pause: [{ scene: S02, index: 8, lufs: -36 }] },
+];
+
+/** Cues whose file is known, with a window of at least one frame. */
+const MUSIC_PLACED = MUSIC_CUES.filter((c) => MUSIC_LIB[c.file] !== undefined && c.to > c.from);
+
+/** The open target of a cue at an absolute frame: its pause override inside that pause, ramped at the edges. */
+const cueOpenLufs = (c: MusicCue, abs: number): number => {
+  let v = c.open;
+  for (const p of c.pause ?? []) {
+    const { start: a, end: b } = pauseAbs(p.scene, p.index);
+    const d = abs < a ? a - abs : abs > b ? abs - b : 0;
+    if (d < DUCK_RAMP) v = p.lufs + (c.open - p.lufs) * ease(d / DUCK_RAMP);
+  }
+  return v;
+};
+const shapeDb = (shape: [number, number][] | undefined, abs: number): number => {
+  if (!shape || shape.length === 0) return 0;
+  if (abs <= shape[0][0]) return shape[0][1];
+  for (let i = 1; i < shape.length; i++) {
+    const [x1, y1] = shape[i];
+    const [x0, y0] = shape[i - 1];
+    if (abs <= x1) return y0 + ((y1 - y0) * (abs - x0)) / Math.max(1, x1 - x0);
+  }
+  return shape[shape.length - 1][1];
+};
+/** A cue's play length: its window, or a non-looping file's own length if shorter. */
+const cueFrames = (c: MusicCue): number => {
+  const lib = MUSIC_LIB[c.file];
+  const win = c.to - c.from;
+  return lib && !lib.loop ? Math.max(1, Math.min(win, Math.floor(lib.seconds * 24))) : win;
+};
+const musicVolume = (c: MusicCue) => {
+  const len = cueFrames(c);
+  return (f: number) => {
+    const abs = c.from + f;
+    const edge = ease(Math.min(f / Math.max(1, c.fadeIn), (len - f) / Math.max(1, c.fadeOut)));
+    const shape = dbGain(shapeDb(c.shape, abs));
+    if (c.hit) return Math.min(MUSIC_HIT_MAX, lufsToVol(c.open, c.file)) * edge * shape;
+    const open = Math.min(MUSIC_LOOP_MAX, lufsToVol(cueOpenLufs(c, abs), c.file));
+    const under = Math.min(open, lufsToVol(c.under, c.file));
+    return ducked(open, under, abs) * edge * shape;
+  };
+};
 
 export const Episode03: React.FC = () => (
   <div style={{ position: "relative", width: 1920, height: 1080, backgroundColor: "#0a0818" }}>
@@ -520,10 +697,12 @@ export const Episode03: React.FC = () => (
         </Sequence>
       )),
     )}
-    {/* The Divine_Motif under Balak's last line and its pause */}
-    <Sequence from={DIVINE_MOTIF.from} durationInFrames={DIVINE_MOTIF.frames} layout="none">
-      <Audio src={staticFile("audio/music/Divine_Motif.wav")} volume={motifVolume} />
-    </Sequence>
+    {/* Music (MUSIC_CUES, the cue sheet M1 to M8): every looped beat ducks under the voices and rises in the pauses */}
+    {MUSIC_PLACED.map((c, k) => (
+      <Sequence key={`music-${k}-${c.beat}-${c.file}`} from={c.from} durationInFrames={cueFrames(c)} layout="none">
+        <Audio src={staticFile(`audio/${c.file}.wav`)} loop={MUSIC_LIB[c.file].loop && !c.hit} volume={musicVolume(c)} />
+      </Sequence>
+    ))}
     {/* Sound effects at the scene events and in the pauses */}
     {PLACED_SFX.map((c, k) => (
       <Sequence key={`sfx-${k}-${c.file}-${c.from}`} from={c.from} durationInFrames={c.frames ?? Math.ceil((sfxSeconds(c.file) * 24) / (c.rate ?? 1))} layout="none">

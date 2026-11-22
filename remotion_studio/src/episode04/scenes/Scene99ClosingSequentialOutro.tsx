@@ -3,8 +3,8 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { SeriesOutro, CARD_PALETTE } from "../../episode/SeriesCards";
 import { BN_FONT, ensureBanglaFont } from "../../cinematic/fonts";
 import { clamp, EASE } from "../../cinematic/core/anim";
-import { UjancharCowLayer } from "../../cinematic/sets/UjancharHouse";
-import { SeatedChild } from "../../episode03/rig/SeatedChild";
+import { GentleCow, solveGentleCow, type GentleCowProps } from "../../cinematic/animals/GentleCow";
+import { SeatedChild, seatedChildHands, type SeatedChildProps } from "../../episode03/rig/SeatedChild";
 import { BirulGlow } from "../../episode03/rig/BirulGlow";
 import { EP04_SCENES } from "../timing";
 import { EP04_CUES } from "../subtitles";
@@ -15,10 +15,13 @@ import { EP04_CUES } from "../subtitles";
  * is a layer inside the outro, which runs to the episode's last frame (TTL-12: no empty end hold).
  *
  * The glimpse: Episode 5 ("কচ্ছপ খেলা ও গাভী রক্ষা", the title in Episode 5's SRT and in this outro's narration) as
- * one calm painted moment (STO-19 decision 10): five-year-old Balak (the Episode 3 SeatedChild, cross-legged, one
- * hand raised gently toward her) beside a calm humped Bengal cow (ANI-04; Episode 2's cow from the shared Ujanchar
- * set) in warm late light on a village meadow. His restrained halo (BirulGlow, steady, soft falloff, BAL-06/07);
- * no glow on the cow. It sits in a feathered, dreamlike oval with no frame, border or backing, melting into the
+ * one calm painted moment (STO-19 decision 10): six-year-old Balak (Episode 5's age) in the BAL-26 plate design (the
+ * SeatedChild rig, design "plate", age 6, BAL-26b), cross-legged, his palm raised to a calm humped Bengal cow
+ * (ANI-04; GentleCow, the Episode 2 Ujanchar cow that acts in Episode 5) who lowers her muzzle to it, then his slow
+ * strokes, in warm late light on a village meadow. It is Episode 5's final cow moment (scene 02, P3) in miniature:
+ * Balak on the left facing right, the cow on his right facing left, the cow about 1.1 times his scale and standing a
+ * little behind his ground line, her muzzle at his palm, his hand following it. His restrained halo (BirulGlow at the
+ * plate head's glow anchor, steady, soft falloff, BAL-06/07); no glow on the cow. It sits in a feathered, dreamlike oval with no frame, border or backing, melting into the
  * outro background, fades in on the narration's "আসছে পরের পর্ব" line, drifts and zooms very slightly, and fades
  * out before the outro's own fade to dark. The label "পর্ব পাঁচ" and the episode name sit on its lower feathered
  * edge in glowing cream-gold Baloo Da 2 (TTL-01), with no dark backing. Geometry and timing as Episode 3's glimpse.
@@ -69,8 +72,73 @@ const EP5_NAME = "কচ্ছপ খেলা ও গাভী রক্ষা"
 /* The painted moment (1920 x 1080 units, shown scaled inside the vignette). */
 const HORIZON = 600;
 const GROUND = 830;
-const BALAK = { x: 850, y: GROUND, s: 1.15 };
-const COW = { x: 1340, y: GROUND - 6, s: 1.55, flip: true };
+/**
+ * Balak (plate design, age 6) and the cow, in Episode 5 scene 02 P3's proportions (Balak s 0.95, cow s 1.05, the cow
+ * about 24 units behind his ground line, her ground point 112 x Balak.s + 245 to his right), scaled up for the
+ * vignette and the pair centred in its clear middle.
+ */
+const BALAK = { x: 690, y: GROUND, s: 1.2 };
+const COW_S = BALAK.s * (1.05 / 0.95);
+/** Where his palm meets her muzzle (figure units, he faces +x): Episode 5's STROKE_PALM. */
+const STROKE_PALM = { x: 112, y: -120 };
+const PALM_W = { x: BALAK.x + STROKE_PALM.x * BALAK.s, y: BALAK.y + STROKE_PALM.y * BALAK.s };
+const COW = { x: PALM_W.x + 245 * (COW_S / 1.05), y: GROUND - 24 * (BALAK.s / 0.95), s: COW_S };
+
+/**
+ * The glimpse's little beat on its local clock (0 = the glimpse starts to fade in): his palm is already rising and
+ * waits a breath short of her as her muzzle comes down (nuzzle, 24 f), touches at TOUCH, then slow strokes (half the
+ * rig's speed: calm). The rig runs on R0 + t (R0 keeps its clock positive), with t the strokeCow clock (STROKE_COW_T:
+ * raise 20, touch 32).
+ */
+const TOUCH = 66;
+const NUZZLE_AT = TOUCH - 24;
+const R0 = 400;
+const strokeT = (lf: number): number => {
+  if (lf <= 0) return 8;
+  if (lf < 30) return 8 + (12 * lf) / 30;
+  if (lf < TOUCH) return 20 + (12 * (lf - 30)) / (TOUCH - 30);
+  return 32 + 0.5 * (lf - TOUCH);
+};
+
+const cowProps = (lf: number): GentleCowProps => ({
+  x: COW.x,
+  y: COW.y,
+  s: COW.s,
+  flip: true,
+  f: lf,
+  lifeF: lf + 60,
+  action: "nuzzle",
+  actionStart: NUZZLE_AT,
+  prevAction: "idle",
+  prevActionStart: NUZZLE_AT - 60,
+  turn: -0.06,
+  target: PALM_W,
+  seed: 7,
+});
+
+const balakProps = (lf: number): SeatedChildProps => {
+  const cow = solveGentleCow(cowProps(lf));
+  const fig = (p: { x: number; y: number }) => ({ x: (p.x - BALAK.x) / BALAK.s, y: (p.y - BALAK.y) / BALAK.s });
+  const muzzle = fig(cow.muzzle);
+  const fore = fig(cow.forehead);
+  // Before her muzzle has come down his palm waits at the meeting point; from then on it follows her muzzle.
+  const k = EASE.inOut(clamp((lf - (TOUCH - 18)) / 14));
+  return {
+    x: BALAK.x,
+    y: BALAK.y,
+    s: BALAK.s,
+    f: R0 + strokeT(lf),
+    lifeF: R0 + lf,
+    design: "plate",
+    age: 6,
+    pose: "strokeCow",
+    prevPose: "sitCross",
+    poseStart: R0,
+    strokeAt: { x: STROKE_PALM.x + (muzzle.x - STROKE_PALM.x) * k, y: STROKE_PALM.y + (muzzle.y - STROKE_PALM.y) * k },
+    strokeDir: { x: fore.x - muzzle.x, y: fore.y - muzzle.y },
+    face: { smile: 0.62 },
+  };
+};
 
 /** Sky, low warm sun, a soft far tree line and the meadow. */
 const Meadow: React.FC<{ f: number }> = ({ f }) => {
@@ -126,36 +194,31 @@ const Meadow: React.FC<{ f: number }> = ({ f }) => {
 };
 
 /** Balak's faint ground glow and his halo, then the child (BAL-05 to BAL-07: his light only, steady). */
-const Balak: React.FC<{ f: number }> = ({ f }) => (
-  <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
-    <defs>
-      <radialGradient id="ep5g-groundglow">
-        <stop offset="0" stopColor="#FFF0C8" stopOpacity={0.35} />
-        <stop offset="1" stopColor="#FFF0C8" stopOpacity={0} />
-      </radialGradient>
-    </defs>
-    <ellipse cx={BALAK.x} cy={BALAK.y + 4} rx={170} ry={30} fill="url(#ep5g-groundglow)" />
-    <BirulGlow cx={BALAK.x} cy={BALAK.y - 150 * BALAK.s} r={150 * BALAK.s} glow={0.75} f={f} />
-    <SeatedChild
-      x={BALAK.x}
-      y={BALAK.y}
-      s={BALAK.s}
-      f={f + 400}
-      lifeF={f + 400}
-      pose="palmRaise"
-      prevPose="sitCross"
-      poseStart={400 - 30}
-      expression="serene"
-      face={{ lookX: 0.6, smile: 0.7 }}
-    />
-  </svg>
-);
+const Balak: React.FC<{ f: number }> = ({ f }) => {
+  const props = balakProps(f);
+  const g = seatedChildHands(props).glowAnchor;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
+      <defs>
+        <radialGradient id="ep5g-groundglow">
+          <stop offset="0" stopColor="#FFF0C8" stopOpacity={0.35} />
+          <stop offset="1" stopColor="#FFF0C8" stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      <ellipse cx={BALAK.x} cy={BALAK.y + 4} rx={170} ry={30} fill="url(#ep5g-groundglow)" />
+      <BirulGlow cx={g.cx} cy={g.cy} r={g.r} glow={0.75} f={f} />
+      <SeatedChild {...props} />
+    </svg>
+  );
+};
 
-/** The painted Episode 5 moment: meadow, the calm cow, Balak beside her. */
+/** The painted Episode 5 moment: meadow, the calm cow (a little behind him), Balak beside her. */
 const CowGlimpse: React.FC<{ f: number }> = ({ f }) => (
   <div style={{ position: "absolute", inset: 0 }}>
     <Meadow f={f} />
-    <UjancharCowLayer f={f + 60} calm={0} cow={COW} />
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
+      <GentleCow {...cowProps(f)} />
+    </svg>
     <Balak f={f} />
   </div>
 );

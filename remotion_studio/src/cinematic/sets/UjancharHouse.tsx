@@ -1345,3 +1345,89 @@ export const UjancharHouse: React.FC<UjancharHouseProps> = ({
     {grade && <Grade {...ujancharGrade(time)} />}
   </>
 );
+
+/* ------------------------------------------------------------------ */
+/* Shared pieces for other sets in this world (Episode 5, 2026-11-22)   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The village's materials and colours, and the internal pieces above, exported (additively, nothing above changed) so
+ * other Ujanchar-world sets (src/cinematic/sets/KrishnanagarKachari.tsx) are built from the same parts:
+ *  UjancharFenceRun { x0, x1, seed }        bamboo lattice fence, base on y 862 (draw it in a translated <g> elsewhere)
+ *  UjancharBush { x, y, w, f, seed, flowers? }   round leafy bush, base at (x, y)
+ *  UjancharKolshi { x, y, s? }              clay water pot, base at (x, y)
+ *  UjancharBroom { x, y }                   grass broom leaning on a wall, foot at (x, y)
+ *  UjancharHut { f, children? }             the family's hut exactly as drawn here (fixed geometry: UJANCHAR.HUT)
+ *  UjancharLemonTree { f, x, y, s? }        the lemon tree, base at (x, y)
+ *  UjancharJabaFlower { x, y, r, rot?, open? }  one hibiscus flower
+ *  UjancharMist / UjancharMistDefs          the dawn mist band and its blur filter
+ *  UjancharForegroundGrass { f } / UjancharNearLeaves { f }   the near grass and the top-corner leaf sprays
+ *  ujancharBgBlur(depth, calm, cam?) / ujancharBgFilter(calm, time)   the CAM-11 depth blur and background grade
+ *  ujancharHash(n)                          the seeded hash every piece here uses
+ *  UJANCHAR_PALETTE                         the colours of the walls, thatch, bamboo, earth, foliage and pots
+ */
+export const UJANCHAR_PALETTE = {
+  /** mud wall: face, lower band, texture strokes, eave shadow (#2a1608 at 0.28) */
+  wall: "#b8875a",
+  wallLow: "#9e6e44",
+  wallStroke: "#a2744a",
+  eaveShadow: "#2a1608",
+  /** mud plinth: top edge, face, highlight, foot shade */
+  plinthTop: "#c9a06c",
+  plinthFace: "#a8794a",
+  plinthLight: "#d4ad78",
+  plinthShade: "#7e5632",
+  /** doorway, door leaf, frame, window bars */
+  doorDark: "#24160c",
+  doorDeep: "#3a2414",
+  doorLeaf: "#7a5232",
+  doorFrame: "#6b4528",
+  windowDark: "#2c1c10",
+  /** thatch: body, ridge highlight, straw lines, eave edge */
+  thatch: "#c9a35a",
+  thatchRidge: "#e4c47c",
+  thatchStraw: "#a8823e",
+  thatchEave: "#8e6a32",
+  /** bamboo: post, highlight, lashings, fence lattice light and dark, fence rails */
+  bamboo: "#9c7a44",
+  bambooLight: "#d8bd7c",
+  bambooTie: "#6f5530",
+  fenceLight: "#b39556",
+  fenceDark: "#9c7f45",
+  fenceRail: "#a8894c",
+  /** earth: the courtyard floor, broom sweeps, the yard plane, shadow colour */
+  floor: "#b88a58",
+  floorSweep: "#a57a4a",
+  yard: "#9c7448",
+  shadow: "#2a1a0c",
+  /** foliage: bush dark and light, bush highlight, jungle masses, deep jungle */
+  bushDark: "#33602b",
+  bushLight: "#3f7232",
+  bushHi: "#7aa64a",
+  jungle: ["#2c5428", "#36632f", "#24481f"] as readonly string[],
+  jungleDeep: "#264a22",
+  /** clay pot body, rim, highlight; trunk brown */
+  clay: "#b25a2e",
+  clayRim: "#8e4220",
+  clayLight: "#e08a52",
+  trunk: "#5a3f28",
+  /** the morning stage background */
+  bg: "#f2d9a6",
+} as const;
+
+export {
+  FenceRun as UjancharFenceRun,
+  Bush as UjancharBush,
+  Kolshi as UjancharKolshi,
+  Broom as UjancharBroom,
+  Hut as UjancharHut,
+  LemonTree as UjancharLemonTree,
+  JabaFlower as UjancharJabaFlower,
+  Mist as UjancharMist,
+  MistDefs as UjancharMistDefs,
+  ForegroundGrass as UjancharForegroundGrass,
+  NearLeaves as UjancharNearLeaves,
+  bgBlur as ujancharBgBlur,
+  bgFilter as ujancharBgFilter,
+  hashS as ujancharHash,
+};

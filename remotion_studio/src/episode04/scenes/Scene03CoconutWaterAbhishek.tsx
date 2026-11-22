@@ -18,6 +18,7 @@ import {
 import {
   BrassBell,
   BrassLamp,
+  Conch,
   DhoopDani,
   GreenCoconut,
   ThakurGhar,
@@ -28,7 +29,15 @@ import {
 } from "../../cinematic/sets/VedicHouseDay";
 import { clipSpan4, gapsFor4, pausesFor4, storyToReal, useStory4 } from "../../episode/storyClock";
 import { BirulGlow } from "../../episode03/rig/BirulGlow";
-import { DRINK_BOWL_AT, DRINK_BOWL_T, HELD_OBJECT_BOTTOM, HeldObjectArt, SeatedChild, sighCurve } from "../../episode03/rig/SeatedChild";
+import {
+  DRINK_BOWL_AT,
+  DRINK_BOWL_T,
+  HELD_OBJECT_BOTTOM,
+  HeldObjectArt,
+  SeatedChild,
+  seatedChildHands,
+  sighCurve,
+} from "../../episode03/rig/SeatedChild";
 import { EP04_SCENES } from "../timing";
 
 /**
@@ -180,9 +189,14 @@ const balakTalk = talkOf("03b_Toddler_Coconut.wav", 1);
 /* Layout                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Veranda (VedicShrineVeranda, plane 1.0): Balak seated left of the door, the dhoop-dani by the left jamb. */
-const BV = { x: 690, y: 958, s: 1.3 };
-const DHOOP_V = { x: 775, y: 912 };
+/**
+ * Veranda (VedicShrineVeranda, plane 1.0): Balak seated left of the door, the dhoop-dani by the left jamb.
+ * BAL-26b: in the plate design at five his head is about 85% of Thakurma's (the adult Puppet beside him in the wide;
+ * the delivered classic head was about 99%), so he is drawn at 1.08 (was 1.3) and sits a little nearer the door (and
+ * further up the veranda) so he can still hand the dhoop in at chest height without his raised arm crossing his face.
+ */
+const BV = { x: 720, y: 928, s: 1.08 };
+const DHOOP_V = { x: 795, y: 892 };
 /** The priest seen through the door (0.9 plane), just inside it, turned three-quarters toward the khat. */
 const PV = { x: 1000, y: 822, s: 0.74 };
 /** Thakurma steps out of the door and walks off to the right along the veranda. */
@@ -191,7 +205,20 @@ const TH_Y = 932;
 
 /** Shrine room (ThakurGhar, plane 1.0): the priest on his asana facing the khat, Balak by the stone bowl, facing him. */
 const PG = { x: 850, y: 940, s: 1.22 };
-const BI = { x: 1236, y: 1004, s: 1.12 };
+/**
+ * BAL-26b: 0.97 (was 1.12) so his plate head is about 85% of the priest's (the delivered classic head was about 97%);
+ * a little left so the bowl (which scales with him) keeps its place on the floor.
+ */
+const BI = { x: 1223, y: 1004, s: 0.97 };
+/** Shot framings on him scale with him: the delivered MCU and bowl close-up kept in his own figure units. */
+const BI_OLD = { x: 1236, y: 1004, s: 1.12 };
+const onBalak = (cx: number, cy: number, z: number) => ({
+  cx: BI.x + ((cx - BI_OLD.x) * BI.s) / BI_OLD.s,
+  cy: BI.y + ((cy - BI_OLD.y) * BI.s) / BI_OLD.s,
+  z: (z * BI_OLD.s) / BI.s,
+});
+const MCU = onBalak(1280, 770, 2.6);
+const BOWL_CLOSE = onBalak(1180, 930, 2.6);
 /**
  * The big stone bowl where Balak's drinkBowl takes it from and sets it back (his default reachAt DRINK_BOWL_AT,
  * flipped): the same bowl (the shared stoneBowlArt) on the floor, in his hands and in the close-up.
@@ -201,6 +228,8 @@ const BOWL_AT = { x: BI.x - DRINK_BOWL_AT.x * BI.s, y: BI.y + DRINK_BOWL_AT.y * 
 const COCO_A = { x: 1078, y: 968 };
 const COCO_B = { x: 1046, y: 990 };
 const LAMP = { x: 1462, y: 848 };
+/** BAL-26b: the conch on its stand (set default x 1196) would stand right behind the smaller Balak's head; moved to the back right, between the ghot and the lamp. */
+const CONCH = { x: 1425, y: 900 };
 
 /* ------------------------------------------------------------------ */
 /* Camera                                                               */
@@ -220,9 +249,9 @@ const SHOTS: Shot[] = [
   { from: B.a, set: "veranda", cx: 850, cy: 730, z: 1.75 }, // 3 VERANDA_MED (AG2 a, b)
   { from: B.c, set: "ghar", cx: 1060, cy: 610, z: 1.12 }, // 4 INSIDE_WIDE (AG2 c)
   { from: B.d, set: "ghar", cx: 1075, cy: 780, z: 1.72 }, // 5 TWO_DRINK (AG2 d, P2)
-  { from: V.thakur - 7, set: "ghar", cx: 1280, cy: 770, z: 2.6 }, // 6 BALAK_MCU
+  { from: V.thakur - 7, set: "ghar", ...MCU }, // 6 BALAK_MCU
   { from: V.apnar - 2, set: "ghar", cx: 1040, cy: 760, z: 1.55 }, // 7 TWO_SHOT
-  { from: V.fopra - 2, set: "ghar", cx: 1180, cy: 930, z: 2.6 }, // 8 BOWL_CLOSE (the bowl above y 820)
+  { from: V.fopra - 2, set: "ghar", ...BOWL_CLOSE }, // 8 BOWL_CLOSE (the bowl above y 820)
   { from: P3[0], set: "ghar", cx: 1040, cy: 750, z: 1.62 }, // 9 TWO_REACT (P3)
 ];
 const shotAt = (lf: number): Shot => {
@@ -287,8 +316,12 @@ interface ChildSeg {
 
 /** Dhoop-dani on the veranda floor, as a kneelReach target (its grip centre, figure units). */
 const DHOOP_REACH = { x: (DHOOP_V.x - BV.x) / BV.s, y: (DHOOP_V.y - BV.y) / BV.s - HELD_OBJECT_BOTTOM.incense };
-/** Where he holds it in at the threshold (figure units): into the door opening, at the priest's hand. */
-const OFFER_AT = { x: 137, y: -164 };
+/**
+ * Where he holds it in at the threshold (figure units): into the door opening, at the priest's hand. Kept at the
+ * delivered world point (the priest's hand), whatever his scale.
+ */
+const OFFER_WORLD = { x: 868, y: 745 };
+const OFFER_AT = { x: (OFFER_WORLD.x - BV.x) / BV.s, y: (OFFER_WORLD.y - BV.y) / BV.s };
 const PICK = B.a + 8;
 const OFFER = PICK + 28;
 const HANDOVER = OFFER + 22;
@@ -527,8 +560,11 @@ const TrayProp: PropRenderer = ({ scale, worldRot }) => (
 const VERANDA_LIGHT: Lighting = { keySide: 1, rim: "#ffd79a", rimStrength: 0.35, rimSide: 1, brightness: 1 };
 const GHAR_LIGHT: Lighting = { keySide: -1, rim: "#ffcf86", rimStrength: 0.4, rimSide: 1, brightness: 1 };
 
-/** Balak's restrained divine light: a soft warm halo behind his head and a faint ground glow (steady, BAL-05 to 07). */
-const BalakLight: React.FC<{ x: number; y: number; s: number; kneel: number; lf: number }> = ({ x, y, s, kneel, lf }) => (
+/**
+ * Balak's restrained divine light: a soft warm halo behind his head and a faint ground glow (steady, BAL-05 to 07).
+ * The halo sits on the rig's own glow anchor this frame (centred behind the plate head, kneeling or seated).
+ */
+const BalakLight: React.FC<{ x: number; y: number; s: number; halo: { cx: number; cy: number; r: number }; lf: number }> = ({ x, y, s, halo, lf }) => (
   <g>
     <defs>
       <radialGradient id="s03-ground-glow" cx="50%" cy="50%" r="50%">
@@ -537,39 +573,49 @@ const BalakLight: React.FC<{ x: number; y: number; s: number; kneel: number; lf:
       </radialGradient>
     </defs>
     <ellipse cx={x} cy={y + 4} rx={120 * s} ry={20 * s} fill="url(#s03-ground-glow)" />
-    <BirulGlow cx={x} cy={y - (150 + 34 * kneel) * s} r={150 * s} glow={0.62} f={lf} />
+    <BirulGlow cx={halo.cx} cy={halo.cy} r={halo.r} glow={0.62} f={lf} />
   </g>
 );
 
+/**
+ * BAL-26b (2026-11-22): Balak in the reference-plate design at five (`design="plate"`, `age={5}`, the shared
+ * ThakurHeadPlate). Poses, timing, lip sync, blinks and expressions are the delivered ones.
+ */
+const BALAK_AGE = 5;
+
 const Balak: React.FC<{ lf: number; place: { x: number; y: number; s: number }; flip: boolean; mouth: number }> = ({ lf, place, flip, mouth }) => {
   const st = childAt(lf);
+  const props: ChildProps = {
+    x: place.x,
+    y: place.y,
+    s: place.s,
+    flip,
+    f: cc(lf),
+    lifeF: lf,
+    pose: st.pose,
+    prevPose: st.prevPose,
+    poseStart: st.poseStart,
+    prevPoseStart: st.prevPoseStart,
+    kneel: st.kneel,
+    holding: st.holding,
+    reachFor: st.reachFor,
+    reachAt: st.reachAt,
+    pointAt: st.pointAt,
+    expression: st.expression,
+    prevExpression: st.prevExpression,
+    expressionStart: st.expressionStart,
+    face: childFace(lf),
+    mouth,
+    talk: balakTalk(lf),
+    sigh: BALAK_SIGH,
+    design: "plate",
+    age: BALAK_AGE,
+  };
+  const halo = seatedChildHands(props).glowAnchor;
   return (
     <>
-      <BalakLight x={place.x} y={place.y} s={place.s} kneel={st.kneel} lf={lf} />
-      <SeatedChild
-        x={place.x}
-        y={place.y}
-        s={place.s}
-        flip={flip}
-        f={cc(lf)}
-        lifeF={lf}
-        pose={st.pose}
-        prevPose={st.prevPose}
-        poseStart={st.poseStart}
-        prevPoseStart={st.prevPoseStart}
-        kneel={st.kneel}
-        holding={st.holding}
-        reachFor={st.reachFor}
-        reachAt={st.reachAt}
-        pointAt={st.pointAt}
-        expression={st.expression}
-        prevExpression={st.prevExpression}
-        expressionStart={st.expressionStart}
-        face={childFace(lf)}
-        mouth={mouth}
-        talk={balakTalk(lf)}
-        sigh={BALAK_SIGH}
-      />
+      <BalakLight x={place.x} y={place.y} s={place.s} halo={halo} lf={lf} />
+      <SeatedChild {...props} />
     </>
   );
 };
@@ -637,7 +683,7 @@ export const Scene03CoconutWaterAbhishek: React.FC = () => {
         <ThakurGhar
           f={lf}
           cam={cam}
-          show={{ bowl: false, bell: lf < B.c, dhoop: lf >= B.a, coconuts: false, lamp: false }}
+          show={{ bowl: false, bell: lf < B.c, dhoop: lf >= B.a, coconuts: false, lamp: false, conch: false }}
           behind={
             <Puppet
               cast={PRIEST}
@@ -660,6 +706,7 @@ export const Scene03CoconutWaterAbhishek: React.FC = () => {
               {/* the two cut green coconuts beside the bowl and the tall lamp, moved clear of where Balak sits */}
               <GreenCoconut x={COCO_A.x} y={COCO_A.y} s={0.95} rot={-75} />
               <GreenCoconut x={COCO_B.x} y={COCO_B.y} s={0.95} rot={68} />
+              <Conch x={CONCH.x} y={CONCH.y} s={1.15} />
               <BrassLamp x={LAMP.x} y={LAMP.y} s={1} f={lf} kind="pilsuj" seed={5} />
               {balakIn && <Balak lf={lf} place={BI} flip mouth={mouth} />}
               {/* the bowl on the floor in front of his near knee, drawn over him as his rig draws it while he drinks */}

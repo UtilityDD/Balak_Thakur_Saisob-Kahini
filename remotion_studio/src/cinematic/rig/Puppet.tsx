@@ -44,8 +44,10 @@ export interface CastMember {
   lowerColor: string;
   lowerShade: string;
   lowerTrim?: string;
-  dhotiLength?: "knee" | "calf";
-  scarf?: { color: string; shade: string; trim?: string; style: "drape" | "neck" | "shawl" | "check" };
+  /** "hitched" (Episode 5 on): a working man's dhoti tucked up for work (malkochha), the hem above the knee. */
+  dhotiLength?: "knee" | "calf" | "hitched";
+  /** "gamchha" (Episode 5 on): a checked cotton towel folded over the left shoulder, one end down the chest. */
+  scarf?: { color: string; shade: string; trim?: string; style: "drape" | "neck" | "shawl" | "check" | "gamchha" };
   mustache?: string;
   glasses?: boolean;
   tilak?: boolean;
@@ -55,6 +57,12 @@ export interface CastMember {
   wiry?: boolean;
   ribbon?: string;
   face?: Partial<FaceShape>;
+  /**
+   * A cloth shoulder bag (jhola, Episode 5 on): the strap runs from the opposite shoulder across the chest to the
+   * bag at the hip on `side` (-1 = the figure's left hip, the default; it is the near hip of a figure turned to
+   * screen right). Swings a little with the body.
+   */
+  bag?: { color: string; shade: string; strap?: string; side?: 1 | -1 };
   seed: number;
 }
 
@@ -107,6 +115,33 @@ export interface Pose {
    * every frame for any body turn, so the palms always meet. Overrides rS / rE / lS / lE by its weight.
    */
   join: number;
+  /* ---- Episode 5 gestures (all 0 = off; every one is solved every frame and blends with its weight) ---- */
+  /** 0..1 both hands clapped to the sides of the head (alarm: Binoy's "hay hay, gelo gelo"). Use with `shoutMouth`. */
+  headHands: number;
+  /** -1..1 one hand scratching the side of the head (puzzled); the sign picks the arm (+ right, - left). The fingers
+   * keep scratching on the life clock, so it goes on in a pause. */
+  scratch: number;
+  /** -1..1 fingertips to the mouth (shock, worry: Binoy's mother at her door); the sign picks the arm. */
+  mouthHand: number;
+  /** 0..1 both hands go to the point PuppetProps.holdAt gives (a child's hand held in both hands: Charu). */
+  hold: number;
+  /** 0..1 the held hand turning in her hands: 0 as taken, 0.5 palm up, 1 turned over again (her wrists roll with it). */
+  holdTurn: number;
+  /** 0..1 with `hold`: the held hand is raised to her near cheek (the grip point then comes from the Puppet: read it
+   * from PuppetProps.anchors to place the child's hand). */
+  cheek: number;
+  /** -1..1 a jab of one hand toward PuppetProps.pointAt (the sign picks the arm); see `jabPulse`. */
+  jab: number;
+  /** -1..1 one hand flung up, palm open (exasperation); the sign picks the arm. */
+  throwUp: number;
+  /** Bamboo pole (rProp or lProp "bamboo"): tilt of the pole from upright, degrees; + leans its top toward the side
+   * the figure faces. */
+  poleTilt: number;
+  /** Bamboo pole: 0 = carried (it rides the hand as the pose's arm angles put it), 1 = its foot planted on the
+   * ground (the arm is solved so the fist holds it there). */
+  poleDrop: number;
+  /** Bamboo pole: lift of its foot above the ground while planted (figure px); `bambooThump` keys it. */
+  poleLift: number;
 }
 
 export const BASE_POSE: Pose = {
@@ -142,6 +177,17 @@ export const BASE_POSE: Pose = {
   kneel: 0,
   bow: 0,
   join: 0,
+  headHands: 0,
+  scratch: 0,
+  mouthHand: 0,
+  hold: 0,
+  holdTurn: 0,
+  cheek: 0,
+  jab: 0,
+  throwUp: 0,
+  poleTilt: 0,
+  poleDrop: 0,
+  poleLift: 0,
 };
 
 export interface PropCtx {
@@ -300,7 +346,7 @@ const poseHold = (q: Pose): number => {
   const elbow = Math.max(0, Math.max(Math.abs(q.rE - BASE_POSE.rE), Math.abs(q.lE - BASE_POSE.lE)) - 8) / 40;
   const back = Math.max(q.rBack, q.lBack);
   const hands = q.rHand !== BASE_POSE.rHand || q.lHand !== BASE_POSE.lHand || q.rProp || q.lProp ? 1 : 0;
-  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4 + q.kneel + q.bow + q.join;
+  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4 + q.kneel + q.bow + q.join + Math.abs(q.headHands) + Math.abs(q.scratch) + Math.abs(q.mouthHand) + q.hold + Math.abs(q.jab) + Math.abs(q.throwUp);
   const emotion = Math.max(q.tears, q.gasp) * 2;
   const moving = Math.abs(q.stride) * 2;
   return clamp(Math.max(reach, elbow, back, hands, body, emotion, moving));
@@ -478,7 +524,7 @@ export const puppetBreath = ({ t, f, seed, child = false, stillness = 0, rate = 
  * raised-cosine kernel, so a step becomes an ease-in-out over about 9 frames and no joint jumps faster than that. */
 
 type NumKey = { [K in keyof Pose]: Pose[K] extends number ? K : never }[keyof Pose];
-const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack", "kneel", "bow", "join"];
+const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack", "kneel", "bow", "join", "headHands", "scratch", "mouthHand", "hold", "holdTurn", "cheek", "jab", "throwUp", "poleTilt", "poleDrop", "poleLift"];
 const EYE_KEYS: NumKey[] = ["eyeX", "eyeY"];
 /** Raised-cosine weights for offsets -r..r (window of 2r + 2 frames, so the ends carry a little weight). */
 const kernel = (r: number) => Array.from({ length: 2 * r + 1 }, (_, i) => 0.5 + 0.5 * Math.cos((Math.PI * (i - r)) / (r + 1)));
@@ -536,6 +582,33 @@ export interface PuppetProps {
    * poses, acting, mouth, talk and everything story-driven stay on f, so a scene can hold its story while life goes on.
    */
   lifeF?: number;
+  /** World point (story clock) the hands go to under Pose.hold: the child's hand Charu takes (Episode 5). */
+  holdAt?: (f: number) => { x: number; y: number };
+  /** World point (story clock) a Pose.jab points at (Haricharan's jab toward the grove). */
+  pointAt?: (f: number) => { x: number; y: number };
+  /** Bamboo pole length in figure px (before scale); default about 1.05 x the figure's own height. */
+  poleLength?: number;
+  /**
+   * Called during render with this frame's world points (after the figure's x, y, scale and flip): the head centre,
+   * the near cheek, the mouth, both wrists, the hold point (Pose.hold / cheek) and, with a bamboo, the pole's grip,
+   * foot (`poleBase`) and top (`poleTip`). Write them into a plain object and render whatever must touch them (a
+   * child's arm, a dust puff at the pole's foot) AFTER this Puppet in the same tree: React renders siblings in order.
+   */
+  anchors?: (a: PuppetAnchors) => void;
+}
+
+type XY = { x: number; y: number };
+/** World points of a Puppet for one frame (see PuppetProps.anchors). */
+export interface PuppetAnchors {
+  head: XY;
+  cheek: XY;
+  mouth: XY;
+  rWrist: XY;
+  lWrist: XY;
+  hold: XY | null;
+  poleGrip: XY | null;
+  poleBase: XY | null;
+  poleTip: XY | null;
 }
 
 export const Puppet: React.FC<PuppetProps> = ({
@@ -557,6 +630,10 @@ export const Puppet: React.FC<PuppetProps> = ({
   breathRate = 1,
   sigh,
   lifeF,
+  holdAt,
+  pointAt,
+  poleLength,
+  anchors,
 }) => {
   const life = lifeF ?? f; // life clock (idle life); f stays the story clock
   const ctxLights = React.useContext(SceneLights);
@@ -1002,19 +1079,28 @@ export const Puppet: React.FC<PuppetProps> = ({
   const dhoti = () => {
     const yy = (v: number) => v + hipY;
     const hemK = c.dhotiLength === "knee" ? 0.12 : 0.55;
+    // malkochha (Episode 5): tucked up for work, the hem a little above the knee, close round the thigh
+    const hitched = c.dhotiLength === "hitched";
     const panels = legsSorted.map((L) => {
-      const hx = lerp(L.knee.x, L.ankle.x, hemK);
-      const hy = yy(lerp(L.knee.y, L.ankle.y, hemK));
+      const hx = hitched ? lerp(L.knee.x, L.hip.x, 0.2) : lerp(L.knee.x, L.ankle.x, hemK);
+      const hy = hitched ? yy(lerp(L.knee.y, L.hip.y, 0.2)) : yy(lerp(L.knee.y, L.ankle.y, hemK));
       const top: [number, number] = [L.hip.x, yy(L.hip.y) - 6];
-      const flare = legW2 * (seated ? 2.4 : 2.05);
-      const pts: Array<[number, number]> = [
-        [top[0] - legW1 * 1.5, top[1]],
-        [top[0] + legW1 * 1.5, top[1]],
-        [L.knee.x - legW1 * 1.35, yy(L.knee.y)],
-        [L.knee.x + legW1 * 1.35, yy(L.knee.y)],
-        [hx - flare, hy],
-        [hx + flare, hy],
-      ];
+      const flare = hitched ? legW1 * 1.32 : legW2 * (seated ? 2.4 : 2.05);
+      const pts: Array<[number, number]> = hitched
+        ? [
+            [top[0] - legW1 * 1.5, top[1]],
+            [top[0] + legW1 * 1.5, top[1]],
+            [hx - flare, hy],
+            [hx + flare, hy],
+          ]
+        : [
+            [top[0] - legW1 * 1.5, top[1]],
+            [top[0] + legW1 * 1.5, top[1]],
+            [L.knee.x - legW1 * 1.35, yy(L.knee.y)],
+            [L.knee.x + legW1 * 1.35, yy(L.knee.y)],
+            [hx - flare, hy],
+            [hx + flare, hy],
+          ];
       const d = smoothPath(hull(pts), 1);
       return (
         <g key={`dh${L.side}`}>
@@ -1031,7 +1117,8 @@ export const Puppet: React.FC<PuppetProps> = ({
     const bridge = `M ${-hwp * 1.08} ${waistY} L ${hwp * 1.08} ${waistY} L ${hwp * 0.6} ${crotchY} L ${-hwp * 0.6} ${crotchY} Z`;
     // front pleats (kochi)
     const kx = frontX * 0.7 - B.hw * 0.12;
-    const kLen = Math.max(20, Math.min(...legs.map((L) => yy(L.knee.y))) - waistY + 14);
+    const kLen0 = Math.max(20, Math.min(...legs.map((L) => yy(L.knee.y))) - waistY + 14);
+    const kLen = hitched ? Math.max(16, kLen0 * 0.45) : kLen0; // malkochha: the front pleats are tucked up
     return (
       <g>
         {panels[0]}
@@ -1436,6 +1523,38 @@ export const Puppet: React.FC<PuppetProps> = ({
         </g>
       );
     }
+    if (s.style === "gamchha") {
+      // a checked towel folded over the left shoulder: the fold lies on the shoulder, one end hangs down the chest
+      const gx = -swp * 0.56 + frontX * 0.35;
+      const w = B.sw * 0.2;
+      const top = shY - 5;
+      const bot = shY + B.torsoLen * 0.56;
+      const sw2 = cs * 0.9 + pc * 1.2;
+      const xl = (k: number) => lerp(gx - w * 1.25, gx - w + sw2 * 1.05, k);
+      const xr = (k: number) => lerp(gx + w * 1.1, gx + w + sw2, k);
+      const yk = (k: number) => lerp(top + 3, bot + 1.5, k);
+      const end = `M ${gx - w * 1.25} ${top + 4} Q ${gx} ${top - 5} ${gx + w * 1.1} ${top + 2} L ${gx + w + sw2} ${bot} Q ${gx + sw2} ${bot + 3} ${gx - w + sw2 * 1.05} ${bot + 3} Z`;
+      const fold = `M ${-swp * 1.02} ${shY + 8} Q ${-swp * 0.88} ${shY - 9} ${gx + w * 1.1} ${top + 2} L ${gx - w * 1.25} ${top + 4} Q ${-swp * 0.93} ${shY - 1} ${-swp * 1.06} ${shY + 14} Z`;
+      const tr = s.trim ?? "#f3e6cf";
+      return (
+        <g>
+          <path d={fold} fill={s.shade} />
+          <path d={end} fill={s.color} />
+          {[0.18, 0.42, 0.66, 0.9].map((k) => (
+            <path key={k} d={`M ${xl(k)} ${yk(k)} L ${xr(k)} ${yk(k) - 1}`} stroke={tr} strokeWidth={2.2} opacity={0.85} />
+          ))}
+          {[0.34, 0.68].map((k) => (
+            <path key={`v${k}`} d={`M ${lerp(xl(0.04), xr(0.04), k)} ${yk(0.04)} L ${lerp(xl(1), xr(1), k)} ${yk(1)}`} stroke={tr} strokeWidth={1.6} opacity={0.7} />
+          ))}
+          {/* the fringe at the hanging end */}
+          {[0.15, 0.35, 0.55, 0.75, 0.92].map((k) => {
+            const fx = lerp(xl(1), xr(1), k);
+            return <path key={`r${k}`} d={`M ${fx} ${bot + 2} l ${sw2 * 0.15} 5`} stroke={s.color} strokeWidth={1.3} strokeLinecap="round" />;
+          })}
+          <path d={`M ${gx - w * 1.25} ${top + 4} Q ${gx} ${top - 5} ${gx + w * 1.1} ${top + 2}`} stroke={s.shade} strokeWidth={1.4} fill="none" opacity={0.8} />
+        </g>
+      );
+    }
     const check = s.style === "check";
     return (
       <g>
@@ -1461,8 +1580,33 @@ export const Puppet: React.FC<PuppetProps> = ({
     );
   };
 
+  /* ---------------- shoulder bag (jhola, Episode 5 on) ---------------- */
+  const bag = () => {
+    const b = c.bag;
+    if (!b) return null;
+    const bs = b.side ?? -1;
+    const sway = (clothSway + Math.sin(life * 0.09 + c.seed) * 0.8) * 0.8;
+    const bw = B.sw * 0.66;
+    const bh = B.sw * 0.74;
+    const bx = bs * hwp * 1.02 + frontX * 0.5 + sway;
+    const by = hipY - B.torsoLen * 0.12;
+    const sx0 = -bs * swp * 0.6 + frontX * 0.3;
+    const sy0 = shY - 3;
+    const ex = bx - bs * bw * 0.3;
+    const strap = b.strap ?? b.shade;
+    const body = `M ${bx - bw * 0.46} ${by} L ${bx + bw * 0.46} ${by} Q ${bx + bw * 0.56} ${by + bh * 0.6} ${bx + bw * 0.5} ${by + bh} Q ${bx} ${by + bh * 1.06} ${bx - bw * 0.5} ${by + bh} Q ${bx - bw * 0.56} ${by + bh * 0.6} ${bx - bw * 0.46} ${by} Z`;
+    return (
+      <g>
+        <path d={`M ${sx0} ${sy0} Q ${frontX * 0.6 - bs * swp * 0.05} ${lerp(sy0, by, 0.42)} ${ex} ${by + 2}`} stroke={strap} strokeWidth={B.limbW * 0.55} fill="none" strokeLinecap="round" />
+        <path d={body} fill={b.color} />
+        <path d={`M ${bx - bw * 0.46} ${by} L ${bx + bw * 0.46} ${by} Q ${bx + bw * 0.48} ${by + bh * 0.34} ${bx} ${by + bh * 0.4} Q ${bx - bw * 0.48} ${by + bh * 0.34} ${bx - bw * 0.46} ${by} Z`} fill={b.shade} opacity={0.75} />
+        <path d={`M ${bx - bw * 0.3} ${by + bh * 0.62} Q ${bx} ${by + bh * 0.7} ${bx + bw * 0.32} ${by + bh * 0.6}`} stroke={b.shade} strokeWidth={1.2} fill="none" opacity={0.6} />
+      </g>
+    );
+  };
+
   /* ---------------- arms ---------------- */
-  const arm = (side: 1 | -1, S: number, E: number, shape: HandShape, propId: string, back: boolean, extraFlex: number, wrist = 0) => {
+  const arm = (side: 1 | -1, S: number, E: number, shape: HandShape, propId: string, back: boolean, extraFlex: number, wrist = 0, turn?: number, backK?: number) => {
     const sx = side * B.sw * 0.86 * cphi;
     const rot1 = -side * S;
     const rot2 = -side * E;
@@ -1475,7 +1619,9 @@ export const Puppet: React.FC<PuppetProps> = ({
     const fitted = c.outfit === "blouse" || c.outfit === "frock"; // blouse sleeves hug the arm
     const L = B.limbW * slim;
     const PropR = propId ? props[propId] : undefined;
-    const skin = back ? c.skinShade : c.skin;
+    // backK (Episode 5, Pose.hold): eases a far arm out of its dark far-side styling to a light shade of her own skin
+    const skin = backK !== undefined ? lerpColor(c.skin, c.skinShade, lerp(0.22, 1, backK)) : back ? c.skinShade : c.skin;
+    const backStyle = backK !== undefined ? (backK > 0.001 ? { filter: `brightness(${lerp(1, 0.85, backK)})` } : undefined) : back ? { filter: "brightness(0.85)" } : undefined;
     const bend = clamp(Math.abs(E) / 120); // elbow flexion 0..1
     const inner = -Math.sign(rot2 || 1); // side of the arm the elbow folds toward
     const sleeveFill = `url(#${uid}-topg)`;
@@ -1488,7 +1634,7 @@ export const Puppet: React.FC<PuppetProps> = ({
       </g>
     );
     return (
-      <g transform={`translate(${sx}, ${shY + B.limbW}) rotate(${rot1})`} style={back ? { filter: "brightness(0.85)" } : undefined}>
+      <g transform={`translate(${sx}, ${shY + B.limbW}) rotate(${rot1})`} style={backStyle}>
         {/* upper arm: deltoid → biceps → elbow */}
         <path d={seg(B.ua, L * 1.25, L * 1.1, L * 0.86, 0.3)} fill={skin} />
         {upperSleeve && sleeve(B.ua * upperLen, L * (fitted ? 1.38 : 1.75), c.sleeve === "half" ? L * (fitted ? 1.22 : 1.6) : L * 1.3)}
@@ -1523,7 +1669,7 @@ export const Puppet: React.FC<PuppetProps> = ({
               />
             ))}
           <g transform={`translate(0, ${B.fa - 2})${PropR ? "" : ` rotate(${-side * wrist})`}`}>
-            <Hand shape={shape} L={B.hand} skin={skin} shade={c.skinShade} side={side} flex={noise1(life * 0.04, c.seed + side) * 0.5 + 0.5 + extraFlex} />
+            <Hand shape={shape} L={B.hand} skin={skin} shade={c.skinShade} side={side} flex={noise1(life * 0.04, c.seed + side) * 0.5 + 0.5 + extraFlex} turn={turn} />
             {PropR && <g transform={`translate(0, ${B.hand * 0.62})`}>{PropR({ f, worldRot: rot1 + rot2 + p.lean, side, scale: B.hand / 30 })}</g>}
           </g>
         </g>
@@ -1659,7 +1805,17 @@ export const Puppet: React.FC<PuppetProps> = ({
    * Two-bone arm solve: the shoulder and elbow angles (S, E, in this rig's convention) that put the wrist on the figure
    * point (tx, ty), taking the elbow solution `pref` asks for; returned near the given S and E so blends never wrap.
    */
-  const solveArm = (side: 1 | -1, far: boolean, tx: number, ty: number, S: number, E: number, lowK = 1): [number, number] => {
+  const solveArm = (
+    side: 1 | -1,
+    far: boolean,
+    tx: number,
+    ty: number,
+    S: number,
+    E: number,
+    lowK = 1,
+    /** Episode 5: picks the elbow solution with the larger score of the elbow's figure point (overrides lowK). */
+    pref?: (ex: number, ey: number) => number,
+  ): [number, number] => {
     const R = far ? (bowDeg * Math.PI) / 180 : Rnear;
     const sx0 = side * B.sw * 0.86 * cphi;
     const sy0 = shY + B.limbW;
@@ -1677,7 +1833,11 @@ export const Puppet: React.FC<PuppetProps> = ({
       const [ex, ey] = toFig(sx0 - Math.sin(r1) * ua, sy0 + Math.cos(r1) * ua, R);
       return lowK * ey - (1 - lowK) * fwd * ex;
     };
-    const sgn = elbowK(alpha + beta) >= elbowK(alpha - beta) ? 1 : -1;
+    const elbowP = (r1: number) => {
+      const [ex, ey] = toFig(sx0 - Math.sin(r1) * ua, sy0 + Math.cos(r1) * ua, R);
+      return pref ? pref(ex, ey) : 0;
+    };
+    const sgn = pref ? (elbowP(alpha + beta) >= elbowP(alpha - beta) ? 1 : -1) : elbowK(alpha + beta) >= elbowK(alpha - beta) ? 1 : -1;
     const r1 = alpha + sgn * beta;
     const r2 = -sgn * bend;
     return [S + wrapDeg((-side * r1 * 180) / Math.PI - S), E + wrapDeg((-side * r2 * 180) / Math.PI - E)];
@@ -1738,8 +1898,232 @@ export const Puppet: React.FC<PuppetProps> = ({
   };
   const [rS1, rE1] = armSolve(1, rFar, p.rS + armR.dS, elbowR + armR.dE);
   const [lS1, lE1] = armSolve(-1, lFar, p.lS + armL.dS, elbowL + armL.dE);
-  const rDraw = arm(1, rS1, rE1, p.rHand, p.rProp, rFar, armR.flex, handAim(1, rFar, rS1, rE1, wristR));
-  const lDraw = arm(-1, lS1, lE1, p.lHand, p.lProp, lFar, armL.flex, handAim(-1, lFar, lS1, lE1, wristL));
+
+  /* ---------------- Episode 5: hands to the head, the held hand, the jab, the flung hand, the bamboo ---------------- */
+  // Everything here is off at the Pose defaults (no weight, no "bamboo" prop): the arms are then exactly as before.
+  const deg = Math.PI / 180;
+  const bounce5 = Math.min(0.032, Math.abs(p.lean) * 0.0028); // = the assembly's squash below
+  const wsx = S * (1 + bounce5);
+  const wsy = scale * (1 - bounce5);
+  const toWorld = (q: [number, number]): XY => ({ x: x + p.bodyX + wsx * q[0], y: y + p.bodyY + wsy * q[1] });
+  const fromWorld = (q: XY): [number, number] => [(q.x - x - p.bodyX) / wsx, (q.y - y - p.bodyY) / wsy];
+  const armFrame = (far: boolean) => (far ? bowDeg * deg : Rnear);
+  const wrap5 = (v: number) => v - 2 * Math.PI * Math.floor((v + Math.PI) / (2 * Math.PI));
+  /** The rotation that turns +y toward (dx, dy) (SVG rotate, radians). */
+  const angOf = (dx: number, dy: number) => Math.atan2(-dx, dy);
+  // head points: an offset from the head centre in the head's own frame (its tilt), placed as head() places the head
+  const tilt5 = (pHead.headTilt + headTiltIdle + emphasis * 0.5) * deg;
+  const yaw5 = clamp(phi + clamp(pHead.headTurn + headTurnIdle, -1, 1) * 1.15, -1.45, 1.45);
+  const headPt = (ox: number, oy: number): [number, number] => {
+    const [hx, hy] = headLocal();
+    const cy0 = hy + pHead.headNod + Math.abs(emphasis) * 0.6;
+    return toFig(hx + ox * Math.cos(tilt5) - oy * Math.sin(tilt5), cy0 + ox * Math.sin(tilt5) + oy * Math.cos(tilt5), Rnear);
+  };
+  const Rh = B.headR;
+  const faceSide: 1 | -1 = yaw5 >= 0 ? 1 : -1;
+  const mouthFig = () => headPt(Rh * 0.74 * Math.sin(yaw5), Rh * 0.52);
+  // the cheek turned toward the camera (in a three-quarter view: between the nose and the ear)
+  const cheekFig = () => headPt(Rh * (0.75 * Math.sin(yaw5) - 0.35 * faceSide * Math.cos(yaw5)), Rh * 0.34);
+  /** Forward kinematics of one arm in figure space: shoulder, wrist and the hand's rotation (radians). */
+  const fk = (side: 1 | -1, far: boolean, S0: number, E0: number, w0: number) => {
+    const R = armFrame(far);
+    const r1 = -side * S0 * deg;
+    const r2 = -side * E0 * deg;
+    const sx0 = side * B.sw * 0.86 * cphi;
+    const sy0 = shY + B.limbW;
+    const ex = sx0 - Math.sin(r1) * B.ua;
+    const ey = sy0 + Math.cos(r1) * B.ua;
+    const fa = B.fa - 2;
+    return {
+      sh: toFig(sx0, sy0, R),
+      wr: toFig(ex - Math.sin(r1 + r2) * fa, ey + Math.cos(r1 + r2) * fa, R),
+      handA: R + r1 + r2 - side * w0 * deg,
+    };
+  };
+  /** The wrist turn (degrees, this rig's convention) that points the hand along the figure-space rotation a. */
+  const aimWrist = (side: 1 | -1, far: boolean, S0: number, E0: number, a: number, lim = 95) =>
+    clamp((-side * wrap5(a - (armFrame(far) + (-side * S0 - side * E0) * deg))) / deg, -lim, lim);
+  const norm2 = (dx: number, dy: number): [number, number] => {
+    const n = Math.hypot(dx, dy) || 1;
+    return [dx / n, dy / n];
+  };
+  const reachLen = B.ua + B.fa - 2;
+  // the hold point (Pose.hold): the scene's world point, raised toward the near cheek by Pose.cheek
+  const holdK = clamp(p.hold);
+  let holdFig: [number, number] | null = null;
+  if (holdK > 1e-4 || (anchors && holdAt)) {
+    const t0 = holdAt ? fromWorld(holdAt(f)) : toFig(frontX + fwd * B.sw * 0.9, shY + B.torsoLen * 0.45, Rnear);
+    const ck = cheekFig();
+    const k = clamp(p.cheek);
+    holdFig = [lerp(t0[0], ck[0], k), lerp(t0[1], ck[1], k)];
+  }
+  // the bamboo pole (rProp / lProp "bamboo" when the scene supplies no renderer of its own)
+  const poleSide: 0 | 1 | -1 = props.bamboo ? 0 : p.rProp === "bamboo" ? 1 : p.lProp === "bamboo" ? -1 : 0;
+  const figH = B.thigh + B.shin + B.foot * 0.28 + B.torsoLen + B.neck + B.headR * 2.1;
+  const poleLen = poleLength ?? figH * 1.05;
+  const tiltP = p.poleTilt * deg * fwd;
+  const poleU: [number, number] = [Math.sin(tiltP), -Math.cos(tiltP)]; // up the pole
+  const poleN: [number, number] = (() => {
+    const a: [number, number] = [-poleU[1], poleU[0]];
+    return a[0] * fwd >= 0 ? a : [-a[0], -a[1]];
+  })(); // across the pole, toward the facing side: the fist's long axis
+  const gripCarry = (B.thigh + B.shin) * 0.8; // grip to the pole's foot while carried
+  const fistOff = B.hand * 0.4; // wrist to the middle of the curled fingers
+  const e5On = poleSide !== 0 || Math.abs(p.headHands) + Math.abs(p.scratch) + Math.abs(p.mouthHand) + holdK + Math.abs(p.jab) + Math.abs(p.throwUp) > 1e-4;
+  type Arm5 = { S: number; E: number; hand: HandShape; wrist: number; turn?: number };
+  const arm5 = (side: 1 | -1, far: boolean, S0: number, E0: number, hand0: HandShape, w0: number): Arm5 => {
+    const st: Arm5 = { S: S0, E: E0, hand: hand0, wrist: w0 };
+    if (!e5On) return st;
+    let best = 0.4;
+    const go = (w: number, t: [number, number], pref: ((ex: number, ey: number) => number) | undefined, aim: number | null, shape: HandShape, turn?: number) => {
+      if (w <= 1e-4) return;
+      const [s2, e2] = solveArm(side, far, t[0], t[1], st.S, st.E, 1, pref);
+      st.S = lerp(st.S, s2, w);
+      st.E = lerp(st.E, e2, w);
+      if (aim !== null) st.wrist = lerp(st.wrist, aimWrist(side, far, st.S, st.E, aim), w);
+      if (w >= best) {
+        best = w;
+        st.hand = shape;
+        st.turn = turn;
+      }
+    };
+    const shoulder = fk(side, far, 0, 0, 0).sh;
+    const elbowOut = (ex: number, ey: number) => side * ex - 0.5 * ey;
+    const elbowLow = (_ex: number, ey: number) => ey;
+    // both hands clapped to the sides of the head, fingers up over the temples, elbows out (alarm)
+    const hh = clamp(Math.abs(p.headHands));
+    if (hh > 1e-4) {
+      const [dx, dy] = norm2(-side * 0.35, -1);
+      go(hh, headPt(side * Rh * 1.02, Rh * 0.2), elbowOut, angOf(dx, dy), "open", Math.PI);
+    }
+    // scratching the side of the head: the fingertips work in small irregular strokes on the life clock
+    const sc = clamp(Math.abs(p.scratch));
+    if (sc > 1e-4 && Math.sign(p.scratch) === side) {
+      const t = life * 0.9;
+      const wig = Math.sin(t) + 0.35 * Math.sin(t * 2.3 + 1.1);
+      const [dx, dy] = norm2(-side * 0.45, -1);
+      const tip = headPt(side * Rh * 0.62 + Rh * 0.05 * wig, -Rh * 0.62 + Rh * 0.045 * Math.sin(t * 1.7 + 0.4));
+      go(sc, [tip[0] - dx * B.hand * 0.68, tip[1] - dy * B.hand * 0.68], (ex, ey) => side * ex - 0.7 * ey, angOf(dx, dy), "relaxed", Math.PI);
+    }
+    // fingertips to the mouth
+    const mh = clamp(Math.abs(p.mouthHand));
+    if (mh > 1e-4 && Math.sign(p.mouthHand) === side) {
+      const [dx, dy] = norm2(fwd * 0.2, -1);
+      const tip = mouthFig();
+      go(mh, [tip[0] - dx * B.hand * 0.66, tip[1] - dy * B.hand * 0.66], elbowLow, angOf(dx, dy), "relaxed");
+    }
+    // a child's hand held in both of hers: the far hand cups UNDER it (palm up, seen edge-on, the fingers curling up
+    // round its little-finger side), the near hand rests over its back; the held hand stays visible between them.
+    // Her wrists roll a little as it turns.
+    if (holdK > 1e-4 && holdFig) {
+      const nearArm = rFar === lFar ? side === 1 : !far;
+      const roll = Math.sin(Math.PI * clamp(p.holdTurn));
+      if (!nearArm) {
+        const [dx, dy] = norm2(fwd, -0.12 - 0.12 * roll);
+        const psi = side * fwd * (Math.PI / 2 - 0.3 + 0.2 * roll); // curl toward screen-up = palm up
+        // the elbow drops back behind the hand, so the forearm comes in low and level under his hand
+        go(holdK, [holdFig[0] - dx * B.hand * 0.4, holdFig[1] - dy * B.hand * 0.4 + B.hand * 0.3], (ex, ey) => -fwd * ex + 0.25 * ey, angOf(dx, dy), "cup", psi);
+      } else {
+        const [dx, dy] = norm2(fwd, 0.5 + 0.15 * roll);
+        go(holdK, [holdFig[0] - dx * B.hand * 0.55, holdFig[1] - dy * B.hand * 0.55 - B.hand * 0.27], undefined, angOf(dx, dy), "relaxed");
+      }
+    }
+    // the jab: the arm shoots out toward PuppetProps.pointAt, index finger leading
+    const jb = clamp(Math.abs(p.jab));
+    if (jb > 1e-4 && Math.sign(p.jab) === side) {
+      const P = pointAt ? fromWorld(pointAt(f)) : ([shoulder[0] + fwd * 200, shoulder[1] - 30] as [number, number]);
+      const [dx, dy] = norm2(P[0] - shoulder[0], P[1] - shoulder[1]);
+      go(jb, [shoulder[0] + dx * reachLen * 0.93, shoulder[1] + dy * reachLen * 0.93], elbowLow, angOf(dx, dy), "point");
+    }
+    // the hand flung up, palm open
+    const tu = clamp(Math.abs(p.throwUp));
+    if (tu > 1e-4 && Math.sign(p.throwUp) === side) {
+      const [dx, dy] = norm2(fwd * 0.35, -1);
+      const [ax, ay] = norm2(fwd * 0.2, -1);
+      go(tu, [shoulder[0] + dx * reachLen * 0.86, shoulder[1] + dy * reachLen * 0.86], (ex, ey) => side * ex + 0.2 * ey, angOf(ax, ay), "open", 0);
+    }
+    // the bamboo hand: planted (poleDrop) the fist is solved onto the standing pole; the fist always grips across it
+    if (side === poleSide) {
+      const pd = clamp(p.poleDrop);
+      if (pd > 1e-4) {
+        const baseX = shoulder[0] + fwd * B.sw * 0.55;
+        const gripH = B.thigh + B.shin + B.torsoLen * 0.22;
+        const gx = baseX + poleU[0] * gripH;
+        const gy = -p.poleLift + poleU[1] * gripH;
+        const [s2, e2] = solveArm(side, far, gx - poleN[0] * fistOff, gy - poleN[1] * fistOff, st.S, st.E, 1, (ex, ey) => ey - fwd * ex * 0.5);
+        st.S = lerp(st.S, s2, pd);
+        st.E = lerp(st.E, e2, pd);
+      }
+      st.wrist = aimWrist(side, far, st.S, st.E, angOf(poleN[0], poleN[1]));
+      st.hand = "hold";
+      st.turn = undefined;
+    }
+    return st;
+  };
+  const r5 = arm5(1, rFar, rS1, rE1, p.rHand, handAim(1, rFar, rS1, rE1, wristR));
+  const l5 = arm5(-1, lFar, lS1, lE1, p.lHand, handAim(-1, lFar, lS1, lE1, wristL));
+  // holding a child's hand, the far arm comes forward to cup it: it loses the dark far-side styling by the hold weight
+  const farLight = (far: boolean) => (far && holdK > 1e-4 && holdFig ? 1 - holdK : undefined);
+  const rDraw = arm(1, r5.S, r5.E, r5.hand, p.rProp, rFar, armR.flex, r5.wrist, r5.turn, farLight(rFar));
+  const lDraw = arm(-1, l5.S, l5.E, l5.hand, p.lProp, lFar, armL.flex, l5.wrist, l5.turn, farLight(lFar));
+  // the pole itself: through the fist, its foot on the ground when planted and never below it (MOT-07)
+  let pole: { grip: [number, number]; base: [number, number]; tip: [number, number] } | null = null;
+  if (poleSide !== 0) {
+    const a5 = poleSide === 1 ? r5 : l5;
+    const g = fk(poleSide, poleSide === 1 ? rFar : lFar, a5.S, a5.E, a5.wrist);
+    const grip: [number, number] = [g.wr[0] - Math.sin(g.handA) * fistOff, g.wr[1] + Math.cos(g.handA) * fistOff];
+    const cosT = Math.max(0.2, -poleU[1]);
+    const toFloor = (0 - grip[1]) / cosT;
+    const planted = (-p.poleLift - grip[1]) / cosT;
+    const len = clamp(Math.min(lerp(gripCarry, planted, clamp(p.poleDrop)), toFloor), poleLen * 0.12, poleLen * 0.88);
+    const base: [number, number] = [grip[0] - poleU[0] * len, grip[1] - poleU[1] * len];
+    pole = { grip, base, tip: [base[0] + poleU[0] * poleLen, base[1] + poleU[1] * poleLen] };
+  }
+  const poleFar = poleSide !== 0 && (poleSide === 1 ? rFar : lFar);
+  /** The bamboo: green-brown, knotted, a little thicker at the foot; drawn behind the fist so the fingers wrap it. */
+  const poleDraw = (local: boolean) => {
+    if (!pole) return null;
+    const [bx, by] = local ? toLocal(pole.base[0], pole.base[1], Rnear) : pole.base;
+    const rot = (tiltP - (local ? Rnear : 0)) / deg;
+    const w0 = B.limbW * 0.62;
+    const w1 = B.limbW * 0.5;
+    const Lq = poleLen;
+    const body = `M ${-w0} 0 L ${-w1} ${-Lq} Q 0 ${-Lq - w1 * 0.5} ${w1} ${-Lq} L ${w0} 0 Q 0 ${w0 * 0.45} ${-w0} 0 Z`;
+    const nodes = [0.1, 0.27, 0.44, 0.61, 0.78, 0.94];
+    return (
+      <g transform={`translate(${bx}, ${by}) rotate(${rot})`}>
+        <path d={body} fill="#8c8a45" />
+        <path d={`M ${-w0 * 0.55} -2 L ${-w1 * 0.55} ${-Lq + 2}`} stroke="#c2bd72" strokeWidth={w1 * 0.55} strokeLinecap="round" opacity={0.75} />
+        <path d={`M ${w0 * 0.6} -2 L ${w1 * 0.6} ${-Lq + 2}`} stroke="#5f5b28" strokeWidth={w1 * 0.6} strokeLinecap="round" opacity={0.7} />
+        {nodes.map((k) => {
+          const wk = lerp(w0, w1, k) * 1.12;
+          const yk = -Lq * k;
+          return (
+            <g key={k}>
+              <path d={`M ${-wk} ${yk} Q 0 ${yk + wk * 0.4} ${wk} ${yk}`} stroke="#545022" strokeWidth={1.6} fill="none" />
+              <path d={`M ${-wk * 0.9} ${yk - 2.2} Q 0 ${yk - 2.2 + wk * 0.35} ${wk * 0.9} ${yk - 2.2}`} stroke="#cfc983" strokeWidth={0.9} fill="none" opacity={0.7} />
+            </g>
+          );
+        })}
+        <ellipse cx={0} cy={-Lq} rx={w1} ry={w1 * 0.35} fill="#6d6a33" />
+      </g>
+    );
+  };
+  if (anchors) {
+    const rw = fk(1, rFar, r5.S, r5.E, r5.wrist).wr;
+    const lw = fk(-1, lFar, l5.S, l5.E, l5.wrist).wr;
+    anchors({
+      head: toWorld(headPt(0, 0)),
+      cheek: toWorld(cheekFig()),
+      mouth: toWorld(mouthFig()),
+      rWrist: toWorld(rw),
+      lWrist: toWorld(lw),
+      hold: holdFig ? toWorld(holdFig) : null,
+      poleGrip: pole ? toWorld(pole.grip) : null,
+      poleBase: pole ? toWorld(pole.base) : null,
+      poleTip: pole ? toWorld(pole.tip) : null,
+    });
+  }
   const farT = `translate(${upperX}, ${antY})${bowDeg ? ` rotate(${bowDeg}, 0, ${hipY})` : ""}`;
 
   // squash with the lean only (a pose shape, story-driven); no periodic bounce: breathing never scales the figure (MOT-20)
@@ -1781,6 +2165,7 @@ export const Puppet: React.FC<PuppetProps> = ({
         </radialGradient>
       </defs>
       <ellipse cx={0} cy={2} rx={B.hw * (seated ? 3.4 : 2.4)} ry={B.hw * 0.42} fill={`url(#${uid}-ao)`} />
+      {poleFar && poleDraw(false)}
       {lFar && <g transform={farT}>{lDraw}</g>}
       {rFar && <g transform={farT}>{rDraw}</g>}
       {lowerBody()}
@@ -1788,7 +2173,9 @@ export const Puppet: React.FC<PuppetProps> = ({
         {c.outfit === "frock" && skirt("knee")}
         {torso()}
         {scarf()}
+        {bag()}
         {head()}
+        {pole && !poleFar && poleDraw(true)}
         {!lFar && lDraw}
         {!rFar && rDraw}
         {wrap > 0.02 && dom && (
@@ -1937,4 +2324,231 @@ export const kneelingPranam = (f: number, t: PranamTiming): Partial<Pose> => {
     headTilt: 7 * bow,
     smile: 0.25,
   };
+};
+
+/* ------------------------------------------------------------------ */
+/* Episode 5 helpers: walks, the bamboo thump, the jab, silent shouts.  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * EPISODE 5 PEOPLE: poses, gestures and props (all additive; Episodes 1 to 4 never set them)
+ *
+ * Pose channels (blend like every other body channel; key them with ease "inOut" over 10 to 18 frames):
+ *   headHands 0..1      both hands clapped to the head (Binoy's alarm; with `shoutMouth` and GESTURES.handsOnHead)
+ *   scratch   -1..1     scratching the head, sign = arm (+ right, - left); strokes run on lifeF (go on in a pause)
+ *   mouthHand -1..1     fingertips to the mouth (Binoy's mother at her door: CAST.womanA + GESTURES.handAtMouth)
+ *   hold      0..1      both hands on PuppetProps.holdAt's world point (Charu takes Balak's hand)
+ *   holdTurn  0..1      0 as taken, 0.5 palm up, 1 turned over (her wrists roll; the child's rig turns its own hand)
+ *   cheek     0..1      with hold: the held hand goes up to her near cheek; read PuppetProps.anchors().hold to place
+ *                       the child's hand there (render the child after Charu)
+ *   jab       -1..1     the arm shoots out toward PuppetProps.pointAt (sign = arm); drive it with `jabPulse`
+ *   throwUp   -1..1     one hand flung up, palm open (sign = arm); drive it with `throwUpPulse`
+ *   rProp/lProp "bamboo" a bamboo pole in that fist every frame (unless the scene passes its own props.bamboo):
+ *     poleTilt (deg, + top toward the facing side), poleDrop (0 carried in the fist, 1 foot planted on the ground,
+ *     the arm solved onto the standing pole), poleLift (foot above the ground while planted; `bambooThump` keys it).
+ *     The pole never goes below the ground; anchors() gives poleGrip, poleBase (its foot) and poleTip in world px.
+ * Cast extras (CastMember): bag (a jhola across the chest), scarf style "gamchha", dhotiLength "hitched".
+ * Faces: knitted angry brows are browTilt about -0.8 with brow -0.2 (GESTURES.angryBrows). Agitated breathing is the
+ * existing breathRate prop (about 2.0 to 2.5 for Haricharan after the run, 1.6 for Binoy's fright); a relief sigh is
+ * the existing `sigh` prop (envelope on the clock passed as f: inside a pause, pass a clock that advances).
+ * Actions inside a pause (P3: the cheek, the sigh, the scratch, the bend) need an f that advances: give that Puppet
+ * f = the pause's own running frame offset from the story frame, or key them on lifeF.
+ */
+
+const cycleSpeed = (o: { speed: number; scale: number; height: number; bodyTurn: number; child?: boolean }) => {
+  const leg = (o.child ? 91 : 154) * o.height; // thigh + shin
+  // mean speed of a planted foot sweeping back at stride 1: leg * 0.42 (thigh swing) * 0.3 (phase per frame) * 2/pi
+  const perStride = leg * 0.42 * 0.3 * (2 / Math.PI) * Math.max(0.25, Math.abs(Math.sin(clamp(o.bodyTurn, -1, 1) * 0.95)));
+  return o.speed / Math.max(1e-6, o.scale) / perStride;
+};
+
+export interface WalkOpts {
+  /** Story frame the walk starts and its length in frames (start to stop). */
+  start: number;
+  dur: number;
+  /** bodyX at the start and at the stop (world px). */
+  fromX: number;
+  toX: number;
+  /** The Puppet's scale and the cast member's height (they set the stride that keeps the feet planted). */
+  scale: number;
+  height: number;
+  /** cast.seed (the rig's leg phase: arms swing and the body bobs on it). */
+  seed: number;
+  /** Set when the Puppet is drawn flipped. */
+  flip?: boolean;
+  /** Body turn while walking; default 0.85 toward the travel direction. */
+  bodyTurn?: number;
+  /** Frames of speeding up and of slowing down (default 10 and 8). A short `stopIn` is a "stop short". */
+  startIn?: number;
+  stopIn?: number;
+  /**
+   * "hurry": a quick walk (Charu, Surendra: arms swing a little, slight lean); "run": hurried run-in (Haricharan:
+   * strong lean, pumping bent arms); "stomp": a heavy angry walk (shoulders forward, head down, a jolt at each step).
+   */
+  kind?: "hurry" | "run" | "stomp";
+  /** Arm that carries something (the bamboo): it swings only a little. */
+  carrySide?: 1 | -1;
+  /** Base arm angles the swing rides on (default a relaxed hang). */
+  rS?: number;
+  rE?: number;
+  lS?: number;
+  lE?: number;
+  child?: boolean;
+  /**
+   * Put the travel into Pose.bodyX (default false). Leave it false and add walkTravel(f, o).bodyX to the Puppet's
+   * `x` instead: Pose.bodyX velocity drives the rig's cloth drag, which at a hurry or a run pulls a veil or a sari
+   * end out into a long thin streak behind the figure.
+   */
+  travelInBodyX?: boolean;
+}
+
+/** Travel along x with eased speed up and slow down (trapezoid speed profile): bodyX and the speed in px a frame. */
+export const walkTravel = (f: number, o: Pick<WalkOpts, "start" | "dur" | "fromX" | "toX" | "startIn" | "stopIn">) => {
+  const a = Math.max(1, o.startIn ?? 10);
+  const b = Math.max(1, o.stopIn ?? 8);
+  const T = Math.max(a + b + 1, o.dur);
+  const D = o.toX - o.fromX;
+  const vmax = D / (T - (a + b) / 2);
+  const u = clamp(f - o.start, 0, T);
+  let pos: number;
+  let v: number;
+  if (u < a) {
+    pos = (vmax * u * u) / (2 * a);
+    v = (vmax * u) / a;
+  } else if (u < T - b) {
+    pos = vmax * (a / 2 + (u - a));
+    v = vmax;
+  } else {
+    const r = T - u;
+    pos = D - (vmax * r * r) / (2 * b);
+    v = (vmax * r) / b;
+  }
+  return { bodyX: o.fromX + pos, speed: Math.abs(f - o.start < 0 || f - o.start > T ? 0 : v), moving: f >= o.start && f <= o.start + T };
+};
+
+/**
+ * A walk in, run in or stomp off as Pose channels for frame f: bodyY (bob), stride (matched to the travel speed so
+ * the feet stay planted), bodyTurn, lean, headNod and the arm swing. Move the Puppet itself by walkTravel(f, o).bodyX
+ * (add it to `x`), or set travelInBodyX. Spread it over the scene's own keys (and add gestures on top). Before the
+ * start and after the stop it returns the standing values.
+ * Charu's sari hem lifts over the forward foot by itself in any walk (CHR-05 to CHR-07).
+ */
+export const walkPose = (f: number, o: WalkOpts): Partial<Pose> => {
+  const kind = o.kind ?? "hurry";
+  const tr = walkTravel(f, o);
+  const dir = Math.sign(o.toX - o.fromX) || 1;
+  const turn = o.bodyTurn ?? 0.85 * dir * (o.flip ? -1 : 1);
+  const fwdF = Math.sign(turn) || 1; // facing side in figure space
+  const vmax = Math.abs(o.toX - o.fromX) / Math.max(1, o.dur - ((o.startIn ?? 10) + (o.stopIn ?? 8)) / 2);
+  const k = vmax > 0 ? clamp(tr.speed / vmax) : 0; // 0 standing .. 1 full pace
+  const stride = clamp(cycleSpeed({ speed: tr.speed, scale: o.scale, height: o.height, bodyTurn: turn, child: o.child }), 0, kind === "run" ? 1.9 : 1.5);
+  const ph = f * 0.3 + o.seed; // = Puppet's leg phase; sin(ph) > 0: the left leg forward
+  const phLag = (f - 2) * 0.3 + o.seed; // the shoulders follow the hips
+  const P = {
+    hurry: { lean: 4, swing: 12, bend: 22, bob: 2.6, nod: 0 },
+    run: { lean: 11, swing: 30, bend: 72, bob: 4.5, nod: 1.5 },
+    stomp: { lean: 6, swing: 14, bend: 28, bob: 2.2, nod: 4 },
+  }[kind];
+  // arms swing opposite their own leg; the carrying arm only a little
+  const swingOf = (sd: 1 | -1) => {
+    const legFwd = sd < 0 ? Math.sin(phLag) : -Math.sin(phLag);
+    const amp = P.swing * (o.carrySide === sd ? 0.25 : 1) * k;
+    return fwdF * sd * amp * -legFwd;
+  };
+  const bendOf = (sd: 1 | -1) => fwdF * sd * P.bend * k * (o.carrySide === sd ? 0.3 : 1);
+  // the body is highest as the legs pass and lowest at each foot strike; a stomp adds a sharp jolt at the strike
+  const strike = Math.pow(Math.sin(ph) * Math.sin(ph), 6);
+  const bodyY = -P.bob * k * Math.cos(ph) * Math.cos(ph) + (kind === "stomp" ? 3.2 * k * strike : 0);
+  return {
+    ...(o.travelInBodyX ? { bodyX: tr.bodyX } : {}),
+    bodyY,
+    stride,
+    bodyTurn: turn,
+    lean: fwdF * P.lean * k,
+    headNod: P.nod * k + (kind === "stomp" ? 2.5 * k * strike : 0),
+    rS: (o.rS ?? 6) + swingOf(1),
+    rE: (o.rE ?? -10) + bendOf(1),
+    lS: (o.lS ?? 6) + swingOf(-1),
+    lE: (o.lE ?? -10) + bendOf(-1),
+  };
+};
+
+/** Eased turn of the body from one bodyTurn to another (a turn on the spot before walking off: 10 to 16 frames). */
+export const turnBody = (f: number, start: number, dur: number, from: number, to: number) => lerp(from, to, easeIO((f - start) / Math.max(1, dur)));
+
+/** Bamboo thump timings (frames from its start): the pole lifts, then strikes the ground at `hit`. */
+export const BAMBOO_THUMP = { lift: 9, hit: 13, end: 26 } as const;
+
+/**
+ * One thump of the bamboo's foot on the ground (Haricharan's exasperation, AG2). Use with poleDrop = 1. Returns
+ * poleLift (set it) and dLean / dY / dS (add them: the body and the pole arm rise with the lift and jolt at the hit).
+ * The foot meets the ground on frame start + BAMBOO_THUMP.hit: put the thud and a little dust there.
+ */
+export const bambooThump = (f: number, start: number) => {
+  const u = f - start;
+  if (u <= 0 || u >= BAMBOO_THUMP.end) return { poleLift: 0, dLean: 0, dY: 0, dS: 0 };
+  const up = easeIO(u / BAMBOO_THUMP.lift); // lift with a little anticipation
+  const down = clamp((u - BAMBOO_THUMP.lift) / (BAMBOO_THUMP.hit - BAMBOO_THUMP.lift)); // the strike: fast, accelerating
+  const lift = 30 * up * (1 - down * down);
+  const after = u > BAMBOO_THUMP.hit ? u - BAMBOO_THUMP.hit : -1;
+  const jolt = after >= 0 ? Math.exp(-after / 3) : 0;
+  const rebound = after >= 0 ? 4 * Math.sin(Math.PI * clamp(after / 6)) : 0;
+  return { poleLift: lift + rebound, dLean: -2 * up * (1 - down) + 2.5 * jolt, dY: -3 * up * (1 - down) + 2.5 * jolt, dS: 10 * up * (1 - down) };
+};
+
+/** A jab of the hand toward a point (with Pose.jab and PuppetProps.pointAt): shoots out fast, holds, eases back. */
+export const jabPulse = (f: number, start: number, hold = 14, count = 1, gapF = 10) => {
+  let v = 0;
+  for (let i = 0; i < count; i++) {
+    const s0 = start + i * (6 + hold + gapF);
+    const u = f - s0;
+    if (u <= 0 || u >= 6 + hold + 12) continue;
+    const out = u < 6 ? Math.sin((Math.PI / 2) * (u / 6)) * 1.06 : u < 9 ? lerp(1.06, 1, (u - 6) / 3) : 1;
+    const back = u > 6 + hold ? easeIO((u - 6 - hold) / 12) : 0;
+    v = Math.max(v, Math.min(1.06, out) * (1 - back));
+  }
+  return Math.min(1, v);
+};
+
+/** The free hand flung up in exasperation and dropped: quick up (6 frames), a beat, a slower fall (14 frames). */
+export const throwUpPulse = (f: number, start: number, hold = 8) => {
+  const u = f - start;
+  if (u <= 0 || u >= 6 + hold + 14) return 0;
+  return easeIO(u / 6) * (1 - easeIO((u - 6 - hold) / 14));
+};
+
+/**
+ * A silent shout's mouth (Binoy's "hay hay, gelo gelo": the narrator quotes him, so no lip sync): opens wide over
+ * 4 frames, holds with a small irregular working of the jaw, closes over 6. Pass as the Puppet's `mouth`.
+ */
+export const shoutMouth = (f: number, start: number, dur: number, seed = 1): MouthState => {
+  const u = f - start;
+  if (u <= 0 || u >= dur) return MOUTH_REST;
+  const env = easeIO(u / 4) * (1 - easeIO((u - (dur - 6)) / 6));
+  const work = 0.12 * noise1(u / 5, seed) + 0.06 * Math.sin(u * 0.9 + seed);
+  return { open: env * clamp(0.82 + work), width: 1 + 0.12 * env, round: 0.25 * env, teeth: 0.45 * env };
+};
+
+/** Ready-made Episode 5 expressions and gestures (spread into a pose key; lean presets assume bodyTurn > 0). */
+export const GESTURES5 = {
+  /** Binoy, watching quietly: a curious head tilt, brows up a little, a hint of a smile. */
+  curiousTilt: { headTilt: 9, headTurn: 0.12, brow: 0.45, eyeY: 0.15, smile: 0.32 } as Partial<Pose>,
+  /** Binoy's alarm: both hands to the head, brows up and drawn together (add shoutMouth as his mouth). */
+  handsOnHead: { headHands: 1, brow: 0.9, browTilt: 0.55, smile: 0, lean: -3 } as Partial<Pose>,
+  /** Binoy, puzzled: scratches his head with the right hand, head tipped, one brow worried. */
+  scratchHead: { scratch: 1, headTilt: -7, brow: 0.25, browTilt: 0.35, smile: 0.12, eyeY: -0.1 } as Partial<Pose>,
+  /** Surendra bends forward to look (with bodyTurn > 0; mirror lean for bodyTurn < 0). */
+  bendToLook: { lean: 16, crouch: 0.1, headNod: 5, brow: 0.35, eyeY: 0.45, smile: 0.15 } as Partial<Pose>,
+  /** Puzzled, standing (Surendra, after the look): head tipped, brows uneven, mouth flat. */
+  puzzled: { headTilt: -6, brow: 0.3, browTilt: 0.3, smile: 0.12 } as Partial<Pose>,
+  /** Haricharan's anger: knitted brows, no smile (bluster, not menace). */
+  angryBrows: { brow: -0.2, browTilt: -0.85, smile: 0, lid: 0.12 } as Partial<Pose>,
+  /** Haricharan standing with the bamboo upright beside him in his right fist. */
+  bambooUpright: { rProp: "bamboo", rHand: "hold", poleDrop: 1, poleTilt: 3 } as Partial<Pose>,
+  /** Haricharan carrying the bamboo on the run: slanted forward, foot off the ground. */
+  bambooCarried: { rProp: "bamboo", rHand: "hold", poleDrop: 0, poleTilt: 22, rS: 22, rE: 55 } as Partial<Pose>,
+  /** Binoy's mother at her door: fingertips to her mouth (left hand; use mouthHand: 1 for the right). */
+  handAtMouth: { mouthHand: -1, brow: 0.5, browTilt: 0.45, smile: 0 } as Partial<Pose>,
+  /** Charu kneeling, both hands round the child's hand (PuppetProps.holdAt); key holdTurn and cheek on top. */
+  holdChildHand: { kneel: 1, hold: 1, brow: 0.3, browTilt: 0.4, smile: 0.1, eyeY: 0.35 } as Partial<Pose>,
 };
