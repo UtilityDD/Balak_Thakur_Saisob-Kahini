@@ -60,3 +60,13 @@ Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as
 
 ## 2026-11-22 (later)
 - BAL-26: the director’s reference plates (age 6 to 22) set Balak’s face and body from Episode 5 on, adapted to age; short straight black hair replaces curls for these ages. Plates copied to `01_Series_Bible/Thakur_Reference_Plates/`.
+- STO-20: Episode 5 shot-and-pause plan approved on the recommended answers (kachari in Ujanchar, Balak six in the BAL-26 design, standing rig, tortoises, cow walk, six pauses, two action gaps, one chapter break).
+- Episode 5 build (STO-20, BAL-26): plate-design Balak (seated and standing, shared head), tortoises, Gentle cow, Krishnanagar kachari set, Binoy and Haricharan, timing 2,849 frames (6 pauses, 2 action gaps, 1 chapter break), CC sound effects in sfx/ep05; review stills and clips prepared for the director (not yet approved).
+- STO-20a: director review of Episode 5 scene 01: smile and push-in during the tortoise play; remove the hump and stiff chadar panel from the standing child’s back in bends.
+- STO-20b: Balak sits on the ground for the whole Episode 5 tortoise scene (director override of the book’s standing posture).
+- AUD-07: cinematic, situation-led scoring with Indian instruments from Episode 5 (cue sheet Ep05_Music_Cue_Sheet.md); tension and fear at the tortoise bite.
+- BAL-26a: Episode 3 switches to the reference-plate Balak (age 5); re-render after approval.
+- Director approved the reference-plate Balak in Episode 3 (BAL-26a) and asked for the new cinematic music (AUD-07) in Episode 3 too (cue sheet Ep03_Music_Cue_Sheet.md); Episode 3 to be re-rendered after approval.
+- BAL-26b: Episode 4 switches to the reference-plate Balak (age 5; age 6 in the outro glimpse); re-render after approval.
+- Director: proceed with the suggestions: the new score in Episode 4 too (AUD-07), and Episode 2 re-rendered in the same final session so its outro glimpse of Episode 3 shows the reference-plate Balak; final renders of Episodes 5, 3, 4 and 2 after the main session's check (render_final_set3.sh).
+- Deliveries 2026-11-22 (second set, render_final_set3.sh): Episode 5 new (2,849 frames, 1:58.8, -16.7 LUFS); Episode 3 (3,259 frames, -16.2 LUFS) and Episode 4 (3,335 frames, -16.3 LUFS) re-delivered with the reference-plate Balak and the cinematic score. All zero decode errors, black only at designed fades and chapter breaks; final SRTs re-exported; previous Episode 3/4 cuts kept in the worktree folder render_final_2026-11-22/. Episode 2 re-render paused by the director at 2 of 4 chunks.

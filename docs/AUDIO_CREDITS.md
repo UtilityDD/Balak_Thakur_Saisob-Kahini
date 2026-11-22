@@ -98,3 +98,62 @@ Commons (2026-11-21); the closest clean recordings above were used.
 > Sound effects: 'Tibetan Singing Bowl hit 4.5inch' by דג בלי מלח (CC BY-SA 4.0), via Wikimedia Commons.
 
 Optional (no credit required): drinking water by ezwa (public domain); Issyk-Kul lake shore by thoschi (CC0).
+
+---
+
+## Episode 5
+
+Added 2026-11-22. Files in `remotion_studio/public/audio/sfx/ep05/` (production worktree); trims, filters, levels and
+rejected candidates in that folder's `README.md`; the downloaded originals and the build recipe
+(`build_ep05_sfx.py`) in its `_source/` folder. 48 kHz mono 16-bit WAV, sample peak at most -6 dBFS; one-shots
+-24 to -30 LUFS, the loop -27 LUFS. Not yet placed in code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| `shell_scrape.wav` | "Dragging a hose once (Gravity Sound).wav" | https://commons.wikimedia.org/wiki/File:Dragging_a_hose_once_(Gravity_Sound).wav | 1.25 to 2.05 s (the scrape); filtered 150 Hz to 3.2 kHz, slowed to 0.8x | Gravity Sound | CC BY 4.0 |
+| `shell_scrape.wav` | "Hollow log knocking (Gravity Sound).wav" | https://commons.wikimedia.org/wiki/File:Hollow_log_knocking_(Gravity_Sound).wav | 3.17 to 3.47 s (one knock, at 1.02 s in the file); low-passed 1.8 kHz, -12 dB | Gravity Sound | CC BY 4.0 |
+| `vine_tear.wav` | "Rustling leaves (Gravity Sound).wav" | https://commons.wikimedia.org/wiki/File:Rustling_leaves_(Gravity_Sound).wav | 2.05 to 3.85 s (the leafy pull); filtered 150 Hz to 5 kHz | Gravity Sound | CC BY 4.0 |
+| `vine_tear.wav`, `cow_munch.wav` | "Tearing mint.ogg" (PDSounds record 570) | https://commons.wikimedia.org/wiki/File:Tearing_mint.ogg | vine_tear: 5.70 to 6.40 s (stem snaps, 0.9x); cow_munch: five tears (1.13 to 1.55, 12.70 to 13.09, 18.93 to 19.30, 7.64 to 7.88, 17.35 to 17.60 s), 0.7x, filtered 400 Hz to 3.5 kHz, gated | hugh | Public domain |
+| `bamboo_thump.wav` | "Hollow stick hit 2 (Gravity Sound).wav" | https://commons.wikimedia.org/wiki/File:Hollow_stick_hit_2_(Gravity_Sound).wav | 0.625 to 0.925 s (the hit); low-passed 3.5 kHz | Gravity Sound | CC BY 4.0 |
+| `bamboo_thump.wav` | "Land in Gravel (Gravity Sound).mp3" | https://commons.wikimedia.org/wiki/File:Land_in_Gravel_(Gravity_Sound).mp3 | 0.055 to 0.175 s (low thud only, low-passed 450 Hz, -4 dB) | Gravity Sound | CC BY 4.0 |
+| `cow_breath.wav` | "Horse sound effect.wav" (via Commons' MP3 transcode) | https://commons.wikimedia.org/wiki/File:Horse_sound_effect.wav | 110.25 to 111.05 s (one soft breath); filtered 200 Hz to 3 kHz, lowered to 0.85x, tempo 0.8x (1.20 s) | Zagzav12 | CC0 |
+| `banana_leaves.wav` | "Bourne woods windy 2020-05-05 0757.mp3" | https://commons.wikimedia.org/wiki/File:Bourne_woods_windy_2020-05-05_0757.mp3 | 17.0 to 33.6 s; filtered 180 Hz to 1.9 kHz (48 dB/oct, removes the birdsong); 15.0 s seamless loop | Robert EA Harvey | CC BY-SA 4.0 |
+
+No tortoise or turtle shell sound, no cow chewing or tearing grass, no cow breath or snort, no bamboo pole on earth
+and no broad leaves in a breeze were found on Commons (2026-11-22). `cow_munch.wav` is a constructed stand-in (leaf
+tears pitched down), `cow_breath.wav` is a horse's breath, and the others are built from the closest real recordings
+above. The director should listen to them before they are cued.
+
+**Suggested credit line for the Episode 5 video description:**
+
+> Sound effects: 'Dragging a hose once', 'Hollow log knocking', 'Rustling leaves', 'Hollow stick hit 2' and 'Land in Gravel' by Gravity Sound (CC BY 4.0); 'Bourne woods windy 2020-05-05' by Robert EA Harvey (CC BY-SA 4.0); via Wikimedia Commons.
+
+Optional (no credit required): tearing mint by hugh (public domain); horse breath by Zagzav12 (CC0). Only the
+recordings whose files are actually cued need to stay in the final credit line.
+
+## Episode 5 music
+
+Added 2026-11-22. Files in `remotion_studio/public/audio/music/ep05/` (production worktree); lengths, levels, loop
+points and uses in that folder's `README.md`; the downloaded originals and the build recipe (`build_ep05_music.py`)
+in its `_source/` folder. 48 kHz stereo 16-bit WAV; loops -24 LUFS (low drone -28), one-shots -20 LUFS, true peak at
+most -3 dBTP. Series key Sa = C (`tanpura_drone_cs.wav` in C# for under Divine_Motif). Not yet placed in code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| `tanpura_drone.wav`, `tanpura_drone_low.wav`, `tanpura_drone_cs.wav` | "Tanpura 10" (Freesound 153262) | https://freesound.org/people/sankalp/sounds/153262/ | 9.00 to 40.82 s; -1 semitone for the C versions; low version low-passed with an octave-down layer | sankalp | CC0 |
+| `play_plucks.wav` | "Harp Tinkly Riff 1.wav" (Freesound 415429, swarmandal) | https://freesound.org/people/luckylittleraven/sounds/415429/ | 0.04 to 7.79 s plus ring; -1 semitone | luckylittleraven | CC0 |
+| `cheeky_pluck_1.wav`, `cheeky_pluck_4.wav` (and `cheeky_plucks.wav`) | "Harp Tinkly Riff 2.wav" (Freesound 415432) | https://freesound.org/people/luckylittleraven/sounds/415432/ | 0.03 to 2.40 s; 7.66 to 9.88 s; -1 semitone | luckylittleraven | CC0 |
+| `cheeky_pluck_2.wav` | "Harp Short 4.wav" (Freesound 415477) | https://freesound.org/people/luckylittleraven/sounds/415477/ | 0.03 to 2.30 s; -1 semitone | luckylittleraven | CC0 |
+| `cheeky_pluck_3.wav` | "Harp Whimsical Riff.wav" (Freesound 415433) | https://freesound.org/people/luckylittleraven/sounds/415433/ | 1.48 to 2.78 s; -1 semitone | luckylittleraven | CC0 |
+| `tabla_soft.wav`, `tabla_run.wav`, `tension_rise.wav`, `drum_hit_low.wav`, `drum_pulse.wav`, `drum_pulse_fast.wav` | "Tabla drums demo.oga" | https://commons.wikimedia.org/wiki/File:Tabla_drums_demo.oga | 47.47 to 57.34 s (loop); 13.47 to 16.15 s (run, roll); bass stroke 106.84 to 108.69 s, pitched down for the hit and pulses | tabladrumsonline | CC BY-SA 3.0 |
+| `tension_rise.wav`, `drum_hit_low.wav`, `drum_pulse.wav`, `drum_pulse_fast.wav` | "DHOL BEAT.wav" | https://commons.wikimedia.org/wiki/File:DHOL_BEAT.wav | 82.00 to 83.30 s (low-passed rumble); 53.20 to 53.36 s (stroke attack) | Johnny Kalsi | CC BY 3.0 |
+| `bansuri_relief.wav`, `bansuri_compassion.wav` | "Indian Folk Classical Flute Music (2).wav" | https://commons.wikimedia.org/wiki/File:Indian_Folk_Classical_Flute_Music_(2).wav | 26.85 to 37.25 s; 2.35 to 10.40 s; -2.92 semitones, high-passed 240 Hz, light noise reduction | MayankSingh33 | CC BY-SA 4.0 |
+
+The Freesound files were fetched as Freesound's public HQ previews (192 kbps OGG of the original), as the WAV
+downloads need a login. Changed versions of CC BY-SA sounds are shared under the same licence. The series music
+(Theme_Intro_Bansuri, Warm_Family_Flute and the other loops in `music/`) is synthesised by `scripts/synthesize_audio.py`
+and needs no credit.
+
+**Suggested credit line for the Episode 5 video description** (keep only what is cued):
+
+> Music recordings: 'Tabla drums demo' by tabladrumsonline (CC BY-SA 3.0); 'DHOL BEAT' by Johnny Kalsi (CC BY 3.0); 'Indian Folk Classical Flute Music (2)' by MayankSingh33 (CC BY-SA 4.0); via Wikimedia Commons. Tanpura by sankalp and swarmandal by luckylittleraven (CC0), via Freesound.

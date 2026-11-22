@@ -12,10 +12,16 @@ child saint Balak Thakur, based on "Sri Sri Balak Brahmachari's Childhood Storie
 ## Episode status (2026-11-22)
 - Episode 1: final (9,705 frames, 6:44.5). Will need a re-render for the shared rig fixes (hands, breathing,
   baby face); the director said "not now" (2026-11-22).
-- Episode 2: final delivered 2026-11-22 (7,307 frames, 5:04.5), with Surendra as the rice-pot father.
-- Episode 3: final delivered 2026-11-22 (3,259 frames, 2:15.8), at the Vedic house; the girls scold Balak (STO-17a, STO-18).
-- Episode 4: final delivered 2026-11-22 (3,335 frames, 2:19.0), at the Vedic house (STO-19); generator scripts/build_ep04_timing.js with pauses, action gaps and chapter breaks.
-- Episodes 5 to 19: scripts, manifests, SRTs and draft voices only.
+- Episode 2: final delivered 2026-11-22 (7,307 frames, 5:04.5), with Surendra as the rice-pot father. A re-render so its
+  outro glimpse of Episode 3 shows the new Balak is paused at 2 of 4 chunks (`render_final_set3.sh`, resumes skipping them).
+- Episode 3: final re-delivered 2026-11-22 (3,259 frames, 2:15.8), at the Vedic house; the girls scold Balak (STO-17a, STO-18);
+  reference-plate Balak (BAL-26a) and cinematic score (AUD-07, `02_Audio/Ep03_Music_Cue_Sheet.md`).
+- Episode 4: final re-delivered 2026-11-22 (3,335 frames, 2:19.0), at the Vedic house (STO-19); generator scripts/build_ep04_timing.js with pauses, action gaps and chapter breaks; reference-plate Balak (BAL-26b) and cinematic score (AUD-07).
+- Episode 5: final delivered 2026-11-22 (2,849 frames, 1:58.8), the Krishnanagar kachari in Ujanchar (STO-20, 20a, 20b): the
+  tortoise (Balak seated) and the cow in the banana grove; reference-plate Balak at six (BAL-26), cinematic score (AUD-07).
+- Episodes 6 to 19: scripts, manifests, SRTs and draft voices only.
+- From Episode 5 on Balak follows the director's reference plates (`01_Series_Bible/Thakur_Reference_Plates/`, BAL-26); every
+  episode gets a music cue sheet with Indian instruments (AUD-07; library in `remotion_studio/public/audio/music/ep05/`).
 Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 
 ## Where things live
