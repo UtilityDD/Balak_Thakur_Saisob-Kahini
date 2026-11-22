@@ -1,0 +1,83 @@
+{
+  "episode": "ep05",
+  "publicSubdir": "ghibli_ep05",
+  "srcSubdir": "episode05",
+  "fullPlates": [
+    { "raw": "sky_kachari_morning.png", "out": "sky_kachari_morning.png", "width": 2560, "height": 1440 },
+    { "raw": "sky_grove_afternoon.png", "out": "sky_grove_afternoon.png", "width": 2560, "height": 1440 },
+    { "raw": "card_intro_bg_sketch.png", "out": "card_intro_bg_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "card_source_bg_sketch.png", "out": "card_source_bg_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "card_outro_padma_sketch.png", "out": "card_outro_padma_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "glimpse_ep06_veranda_sketch.png", "out": "glimpse_ep06_veranda_sketch.png", "width": 2560, "height": 1440 }
+  ],
+  "panoramas": [
+    { "kind": "far_trees", "raw": "far_trees_sketch.png", "out": "far_trees_sketch.png" },
+    { "kind": "courtyard_floor", "raw": "yard_earth_floor_sketch.png", "out": "yard_earth_floor_sketch.png" },
+    { "kind": "courtyard_floor", "raw": "grove_floor_sketch.png", "out": "grove_floor_sketch.png" }
+  ],
+  "cutouts": [
+    {
+      "name": "kachari_front_sketch",
+      "raw": "kachari_front_sketch.png",
+      "cropFrac": [0.11, 0.04, 0.89, 0.96],
+      "targetHeight": 1080,
+      "softShadowBotFrac": 0.08,
+      "holeMinArea": 0,
+      "chokeLightHalo": true
+    },
+    {
+      "name": "mud_house_main_sketch",
+      "raw": "mud_house_main_sketch.png",
+      "cropFrac": [0.10, 0.04, 0.90, 0.96],
+      "targetHeight": 1080,
+      "softShadowBotFrac": 0.08,
+      "holeMinArea": 0,
+      "chokeLightHalo": true
+    },
+    {
+      "name": "mud_house_corner_sketch",
+      "raw": "mud_house_corner_sketch.png",
+      "cropFrac": [0.03, 0.03, 0.97, 0.95],
+      "targetHeight": 1160,
+      "softShadowBotFrac": 0.12,
+      "holeMinArea": 0,
+      "chokeLightHalo": true
+    },
+    {
+      "name": "kachari_back_wall_sketch",
+      "raw": "kachari_back_wall_sketch.png",
+      "cropFrac": [0.00, 0.04, 0.915, 0.96],
+      "targetHeight": 1080,
+      "softShadowBotFrac": 0.06,
+      "holeMinArea": 0,
+      "chokeLightHalo": true
+    },
+    {
+      "name": "tree_mango_sketch",
+      "raw": "tree_mango_sketch.png",
+      "targetHeight": 1240,
+      "softShadowBotFrac": 0.16,
+      "holeMinArea": 45,
+      "holeMaxYFrac": 0.80,
+      "chokeLightHalo": true
+    },
+    {
+      "name": "banana_clump_sketch",
+      "raw": "banana_clump_sketch.png",
+      "targetHeight": 1240,
+      "softShadowBotFrac": 0.14,
+      "holeMinArea": 45,
+      "holeMaxYFrac": 0.88,
+      "chokeLightHalo": true
+    }
+  ],
+  "propsSheet": {
+    "raw": "props_sheet_ep05.png",
+    "items": [
+      { "name": "prop_tipped_jhanka", "quadrant": "top_left", "targetHeight": 820, "softShadowBotFrac": 0.18, "holeMinArea": 0, "chokeLightHalo": true },
+      { "name": "prop_bamboo_fence", "quadrant": "top_right", "targetHeight": 820, "softShadowBotFrac": 0.08, "holeMinArea": 40, "holeMaxYFrac": 0.92, "chokeLightHalo": true },
+      { "name": "prop_clerk_desk", "quadrant": "bottom_left", "targetHeight": 768, "softShadowBotFrac": 0.14, "holeMinArea": 0, "chokeLightHalo": true },
+      { "name": "prop_khadam_sandals", "quadrant": "bottom_right", "targetHeight": 640, "softShadowBotFrac": 0.16, "holeMinArea": 0, "chokeLightHalo": true }
+    ]
+  }
+}

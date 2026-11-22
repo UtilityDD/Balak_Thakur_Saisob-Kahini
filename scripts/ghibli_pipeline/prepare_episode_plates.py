@@ -42,6 +42,79 @@ from prepare_ghibli_plates import (
     slice_props_sheet,
     trim_rgba,
 )
+import numpy as np
+
+
+def slice_custom_props_sheet(
+    raw_path: Path,
+    out_dir: Path,
+    items: list[dict] | None = None,
+) -> dict[str, tuple[int, int, float, float]]:
+    """Slice a 2x2 prop sheet with customizable quadrant names, heights, and hole-removal settings."""
+    if not items:
+        return slice_props_sheet(raw_path, out_dir)
+
+    src = Image.open(raw_path).convert("RGBA")
+    arr = np.asarray(src)
+    h, w = arr.shape[:2]
+
+    rgb = arr[:, :, :3].astype(np.int16)
+    non_white = ((rgb.min(axis=2) < 235) | ((rgb.max(axis=2) - rgb.min(axis=2)) > 20)).astype(np.float32)
+
+    y_lo, y_hi = int(h * 0.40), int(h * 0.60)
+    x_lo, x_hi = int(w * 0.40), int(w * 0.60)
+    split_y = y_lo + int(np.argmin(non_white[y_lo:y_hi, :].sum(axis=1)))
+    split_x = x_lo + int(np.argmin(non_white[:, x_lo:x_hi].sum(axis=0)))
+
+    quad_boxes = {
+        "top_left": (0, 0, split_x, split_y),
+        "top_right": (split_x, 0, w, split_y),
+        "bottom_left": (0, split_y, split_x, h),
+        "bottom_right": (split_x, split_y, w, h),
+    }
+    default_order = ["top_left", "top_right", "bottom_left", "bottom_right"]
+
+    results: dict[str, tuple[int, int, float, float]] = {}
+    for idx, item in enumerate(items):
+        name = item["name"]
+        quad = item.get("quadrant", default_order[idx % 4])
+        box = quad_boxes[quad]
+        target_h = int(item.get("targetHeight", 768))
+        hole_min_area = int(item.get("holeMinArea", 0))
+        hole_max_y_frac = float(item.get("holeMaxYFrac", 0.90))
+        soft_shadow = float(item.get("softShadowBotFrac", 0.14))
+
+        crop = src.crop(box)
+        rgba = extract_border_alpha(
+            crop,
+            mode="all_edges",
+            white_min=228,
+            sat_max=28,
+            feather_px=1.1,
+            soft_shadow_bot_frac=soft_shadow,
+            choke_light_halo=bool(item.get("chokeLightHalo", True)),
+        )
+        if hole_min_area > 0:
+            rgba = remove_enclosed_holes(
+                rgba,
+                min_area=hole_min_area,
+                max_y_frac=hole_max_y_frac,
+                white_min=int(item.get("holeWhiteMin", 228)),
+                sat_max=int(item.get("holeSatMax", 24)),
+            )
+        trimmed = trim_rgba(rgba, pad=12)
+        tw = max(64, round(trimmed.width * (target_h / trimmed.height)))
+        final = resize_sharp(trimmed, (tw, target_h), sharpen=True)
+        out_path = out_dir / f"{name}.png"
+        final.save(out_path, optimize=True)
+
+        f_arr = np.asarray(final)
+        ys_all, xs_all = np.where(f_arr[:, :, 3] > 60)
+        ax = float(xs_all.mean() / tw) if len(xs_all) else 0.5
+        ay = float((ys_all.max() + 1) / target_h) if len(ys_all) else 0.96
+        results[name] = (tw, target_h, ax, ay)
+        print(f"[OK] Prop '{name}' ({quad}) sliced & saved: {out_path} ({tw}x{target_h})")
+    return results
 
 
 def write_episode_anchors_ts(out_ts: Path, meta: dict[str, tuple[int, int, float, float]]) -> None:
@@ -100,8 +173,17 @@ def run_from_manifest(manifest_path: Path) -> None:
         name = cut["name"]
         raw_p = raw_dir / cut.get("raw", f"{name}.png")
         out_p = img_dir / f"{name}.png"
+        src_im = Image.open(raw_p).convert("RGBA")
+        if "cropFrac" in cut:
+            cf = cut["cropFrac"]  # [x0, y0, x1, y1] in 0..1
+            sw, sh = src_im.size
+            cropped_tmp = raw_dir / f"_tmp_crop_{name}.png"
+            src_im.crop((int(sw * cf[0]), int(sh * cf[1]), int(sw * cf[2]), int(sh * cf[3]))).save(cropped_tmp)
+            use_raw = cropped_tmp
+        else:
+            use_raw = raw_p
         meta[name] = process_cutout(
-            raw_p,
+            use_raw,
             out_p,
             target_height=int(cut.get("targetHeight", 1200)),
             soft_shadow_bot_frac=float(cut.get("softShadowBotFrac", 0.20)),
@@ -109,9 +191,15 @@ def run_from_manifest(manifest_path: Path) -> None:
             hole_max_y_frac=float(cut.get("holeMaxYFrac", 0.82)),
             choke_light_halo=bool(cut.get("chokeLightHalo", True)),
         )
+        if "cropFrac" in cut and use_raw.exists():
+            use_raw.unlink(missing_ok=True)
 
     if "propsSheet" in cfg:
-        meta.update(slice_props_sheet(raw_dir / cfg["propsSheet"], img_dir))
+        ps = cfg["propsSheet"]
+        if isinstance(ps, dict):
+            meta.update(slice_custom_props_sheet(raw_dir / ps["raw"], img_dir, ps.get("items")))
+        else:
+            meta.update(slice_props_sheet(raw_dir / ps, img_dir))
 
     if meta:
         write_episode_anchors_ts(anchors_ts, meta)

@@ -9,7 +9,9 @@
 
 import React from "react";
 import { EP03_TOTAL_FRAMES } from "../episode03/timing";
+import { EP05_TOTAL_FRAMES } from "../episode05/timing";
 import { Episode03Ghibli } from "./episode03/Episode03Ghibli";
+import { Episode05Ghibli } from "./episode05/Episode05Ghibli";
 
 export interface GhibliEpisodeSpec {
   /** Remotion Composition ID (e.g. "Episode03GhibliTest"). */
@@ -31,6 +33,15 @@ export const GHIBLI_EPISODES: readonly GhibliEpisodeSpec[] = [
     slug: "ep03",
     component: Episode03Ghibli,
     durationInFrames: EP03_TOTAL_FRAMES,
+    fps: 24,
+    width: 1920,
+    height: 1080,
+  },
+  {
+    id: "Episode05GhibliTest",
+    slug: "ep05",
+    component: Episode05Ghibli,
+    durationInFrames: EP05_TOTAL_FRAMES,
     fps: 24,
     width: 1920,
     height: 1080,
