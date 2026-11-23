@@ -32,6 +32,12 @@ See [../CLAUDE.md](../CLAUDE.md) for the rules and commands.
 | `asset_taxonomy_and_library_plan.md` | Shared asset folder taxonomy and naming convention |
 | `production_rules.md`, `divine_visual_language.md` | Only on the worktree branch so far: binding production rules and Balak's divine visual language |
 
+### `05_Rework/`
+| Path | Purpose |
+|---|---|
+| `README.md` | Index of rework projects that change shared assets across the series, and the layout of a project folder |
+| `Thakur_Painted_Look_Library/PLAN.md` | Plan (not started) for a reusable hand-painted, more alive look for Balak, tested on him first; `references/`, `qa/`, `reviews/` beside it |
+
 ### `02_Shared_Assets/`
 | Path | Purpose |
 |---|---|

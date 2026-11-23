@@ -157,3 +157,74 @@ and needs no credit.
 **Suggested credit line for the Episode 5 video description** (keep only what is cued):
 
 > Music recordings: 'Tabla drums demo' by tabladrumsonline (CC BY-SA 3.0); 'DHOL BEAT' by Johnny Kalsi (CC BY 3.0); 'Indian Folk Classical Flute Music (2)' by MayankSingh33 (CC BY-SA 4.0); via Wikimedia Commons. Tanpura by sankalp and swarmandal by luckylittleraven (CC0), via Freesound.
+
+---
+
+## Episode 6
+
+Added 2026-11-22 (preparation pass; the Episode 6 plan is still a draft). Files in
+`remotion_studio/public/audio/sfx/ep06/` (production worktree); trims, filters, levels, suggested volumes and rejected
+candidates in that folder's `README.md`; the downloaded originals and the build recipe (`build_ep06_sfx.py`) in its
+`_source/` folder. 48 kHz mono 16-bit WAV, sample peak at most -6 dBFS; one-shots -25 to -35 LUFS, the loop -27 LUFS.
+Freesound files were fetched as Freesound's public HQ previews (192 kbps OGG of the original). Not yet placed in code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| `khadam_earth.wav`, `khadam_step_1.wav` to `khadam_step_3.wav` | "Het rustig lopen van een man op klompen - SoundCloud - Beeld en Geluid.ogg" (a man walking in Dutch wooden clogs) | https://commons.wikimedia.org/wiki/File:Het_rustig_lopen_van_een_man_op_klompen_-_SoundCloud_-_Beeld_en_Geluid.ogg | 8 single steps (8.19 to 14.98 s) re-spaced at about 0.66 s over the recording's background from 22.6 s; singles at 8.81, 9.45, 12.49 s; filtered 180 Hz to 2.4 kHz, 0.92x | Beeld en Geluid | CC BY-SA 3.0 |
+| `khadam_floor.wav`, `khadam_floor_step_1.wav`, `khadam_floor_step_2.wav` | "JK Clogs on Concrete.wav" (Freesound 85110) | https://freesound.org/people/cmusounddesign/sounds/85110/ | 0.38 to 4.70 s (8 steps); singles at 1.04 and 2.13 s; filtered 120 Hz to 5 kHz, 0.95x | cmusounddesign | CC BY 4.0 |
+| `child_sniff.wav`, `child_sniff_1.wav` | "Sniffles.wav" (Freesound 467203) | https://freesound.org/people/ThunderQuads/sounds/467203/ | 0.40 to 0.88 s and 3.27 to 3.75 s; filtered 250 Hz to 9 kHz, raised 1.12x | ThunderQuads | CC0 |
+| `children_far_loop.wav` | "209901 foongaz city-playground-boxhagenerplatz-berlin.wav" (from Freesound 209901; via Commons' MP3 transcode) | https://commons.wikimedia.org/wiki/File:209901_foongaz_city-playground-boxhagenerplatz-berlin.wav | 16.0 to 48.5 s; filtered 350 Hz to 2.2 kHz (no intelligible words), compressed; 30.0 s seamless loop | foongaz | CC0 |
+| `ball_thump.wav` | "Big ball bounce" (Freesound 873899) | https://freesound.org/people/cb9382/sounds/873899/ | bounces at 2.15, 3.48, 0.74 s, low-passed 700 Hz | cb9382 | CC0 |
+| `marbles_click.wav` | "FX_MARBLES_IN_HAND_MOVING.wav" (Freesound 238889) | https://freesound.org/people/Olichite/sounds/238889/ | 22.40 to 23.40 s | Olichite | CC0 |
+| `marbles_click.wav` | "FX_MARBLES_BAG_DROP_ON_CARPET.wav" (Freesound 238887) | https://freesound.org/people/Olichite/sounds/238887/ | 9.50 to 10.25 s (at 0.92 s in the file) | Olichite | CC0 |
+| `coins_palm.wav` | "Coins 1 (Gravity Sound).mp3" | https://commons.wikimedia.org/wiki/File:Coins_1_(Gravity_Sound).mp3 | 0.08 to 0.68 s (two coins), high-passed 300 Hz | Gravity Sound | CC BY 4.0 |
+| `paper_twist.wav` | "Paper Bag" (Freesound 220941) | https://freesound.org/people/nebulousflynn/sounds/220941/ | 32.85 to 34.75 s, high-passed 200 Hz | nebulousflynn | CC BY 4.0 |
+| `jar_lid.wav`, `jar_lid_up.wav`, `jar_lid_down.wav` | "cookie jar large glass with wood lid open close.flac" (Freesound 453847) | https://freesound.org/people/kyles/sounds/453847/ | lift 0.28 to 1.08 s; set-down 8.85 to 9.45 s | kyles | CC0 |
+
+No khadam or Japanese geta recording exists on Commons or Freesound (2026-11-22); Dutch wooden clogs (klompen) are
+the closest real sound. No small child's sniff was found (`child_sniff` is an adult's cold sniffle raised in pitch),
+no paper twist as such (a paper bag crinkled shut) and no marbles on cloth (a bag of marbles on carpet). The director
+should listen to the khadam and the sniff before they are cued. Changed versions of CC BY-SA sounds are shared under
+the same licence.
+
+**Suggested credit line for the Episode 6 video description** (keep only what is cued):
+
+> Sound effects: 'Het rustig lopen van een man op klompen' by Beeld en Geluid (CC BY-SA 3.0) and 'Coins 1' by Gravity Sound (CC BY 4.0), via Wikimedia Commons; 'JK Clogs on Concrete' by cmusounddesign and 'Paper Bag' by nebulousflynn (CC BY 4.0), via Freesound.
+
+Optional (no credit required): playground by foongaz, sniffles by ThunderQuads, big ball bounce by cb9382, marbles by
+Olichite, cookie jar by kyles (all CC0).
+
+### Episode 6 immersive re-cut sound effects (STO-22a)
+
+Added 2026-11-23 for the re-cut's wordless moments (hens, crow, sparrow, goat, the off-screen dog, the plate and slate,
+the heartbeat). Same folder, format and method as above; details, onsets and suggested volumes in the folder's
+`README.md` ("Immersive re-cut"), originals and the recipe (`build_ep06_recut_sfx.py`) in `_source/`. Not yet placed in
+code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| `hens_cluck_loop.wav` | 'Two Chickens "Talking"' (Freesound 253649) | https://freesound.org/people/SquaredGlasses/sounds/253649/ | call phrases 1.35 to 17.30 s re-sequenced (two re-used at 1.06x and 0.95x); 24 s seamless loop | SquaredGlasses | CC BY 3.0 |
+| `hens_cluck_loop.wav` | "Chicken 01.wav" (a domestic chicken, Kerala, India) | https://commons.wikimedia.org/wiki/File:Chicken_01.wav | 0.30 to 9.30 s, tiled under the above at -7 dB | Ganesh Mohan T | CC BY-SA 4.0 |
+| `hens_scatter.wav` | "Hens leaving coop.ogg" | https://commons.wikimedia.org/wiki/File:Hens_leaving_coop.ogg | wing flurries 6.80 to 7.55 s and 5.40 to 6.05 s | alys (PDSounds) | Public domain |
+| `hens_scatter.wav` | "excited chickens" (Freesound 178096) | https://freesound.org/people/Setuniman/sounds/178096/ | cackles 0.85 to 1.33 s and 8.04 to 8.56 s | Setuniman | CC BY 4.0 |
+| `crow_caw.wav`, `crow_takeoff.wav` | "Corvus splendens.ogg" (house crows, India) | https://commons.wikimedia.org/wiki/File:Corvus_splendens.ogg | 1.30 to 2.72 s (two calls); the call at 2.72 to 3.24 s | Vladimir Yu. Arkhipov | CC BY-SA 3.0 |
+| `crow_takeoff.wav` | "Pigeon, Flies Away, Flapping Wings" (Freesound 689998) | https://freesound.org/people/Kinoton/sounds/689998/ | 0.35 to 2.84 s, slowed to 0.86x | Kinoton | CC0 |
+| `sparrow_chirp.wav` | "House Sparrow.ogg" (India) | https://commons.wikimedia.org/wiki/File:House_Sparrow.ogg | 9.85 to 11.75 s (three chirps) | Gypsypkd | Public domain |
+| `goat_bleat.wav` | "Single Goat Bleating 2x" (Freesound 581240) | https://freesound.org/people/Kinoton/sounds/581240/ | first bleat, 0.22 to 1.42 s | Kinoton | CC0 |
+| `dog_bark.wav` | "Morning Dog barking far2" (Freesound 723812; a rural village) | https://freesound.org/people/Balaram_Mahalder/sounds/723812/ | 16.40 to 18.10 s (two far barks), filtered 300 Hz to 4 kHz | Balaram_Mahalder | CC0 |
+| `plate_clink.wav`, `plate_clink_1.wav` | "small brass sound bowl strike and ring - 3" (Freesound 762646) | https://freesound.org/people/FOSSarts/sounds/762646/ | the strike at 0.26 s, ring damped (62 and 70 dB/s) into two plate taps | FOSSarts | CC0 |
+| `slate_tap.wav` | "Brick pick up and put down close mic.aiff" (Freesound 483409) | https://freesound.org/people/vintage2005/sounds/483409/ | the set-down at 7.33 to 7.78 s | vintage2005 | CC0 |
+| `slate_tap.wav` | "tap_on_chalkboard.wav" (Freesound 258092) | https://freesound.org/people/joedeshon/sounds/258092/ | the whole tap, twice | joedeshon | CC0 |
+| `heartbeat_soft.wav` | "Athletic bradycardia wav.wav" (a resting heart, stethoscope) | https://commons.wikimedia.org/wiki/File:Athletic_bradycardia_wav.wav | beats at 1.88, 3.31, 4.73, 6.10 s re-spaced to 60 bpm, low-passed 500 Hz | Athletearrhythmia | CC0 |
+
+Stand-ins: the crow's wings are a pigeon's (slowed), the slate set-down is a brick on a hard counter with chalk taps
+for the slate pencil, the brass-plate tap is a small brass bowl with its ring damped. No crow take-off, thali or
+writing-slate recording was found on Commons or Freesound (2026-11-23).
+
+**Suggested credit line, re-cut additions** (keep only what is cued):
+
+> 'Chicken 01' by Ganesh Mohan T (CC BY-SA 4.0) and 'Corvus splendens' by Vladimir Yu. Arkhipov (CC BY-SA 3.0), via Wikimedia Commons; 'Two Chickens "Talking"' by SquaredGlasses (CC BY 3.0) and 'excited chickens' by Setuniman (CC BY 4.0), via Freesound.
+
+Optional (no credit required): hens leaving coop by alys and house sparrow by Gypsypkd (public domain); pigeon wings and
+goat by Kinoton, village dog by Balaram_Mahalder, brass bowl by FOSSarts, brick by vintage2005, chalk tap by joedeshon,
+heartbeat by Athletearrhythmia (all CC0).

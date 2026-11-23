@@ -64,7 +64,7 @@ See [../docs/REPO_MAP.md](../docs/REPO_MAP.md).
 | 3 | `Episode_03_Five_Year_Old_Wisdom` | 3,259 frames, 2:15.8 | `Episode_03_Five_Year_Old_Wisdom.mp4`, 2026-11-22 re-delivered (3,259 frames, -16.2 LUFS), with `_bn_final.srt` | None. Reference-plate Balak (BAL-26a), visible feet for the flowers, cinematic score (AUD-07) |
 | 4 | `Episode_04_Idols_and_Coconut_Water` | 3,335 frames, 2:19.0 | `Episode_04_Idols_and_Coconut_Water.mp4`, 2026-11-22 re-delivered (3,335 frames, -16.3 LUFS), with `_bn_final.srt` | None. Reference-plate Balak (BAL-26b), cinematic score (AUD-07) |
 | 5 | `Episode_05_Tortoise_and_Gentle_Cow` | 2,849 frames, 1:58.8 | `Episode_05_Tortoise_and_Gentle_Cow.mp4`, 2026-11-22 final (2,849 frames, -16.7 LUFS), with `_bn_final.srt` | None. STO-20/20a/20b, BAL-26, AUD-07 |
-| 6 | `Episode_06_Rescuing_Brother_and_Playmates` | | None | Script stage |
+| 6 | `Episode_06_Rescuing_Brother_and_Playmates` | 2,978 frames, 2:04.1 | `Episode_06_Rescuing_Brother_and_Playmates.mp4`, 2026-11-23 final (2,978 frames, -16.4 LUFS), with `_bn_final.srt` | Immersive re-cut planned as the STO-22 pilot (`Ep06_Immersive_Recut_PLAN.md`, awaiting approval; about 2:17.6). STO-21, CHR-08/08a, AUD-07/08; the khadam is a clog recording stand-in (no free khadam recording exists) |
 | 7 | `Episode_07_Labababus_Pathshala` | | None | Script stage |
 | 8 | `Episode_08_Ananda_Master_and_Mothers_Heart` | | None | Script stage |
 | 9 | `Episode_09_Gayali_Mandra_Haat` | | None | Script stage |

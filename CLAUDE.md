@@ -19,7 +19,9 @@ child saint Balak Thakur, based on "Sri Sri Balak Brahmachari's Childhood Storie
 - Episode 4: final re-delivered 2026-11-22 (3,335 frames, 2:19.0), at the Vedic house (STO-19); generator scripts/build_ep04_timing.js with pauses, action gaps and chapter breaks; reference-plate Balak (BAL-26b) and cinematic score (AUD-07).
 - Episode 5: final delivered 2026-11-22 (2,849 frames, 1:58.8), the Krishnanagar kachari in Ujanchar (STO-20, 20a, 20b): the
   tortoise (Balak seated) and the cow in the banana grove; reference-plate Balak at six (BAL-26), cinematic score (AUD-07).
-- Episodes 6 to 19: scripts, manifests, SRTs and draft voices only.
+- Episode 6: final delivered 2026-11-23 (2,978 frames, 2:04.1, -16.4 LUFS) at the Ujanchar house and a new Ujanchar playing
+  field (STO-21, CHR-08/08a, AUD-08): the elder brother saved, the treasurer and the ten rupees.
+- Episodes 7 to 19: scripts, manifests, SRTs and draft voices only. Planned rework: `05_Rework/` (Balak painted-look library, not started).
 - From Episode 5 on Balak follows the director's reference plates (`01_Series_Bible/Thakur_Reference_Plates/`, BAL-26); every
   episode gets a music cue sheet with Indian instruments (AUD-07; library in `remotion_studio/public/audio/music/ep05/`).
 Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
@@ -80,7 +82,8 @@ Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 12. Commit and push only when the director asks; end commit messages with the attribution line given in the session.
 13. Record decisions in the same session (see the end of this file).
 
-Other standing rules, in brief (details in the decision files): visuals follow the narration literally; reuse
+Other standing rules, in brief (details in the decision files): faithful story, cinematic telling (STO-22: every narrated
+event shown, plus marked wordless moments around it; no new lines, no changed facts); reuse
 established sets (below); font Baloo Da 2 (`BN_FONT`, `src/cinematic/fonts.ts`) everywhere; Episode 1 intro, subtitle
 and outro styles are the template, the title page shows no captions, the outro shows the next episode as a soft
 boxless glimpse (TTL-10a); eased pose changes, overlapping action, no frozen pose over about 20 frames outside a
