@@ -1,4 +1,5 @@
 import React, { useId } from "react";
+import { useSetSkin } from "./SetSkin";
 import { clamp, lerp, noise1, safeId } from "../core/anim";
 import { Cam, Grade, Layer } from "../core/Stage";
 import { Bokeh } from "../fx/Fx";
@@ -1647,7 +1648,14 @@ export interface VillageBackdropProps {
   mid?: React.ReactNode;
 }
 
-export const VillageBackdrop: React.FC<VillageBackdropProps> = ({ view, time = "lateMorning", f, cam, calm = 1, far, yard, mid }) => (
+export const VillageBackdrop: React.FC<VillageBackdropProps> = ({ view, time = "lateMorning", f, cam, calm = 1, far, yard, mid }) => {
+  // opt-in painted skin (SetSkin.tsx); with no provider this is skipped and the vector backdrop renders as before
+  const skinned = useSetSkin()?.villageBackdrop?.({ view, time, f, cam, calm, far, yard, mid });
+  if (skinned !== undefined) return <>{skinned}</>;
+  return <VillageBackdropVector view={view} time={time} f={f} cam={cam} calm={calm} far={far} yard={yard} mid={mid} />;
+};
+
+const VillageBackdropVector: React.FC<VillageBackdropProps> = ({ view, time = "lateMorning", f, cam, calm = 1, far, yard, mid }) => (
   <div style={{ position: "absolute", inset: 0, filter: ujancharBgFilter(calm, "morning") }}>
     <VillageSkyLayer time={time} f={f} cam={cam} calm={calm} />
     <VillageJungleLayer time={time} f={f} cam={cam} calm={calm} />
@@ -2018,7 +2026,28 @@ const LaneFloor: React.FC<{ part: Part; time: VillageTime; f: number; crossing?:
  * the stall (with `seller`), the shirt (with `inPocket`), the clothes line, `under` and the characters (`children`).
  */
 export const VillageFloorLayer: React.FC<VillageFloorProps> = ({ view, time = "lateMorning", f, calm = 1, seller, lozengeJar = true, doorway, inPocket, shirt = true, log = false, logShadows, crossing, under, children }) => {
-  const part = (pp: Part) =>
+  const skin = useSetSkin();
+  const part = (pp: Part) => {
+    const original = partVector(pp);
+    // opt-in painted skin (SetSkin.tsx); with no provider the vector part renders as before
+    const skinned = skin?.villagePart?.({
+      view,
+      part: pp,
+      time,
+      f,
+      original,
+      seller,
+      lozengeJar,
+      log,
+      logShadows,
+      crossing,
+      doorway,
+      inPocket,
+      shirt,
+    });
+    return skinned !== undefined ? skinned : original;
+  };
+  const partVector = (pp: Part) =>
     view === "field" ? (
       <FieldFloor part={pp} time={time} f={f} seller={seller} lozengeJar={lozengeJar} log={log} logShadows={logShadows} />
     ) : view === "lane" ? (
@@ -2026,16 +2055,17 @@ export const VillageFloorLayer: React.FC<VillageFloorProps> = ({ view, time = "l
     ) : (
       <HouseFloor part={pp} time={time} f={f} doorway={doorway} inPocket={inPocket} shirt={shirt} />
     );
+  const filterTime = time === "sunset" ? "dawn" : "morning";
   return (
     <>
       <Layer depth={1}>{part("ground")}</Layer>
-      <div style={{ position: "absolute", inset: 0, filter: ujancharBgFilter(0.5 * calm, "morning") }}>
+      <div style={{ position: "absolute", inset: 0, filter: ujancharBgFilter(0.5 * calm, filterTime) }}>
         <Layer depth={1}>{part("set")}</Layer>
       </div>
       <Layer depth={1}>
         {part("near")}
         {under}
-        {children}
+        {skin?.inkCharacters ? <g filter="url(#ghibli-char-ink)">{children}</g> : children}
       </Layer>
     </>
   );

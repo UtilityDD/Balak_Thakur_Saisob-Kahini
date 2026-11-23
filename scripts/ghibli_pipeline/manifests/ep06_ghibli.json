@@ -1,0 +1,92 @@
+{
+  "episode": "ep06",
+  "publicSubdir": "ghibli_ep06",
+  "srcSubdir": "episode06",
+  "_note": "Gemini batch 2026-11-23 (1376x768 sources), pre-cleaned by gemini_preclean.py. Back plates are used as full plates sized 1.5x the frame so the camera can push and pan inside them. 2026-11-23: cutouts re-made from the Real-ESRGAN x4 sources at twice the height.",
+  "fullPlates": [],
+  "cutouts": [
+    {
+      "name": "friend_house_front",
+      "targetHeight": 2400,
+      "softShadowBotFrac": 0.1,
+      "holeMinArea": 60,
+      "holeMaxYFrac": 0.92,
+      "raw": "../raw_x4/friend_house_front.png"
+    },
+    {
+      "name": "sweet_stall",
+      "targetHeight": 2400,
+      "softShadowBotFrac": 0.12,
+      "holeMinArea": 400,
+      "holeMaxYFrac": 0.62,
+      "raw": "../raw_x4/sweet_stall.png"
+    },
+    {
+      "name": "haystack_a",
+      "targetHeight": 2000,
+      "softShadowBotFrac": 0.2,
+      "holeMinArea": 0,
+      "raw": "../raw_x4/haystack_a.png"
+    },
+    {
+      "name": "haystack_b",
+      "targetHeight": 2000,
+      "softShadowBotFrac": 0.2,
+      "holeMinArea": 0,
+      "raw": "../raw_x4/haystack_b.png"
+    },
+    {
+      "name": "fallen_log",
+      "targetHeight": 1120,
+      "softShadowBotFrac": 0.12,
+      "holeMinArea": 0,
+      "raw": "../raw_x4/fallen_log.png"
+    },
+    {
+      "name": "tree_banyan_field",
+      "targetHeight": 2800,
+      "softShadowBotFrac": 0.1,
+      "holeMinArea": 120,
+      "holeMaxYFrac": 0.8,
+      "raw": "../raw_x4/tree_banyan_field.png"
+    },
+    {
+      "name": "bamboo_clump",
+      "targetHeight": 2800,
+      "softShadowBotFrac": 0.1,
+      "holeMinArea": 20,
+      "holeMaxYFrac": 0.97,
+      "raw": "../raw_x4/bamboo_clump.png"
+    },
+    {
+      "name": "prop_brass_thali",
+      "targetHeight": 600,
+      "raw": "../raw_x4/prop_brass_thali.png"
+    },
+    {
+      "name": "prop_clay_kolshi",
+      "targetHeight": 680,
+      "raw": "../raw_x4/prop_clay_kolshi.png"
+    },
+    {
+      "name": "prop_slate",
+      "targetHeight": 520,
+      "raw": "../raw_x4/prop_slate.png"
+    },
+    {
+      "name": "prop_rice_sack",
+      "targetHeight": 760,
+      "raw": "../raw_x4/prop_rice_sack.png"
+    },
+    {
+      "name": "prop_low_stool",
+      "targetHeight": 600,
+      "raw": "../raw_x4/prop_low_stool.png"
+    },
+    {
+      "name": "prop_bamboo_basket",
+      "targetHeight": 640,
+      "raw": "../raw_x4/prop_bamboo_basket.png"
+    }
+  ]
+}

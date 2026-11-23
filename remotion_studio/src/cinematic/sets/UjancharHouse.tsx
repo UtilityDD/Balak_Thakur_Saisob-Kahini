@@ -1,4 +1,5 @@
 import React from "react";
+import { useSetSkin } from "./SetSkin";
 import { clamp, lerp, noise1 } from "../core/anim";
 import { Cam, Grade, Layer } from "../core/Stage";
 import { Bokeh, Flame, GlowDefs } from "../fx/Fx";
@@ -757,28 +758,32 @@ export interface UjancharBackdropProps {
 }
 
 /** Sky, jungle, trees, the back of the courtyard and the optional cow, inside the CAM-11 background grade. */
-export const UjancharBackdrop: React.FC<UjancharBackdropProps> = ({ f, time = "morning", cam, calm = 1, fenceJaba = true, cow = false, veranda, yard }) => (
-  <div style={{ position: "absolute", inset: 0, filter: bgFilter(calm, time) }}>
-    <UjancharSkyLayer f={f} time={time} cam={cam} calm={calm} />
-    <UjancharJungleLayer f={f} time={time} cam={cam} calm={calm} />
-    <UjancharTreesLayer f={f} time={time} cam={cam} calm={calm} />
-    <UjancharYardLayer f={f} time={time} cam={cam} calm={calm} fenceJaba={fenceJaba} veranda={veranda} yard={yard} />
-    <UjancharCowLayer f={f} cam={cam} calm={calm} cow={cow} />
-    {time === "dawn" && (
-      // the gold of the low sun over the far planes, strongest on the sun side (right)
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background: "radial-gradient(ellipse 60% 75% at 92% 36%, rgba(255,196,110,0.6) 0%, rgba(255,170,90,0.16) 50%, rgba(0,0,0,0) 100%)",
-          mixBlendMode: "screen",
-          opacity: 0.5,
-        }}
-      />
-    )}
-  </div>
-);
+export const UjancharBackdrop: React.FC<UjancharBackdropProps> = ({ f, time = "morning", cam, calm = 1, fenceJaba = true, cow = false, veranda, yard }) => {
+  const skinned = useSetSkin()?.ujancharBackdrop?.({ f, time, cam, calm, fenceJaba, cow, veranda, yard });
+  if (skinned !== undefined) return <>{skinned}</>;
+  return (
+    <div style={{ position: "absolute", inset: 0, filter: bgFilter(calm, time) }}>
+      <UjancharSkyLayer f={f} time={time} cam={cam} calm={calm} />
+      <UjancharJungleLayer f={f} time={time} cam={cam} calm={calm} />
+      <UjancharTreesLayer f={f} time={time} cam={cam} calm={calm} />
+      <UjancharYardLayer f={f} time={time} cam={cam} calm={calm} fenceJaba={fenceJaba} veranda={veranda} yard={yard} />
+      <UjancharCowLayer f={f} cam={cam} calm={calm} cow={cow} />
+      {time === "dawn" && (
+        // the gold of the low sun over the far planes, strongest on the sun side (right)
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background: "radial-gradient(ellipse 60% 75% at 92% 36%, rgba(255,196,110,0.6) 0%, rgba(255,170,90,0.16) 50%, rgba(0,0,0,0) 100%)",
+            mixBlendMode: "screen",
+            opacity: 0.5,
+          }}
+        />
+      )}
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /* Tulsi mancha and hibiscus shrub (floor-plane pieces)                  */
@@ -1020,9 +1025,10 @@ export interface UjancharFloorProps {
 }
 
 export const UjancharFloorLayer: React.FC<UjancharFloorProps> = ({ f, time = "morning", tulsi = false, jaba = [], nearVeranda = true, edgeBushes = true, under, children }) => {
+  const skin = useSetSkin();
   const dawn = time === "dawn";
   const t = tulsi ? { ...TULSI_DEFAULT, ...(tulsi === true ? {} : tulsi) } : null;
-  return (
+  const original = (
     <Layer depth={1}>
       <MistDefs />
       <defs>
@@ -1059,9 +1065,11 @@ export const UjancharFloorLayer: React.FC<UjancharFloorProps> = ({ f, time = "mo
         <JabaShrub key={`jaba${i}`} x={p.x} y={p.y ?? 892} s={p.s ?? 1} f={f} seed={p.seed ?? i + 1} hide={p.hide} />
       ))}
       {t && <UjancharTulsiMancha x={t.x} y={t.y} s={t.s} f={f} lamp={t.lamp ?? "unlit"} />}
-      {children}
+      {skin?.inkCharacters ? <g filter="url(#ghibli-char-ink)">{children}</g> : children}
     </Layer>
   );
+  const skinned = skin?.ujancharFloor?.({ f, time, under, children, original });
+  return skinned !== undefined ? <>{skinned}</> : original;
 };
 
 /* ------------------------------------------------------------------ */
