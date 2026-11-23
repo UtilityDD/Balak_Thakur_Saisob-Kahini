@@ -14,6 +14,12 @@ import { TortoiseQA } from "./episode05/qa/TortoiseQA";
 import { CowQA } from "./episode05/qa/CowQA";
 import { KachariSetQA } from "./episode05/qa/KachariSetQA";
 import { Cast05QA } from "./episode05/qa/Cast05QA";
+import { VillageFieldQA } from "./episode06/qa/VillageFieldQA";
+import { StandingChild6QA } from "./episode06/qa/StandingChild6QA";
+import { SeatedChild6QA } from "./episode06/qa/SeatedChild6QA";
+import { Cast06QA } from "./episode06/qa/Cast06QA";
+import { Props06QA } from "./episode06/qa/Props06QA";
+import { VillageLifeQA } from "./episode06/qa/VillageLifeQA";
 import { SCENE02, Scene02Demo } from "./cinematic/Scene02Demo";
 import { SCENE03, Scene03Demo } from "./cinematic/scenes/Scene03Arrival";
 import { SCENE04, Scene04Demo } from "./cinematic/scenes/Scene04Ulu";
@@ -26,19 +32,25 @@ import { SCENE08, Scene08Demo } from "./cinematic/scenes/Scene08Closing";
 import { Episode02 } from "./episode02/Episode02";
 import { EP02_TOTAL_FRAMES } from "./episode02/timing";
 import { Episode03 } from "./episode03/Episode03";
+import { Episode03Ghibli } from "./ghibli_pipeline/episode03/Episode03Ghibli";
 import { SourceAttributionQA } from "./episode/SourceAttributionQA";
 import { EP03_TOTAL_FRAMES } from "./episode03/timing";
 import { Episode04 } from "./episode04/Episode04";
 import { Episode05 } from "./episode05/Episode05";
+import { Episode05Ghibli } from "./ghibli_pipeline/episode05/Episode05Ghibli";
 import { EP05_TOTAL_FRAMES } from "./episode05/timing";
+import { Episode06 } from "./episode06/Episode06";
+import { EP06_TOTAL_FRAMES } from "./episode06/timing";
 import { EP04_TOTAL_FRAMES } from "./episode04/timing";
 import { ParamBismoyEp01 } from "./param_bismoy_ep01/ParamBismoyEp01";
 import { S2_EP01_TOTAL_FRAMES } from "./param_bismoy_ep01/timing";
 import { ParamBismoyPaintedDemo, PAINTED_DEMO_FRAMES } from "./param_bismoy_ep01/ParamBismoyPaintedDemo";
+import { RefTracedQA } from "./cinematic/thakur/qa/RefTracedQA";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition id="ThakurRefTracedQA" component={RefTracedQA} durationInFrames={96} fps={24} width={1920} height={1080} />
       <Composition id="ParamBismoyPaintedDemo" component={ParamBismoyPaintedDemo} durationInFrames={PAINTED_DEMO_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="ParamBismoyEp01" component={ParamBismoyEp01} durationInFrames={S2_EP01_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition
@@ -52,7 +64,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="SourceAttributionQA" component={SourceAttributionQA} durationInFrames={150} fps={24} width={1920} height={1080} />
       <Composition id="Episode04" component={Episode04} durationInFrames={EP04_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode05" component={Episode05} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode05GhibliTest" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode06" component={Episode06} durationInFrames={EP06_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode03" component={Episode03} durationInFrames={EP03_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode03GhibliTest" component={Episode03Ghibli} durationInFrames={EP03_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode02" component={Episode02} durationInFrames={EP02_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       {/* Cinematic re-stage demo of Scene 02 (Diwali night) */}
       <Composition
@@ -85,6 +100,12 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="CowQA" component={CowQA} durationInFrames={240} fps={24} width={1920} height={1080} />
       <Composition id="KachariSetQA" component={KachariSetQA} durationInFrames={240} fps={24} width={1920} height={1080} />
       <Composition id="Cast05QA" component={Cast05QA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="VillageFieldQA" component={VillageFieldQA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="StandingChild6QA" component={StandingChild6QA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="SeatedChild6QA" component={SeatedChild6QA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="Cast06QA" component={Cast06QA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="Props06QA" component={Props06QA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="VillageLifeQA" component={VillageLifeQA} durationInFrames={240} fps={24} width={1920} height={1080} />
       <Composition id="CastLineup" component={CastLineup} durationInFrames={240} fps={24} width={1920} height={1080} />
       <Composition id="CastCloseup" component={CastCloseup} durationInFrames={240} fps={24} width={1920} height={1080} />
     </>

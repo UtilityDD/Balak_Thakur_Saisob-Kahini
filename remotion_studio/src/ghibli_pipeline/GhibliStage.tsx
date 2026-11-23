@@ -76,6 +76,14 @@ export const GhibliLayer: React.FC<{
   const blur = Math.min(14, Math.abs(depth - focus) * (cam.dof ?? 0) + extraBlur);
   const tx = -cam.x * (effDepth + parallaxDrift);
   const ty = -cam.y * (effDepth + parallaxDrift * 0.45);
+  // Phase 4 (Items 16 & 23): Painted background blur & aerial-perspective softness on distant planes
+  const farDist = Math.max(0, 1 - depth);
+  const paintedFilter =
+    blur > 0.25
+      ? `blur(${blur.toFixed(2)}px)${farDist > 0.2 ? ` saturate(${(1 - farDist * 0.14).toFixed(3)}) contrast(${(1 - farDist * 0.08).toFixed(3)}) brightness(${(1 + farDist * 0.03).toFixed(3)})` : ""}`
+      : farDist > 0.35
+        ? `saturate(${(1 - farDist * 0.10).toFixed(3)}) contrast(${(1 - farDist * 0.05).toFixed(3)})`
+        : undefined;
   return (
     <div
       style={{
@@ -83,7 +91,7 @@ export const GhibliLayer: React.FC<{
         inset: 0,
         transformOrigin: "50% 50%",
         transform: `scale(${s}) translate(${tx}px, ${ty}px) rotate(${(cam.rot ?? 0) * effDepth}deg)`,
-        filter: blur > 0.25 ? `blur(${blur.toFixed(2)}px)` : undefined,
+        filter: paintedFilter,
         mixBlendMode: blend,
         opacity,
       }}
@@ -133,7 +141,9 @@ export const GhibliCutout: React.FC<{
 };
 
 /**
- * Soft warm sepia-umber ground contact shadow under a character or prop, angled gently away from upper-right sun.
+ * 2-layer Studio Ghibli ground shadow (Phase 1, Item 4):
+ *  1. Wide directional watercolor cast wash stretched away from the scene sun (`sunDir`).
+ *  2. Crisp, darker ambient-occlusion contact crease right under soles, knees, or seated lap.
  */
 export const ContactShadow: React.FC<{
   x: number;
@@ -141,49 +151,389 @@ export const ContactShadow: React.FC<{
   rx?: number;
   ry?: number;
   opacity?: number;
-}> = ({ x, y, rx = 34, ry = 9, opacity = 0.32 }) => {
+  /** Sun horizontal direction (+1 = upper-right sun casting shadow left, -1 = upper-left sun casting right). */
+  sunDir?: 1 | -1;
+  /** Extra cast shadow stretch multiplier (default 1, use 1.4+ for low dawn/afternoon sun). */
+  castStretch?: number;
+}> = ({ x, y, rx = 34, ry = 9, opacity = 0.34, sunDir = 1, castStretch = 1 }) => {
   const id = `cs-${useId().replace(/:/g, "")}`;
+  const castDx = -sunDir * rx * 0.36 * castStretch;
+  const castRx = rx * (1.35 * castStretch);
+  const castRy = ry * 1.18;
   return (
-    <g opacity={opacity} transform={`translate(${x - rx * 0.14}, ${y + 2})`}>
+    <g opacity={opacity} pointerEvents="none">
       <defs>
-        <radialGradient id={id} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#3a2216" stopOpacity={0.9} />
-          <stop offset="55%" stopColor="#4a2e1f" stopOpacity={0.45} />
-          <stop offset="100%" stopColor="#4a2e1f" stopOpacity={0} />
+        <radialGradient id={`${id}-cast`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#3e2920" stopOpacity={0.62} />
+          <stop offset="52%" stopColor="#4f3930" stopOpacity={0.32} />
+          <stop offset="82%" stopColor="#5a453c" stopOpacity={0.12} />
+          <stop offset="100%" stopColor="#5a453c" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id={`${id}-contact`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#24120a" stopOpacity={0.95} />
+          <stop offset="58%" stopColor="#321b11" stopOpacity={0.62} />
+          <stop offset="100%" stopColor="#321b11" stopOpacity={0} />
         </radialGradient>
       </defs>
-      <ellipse cx={0} cy={0} rx={rx} ry={ry} fill={`url(#${id})`} />
+      {/* Layer 1: Wide soft directional watercolor cast shadow */}
+      <ellipse
+        cx={x + castDx}
+        cy={y + 3.5}
+        rx={castRx}
+        ry={castRy}
+        fill={`url(#${id}-cast)`}
+        style={{ mixBlendMode: "multiply" }}
+      />
+      {/* Layer 2: Crisp dark ambient-occlusion contact crease right beneath feet/knees */}
+      <ellipse
+        cx={x - sunDir * rx * 0.06}
+        cy={y + 1.2}
+        rx={rx * 0.78}
+        ry={Math.max(2.6, ry * 0.52)}
+        fill={`url(#${id}-contact)`}
+        style={{ mixBlendMode: "multiply" }}
+      />
     </g>
   );
 };
 
 /**
- * Non-destructive SVG filter wrapper for rigged characters (`Puppet` and `SeatedChild`).
- * Adds a delicate warm sepia-charcoal hand-drawn ink silhouette line (#3d2417) and subtle
- * organic watercolor pigment warmth without modifying a single rig file or joint.
+ * Phase 1 Studio Ghibli Painter's Material & Lighting Filter (`GhibliCharFilterDefs`):
+ * Transforms rigged vector characters (`Puppet`, `SeatedChild`, `StandingChild`, `GentleCow`, `Tortoise`)
+ * into hand-painted watercolor + sepia-ink film cels:
+ *  1. Organic watercolor pigment pooling + wet-edge darkening + fine cold-press paper texture inside fills
+ *     (eliminating flat vector fills).
+ *  2. Scene-matched directional lighting: warm sunlit rim on the sunward edge (`sunColor`) + cool sky/foliage
+ *     bounce light on the shadow edge (`bounceColor`) + optional canopy shade darkening (`shadeFactor`).
+ *  3. Interior hand-inked sepia linework (`feConvolveMatrix`) + outer warm-sepia silhouette contour.
+ *  4. Subtle 8 fps hand-drawn pencil boil (`feDisplacementMap` stepped on threes).
+ *  5. Optional animated dappled canopy sunlight modulation (`dapple={true}`) for grove/tree scenes.
  */
-export const GhibliCharFilterDefs: React.FC = () => (
-  <defs>
-    <filter id="ghibli-char-ink" x="-12%" y="-12%" width="124%" height="124%" colorInterpolationFilters="sRGB">
-      {/* Warm watercolor paper-tint harmony on character fills */}
-      <feColorMatrix
-        in="SourceGraphic"
-        type="matrix"
-        values="1.01 0.01 0 0 0.008  0 0.995 0 0 0.004  0 0 0.965 0 -0.006  0 0 0 1 0"
-        result="warmed"
-      />
-      {/* Delicate 1.05px sepia-charcoal ink contour around character silhouette */}
-      <feMorphology in="SourceAlpha" operator="dilate" radius="1.05" result="dilated" />
-      <feGaussianBlur in="dilated" stdDeviation="0.35" result="softOutline" />
-      <feFlood floodColor="#3b2316" floodOpacity="0.62" result="inkColor" />
-      <feComposite in="inkColor" in2="softOutline" operator="in" result="outerInk" />
-      <feMerge>
-        <feMergeNode in="outerInk" />
-        <feMergeNode in="warmed" />
-      </feMerge>
-    </filter>
-  </defs>
-);
+export const GhibliCharFilterDefs: React.FC<{
+  /** Optional life frame for 8 fps subtle pencil boil (defaults to Remotion's current frame). */
+  f?: number;
+  /** Sunward rim-light direction (+1 = upper-right sun, -1 = upper-left sun). */
+  rimDir?: 1 | -1;
+  /** Warm sunlight rim tint matching scene time of day. */
+  sunColor?: string;
+  /** Cool bounce light tint on the shadow side (e.g. cool sky blue-grey or sage leaf bounce). */
+  bounceColor?: string;
+  /** Tree/canopy shade darkening factor (0 = full sun, 0.25 = grove shade). */
+  shadeFactor?: number;
+  /** Enable subtle dappled canopy sunlight modulation over character fills (grove/tree scenes). */
+  dapple?: boolean;
+}> = ({
+  f,
+  rimDir = 1,
+  sunColor = "#ffe6a8",
+  bounceColor = "#8ea8c4",
+  shadeFactor = 0,
+  dapple = false,
+}) => {
+    const curF = useCurrentFrame();
+    const frame = f ?? curF;
+    // Step boil seed on threes (8 fps at 24 fps) across a gentle 4-drawing cycle so it breathes naturally
+    const boilSeed = 11 + (Math.floor(Math.max(0, frame) / 3) % 4) * 7;
+    const dappleSeed = 41;
+    const dappleFreqX = 0.011 + 0.0005 * Math.sin(frame * 0.025);
+    const dappleFreqY = 0.016 + 0.0005 * Math.cos(frame * 0.021);
+    const rimDx = rimDir > 0 ? -1.8 : 1.8;
+    const bounceDx = rimDir > 0 ? 2.2 : -2.2;
+    const shadeGain = 1 - Math.max(0, Math.min(0.6, shadeFactor)) * 0.22;
+    const shadeR = (1.015 * shadeGain).toFixed(4);
+    const shadeG = (0.992 * (shadeGain + shadeFactor * 0.02)).toFixed(4);
+    const shadeB = (0.955 * (shadeGain + shadeFactor * 0.05)).toFixed(4);
+    const balakR = (1.02 * (1 - shadeFactor * 0.14)).toFixed(4);
+    const balakG = (1.0 * (1 - shadeFactor * 0.12)).toFixed(4);
+    const balakB = (0.96 * (1 - shadeFactor * 0.09)).toFixed(4);
+
+    return (
+      <defs>
+        <filter id="ghibli-char-ink" x="-14%" y="-14%" width="128%" height="128%" colorInterpolationFilters="sRGB">
+          {/* 1. Scene-matched color harmony + shade darkening */}
+          <feColorMatrix
+            in="SourceGraphic"
+            type="matrix"
+            values={`${shadeR} 0.012 0 0 0.007  0 ${shadeG} 0 0 0.004  0 0 ${shadeB} 0 -0.006  0 0 0 1 0`}
+            result="warmed"
+          />
+
+          {/* 1b. Pure monochrome warm-ochre watercolor pigment mottling locked inside character alpha (no RGB color noise) */}
+          <feTurbulence type="fractalNoise" baseFrequency="0.019 0.024" numOctaves="3" seed="17" result="wcMottle" />
+          <feColorMatrix
+            in="wcMottle"
+            type="matrix"
+            values="0.14 0 0 0 0.88  0.13 0 0 0 0.88  0.11 0 0 0 0.87  0 0 0 0 1"
+            result="wcMottleTone"
+          />
+          <feComposite in="wcMottleTone" in2="SourceAlpha" operator="in" result="wcMottleClipped" />
+          <feBlend in="warmed" in2="wcMottleClipped" mode="multiply" result="wcMottled" />
+
+          {/* 1c. Subtle watercolor wet-edge pigment pooling along inner contour */}
+          <feMorphology in="SourceAlpha" operator="erode" radius="2.0" result="erodedAlpha" />
+          <feGaussianBlur in="erodedAlpha" stdDeviation="1.5" result="erodedSoft" />
+          <feComposite in="SourceAlpha" in2="erodedSoft" operator="out" result="wetEdgeBand" />
+          <feFlood floodColor="#7a563c" floodOpacity="0.18" result="wetEdgePigment" />
+          <feComposite in="wetEdgePigment" in2="wetEdgeBand" operator="in" result="wetEdge" />
+          <feBlend in="wcMottled" in2="wetEdge" mode="multiply" result="wcPainted" />
+
+          {/* 2. Directional sunward warm rim light */}
+          <feOffset in="SourceAlpha" dx={rimDx} dy="1.35" result="alphaShifted" />
+          <feComposite in="SourceAlpha" in2="alphaShifted" operator="out" result="rimEdgeRaw" />
+          <feGaussianBlur in="rimEdgeRaw" stdDeviation="0.7" result="rimEdgeSoft" />
+          <feFlood floodColor={sunColor} floodOpacity="0.54" result="rimColor" />
+          <feComposite in="rimColor" in2="rimEdgeSoft" operator="in" result="rimLight" />
+
+          {/* 2b. Opposite shadow-side cool sky/foliage bounce light */}
+          <feOffset in="SourceAlpha" dx={bounceDx} dy="-0.9" result="bounceShifted" />
+          <feComposite in="SourceAlpha" in2="bounceShifted" operator="out" result="bounceEdgeRaw" />
+          <feGaussianBlur in="bounceEdgeRaw" stdDeviation="1.35" result="bounceEdgeSoft" />
+          <feFlood floodColor={bounceColor} floodOpacity="0.26" result="bounceColorFlood" />
+          <feComposite in="bounceColorFlood" in2="bounceEdgeSoft" operator="in" result="bounceLight" />
+
+          {/* 3. Interior hand-inked sepia linework */}
+          <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="luma" />
+          <feConvolveMatrix
+            in="luma"
+            order="3"
+            kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1"
+            divisor="1.38"
+            bias="0"
+            preserveAlpha="true"
+            result="edgesRaw"
+          />
+          <feColorMatrix
+            in="edgesRaw"
+            type="matrix"
+            values="0 0 0 0 0.22  0 0 0 0 0.125  0 0 0 0 0.078  0.54 0.54 0.54 0 -0.14"
+            result="interiorEdges"
+          />
+          <feComposite in="interiorEdges" in2="SourceAlpha" operator="in" result="interiorInkClipped" />
+          <feComponentTransfer in="interiorInkClipped" result="interiorInk">
+            <feFuncA type="linear" slope="0.40" intercept="0" />
+          </feComponentTransfer>
+
+          {/* 4. Outer sepia-charcoal silhouette contour */}
+          <feMorphology in="SourceAlpha" operator="dilate" radius="1.15" result="dilated" />
+          <feGaussianBlur in="dilated" stdDeviation="0.32" result="softOutline" />
+          <feFlood floodColor="#382115" floodOpacity="0.72" result="inkColor" />
+          <feComposite in="inkColor" in2="softOutline" operator="in" result="outerInk" />
+
+          {/* 5. Composite outer ink + watercolor-painted fills + cool bounce + interior ink + warm rim */}
+          <feMerge result="celPainted">
+            <feMergeNode in="outerInk" />
+            <feMergeNode in="wcPainted" />
+            <feMergeNode in="bounceLight" />
+            <feMergeNode in="interiorInk" />
+            <feMergeNode in="rimLight" />
+          </feMerge>
+
+          {/* 6. Subtle 8 fps hand-drawn pencil/cel line boil */}
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.028"
+            numOctaves="2"
+            seed={boilSeed}
+            result="boilNoise"
+          />
+          <feDisplacementMap
+            in="celPainted"
+            in2="boilNoise"
+            scale="0.82"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="boiledCel"
+          />
+
+          {dapple ? (
+            <>
+              {/* 7. Animated dappled canopy shadow modulation clipped to character alpha */}
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency={`${dappleFreqX.toFixed(4)} ${dappleFreqY.toFixed(4)}`}
+                numOctaves="2"
+                seed={dappleSeed}
+                result="dappleField"
+              />
+              <feColorMatrix
+                in="dappleField"
+                type="matrix"
+                values="0 0 0 0 0.25  0 0 0 0 0.19  0 0 0 0 0.14  0.34 0 0 0 -0.05"
+                result="dappleTint"
+              />
+              <feComposite in="dappleTint" in2="SourceAlpha" operator="in" result="dappleClipped" />
+              <feBlend in="boiledCel" in2="dappleClipped" mode="multiply" />
+            </>
+          ) : (
+            <feMerge>
+              <feMergeNode in="boiledCel" />
+            </feMerge>
+          )}
+        </filter>
+
+        {/* Dedicated luminous watercolor cel-ink filter tuned specifically for Child Thakur:
+          gentle watercolor pigment bloom on skin & cream cotton, warm golden rim, cool sky bounce,
+          delicate warm-sepia interior pencil lines, and soft 8fps boil. */}
+        <filter id="ghibli-balak-ink" x="-14%" y="-14%" width="128%" height="128%" colorInterpolationFilters="sRGB">
+          <feColorMatrix
+            in="SourceGraphic"
+            type="matrix"
+            values={`${balakR} 0.014 0 0 0.010  0 ${balakG} 0 0 0.005  0 0 ${balakB} 0 -0.005  0 0 0 1 0`}
+            result="warmed"
+          />
+
+          {/* Delicate monochrome warm-ochre watercolor pigment mottling on skin & cotton chadar */}
+          <feTurbulence type="fractalNoise" baseFrequency="0.022 0.026" numOctaves="3" seed="23" result="wcMottle" />
+          <feColorMatrix
+            in="wcMottle"
+            type="matrix"
+            values="0.10 0 0 0 0.91  0.095 0 0 0 0.91  0.085 0 0 0 0.90  0 0 0 0 1"
+            result="wcMottleTone"
+          />
+          <feComposite in="wcMottleTone" in2="SourceAlpha" operator="in" result="wcMottleClipped" />
+          <feBlend in="warmed" in2="wcMottleClipped" mode="multiply" result="wcMottled" />
+
+          {/* Subtle warm-ochre wet-edge pooling */}
+          <feMorphology in="SourceAlpha" operator="erode" radius="1.8" result="erodedAlpha" />
+          <feGaussianBlur in="erodedAlpha" stdDeviation="1.4" result="erodedSoft" />
+          <feComposite in="SourceAlpha" in2="erodedSoft" operator="out" result="wetEdgeBand" />
+          <feFlood floodColor="#8a6548" floodOpacity="0.13" result="wetEdgePigment" />
+          <feComposite in="wetEdgePigment" in2="wetEdgeBand" operator="in" result="wetEdge" />
+          <feBlend in="wcMottled" in2="wetEdge" mode="multiply" result="wcPainted" />
+
+          {/* Luminous warm-gold sunward rim */}
+          <feOffset in="SourceAlpha" dx={rimDx} dy="1.2" result="alphaShifted" />
+          <feComposite in="SourceAlpha" in2="alphaShifted" operator="out" result="rimEdgeRaw" />
+          <feGaussianBlur in="rimEdgeRaw" stdDeviation="0.75" result="rimEdgeSoft" />
+          <feFlood floodColor="#fff1c4" floodOpacity="0.60" result="rimColor" />
+          <feComposite in="rimColor" in2="rimEdgeSoft" operator="in" result="rimLight" />
+
+          {/* Soft cool sky/leaf bounce on shadow side */}
+          <feOffset in="SourceAlpha" dx={bounceDx} dy="-0.8" result="bounceShifted" />
+          <feComposite in="SourceAlpha" in2="bounceShifted" operator="out" result="bounceEdgeRaw" />
+          <feGaussianBlur in="bounceEdgeRaw" stdDeviation="1.3" result="bounceEdgeSoft" />
+          <feFlood floodColor={bounceColor} floodOpacity="0.20" result="bounceColorFlood" />
+          <feComposite in="bounceColorFlood" in2="bounceEdgeSoft" operator="in" result="bounceLight" />
+
+          {/* Very delicate warm-ochre interior pencil crease detection */}
+          <feColorMatrix in="SourceGraphic" type="saturate" values="0" result="luma" />
+          <feConvolveMatrix
+            in="luma"
+            order="3"
+            kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1"
+            divisor="1.65"
+            bias="0"
+            preserveAlpha="true"
+            result="edgesRaw"
+          />
+          <feColorMatrix
+            in="edgesRaw"
+            type="matrix"
+            values="0 0 0 0 0.34  0 0 0 0 0.21  0 0 0 0 0.13  0.42 0.42 0.42 0 -0.16"
+            result="interiorEdges"
+          />
+          <feComposite in="interiorEdges" in2="SourceAlpha" operator="in" result="interiorInkClipped" />
+          <feComponentTransfer in="interiorInkClipped" result="interiorInk">
+            <feFuncA type="linear" slope="0.22" intercept="0" />
+          </feComponentTransfer>
+
+          {/* Fine warm-sepia outer silhouette line */}
+          <feMorphology in="SourceAlpha" operator="dilate" radius="0.95" result="dilated" />
+          <feGaussianBlur in="dilated" stdDeviation="0.3" result="softOutline" />
+          <feFlood floodColor="#462a1b" floodOpacity="0.62" result="inkColor" />
+          <feComposite in="inkColor" in2="softOutline" operator="in" result="outerInk" />
+
+          <feMerge result="celPainted">
+            <feMergeNode in="outerInk" />
+            <feMergeNode in="wcPainted" />
+            <feMergeNode in="bounceLight" />
+            <feMergeNode in="interiorInk" />
+            <feMergeNode in="rimLight" />
+          </feMerge>
+
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.024"
+            numOctaves="2"
+            seed={boilSeed}
+            result="boilNoise"
+          />
+          <feDisplacementMap
+            in="celPainted"
+            in2="boilNoise"
+            scale="0.52"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="boiledCel"
+          />
+
+          {dapple ? (
+            <>
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency={`${dappleFreqX.toFixed(4)} ${dappleFreqY.toFixed(4)}`}
+                numOctaves="2"
+                seed={dappleSeed}
+                result="dappleField"
+              />
+              <feColorMatrix
+                in="dappleField"
+                type="matrix"
+                values="0 0 0 0 0.32  0 0 0 0 0.24  0 0 0 0 0.16  0.22 0 0 0 -0.04"
+                result="dappleTint"
+              />
+              <feComposite in="dappleTint" in2="SourceAlpha" operator="in" result="dappleClipped" />
+              <feBlend in="boiledCel" in2="dappleClipped" mode="multiply" />
+            </>
+          ) : (
+            <feMerge>
+              <feMergeNode in="boiledCel" />
+            </feMerge>
+          )}
+        </filter>
+
+        {/* Phase 2 (Item 14): Dedicated watercolor + hand-inked filter for live interactive SVG props
+          (jaba branch, picked flowers, clay kolsi, pebbles, bamboo trellis, tortoises) so IK hand contact
+          stays 100% live while every prop reads as hand-painted watercolor on cold-press paper. */}
+        <filter id="ghibli-prop-watercolor" x="-12%" y="-12%" width="124%" height="124%" colorInterpolationFilters="sRGB">
+          <feColorMatrix
+            in="SourceGraphic"
+            type="matrix"
+            values="1.01 0.012 0 0 0.008  0 0.99 0 0 0.004  0 0 0.94 0 -0.006  0 0 0 1 0"
+            result="propWarm"
+          />
+          <feTurbulence type="fractalNoise" baseFrequency="0.032 0.038" numOctaves="3" seed="31" result="propNoise" />
+          <feColorMatrix
+            in="propNoise"
+            type="matrix"
+            values="0.18 0 0 0 0.85  0.17 0 0 0 0.85  0.14 0 0 0 0.84  0 0 0 0 1"
+            result="propWash"
+          />
+          <feComposite in="propWash" in2="SourceAlpha" operator="in" result="propWashClip" />
+          <feBlend in="propWarm" in2="propWashClip" mode="multiply" result="propMottled" />
+
+          <feMorphology in="SourceAlpha" operator="erode" radius="1.4" result="propErode" />
+          <feGaussianBlur in="propErode" stdDeviation="1.1" result="propErodeSoft" />
+          <feComposite in="SourceAlpha" in2="propErodeSoft" operator="out" result="propWetBand" />
+          <feFlood floodColor="#69462f" floodOpacity="0.22" result="propWetPigment" />
+          <feComposite in="propWetPigment" in2="propWetBand" operator="in" result="propWetEdge" />
+          <feBlend in="propMottled" in2="propWetEdge" mode="multiply" result="propPainted" />
+
+          <feMorphology in="SourceAlpha" operator="dilate" radius="0.9" result="propDil" />
+          <feGaussianBlur in="propDil" stdDeviation="0.28" result="propSoftOut" />
+          <feFlood floodColor="#3b2316" floodOpacity="0.68" result="propInkCol" />
+          <feComposite in="propInkCol" in2="propSoftOut" operator="in" result="propOutInk" />
+
+          <feMerge result="propMerged">
+            <feMergeNode in="propOutInk" />
+            <feMergeNode in="propPainted" />
+          </feMerge>
+          <feTurbulence type="fractalNoise" baseFrequency="0.032" numOctaves="2" seed={boilSeed} result="propBoil" />
+          <feDisplacementMap in="propMerged" in2="propBoil" scale="0.65" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    );
+  };
 
 /**
  * Soft horizon transition band at y=784 where the courtyard floor meets the veranda steps,
@@ -378,55 +728,78 @@ export const GhibliSketchedLeaf: React.FC<{
 };
 
 /**
- * Final watercolor paper-tooth glaze, warm sun bloom, and soft edge vignette unifying
- * the hand-drawn Ghibli sketch backgrounds and vector character rigs.
+ * Unified Master Color Grade (Phase 1, Item 15):
+ * Renders strictly above BOTH backgrounds and characters so nothing sits "on top" of the painting:
+ *  1. Subtle unified color-harmony wash tying cels and plates into one film exposure.
+ *  2. Warm sun bloom anchored to scene sun position.
+ *  3. Gently stepping 8 fps cold-press watercolor paper tooth.
+ *  4. Soft sepia-umber edge vignette.
  */
 export const GhibliGrade: React.FC<{
   warmth?: number;
   vignette?: number;
   bloomAt?: [number, number];
   paperOpacity?: number;
-}> = ({ warmth = 0.28, vignette = 0.34, bloomAt = [75, 22], paperOpacity = 0.24 }) => (
-  <>
-    {warmth > 0 && (
+}> = ({ warmth = 0.28, vignette = 0.34, bloomAt = [75, 22], paperOpacity = 0.24 }) => {
+  const f = useCurrentFrame();
+  // Subtle 8 fps micro-shift of cold-press paper grain like photographed cel animation on paper
+  const step = Math.floor(Math.max(0, f) / 3) % 4;
+  const grainScale = 1.03;
+  const grainTx = (step % 2) * -10;
+  const grainTy = Math.floor(step / 2) * -8;
+  return (
+    <>
+      {/* Unified subtle warm-ochre film glaze over characters + plates */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background: `radial-gradient(ellipse at ${bloomAt[0]}% ${bloomAt[1]}%, rgba(255,214,148,0.34) 0%, rgba(255,172,96,0.09) 46%, rgba(0,0,0,0) 76%)`,
-          mixBlendMode: "screen",
-          opacity: warmth,
+          background: "linear-gradient(180deg, rgba(255,238,205,0.06) 0%, rgba(242,216,178,0.03) 55%, rgba(62,42,32,0.05) 100%)",
+          mixBlendMode: "soft-light",
           pointerEvents: "none",
         }}
       />
-    )}
-    {paperOpacity > 0 && (
-      <Img
-        src={staticFile("images/ghibli_ep03/watercolor_paper_grain.png")}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          mixBlendMode: "multiply",
-          opacity: paperOpacity,
-          pointerEvents: "none",
-        }}
-      />
-    )}
-    {vignette > 0 && (
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 56%, rgba(28,16,12,${vignette}) 100%)`,
-          pointerEvents: "none",
-        }}
-      />
-    )}
-  </>
-);
+      {warmth > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `radial-gradient(ellipse at ${bloomAt[0]}% ${bloomAt[1]}%, rgba(255,214,148,0.34) 0%, rgba(255,172,96,0.09) 46%, rgba(0,0,0,0) 76%)`,
+            mixBlendMode: "screen",
+            opacity: warmth,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {paperOpacity > 0 && (
+        <Img
+          src={staticFile("images/ghibli_ep03/watercolor_paper_grain.png")}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transform: `scale(${grainScale}) translate(${grainTx}px, ${grainTy}px)`,
+            mixBlendMode: "multiply",
+            opacity: paperOpacity,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+      {vignette > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: `radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 56%, rgba(28,16,12,${vignette}) 100%)`,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+    </>
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /* Sepia-ink-styled interactive blossoms & fallen shiuli carpet        */

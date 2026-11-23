@@ -4,6 +4,7 @@ import { SeriesSubtitles } from "../../episode/SeriesSubtitles";
 import { clipSpan3, cueLocalStory3, pausesFor3, storyToReal } from "../../episode/storyClock";
 import { EP03_CUES } from "../../episode03/subtitles";
 import { EP03_AUDIO, EP03_SCENES, EP03_TOTAL_FRAMES } from "../../episode03/timing";
+import { GhibliWashTransition } from "../core/GhibliWashTransition";
 import { GhibliScene00bSource } from "./scenes/GhibliScene00bSource";
 import { GhibliScene00Intro } from "./scenes/GhibliScene00Intro";
 import { GhibliScene01DawnGarden } from "./scenes/GhibliScene01DawnGarden";
@@ -492,6 +493,10 @@ export const Episode03Ghibli: React.FC = () => (
         </Sequence>
       );
     })}
+    {/* Phase 5 (Item 20): Hand-painted watercolor wash dissolve between Sharad Dawn (S01) and Vedic Courtyard (S02) */}
+    <Sequence from={Math.max(0, sceneStart(S02) - 8)} durationInFrames={28}>
+      <GhibliWashTransition durationFrames={28} />
+    </Sequence>
     {BEDS.map((bed) =>
       bed.layers.map((layer) => (
         <Sequence key={`bed-${bed.name}-${layer.file}`} from={bed.from} durationInFrames={bed.to - bed.from} layout="none">

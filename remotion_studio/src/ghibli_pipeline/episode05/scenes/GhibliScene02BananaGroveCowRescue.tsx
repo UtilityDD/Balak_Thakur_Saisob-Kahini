@@ -24,7 +24,12 @@ import { clipLocalStory5, clipSpan5, cueLocalStory5, gapsFor5, pausesFor5, story
 import { BirulGlow } from "../../../episode03/rig/BirulGlow";
 import { PebblesArt, SeatedChild, SeatedPose } from "../../../episode03/rig/SeatedChild";
 import { EP05_SCENES } from "../../../episode05/timing";
-import { GhibliCharFilterDefs, GhibliLayer, GhibliStage } from "../../GhibliStage";
+import { ContactShadow, GhibliCharFilterDefs, GhibliLayer, GhibliStage } from "../../GhibliStage";
+import { ghibliClock, withGhibliActing } from "../../core/ghibliActing";
+import { arcLerp, balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
+import { GhibliFootstepDust } from "../../core/GhibliAtmosphere";
+import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { GhibliBalakFaceDetail } from "../../core/GhibliFaceDetail";
 import { zoomProportionalDof } from "../../core/ghibliMotion";
 import {
   GhibliKachariBackdrop,
@@ -253,10 +258,11 @@ const balakPose = (bf: number): Partial<React.ComponentProps<typeof SeatedChild>
   if (bf < PEB2_END) return { pose: "playPebbles", prevPose: "sitCross", prevPoseStart: LOOK_NOISE, poseStart: PEB2 };
   if (bf < PALM) return { pose: "lookUp", prevPose: "playPebbles", prevPoseStart: PEB2, poseStart: PEB2_END };
   if (bf < SHAKE_POSE) {
-    const up = EASE.inOut(clamp((bf - PALM) / 14));
-    const k = EASE.inOut(clamp((bf - POINT) / 12));
-    const palm = { x: lerp(PALM_LOW.x, PALM_AT.x, up), y: lerp(PALM_LOW.y, PALM_AT.y, up) };
-    const atP = { x: lerp(palm.x, TRELLIS_AT.x, k), y: lerp(palm.y, TRELLIS_AT.y, k) };
+    // Graceful curved wrist arc rising from lap to chest palm, then gently arcing left toward the torn trellis
+    const up = clamp((bf - PALM) / 14);
+    const k = clamp((bf - POINT) / 12);
+    const palm = arcLerp(PALM_LOW, PALM_AT, up, 24, 6);
+    const atP = arcLerp(palm, TRELLIS_AT, k, 16, 4);
     return { pose: "pointIn", prevPose: "lookUp", poseStart: PALM, pointAt: atP, expression: "compassionate" };
   }
   if (bf < WATCH) return { pose: "lookUp", prevPose: "pointIn", poseStart: SHAKE_POSE, prevExpression: "compassionate", expressionStart: SHAKE_POSE, pointAt: TRELLIS_AT, headShake: HEAD_SHAKE };
@@ -450,7 +456,7 @@ const FloorCow: React.FC<{ r: CowRender; cam: Cam }> = ({ r, cam }) => {
   return (
     <div style={{ position: "absolute", inset: 0, filter: r.calm > 0.01 ? ujancharBgFilter(r.calm, "morning") : undefined }}>
       <GhibliLayer depth={1} extraBlur={r.calm * ujancharBgBlur(0.85, 1, cam)}>
-        <GhibliCharFilterDefs />
+        <GhibliCharFilterDefs dapple shadeFactor={0.18} bounceColor="#7c9c78" sunColor="#ffe7aa" />
         <defs>
           <filter id="gh5s02-clumpsoft" x="-10%" y="-10%" width="120%" height="120%">
             <feGaussianBlur stdDeviation={3} />
@@ -544,7 +550,13 @@ const walkAt = (f: number): Partial<Pose> => {
   if (f >= HC_IN_AGAIN) return walkPose(f, W_DOOR_IN);
   return {};
 };
-const hcAct = (f: number): Pose => {
+/** Fast-action story windows in Scene 02 that run on ones (24 fps); all other acting steps on twos (12 fps). */
+const S02_FAST_WINDOWS: ReadonlyArray<readonly [number, number]> = [
+  [DOOR_BANG, HC_OUT + 18], // Door bang & Haricharan burst
+  [THUMP, THUMP + 18], // Bamboo pole thump
+];
+
+const hcActBase = (f: number): Pose => {
   let k: Pose = HC_ACT(f);
   k = { ...k, ...walkAt(f) };
   k.jab = -jabPulse(f, K.konDike - 7, 16, 1);
@@ -566,6 +578,18 @@ const hcAct = (f: number): Pose => {
   if (f >= STOMP) k = { ...k, ...walkAt(f) };
   return k;
 };
+const hcSpeechRms = (storyF: number): number => {
+  const v = voiceAt(HC_FILE, real(storyF));
+  return v ? speechLevel(v.env, v.rel) : 0;
+};
+const hcAct = withGhibliActing(hcActBase, {
+  personality: "stomp",
+  seed: HC.seed,
+  cadence: "twos",
+  fastWindows: S02_FAST_WINDOWS,
+  speechRms: hcSpeechRms,
+  speechActAmp: 0.78,
+});
 const hcBreathRate = (f: number) => (f < HC_ARRIVE + 40 ? 2.5 : f < C0 ? 2.3 : f < THROW ? 2.1 : 2.5);
 const JAB_AT = { x: 2350, y: 640 };
 
@@ -574,6 +598,9 @@ const LIGHT_DOOR: Lighting = { keySide: 1, rim: "#ffd79a", rimStrength: 0.15, br
 
 export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
   const { f, lifeF, pause } = useStory5(SCENE_ID);
+  // Step Haricharan & cow on twos (12 fps) for anime weight; keep Balak's delicate hand/face acting on smooth 24 fps
+  const cf = ghibliClock(f, "twos", S02_FAST_WINDOWS);
+  const cLifeF = ghibliClock(lifeF, "twos");
   const inP3 = lifeF >= P3_REAL;
   const pc = inP3 ? lifeF - P3_REAL : null;
   const shot = shotAt(f, lifeF);
@@ -582,38 +609,49 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
   const bf = lifeF < (PAUSES[0]?.frames ?? 24) ? lifeF - (PAUSES[0]?.frames ?? 24) : f;
   const p2t = pause.inPause && pause.index === 1 ? pause.t : null;
   const flip = !inP3;
+  const balakVoice = voiceAt(BALAK_FILE, lifeF);
+  const balakSpeechRms = balakVoice && !inP3 ? speechLevel(balakVoice.env, balakVoice.rel) : 0;
   const bProps = inP3
     ? (() => {
-        const bfc = P3_STORY + (pc ?? 0);
-        const cow = solveGentleCow(cowAt(f, lifeF, pc).props);
-        const muzzle = worldToBalakFig(cow.muzzle, false);
-        const fore = worldToBalakFig(cow.forehead, false);
-        return {
-          f: bfc,
-          pose: "strokeCow" as SeatedPose,
-          prevPose: "sitCross" as SeatedPose,
-          poseStart: P3_STORY + P3_STROKE,
-          strokeAt: muzzle,
-          strokeDir: { x: fore.x - muzzle.x, y: fore.y - muzzle.y },
-          face: { smile: 0.62 },
-        };
-      })()
+      const bfc = P3_STORY + (pc ?? 0);
+      const cow = solveGentleCow(cowAt(f, lifeF, pc).props);
+      const muzzle = worldToBalakFig(cow.muzzle, false);
+      const fore = worldToBalakFig(cow.forehead, false);
+      return {
+        f: bfc,
+        pose: "strokeCow" as SeatedPose,
+        prevPose: "sitCross" as SeatedPose,
+        poseStart: P3_STORY + P3_STROKE,
+        strokeAt: muzzle,
+        strokeDir: { x: fore.x - muzzle.x, y: fore.y - muzzle.y },
+        face: { smile: 0.62 },
+      };
+    })()
     : { f: bf, ...balakPose(bf), face: { ...(balakPose(bf).face ?? {}), ...balakFace(bf, p2t) } };
   const beat = pc !== null ? glowBeat(pc) : 0;
   const glow = GLOW_BASE + (1 - GLOW_BASE) * beat;
+  const balakBodyXform = balakLivingBodyTransform({
+    x: BAL.x,
+    y: BAL.y,
+    f: lifeF,
+    facing: flip ? -1 : 1,
+    speechRms: balakSpeechRms,
+    tenderness: inP3 ? 0.75 : 0,
+    seed: 29,
+  });
 
-  const cowR = cowAt(f, lifeF, pc);
-  const torn = f < K.ekdin ? 0 : f < K.hari ? trellisTornAt(f) : 1;
-  const doorOpen = f < DOOR_BANG ? 0 : track(f, [[DOOR_BANG, 0], [DOOR_BANG + 5, 1, "backOut"]]);
-  const hp = hcPlace(f);
+  const cowR = cowAt(cf, cLifeF, pc);
+  const torn = cf < K.ekdin ? 0 : cf < K.hari ? trellisTornAt(cf) : 1;
+  const doorOpen = cf < DOOR_BANG ? 0 : track(cf, [[DOOR_BANG, 0], [DOOR_BANG + 5, 1, "backOut"]]);
+  const hp = hcPlace(cf);
   const showHc = hp.where !== "none" && !inP3;
-  const hcMouth = (fr: number): MouthState => hcMouthReal(lifeF + (fr - f));
-  const hcTalk = (fr: number): number => hcTalkReal(lifeF + (fr - f));
+  const hcMouth = (fr: number): MouthState => hcMouthReal(cLifeF + (fr - cf));
+  const hcTalk = (fr: number): number => hcTalkReal(cLifeF + (fr - cf));
   const hcPuppet = (where: "door" | "floor") => (
     <Puppet
       cast={HC}
-      f={f}
-      lifeF={lifeF}
+      f={cf}
+      lifeF={cLifeF}
       x={hp.x}
       y={hp.y}
       scale={hp.s}
@@ -621,7 +659,7 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
       mouth={hcMouth}
       talk={hcTalk}
       light={where === "door" ? LIGHT_DOOR : LIGHT}
-      breathRate={hcBreathRate(f)}
+      breathRate={hcBreathRate(cf)}
       pointAt={() => JAB_AT}
     />
   );
@@ -629,7 +667,7 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
   const slotCow =
     cowR.where === "slot" ? (
       <GhibliLayer depth={0.85} extraBlur={ujancharBgBlur(0.85, 1, cam) * 0.45}>
-        <GhibliCharFilterDefs />
+        <GhibliCharFilterDefs f={lifeF} dapple />
         <g filter="url(#ghibli-char-ink)">
           <GentleCow {...cowR.props} />
         </g>
@@ -650,12 +688,34 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
         <GhibliKachariFloorLayer view="grove" f={lifeF} trellisTorn={torn} />
         {cowR.where === "floor" && <FloorCow r={cowR} cam={cam} />}
         <GhibliLayer depth={1}>
-          <GhibliCharFilterDefs />
-          <g filter="url(#ghibli-char-ink)">
-            {showHc && hp.where === "floor" && hcPuppet("floor")}
+          <GhibliCharFilterDefs f={lifeF} dapple shadeFactor={0.18} bounceColor="#7c9c78" sunColor="#ffe7aa" />
+          {showHc && hp.where === "floor" && (
+            <>
+              <ContactShadow x={hp.x} y={hp.y} rx={36 * hp.s} ry={10 * hp.s} opacity={0.36} castStretch={1.15} />
+              <GhibliFootstepDust
+                x={hp.x}
+                y={hp.y}
+                activity={
+                  (cf >= HC_OUT && cf <= HC_STOP1 + 6) || (cf >= HC_RUN2 && cf <= HC_ARRIVE + 4) || (cf >= STOMP && cf <= HC_IN_AGAIN)
+                    ? 0.9
+                    : 0
+                }
+                dir={cf >= STOMP ? -1 : 1}
+                s={hp.s}
+                f={lifeF}
+                seed={21}
+              />
+              <g filter="url(#ghibli-char-ink)">{hcPuppet("floor")}</g>
+            </>
+          )}
+          <g filter="url(#ghibli-prop-watercolor)">
             <PebblesArt x={BAL.x} y={BAL.y} s={BAL.s} flip t={pebblesT(inP3 ? 9999 : bf)} />
-            <GroundGlow x={BAL.x} y={BAL.y + 4} w={150 * BAL.s} level={0.5 + 0.5 * beat} />
-            <BirulGlow cx={HALO.x} cy={HALO.y} r={HALO.r * (1 + 0.15 * beat)} glow={glow} f={lifeF} />
+          </g>
+          <ContactShadow x={BAL.x} y={BAL.y + 2} rx={62 * BAL.s} ry={13 * BAL.s} opacity={0.32} castStretch={1.1} />
+          <GhibliBalakGroundGlow x={BAL.x} y={BAL.y + 4} rx={150 * BAL.s} ry={26 * BAL.s} level={0.5 + 0.5 * beat} />
+          <GhibliBalakAura cx={HALO.x} cy={HALO.y} r={HALO.r * (1 + 0.15 * beat)} glow={glow} f={lifeF} />
+          {/* Child Thakur rendered with dedicated luminous `#ghibli-balak-ink`, smooth 24 fps gestures, living breath/speech spine, painted face detail, and warm/cool cotton lap folds */}
+          <g filter="url(#ghibli-balak-ink)" transform={balakBodyXform}>
             <SeatedChild
               x={BAL.x}
               y={BAL.y}
@@ -668,6 +728,8 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
               talk={inP3 ? 0 : balakTalk(lifeF)}
               {...bProps}
             />
+            <GhibliBalakLapDetails x={BAL.x} y={BAL.y} s={BAL.s} flip={flip} f={lifeF} />
+            <GhibliBalakFaceDetail cx={HALO.x} cy={HALO.y} s={BAL.s} flip={flip} zoom={cam.zoom} />
           </g>
         </GhibliLayer>
         <GhibliKachariForegroundAndGrade view="grove" f={lifeF} zoom={cam.zoom} showBokeh />

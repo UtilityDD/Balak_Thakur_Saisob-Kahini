@@ -8,6 +8,10 @@ import { StandingChild, standingChildJoints, type StandingChildProps } from "../
 import { EP05_CUES } from "../../../episode05/subtitles";
 import { EP05_SCENES } from "../../../episode05/timing";
 import { ContactShadow, GhibliCharFilterDefs, GhibliCutout, GhibliGrade, GhibliPreload } from "../../GhibliStage";
+import { ghibliClock } from "../../core/ghibliActing";
+import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { GhibliBalakFaceDetail } from "../../core/GhibliFaceDetail";
+import { GhibliWindClothTail, GhibliWindHairWisps } from "../../core/GhibliWindFlutter";
 import { GHIBLI_ANCHORS } from "../plateAnchors";
 
 /**
@@ -134,11 +138,12 @@ const balakProps = (f: number): StandingChildProps => ({
 });
 
 const GhibliVerandaGlimpse: React.FC<{ f: number }> = ({ f }) => {
-  const p = balakProps(f);
+  const cf = ghibliClock(f, "twos");
+  const p = balakProps(cf);
   const j = standingChildJoints(p);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: "absolute", left: 0, top: 0 }}>
-      <GhibliCharFilterDefs />
+      <GhibliCharFilterDefs f={f} />
       <defs>
         <radialGradient id="gh-ep6g-groundglow">
           <stop offset="0" stopColor="#FFF0C8" stopOpacity={0.36} />
@@ -163,10 +168,32 @@ const GhibliVerandaGlimpse: React.FC<{ f: number }> = ({ f }) => {
         targetHeight={KHADAM.h}
       />
       {/* 6-year-old Balak standing quietly on the veranda by the bamboo post */}
-      <ellipse cx={BALAK.x} cy={BALAK.y + 4} rx={160} ry={26} fill="url(#gh-ep6g-groundglow)" />
-      <BirulGlow cx={j.head.x} cy={j.head.y} r={150 * BALAK.s} glow={0.8} f={f} />
-      <g filter="url(#ghibli-char-ink)">
+      <ContactShadow x={BALAK.x} y={BALAK.y + 2} rx={44 * BALAK.s} ry={10 * BALAK.s} opacity={0.32} />
+      <GhibliBalakGroundGlow x={BALAK.x} y={BALAK.y + 4} rx={155} ry={26} level={0.78} />
+      <GhibliBalakAura cx={j.head.x} cy={j.head.y} r={150 * BALAK.s} glow={0.76} f={f} />
+      <g filter="url(#ghibli-balak-ink)">
+        <GhibliWindClothTail
+          x={BALAK.x - 16 * BALAK.s}
+          y={BALAK.y - 236 * BALAK.s}
+          len={64 * BALAK.s}
+          width={18 * BALAK.s}
+          dir={-1}
+          fill="#f4ede0"
+          f={f}
+          wind={0.58}
+          seed={88}
+        />
         <StandingChild {...p} />
+        <GhibliBalakFaceDetail cx={j.head.x} cy={j.head.y} s={BALAK.s} zoom={1.5} />
+        <GhibliWindHairWisps
+          x={j.head.x - 20 * BALAK.s}
+          y={j.head.y - 16 * BALAK.s}
+          s={BALAK.s * 0.9}
+          dir={-1}
+          f={f}
+          wind={0.55}
+          seed={93}
+        />
       </g>
     </svg>
   );

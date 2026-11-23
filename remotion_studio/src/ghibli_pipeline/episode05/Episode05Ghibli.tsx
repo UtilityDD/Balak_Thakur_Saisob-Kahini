@@ -6,6 +6,7 @@ import { EP05_AUDIO, EP05_BREAKS, EP05_GAPS, EP05_SCENES, EP05_TOTAL_FRAMES, typ
 import { EP05_CUES } from "../../episode05/subtitles";
 import * as S01Module from "../../episode05/scenes/Scene01TortoisePlay";
 import * as S02Module from "../../episode05/scenes/Scene02BananaGroveCowRescue";
+import { GhibliWashTransition } from "../core/GhibliWashTransition";
 import { GhibliScene00Intro } from "../episode03/scenes/GhibliScene00Intro";
 import { GhibliScene00bSource } from "../episode03/scenes/GhibliScene00bSource";
 import { GhibliScene01TortoisePlay } from "./scenes/GhibliScene01TortoisePlay";
@@ -594,6 +595,13 @@ export const Episode05Ghibli: React.FC = () => (
         <AbsoluteFill style={{ background: "#000" }} />
       </Sequence>
     ))}
+    {/* Phase 5 (Item 20): Soft hand-painted watercolor wash transitions at major scene handoffs */}
+    <Sequence from={Math.max(0, sceneStart(S01) - 10)} durationInFrames={24}>
+      <GhibliWashTransition durationFrames={24} />
+    </Sequence>
+    <Sequence from={Math.max(0, sceneStart(OUTRO) - 12)} durationInFrames={26}>
+      <GhibliWashTransition durationFrames={26} />
+    </Sequence>
     {BEDS.map((bed) =>
       bed.layers.map((layer) => (
         <Sequence key={`bed-${bed.name}-${layer.file}`} from={bed.from} durationInFrames={Math.max(1, bed.to - bed.from)} layout="none">

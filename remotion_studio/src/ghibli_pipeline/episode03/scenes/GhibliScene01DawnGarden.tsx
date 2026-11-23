@@ -34,6 +34,8 @@ import {
   GhibliSketchedLeaf,
   GhibliStage,
 } from "../../GhibliStage";
+import { withGhibliActing } from "../../core/ghibliActing";
+import { GhibliSunShafts, GhibliVillageAmbience } from "../../core/GhibliAtmosphere";
 import { GHIBLI_ANCHORS } from "../plateAnchors";
 
 /**
@@ -88,25 +90,26 @@ const mod = (a: number, m: number) => ((a % m) + m) % m;
 const A = (keys: PoseKey<Pose>[]) => makeActing<Pose>(BASE_POSE, keys);
 const DEG = Math.PI / 180;
 
-const alive = (act: (f: number) => Pose, seed: number): ((f: number) => Pose) => {
-  return (f: number) => {
-    const p = act(f);
-    const n = (k: number, s: number) => noise1(f * k, seed * 7 + s);
-    // Gentle organic chest breathing + weight shift carrier
-    const breath = Math.sin(f * 0.055 + seed * 1.7);
-    return {
-      ...p,
-      bodyX: p.bodyX + n(0.023, 1) * 1.25 + Math.sin(f * 0.028 + seed) * 0.65,
-      bodyY: p.bodyY + breath * 0.85,
-      lean: p.lean + n(0.017, 2) * 0.75 + breath * 0.35,
-      headTurn: p.headTurn + n(0.011, 3) * 0.045,
-      headTilt: p.headTilt + n(0.013, 4) * 1.15,
-      headNod: p.headNod + breath * 0.65,
-      rS: p.rS + n(0.031, 5) * 0.9,
-      lS: p.lS + n(0.029, 6) * 0.9,
-    };
-  };
-};
+const alive = (act: (f: number) => Pose, seed: number): ((f: number) => Pose) =>
+  withGhibliActing(
+    (f: number) => {
+      const p = act(f);
+      const n = (k: number, s: number) => noise1(f * k, seed * 7 + s);
+      const breath = Math.sin(f * 0.055 + seed * 1.7);
+      return {
+        ...p,
+        bodyX: p.bodyX + n(0.023, 1) * 1.25 + Math.sin(f * 0.028 + seed) * 0.65,
+        bodyY: p.bodyY + breath * 0.85,
+        lean: p.lean + n(0.017, 2) * 0.75 + breath * 0.35,
+        headTurn: p.headTurn + n(0.011, 3) * 0.045,
+        headTilt: p.headTilt + n(0.013, 4) * 1.15,
+        headNod: p.headNod + breath * 0.65,
+        rS: p.rS + n(0.031, 5) * 0.9,
+        lS: p.lS + n(0.029, 6) * 0.9,
+      };
+    },
+    { personality: "mother", seed, cadence: "twos", wind: 0.45 },
+  );
 
 const LIGHT: Lighting = { keySide: 1, rim: "#ffc786", rimStrength: 0.42 };
 
@@ -907,9 +910,25 @@ export const GhibliScene01DawnGarden: React.FC = () => {
         {/* Upstage Tulsi Mancha & branch-holders plane */}
         <GhibliLayer depth={0.93} groundLocked parallaxDrift={-0.01}>
           <GlowDefs />
-          <GhibliCharFilterDefs />
+          <GhibliCharFilterDefs f={lifeF} sunColor="#ffd38e" bounceColor="#8b9ec4" shadeFactor={Math.max(0, 0.16 - 0.14 * sunLift)} />
+          {/* Hand-painted traditional white rice-paste Alpana motif on the courtyard floor before the Tulsi Mancha */}
+          <g transform={`translate(${tulsi.x}, ${tulsi.y + 18 * tulsi.s}) scale(${tulsi.s}, ${tulsi.s * 0.24})`} opacity={0.48} pointerEvents="none">
+            <circle r={128} fill="none" stroke="#fbf5e8" strokeWidth={4.5} strokeDasharray="10 7" />
+            <circle r={92} fill="none" stroke="#fbf5e8" strokeWidth={3.2} />
+            <circle r={48} fill="none" stroke="#fbf5e8" strokeWidth={2.5} />
+            {Array.from({ length: 8 }, (_, k) => (
+              <path
+                key={k}
+                d="M 0 -52 Q 16 -76 0 -116 Q -16 -76 0 -52 Z"
+                fill="none"
+                stroke="#fbf5e8"
+                strokeWidth={2.8}
+                transform={`rotate(${k * 45})`}
+              />
+            ))}
+          </g>
           {/* Sketched Tulsi Mancha + live flickering diya flame inside niche */}
-          <ContactShadow x={tulsi.x} y={tulsi.y + 4} rx={115 * tulsi.s} ry={18 * tulsi.s} opacity={0.28} />
+          <ContactShadow x={tulsi.x} y={tulsi.y + 4} rx={115 * tulsi.s} ry={18 * tulsi.s} opacity={0.3} castStretch={1.35} />
           <GhibliCutout
             file="images/ghibli_ep03/tulsi_mancha_sketch.png"
             anchor={GHIBLI_ANCHORS.tulsi_mancha_sketch}
@@ -917,8 +936,8 @@ export const GhibliScene01DawnGarden: React.FC = () => {
             y={tulsi.y}
             targetHeight={355 * tulsi.s}
           />
-          <Glow x={tulsi.x} y={tulsi.y - 102 * tulsi.s} r={62 * tulsi.s} kind="warm" o={0.55} />
-          <Flame x={tulsi.x} y={tulsi.y - 94 * tulsi.s} s={1.0 * tulsi.s} f={lifeF} seed={99} />
+          <Glow x={tulsi.x - 10 * tulsi.s} y={tulsi.y - 108 * tulsi.s} r={68 * tulsi.s} kind="warm" o={0.58} />
+          <Flame x={tulsi.x - 10 * tulsi.s} y={tulsi.y - 102 * tulsi.s} s={0.95 * tulsi.s} f={lifeF} seed={99} />
 
           {/* Filled sajis at the foot of the Tulsi Mancha */}
           {VEDIC_COURTYARD.sajisAtTulsi.map((x, i) => {
@@ -936,8 +955,10 @@ export const GhibliScene01DawnGarden: React.FC = () => {
           <Dew f={lifeF} spots={DEW_SPOTS} />
           <FallingShiuli f={lifeF} x={SHIULI_TREE.x} y0={SHIULI_TREE.y - 520} y1={SHIULI_TREE.y + 90} />
 
-          {/* Live IK-locked jaba branch first, so Sarala's and Lata's hands grip over it */}
-          <GhibliJabaBranch f={lifeF} />
+          {/* Live IK-locked jaba branch wrapped in watercolor prop filter so hands still grip it */}
+          <g filter="url(#ghibli-prop-watercolor)">
+            <GhibliJabaBranch f={lifeF} />
+          </g>
 
           <ContactShadow x={POS.sarala.x + SARALA_ACT(f).bodyX} y={POS.sarala.y} rx={36} ry={9} />
           <g filter="url(#ghibli-char-ink)">
@@ -960,7 +981,7 @@ export const GhibliScene01DawnGarden: React.FC = () => {
 
         {/* Principal foreground flower-gatherers plane (pin-sharp at focus=1.0) */}
         <GhibliLayer depth={1}>
-          <GhibliCharFilterDefs />
+          <GhibliCharFilterDefs f={lifeF} sunColor="#ffd38e" bounceColor="#8b9ec4" shadeFactor={Math.max(0, 0.16 - 0.14 * sunLift)} />
           <ContactShadow x={POS.tuni.x + TUNI_ACT(f).bodyX} y={POS.tuni.y} rx={28} ry={8} />
           <g filter="url(#ghibli-char-ink)">
             <Puppet cast={S01_TUNI} f={f} lifeF={lifeF} x={POS.tuni.x} y={POS.tuni.y} scale={FIG_SCALE} acting={TUNI_ACT} light={LIGHT} props={PROPS_TUNI} />
@@ -980,6 +1001,8 @@ export const GhibliScene01DawnGarden: React.FC = () => {
         </GhibliLayer>
         <GhibliLayer depth={1.06}>
           <Mist f={lifeF} y={1010} h={70} n={6} seed={9} opacity={0.18} />
+          <GhibliSunShafts f={lifeF} intensity={0.14 + 0.18 * sunLift} color="#ffd896" count={4} />
+          <GhibliVillageAmbience mode="dawn" f={lifeF} incenseAt={{ x: tulsi.x - 10 * tulsi.s, y: tulsi.y - 108 * tulsi.s }} />
         </GhibliLayer>
         <GhibliLayer depth={1.15}>
           <NearPetals f={lifeF} />

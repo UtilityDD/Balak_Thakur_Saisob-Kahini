@@ -22,6 +22,7 @@ import {
   GhibliLayer,
   GhibliPreload,
 } from "../GhibliStage";
+import { GhibliSunShafts, GhibliVillageAmbience } from "../core/GhibliAtmosphere";
 import { GHIBLI_ANCHORS } from "./plateAnchors";
 
 export { KACHARI, KACHARI_BG, kachariGrade, kachariKeepInSet, trellisPoint, type KachariView };
@@ -628,7 +629,7 @@ export const GhibliKachariFloorLayer: React.FC<{
   children?: React.ReactNode;
 }> = ({ view, f, trellisTorn = 0, basket = true, nearPlants = true, under, children }) => (
   <GhibliLayer depth={1}>
-    <GhibliCharFilterDefs />
+    <GhibliCharFilterDefs f={f} dapple={view === "grove"} />
     {view === "grove" ? (
       <g>
         <image
@@ -639,8 +640,8 @@ export const GhibliKachariFloorLayer: React.FC<{
           height={660}
           preserveAspectRatio="none"
         />
-        {/* Interactive CucumberTrellis wrapped in sepia-charcoal ink harmony filter */}
-        <g filter="url(#ghibli-char-ink)">
+        {/* Interactive CucumberTrellis wrapped in watercolor + sepia-ink prop filter */}
+        <g filter="url(#ghibli-prop-watercolor)">
           <CucumberTrellis x={G_TRELLIS.x} y={G_TRELLIS.y} s={G_TRELLIS.s} f={f} torn={trellisTorn} />
         </g>
         {under}
@@ -672,7 +673,7 @@ export const GhibliKachariFloorLayer: React.FC<{
   </GhibliLayer>
 );
 
-/** Foreground bokeh & Ghibli paper-tooth grade for Episode 5. */
+/** Foreground light shafts, village micro-ambience, bokeh & unified Ghibli master grade for Episode 5. */
 export const GhibliKachariForegroundAndGrade: React.FC<{
   view: KachariView;
   f: number;
@@ -680,6 +681,16 @@ export const GhibliKachariForegroundAndGrade: React.FC<{
   showBokeh?: boolean;
 }> = ({ view, f, zoom = 1, showBokeh = true }) => (
   <>
+    {/* Phase 4 (Items 13 & 27): Foreground sun shafts falling OVER characters + gentle grove butterflies */}
+    <GhibliLayer depth={1.08}>
+      <GhibliSunShafts
+        f={f}
+        intensity={view === "grove" ? 0.28 : 0.16}
+        color={view === "grove" ? "#ffebc0" : "#fff3cf"}
+        count={view === "grove" ? 4 : 3}
+      />
+      {view === "grove" && <GhibliVillageAmbience mode="grove" f={f} />}
+    </GhibliLayer>
     {showBokeh && (
       <GhibliLayer depth={1.22} extraBlur={3.2}>
         <GhibliForegroundBokeh f={f} zoom={zoom} />

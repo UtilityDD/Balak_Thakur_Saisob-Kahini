@@ -23,7 +23,13 @@ import { BirulGlow } from "../../../episode03/rig/BirulGlow";
 import { SeatedChild, seatedChildHands, type SeatedChildProps, type SeatedExpression, type SeatedHandPoints, type SeatedPose } from "../../../episode03/rig/SeatedChild";
 import { EP05_SCENES } from "../../../episode05/timing";
 import { EP05_CUES } from "../../../episode05/subtitles";
-import { GhibliCharFilterDefs, GhibliLayer, GhibliStage } from "../../GhibliStage";
+import { ContactShadow, GhibliCharFilterDefs, GhibliLayer, GhibliStage } from "../../GhibliStage";
+import { ghibliClock, withGhibliActing } from "../../core/ghibliActing";
+import { arcLerp, balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
+import { GhibliFootstepDust } from "../../core/GhibliAtmosphere";
+import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { GhibliBalakFaceDetail } from "../../core/GhibliFaceDetail";
+import { GhibliWindClothTail } from "../../core/GhibliWindFlutter";
 import { ghibliStrideOf, ghibliWalkSpot, safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
 import {
   GhibliKachariBackdrop,
@@ -321,9 +327,10 @@ const balakHands = (lf: number, pl: Place, elev: number, charuHold: Pt | null): 
   const jaw = t2Jaw(Math.min(lf, RELEASE), pl, elev);
   const bitten = { x: jaw.x - 4 * pl.k, y: jaw.y - 7 * pl.k };
   if (lf < RISE_AT) return { ...base, near: bitten };
-  const up = EASE.inOut(clamp((lf - RISE_AT) / 20));
+  // Graceful curved parabolic wrist arc as Balak lifts his hand into Charu's hands
+  const up = clamp((lf - RISE_AT) / 20);
   const target = charuHold ?? holdW;
-  const near = { x: lerp(bitten.x, target.x, up), y: lerp(bitten.y, target.y, up) };
+  const near = arcLerp(bitten, target, up, 22 * pl.k, 8 * pl.k);
   const turnUp = EASE.inOut(clamp((lf - TURN_UP.a) / (TURN_UP.b - TURN_UP.a)));
   const turnOver = EASE.inOut(clamp((lf - TURN_OVER.a) / (TURN_OVER.b - TURN_OVER.a)));
   return { ...base, near, palmUp: turnUp * (1 - turnOver) };
@@ -432,7 +439,13 @@ const binoyKeys = makeActing<Pose>(BASE_POSE, [
   { f: P3A + 2, ease: io, scratch: 0 },
   { f: P3A + 14, in: 12, ease: io, ...GESTURES5.scratchHead, scratch: -1, eyeY: 0.3 },
 ]);
-const binoyActing = (lf: number): Pose => {
+/** Fast-action windows that stay on ones (24 fps); all other character motion steps on twos (12 fps). */
+const S01_FAST_WINDOWS: ReadonlyArray<readonly [number, number]> = [
+  [STRIKE - 2, BITE_AT + 8], // Tortoise strike lunge & bite snap
+  [SHOUT - 4, SHOUT + 14], // Binoy's sudden alarm
+];
+
+const binoyActingBase = (lf: number): Pose => {
   const k = binoyKeys(lf);
   const st = BINOY_STRIDE(lf);
   const ph = lf * 0.3 + CAST.binoy.seed;
@@ -444,7 +457,13 @@ const binoyActing = (lf: number): Pose => {
     lS: k.lS - Math.sin(ph) * 14 * st,
   };
 };
-const binoyX = (lf: number) => BINOY_SPOT(lf).x;
+const binoyActing = withGhibliActing(binoyActingBase, {
+  personality: "child",
+  seed: CAST.binoy.seed,
+  cadence: "twos",
+  fastWindows: S01_FAST_WINDOWS,
+});
+const binoyX = (lf: number) => BINOY_SPOT(ghibliClock(lf, "twos", S01_FAST_WINDOWS)).x;
 const binoyMouth = (lf: number): MouthState => (lf > SHOUT && lf < SHOUT + 46 ? shoutMouth(lf, SHOUT, 46, 3) : MOUTH_REST);
 
 const runPath = (lf: number, run: { start: number; dur: number }, to: { x: number; y: number; s: number }, seed: number, height: number, kind: WalkOpts["kind"]) => {
@@ -483,10 +502,17 @@ const charuKeys = makeActing<Pose>(BASE_POSE, [
   { f: CHEEK.b, in: CHEEK.b - CHEEK.a, ease: io, cheek: CHEEK_K, headTilt: 14, lid: 0.35, smile: 0.35, lean: 14, brow: 0.1, browTilt: 0.15 },
 ]);
 const charuState = (lf: number) => {
-  const run = runPath(lf, CHARU_RUN, CHARU, CAST.charu.seed, CAST.charu.height, "hurry");
-  const k = charuKeys(lf);
+  const cf = ghibliClock(lf, "twos", S01_FAST_WINDOWS);
+  const run = runPath(cf, CHARU_RUN, CHARU, CAST.charu.seed, CAST.charu.height, "hurry");
+  const k = charuKeys(cf);
   return { ...run, acting: { ...k, ...run.pose } as Pose };
 };
+const charuActing = withGhibliActing((fr) => charuState(fr).acting, {
+  personality: "mother",
+  seed: CAST.charu.seed,
+  cadence: "twos",
+  fastWindows: S01_FAST_WINDOWS,
+});
 const charuSigh = (lf: number) => (lf > SIGH_AT && lf < SIGH_AT + 16 ? 1 : 0);
 
 const surenKeys = makeActing<Pose>(BASE_POSE, [
@@ -498,15 +524,28 @@ const surenKeys = makeActing<Pose>(BASE_POSE, [
   { f: P3A + 26, in: 22, ease: io, ...GESTURES5.bendToLook, ...GESTURES5.puzzled, lean: 13, crouch: 0.06, headNod: 4, eyeY: 0.45 },
 ]);
 const surenState = (lf: number) => {
-  const run = runPath(lf, SUREN_RUN, SUREN, CAST.surendra.seed, CAST.surendra.height, "hurry");
-  return { ...run, acting: { ...surenKeys(lf), ...run.pose } as Pose };
+  const sf = ghibliClock(lf, "twos", S01_FAST_WINDOWS);
+  const run = runPath(sf, SUREN_RUN, SUREN, CAST.surendra.seed, CAST.surendra.height, "hurry");
+  return { ...run, acting: { ...surenKeys(sf), ...run.pose } as Pose };
 };
+const surenActing = withGhibliActing((fr) => surenState(fr).acting, {
+  personality: "adult",
+  seed: CAST.surendra.seed,
+  cadence: "twos",
+  fastWindows: S01_FAST_WINDOWS,
+});
 
 const MOTHER = KACHARI.corner.motherDoor;
-const motherKeys = makeActing<Pose>(BASE_POSE, [
+const motherKeysBase = makeActing<Pose>(BASE_POSE, [
   { f: 0, bodyTurn: safeBodyTurn(-0.34), headTurn: -0.18, brow: 0.3, smile: 0.1 },
   { f: SHOUT + 40, in: 16, ease: io, ...GESTURES5.handAtMouth, mouthHand: 1, bodyTurn: safeBodyTurn(-0.34), headTurn: -0.18 },
 ]);
+const motherKeys = withGhibliActing(motherKeysBase, {
+  personality: "mother",
+  seed: CAST.womanA.seed,
+  cadence: "twos",
+  fastWindows: S01_FAST_WINDOWS,
+});
 const motherStep = (lf: number) => track(lf, [[SHOUT + 4, 0], [SHOUT + 30, 1]]);
 
 const CLERK = KACHARI.compound.clerk;
@@ -580,6 +619,8 @@ const Deferred: React.FC<{ render: () => React.ReactNode }> = ({ render }) => <>
 export const GhibliScene01TortoisePlay: React.FC = () => {
   const { lifeF } = useStory5(SCENE_ID);
   const lf = lifeF;
+  // Characters animate on twos (12 fps) for authentic Ghibli weight, auto-switching to ones on fast strikes/shouts
+  const cf = ghibliClock(lf, "twos", S01_FAST_WINDOWS);
   const shot = shotAt(lf);
   const view = shot.view;
   const rawCam = (() => {
@@ -600,6 +641,7 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
   const charuVisible = view === "corner" && ch.visible;
   const charuHoldAt = { v: null as { x: number; y: number } | null };
 
+  // Run Balak's delicate hand & facial acting on smooth 24 fps (`lf`) so his gestures feel fluid and serene
   const balakBase = balakAt(lf, pl, elev, null);
   const cheekOn = lf >= CHEEK.a - 1;
   const holdBase = balakBase.pts.nearPalm;
@@ -609,13 +651,13 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
     charuPre = (
       <Puppet
         cast={CAST.charu}
-        f={lf}
-        lifeF={lf}
+        f={cf}
+        lifeF={cf}
         x={ch.x}
         y={ch.y}
         scale={ch.sc}
         flip
-        acting={(fr) => charuState(fr).acting}
+        acting={charuActing}
         light={SUN}
         holdAt={charuHoldTarget}
         opacity={0}
@@ -635,23 +677,36 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
   const renderBalak = (holdPt: { x: number; y: number } | null) => {
     const r = cheekOn && holdPt ? balakAt(lf, pl, elev, holdPt) : balakBase;
     const g = r.pts.glowAnchor;
+    const bodyXform = balakLivingBodyTransform({
+      x: pl.bx,
+      y: pl.by,
+      f: lf,
+      facing: 1,
+      tenderness: lf >= P3A ? 0.65 : 0,
+      seed: 19,
+    });
     return (
       <g>
-        <BirulGlow cx={g.cx} cy={g.cy} r={g.r} glow={glow} f={lf} />
-        <SeatedChild {...r.props} />
+        <ContactShadow x={pl.bx} y={pl.by + 2} rx={62 * balakS} ry={12 * balakS} opacity={0.30} castStretch={1.15} />
+        <GhibliBalakAura cx={g.cx} cy={g.cy} r={g.r} glow={glow} f={lf} />
+        <g filter="url(#ghibli-balak-ink)" transform={bodyXform}>
+          <SeatedChild {...r.props} />
+          {view === "corner" && <GhibliBalakLapDetails x={pl.bx} y={pl.by} s={balakS} f={lf} />}
+          {view === "corner" && <GhibliBalakFaceDetail cx={g.cx} cy={g.cy} s={balakS} zoom={cam.zoom} />}
+        </g>
       </g>
     );
   };
 
   const su = surenState(lf);
-  const mStep = motherStep(lf);
+  const mStep = motherStep(cf);
   const showMother = view === "corner" && lf >= SHOUT;
 
   const binoy = (
     <Puppet
       cast={CAST.binoy}
-      f={lf}
-      lifeF={lf}
+      f={cf}
+      lifeF={cf}
       x={binoyX(lf)}
       y={KACHARI.corner.binoyStop.y}
       scale={KACHARI.corner.binoyStop.s ?? 0.75}
@@ -665,8 +720,8 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
   const mother = showMother ? (
     <Puppet
       cast={CAST.womanA}
-      f={lf}
-      lifeF={lf}
+      f={cf}
+      lifeF={cf}
       x={MOTHER.x - 34 * (1 - mStep)}
       y={MOTHER.y}
       scale={MOTHER.s ?? 0.46}
@@ -677,49 +732,80 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
   ) : null;
 
   const clerk = (
-    <Puppet cast={CAST.listenerA} f={lf} lifeF={lf} x={CLERK.x} y={CLERK.y} scale={CLERK.s ?? 0.26} seated acting={clerkActing} light={SUN} />
+    <Puppet cast={CAST.listenerA} f={cf} lifeF={cf} x={CLERK.x} y={CLERK.y} scale={CLERK.s ?? 0.26} seated acting={clerkActing} light={SUN} />
   );
 
   const surendra =
     view === "corner" && su.visible ? (
       <Puppet
         cast={CAST.surendra}
-        f={lf}
-        lifeF={lf}
+        f={cf}
+        lifeF={cf}
         x={su.x}
         y={su.y}
         scale={su.sc}
         flip
-        acting={(fr) => surenState(fr).acting}
+        acting={surenActing}
         light={SUN}
         breathRate={lf > SUREN_RUN.start && lf < SUREN_RUN.start + SUREN_RUN.dur + 60 ? 1.6 : 1}
       />
     ) : null;
 
   const charuVisual = charuVisible ? (
-    <Puppet
-      cast={CAST.charu}
-      f={lf}
-      lifeF={lf}
-      x={ch.x}
-      y={ch.y}
-      scale={ch.sc}
-      flip
-      acting={(fr) => charuState(fr).acting}
-      light={SUN}
-      holdAt={charuHoldTarget}
-      sigh={charuSigh}
-      breathRate={lf > CHARU_RUN.start && lf < RISE_AT + 40 ? 1.55 : 1}
-    />
+    <g>
+      <ContactShadow x={ch.x} y={ch.y} rx={32 * ch.sc} ry={8 * ch.sc} opacity={0.34} castStretch={1.15} />
+      <GhibliFootstepDust
+        x={ch.x}
+        y={ch.y}
+        activity={lf >= CHARU_RUN.start && lf <= KNEEL_AT ? 0.85 : 0}
+        dir={-1}
+        s={ch.sc}
+        f={lf}
+        seed={37}
+      />
+      <Puppet
+        cast={CAST.charu}
+        f={cf}
+        lifeF={cf}
+        x={ch.x}
+        y={ch.y}
+        scale={ch.sc}
+        flip
+        acting={charuActing}
+        light={SUN}
+        holdAt={charuHoldTarget}
+        sigh={charuSigh}
+        breathRate={lf > CHARU_RUN.start && lf < RISE_AT + 40 ? 1.55 : 1}
+      />
+      {/* Trailing red-bordered saree anchal fluttering behind Charu as she hurries in */}
+      {lf < KNEEL_AT + 16 && (
+        <GhibliWindClothTail
+          x={ch.x + 14 * ch.sc}
+          y={ch.y - 165 * ch.sc}
+          len={66 * ch.sc}
+          width={24 * ch.sc}
+          dir={1}
+          fill="#f7f1e6"
+          trim="#a62c28"
+          f={lf}
+          wind={0.95}
+          seed={63}
+        />
+      )}
+    </g>
   ) : null;
 
   const lights: SceneLight[] = [{ x: -400, y: -300, color: "#ffe6b0", intensity: 0.35, radius: 1800 }];
-  const T = (i: number) => <Tortoise key={`t${i}`} {...tProps[i]} />;
+  const T = (i: number) => (
+    <g key={`t${i}`} filter="url(#ghibli-prop-watercolor)">
+      <Tortoise {...tProps[i]} />
+    </g>
+  );
 
   if (view === "compound") {
     const yard = (
       <g>
-        <GroundGlow x={pl.bx} y={pl.by} s={balakS} glow={glow} />
+        <GhibliBalakGroundGlow x={pl.bx} y={pl.by + 4} rx={155 * balakS} ry={28 * balakS} level={0.45 + 0.55 * glow} />
         {T(0)}
         {T(2)}
         {T(3)}
@@ -742,7 +828,7 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
 
   const farFloor = (
     <g>
-      <GroundGlow x={pl.bx} y={pl.by} s={balakS} glow={glow} />
+      <GhibliBalakGroundGlow x={pl.bx} y={pl.by + 4} rx={155 * balakS} ry={28 * balakS} level={0.45 + 0.55 * glow} />
       {T(0)}
       {T(3)}
       {T(2)}
@@ -758,12 +844,10 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
             {farFloor}
           </GhibliKachariFloorLayer>
           <GhibliLayer depth={1} extraBlur={shot.balakBlur ?? 0}>
-            <GhibliCharFilterDefs />
-            <g filter="url(#ghibli-char-ink)">
-              {charuPre}
-              <Deferred render={() => renderBalak(charuHoldAt.v)} />
-              {shot.balakBlur ? charuVisual : null}
-            </g>
+            <GhibliCharFilterDefs f={lf} />
+            {charuPre}
+            <Deferred render={() => renderBalak(charuHoldAt.v)} />
+            {shot.balakBlur ? <g filter="url(#ghibli-char-ink)">{charuVisual}</g> : null}
           </GhibliLayer>
           <GhibliLayer depth={1}>
             <GhibliCharFilterDefs />

@@ -29,6 +29,10 @@ import {
   GhibliSketchedLeaf,
   GhibliStage,
 } from "../../GhibliStage";
+import { withGhibliActing, ghibliClock } from "../../core/ghibliActing";
+import { balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
+import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { ThakurRefTraced, type RefTracedPose } from "../../../cinematic/thakur/ThakurRefTraced";
 import { GHIBLI_ANCHORS } from "../plateAnchors";
 
 /**
@@ -1152,12 +1156,30 @@ export const GhibliScene02TulsiCourtyard: React.FC = () => {
             <g transform={STAGING_TRANSFORM}>
               <ContactShadow x={middle.x} y={middle.y} rx={32 * middle.s} ry={8 * middle.s} />
               <g filter="url(#ghibli-char-ink)">
-                <Puppet cast={GIRL_C_CAST} f={lifeF} lifeF={lifeF} x={middle.x} y={middle.y} scale={middle.s} acting={MIDDLE_ACT} light={SUN} />
+                <Puppet
+                  cast={GIRL_C_CAST}
+                  f={ghibliClock(lifeF, "twos")}
+                  lifeF={ghibliClock(lifeF, "twos")}
+                  x={middle.x}
+                  y={middle.y}
+                  scale={middle.s}
+                  acting={withGhibliActing(MIDDLE_ACT, { personality: "mother", seed: GIRL_C_CAST.seed, cadence: "twos" })}
+                  light={SUN}
+                />
               </g>
 
               <ContactShadow x={young.x} y={young.y} rx={30 * young.s} ry={8 * young.s} />
               <g filter="url(#ghibli-char-ink)">
-                <Puppet cast={GIRL_B_CAST} f={lifeF} lifeF={lifeF} x={young.x} y={young.y} scale={young.s} acting={YOUNG_ACT} light={SUN} />
+                <Puppet
+                  cast={GIRL_B_CAST}
+                  f={ghibliClock(lifeF, "twos")}
+                  lifeF={ghibliClock(lifeF, "twos")}
+                  x={young.x}
+                  y={young.y}
+                  scale={young.s}
+                  acting={withGhibliActing(YOUNG_ACT, { personality: "child", seed: GIRL_B_CAST.seed, cadence: "twos" })}
+                  light={SUN}
+                />
               </g>
 
               {FLOOR_LEAVES.map((l, i) => (
@@ -1184,24 +1206,65 @@ export const GhibliScene02TulsiCourtyard: React.FC = () => {
                 targetHeight={34}
               />
 
-              {pickLeafOp > 0.01 && <PickLeaf opacity={pickLeafOp} />}
+              {pickLeafOp > 0.01 && (
+                <g filter="url(#ghibli-prop-watercolor)">
+                  <PickLeaf opacity={pickLeafOp} />
+                </g>
+              )}
               {kolsiRestOp > 0.01 && (
-                <g opacity={kolsiRestOp} transform={`translate(${KOLSI_REST.x}, ${KOLSI_REST.y})`}>
+                <g opacity={kolsiRestOp} transform={`translate(${KOLSI_REST.x}, ${KOLSI_REST.y})`} filter="url(#ghibli-prop-watercolor)">
                   <KolsiShape />
                 </g>
               )}
 
               <ContactShadow x={eldest.x} y={eldest.y} rx={34 * eldest.s} ry={9 * eldest.s} />
               <g filter="url(#ghibli-char-ink)">
-                <Puppet cast={GIRL_A_CAST} f={lifeF} lifeF={lifeF} x={eldest.x} y={eldest.y} scale={eldest.s} acting={ELDEST_ACT} mouth={eldestMouth} talk={eldestTalk} light={SUN} />
+                <Puppet
+                  cast={GIRL_A_CAST}
+                  f={ghibliClock(lifeF, "twos")}
+                  lifeF={ghibliClock(lifeF, "twos")}
+                  x={eldest.x}
+                  y={eldest.y}
+                  scale={eldest.s}
+                  acting={withGhibliActing(ELDEST_ACT, { personality: "mother", seed: GIRL_A_CAST.seed, cadence: "twos", speechRms: eldestTalk })}
+                  mouth={eldestMouth}
+                  talk={eldestTalk}
+                  light={SUN}
+                />
               </g>
 
-              {/* Balak's grounded contact shadow + restrained divine light + unchanged SeatedChild */}
-              <ContactShadow x={BALAK_POS.x + 8} y={BALAK_POS.y + 4} rx={86} ry={16} opacity={0.28} />
-              <GroundGlow level={0.55 + 0.45 * beat} />
-              <BirulGlow cx={glowAt.cx} cy={glowAt.cy} r={haloR} glow={glow} f={lifeF} />
-              <g filter="url(#ghibli-char-ink)" transform={`translate(0, ${balakBreathY.toFixed(2)})`}>
-                <SeatedChild {...balakProps} />
+              {/* Balak's grounded 2-layer shadow + painted divine radiance + luminous smooth 24 fps Child Thakur */}
+              <ContactShadow x={BALAK_POS.x + 8} y={BALAK_POS.y + 4} rx={86} ry={16} opacity={0.32} castStretch={1.15} />
+              <GhibliBalakGroundGlow x={BALAK_POS.x} y={BALAK_POS.y + 6} rx={165} ry={30} level={0.55 + 0.45 * beat} />
+              <GhibliBalakAura cx={glowAt.cx} cy={glowAt.cy} r={haloR} glow={glow} f={lifeF} />
+              <g
+                filter="url(#ghibli-balak-ink)"
+                transform={balakLivingBodyTransform({
+                  x: BALAK_POS.x,
+                  y: BALAK_POS.y,
+                  f: lifeF,
+                  facing: -1,
+                  speechRms: (() => {
+                    const v = voiceAt(BALAK_PARTS, lifeF);
+                    return v ? speechLevel(v.env, v.rel) : 0;
+                  })(),
+                  seed: 13,
+                })}
+              >
+                <ThakurRefTraced
+                  x={BALAK_POS.x}
+                  y={BALAK_POS.y}
+                  s={BALAK_POS.s * 0.242}
+                  f={balakProps.f}
+                  lifeF={lifeF}
+                  pose={(rig.pose as RefTracedPose) ?? "sitCross"}
+                  prevPose={rig.prevPose as RefTracedPose | undefined}
+                  poseStart={rig.poseStart}
+                  footFlowers={footFlowersAt(f)}
+                  mouth={mouth}
+                  face={face}
+                  halo={0}
+                />
               </g>
             </g>
           </GhibliLayer>
