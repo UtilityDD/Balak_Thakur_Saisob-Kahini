@@ -20,7 +20,10 @@ import React, { useId } from "react";
  * top at about PLATE_HAIR_TOP (-52), the chin at plateChinY(age) (37 at age 5). `scale` multiplies all of it (the
  * seated rig uses 0.97 in figure units). `rot` is the in-plane head tilt in degrees about the origin.
  *
- * Turn: PlateFaceState.turn -1..1 is three-quarter, up to +-1.8 a near profile (see PlateFaceState.turn).
+ * Turn: PlateFaceState.turn -1..1 is three-quarter. The drawing reads cleanly up to +-PLATE_TURN_READ (1.3, a strong
+ * three-quarter); larger values (the state still accepts +-1.8) are drawn at 1.3, because the near-profile extension
+ * broke beyond it (2026-11-23). Within +-1 nothing changed; the ear on the turn side now slides under the cheek instead
+ * of fading to a half-transparent ghost.
  *
  * State: `PlateFaceState` is the frame's face (turn, gaze, blink and lids, expression weights, brows, mouth). Rigs with
  * their own eye logic (SeatedChild) fill it themselves; others call `plateFaceState(...)`, which derives it from simple
@@ -69,6 +72,25 @@ export const PLATE_COLORS = {
   clothInner: "#a0998c",
 } as const;
 export type PlateColors = { [K in keyof typeof PLATE_COLORS]: string };
+/**
+ * BAL-26c (2026-11-23), opt-in: the healthy look's palette: a warmer, livelier skin (the same hue family as plate 01,
+ * a touch more red-gold) and warm cotton shading in the white folds (cream lights, honey-grey shades instead of cool
+ * grey). Used by StandingChild build="healthy"; a seated rig can pass it too so the boy matches.
+ */
+export const PLATE_COLORS_HEALTHY: PlateColors = {
+  ...PLATE_COLORS,
+  skin: "#cf955f",
+  skinLit: "#e4af78",
+  skinFar: "#b97e4c",
+  skinShade: "#8c5830",
+  blush: "#ef8c76",
+  clothLit: "#fffaf1",
+  cloth: "#f6efe2",
+  clothMid: "#ece2d0",
+  clothFold: "#dccab0",
+  clothShade: "#c6b193",
+  clothInner: "#a99273",
+};
 
 /* ------------------------------------------------------------------ */
 /* Geometry helpers for the rigs                                        */
@@ -76,12 +98,33 @@ export type PlateColors = { [K in keyof typeof PLATE_COLORS]: string };
 
 /** Age offset used by the geometry: 0 at age 5, clamped to 4..12. */
 export const plateAgeY = (age = 5): number => Math.min(7, Math.max(-1, age - 5));
+/**
+ * The largest head turn that is drawn (2026-11-23): beyond about 1.3 the near-profile extension broke (the far ear slid
+ * onto the cheek, the nose poked past the face outline, the turn-side eye collapsed). Larger requested turns are drawn at
+ * this value. Turns within +-1 are unchanged.
+ */
+export const PLATE_TURN_READ = 1.3;
 /** Top of the hair (head-local). */
 export const PLATE_HAIR_TOP = -52.5;
 /** Chin (head-local y) at an age. */
 export const plateChinY = (age = 5): number => 37 + 1.3 * plateAgeY(age);
 /** Centre of the closed mouth (head-local) at turn 0 and an age: for cups, bowls and hands at the lips. */
 export const plateMouthAt = (age = 5): { x: number; y: number } => ({ x: 3, y: 20.6 + 0.85 * plateAgeY(age) });
+/**
+ * Episode 6 helper: centre of one eye at a head turn, in the head's units AFTER its 0.95 horizontal squash (multiply by
+ * `scale`, then rotate by `rot` about the head centre). side +1 = the eye on the +x side of the head, -1 = the -x side.
+ */
+export const plateEyeAt = (turnIn: number, age = 5, side: 1 | -1 = 1): { x: number; y: number } => {
+  const turn = clamp(turnIn, -PLATE_TURN_READ, PLATE_TURN_READ);
+  const tSg = turn < 0 ? -1 : 1;
+  const pu = smooth(clamp((Math.abs(turn) - 1) / 0.8, 0, 1));
+  const tY = clamp(turn, -1.8, 1.8) * 4.5 + tSg * 14 * pu;
+  const m = 3 + tY;
+  const ageY = plateAgeY(age);
+  const eyeK = 1 - 0.03 * ageY;
+  const x = side > 0 ? m + 15.2 * eyeK * (tSg > 0 ? 1 - 0.5 * pu : 1) : m - 15.4 * eyeK * (tSg < 0 ? 1 - 0.5 * pu : 1);
+  return { x: 0.95 * x, y: -1 + 0.35 * ageY };
+};
 /** Neck radii (base, top) in head-local units: a slim child's neck. */
 export const PLATE_NECK_R: [number, number] = [11.4, 10.4];
 
@@ -124,9 +167,17 @@ export interface PlateFaceState {
   pressed: number;
   /** Cheeks lifting with a smile (units). */
   cheekUp: number;
+  /**
+   * Episode 6, opt-in (absent = off): teary eyes 0..1. A wet shine along the lower lids, a slightly reddened lower rim, a
+   * second glistening catchlight; never a streaming cry or an open-mouth sob. A scene fades it out.
+   */
+  tear?: number;
+  /** Episode 6, opt-in: the inner brow ends drawn toward each other (hurt), 0..1. */
+  browDraw?: number;
 }
 
-export type PlateExpression = "serene" | "joyful" | "thoughtful" | "compassionate" | "playful" | "surprised";
+/** "hurt" and "forgiving" are Episode 6 additions (opt-in; the older expressions are unchanged). */
+export type PlateExpression = "serene" | "joyful" | "thoughtful" | "compassionate" | "playful" | "surprised" | "hurt" | "forgiving";
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -181,6 +232,8 @@ const exprW = (e: PlateExpression) => ({
   comp: e === "compassionate" ? 1 : 0,
   play: e === "playful" ? 1 : 0,
   sur: e === "surprised" ? 1 : 0,
+  hurt: e === "hurt" ? 1 : 0,
+  forg: e === "forgiving" ? 1 : 0,
 });
 
 export interface PlateFaceInput {
@@ -206,6 +259,8 @@ export interface PlateFaceInput {
   smile?: number;
   /** Extra closure 0..1 (eyes closed in prayer, a slow blink of surprise). */
   close?: number;
+  /** Episode 6, opt-in: teary eyes 0..1 (see PlateFaceState.tear). */
+  tear?: number;
 }
 
 /** Face state from simple inputs: expression blend, slow blinks and saccades on the life clock, lip sync. */
@@ -229,7 +284,7 @@ export const plateFaceState = (p: PlateFaceInput): PlateFaceState => {
   const thinkDown = thought * (1 - eyeUp);
   const lx = clamp(p.lookX ?? 0, -1, 1);
   const ly = clamp(p.lookY ?? 0, -1, 1);
-  return {
+  const st: PlateFaceState = {
     turn: clamp(p.turn ?? 0, -1.8, 1.8),
     gazeX: clamp(lx * 2 + 0.2 * wob(L, 6.1, 0.6) - 0.3 * thinkDown + 0.3 * Math.sin(Math.floor(L / 37) * 12.9898) * 0.8, -2.3, 2.3),
     gazeY: clamp(0.35 + ly * 1.6 - 1.6 * eyeUp + 1.1 * eyeDown + 0.9 * thinkDown + 0.15 * Math.sin(Math.floor(L / 41) * 78.233), -1.7, 2.6),
@@ -248,6 +303,24 @@ export const plateFaceState = (p: PlateFaceInput): PlateFaceState => {
     pressed: 0.6 * thought,
     cheekUp: 1.6 * joy + 0.6 * comp + 0.6 * play,
   };
+  // Episode 6 additions, applied only when used (the older expressions give exactly the same state as before).
+  const hurt = lerp(a.hurt, b.hurt, u);
+  const forg = lerp(a.forg, b.forg, u);
+  if (hurt > 0 || forg > 0) {
+    // hurt: brows a little raised and drawn together, mouth closed and level, eyes soft (lids a touch heavier)
+    // forgiving: a small closed-lip smile with soft eyes (cheeks lift the lower lids a little), never a grin
+    st.smile = clamp(st.smile - 0.3 * hurt + 0.24 * forg, 0, lerp(1.15, 0.8, Math.max(hurt, forg)));
+    st.lid = clamp(st.lid + 0.07 * hurt + 0.05 * forg, 0.04, 0.9);
+    st.lowLift = clamp(st.lowLift + 0.12 * hurt + 0.34 * forg, 0, 1);
+    st.browLift += 0.7 * hurt;
+    st.browInner += 0.85 * hurt + 0.2 * forg;
+    st.browDraw = 0.8 * hurt;
+    st.mouthW *= 1 - 0.08 * hurt + 0.04 * forg;
+    st.pressed = Math.max(st.pressed, 0.28 * hurt);
+    st.cheekUp += 0.7 * forg;
+  }
+  if (p.tear !== undefined && p.tear > 0) st.tear = clamp(p.tear, 0, 1);
+  return st;
 };
 
 /* ------------------------------------------------------------------ */
@@ -333,19 +406,26 @@ export interface ThakurHeadPlateProps {
   /** Years, 4 to 12 (default 5): older means a longer face, a slightly narrower jaw, smaller eyes relative to the face. */
   age?: number;
   colors?: PlateColors;
+  /**
+   * BAL-26c opt-in (absent = unchanged): bright, open eyes with clear catchlights, alert brows and a touch of cheek
+   * warmth. The face design and proportions stay BAL-26.
+   */
+  vivid?: boolean;
 }
 
 /** Balak's head in the BAL-26 plate design. See the file header. */
-export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0, scale = 1, state: S, age = 5, colors = PLATE_COLORS }) => {
+export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0, scale = 1, state: S, age = 5, colors = PLATE_COLORS, vivid = false }) => {
   const uid = safe(useId());
   const C = colors;
   const ageY = plateAgeY(age);
   // Turn: |turn| <= 1 slides the features (three-quarter); beyond 1 (to 1.8, near profile) `pu` goes 0..1: the
   // features slide on toward the silhouette, the eye on that side foreshortens and hides behind the nose bridge, the
   // nose shows on the silhouette, that ear disappears, the other ear moves toward the head's centre, the hair follows.
-  const tSg = S.turn < 0 ? -1 : 1;
-  const pu = smooth(clamp((Math.abs(S.turn) - 1) / 0.8, 0, 1));
-  const tY = clamp(S.turn, -1.8, 1.8) * 4.5 + tSg * 14 * pu;
+  // The drawn turn is limited to +-PLATE_TURN_READ, where the face reads cleanly (2026-11-23; see the header).
+  const turnD = clamp(S.turn, -PLATE_TURN_READ, PLATE_TURN_READ);
+  const tSg = turnD < 0 ? -1 : 1;
+  const pu = smooth(clamp((Math.abs(turnD) - 1) / 0.8, 0, 1));
+  const tY = turnD * 4.5 + tSg * 14 * pu;
   const m = 3 + tY; // facial midline
   const oX = 0.3 * tY; // outline shift
   const hX = 0.55 * tY; // part and strands shift
@@ -355,12 +435,14 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
   const jc = 1 - 0.02 * ageY; // full child cheeks, a touch less round when older
   const eyeK = 1 - 0.03 * ageY;
   const eyeY = -1 + 0.35 * ageY;
-  const browY = eyeY - 12;
+  const browY = eyeY - 12 - (vivid ? 0.7 : 0);
   const noseY = 10.9 + 0.6 * ageY;
   const mouthY = plateMouthAt(age).y;
   const ex = { joy: S.joy, comp: S.comp, thought: S.thought, play: S.play };
   /** Joyful, and playful a little lighter: open bright eyes with a lower-lid crescent, round cheeks, a warm smile. */
   const happy = clamp(S.joy + 0.7 * S.play, 0, 1);
+  /** Episode 6 teary eyes (opt-in, 0 = off). */
+  const tear = clamp(S.tear ?? 0, 0, 1);
   const sh = (pts: Array<[number, number]>, dx: number): V[] => pts.map(([px, py]) => ({ x: px + dx, y: py }));
 
   // A child-rounded oval: widest at the cheeks, a soft rounded chin (rounder than the age 12 plate).
@@ -464,7 +546,7 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
     // Calm almond eyes (plate 01): at rest (lid 0.16) the heavy upper lid covers the top fifth or so of the iris,
     // with no white above it; looking down lowers it further; a blink closes it.
     // Joy: a warm eye-smile, the cheeks lift the lower lids and the upper lids soften a little (BAL-22).
-    const k = Math.max(clamp(0.29 + 1.1 * (S.lid - 0.16) - 0.13 * happy, 0.06, 1), S.blink);
+    const k = Math.max(clamp(0.29 + 1.1 * (S.lid - 0.16) - 0.13 * happy - (vivid ? 0.09 : 0), 0.06, 1), S.blink);
     const lift = S.lowLift;
     const cLow = CL - 3 * lift;
     const cU = lerp(CU_OPEN, cLow - 0.6, k);
@@ -495,9 +577,41 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
               <circle cx={gx.toFixed(2)} cy={gy.toFixed(2)} r={irisR.toFixed(2)} fill={C.iris} />
               <circle cx={gx.toFixed(2)} cy={(gy + 1.7).toFixed(2)} r={(irisR * 0.6).toFixed(2)} fill={C.irisRing} opacity={0.32} />
               <circle cx={gx.toFixed(2)} cy={gy.toFixed(2)} r={(2.2 * eyeK).toFixed(2)} fill={C.pupil} />
-              <circle cx={(-sgn * 2 + gx).toFixed(2)} cy={hlY.toFixed(2)} r={(1.45 * eyeK).toFixed(2)} fill="#ffffff" />
+              <circle cx={(-sgn * 2 + gx).toFixed(2)} cy={hlY.toFixed(2)} r={((vivid ? 1.75 : 1.45) * eyeK).toFixed(2)} fill="#ffffff" />
+              {vivid && <circle cx={(sgn * 1.9 + gx).toFixed(2)} cy={(gy + 2.4).toFixed(2)} r={(0.7 * eyeK).toFixed(2)} fill="#ffffff" opacity={0.7} />}
+              {tear > 0.001 && (
+                <>
+                  {/* Teary (Ep 6): a second small catchlight and the bright water line of tears along the lower lid
+                      margin (clipped to the eye, so only a thin meniscus shows) */}
+                  <circle cx={(sgn * 1.9 + gx).toFixed(2)} cy={(gy + 2.5).toFixed(2)} r={(0.8 * eyeK).toFixed(2)} fill="#ffffff" opacity={(0.8 * tear).toFixed(3)} />
+                  <path d={`M${EW.toFixed(2)} ${EOUT.toFixed(2)} ${lowD(Math.max(cLow, cU + 0.8) - 0.15)}`} fill="none" stroke="#ffffff" strokeWidth={2.2} strokeLinecap="round" opacity={(0.55 * tear).toFixed(3)} />
+                </>
+              )}
             </g>
           </g>
+        )}
+        {tear > 0.001 && k < 0.92 && (
+          <>
+            {/* the lower rim a little reddened, with a fine wet shine along its edge; a tiny pooled glint at the inner
+                corner (no drop runs down the cheek) */}
+            <path
+              d={`M${(-EW * 0.8).toFixed(2)} ${(lowMid * 0.72 + 1.1).toFixed(2)} Q0.2 ${(lowMid + 2.4).toFixed(2)} ${(EW * 0.85).toFixed(2)} ${(lowMid * 0.6 + 0.9).toFixed(2)}`}
+              fill="none"
+              stroke="#c4614f"
+              strokeWidth={1.7}
+              strokeLinecap="round"
+              opacity={(0.34 * tear).toFixed(3)}
+            />
+            <path
+              d={`M${(-EW * 0.62).toFixed(2)} ${(lowMid * 0.62 + 1.5).toFixed(2)} Q0.2 ${(lowMid + 2.9).toFixed(2)} ${(EW * 0.66).toFixed(2)} ${(lowMid * 0.58 + 1.3).toFixed(2)}`}
+              fill="none"
+              stroke="#fff4e6"
+              strokeWidth={0.7}
+              strokeLinecap="round"
+              opacity={(0.4 * tear).toFixed(3)}
+            />
+            <ellipse cx={(-EW * 0.86).toFixed(2)} cy={(EIN + 0.9).toFixed(2)} rx={1.2} ry={0.8} fill="#ffffff" opacity={(0.55 * tear).toFixed(3)} />
+          </>
         )}
         {/* Firm upper lash line, a touch heavier on its outer half (no cat-eye flick) */}
         <path d={lidD(cU)} fill="none" stroke={C.lash} strokeWidth={k > 0.9 ? 1.8 : 2.7} strokeLinecap="round" />
@@ -520,7 +634,7 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
 
   // Brows: straight, dark and firm, thick at the inner end, tapering outward.
   const brow = (dir: number, k: number): string => {
-    const xi = m + dir * 5.2 * k;
+    const xi = S.browDraw ? m + dir * (5.2 - 1.3 * S.browDraw) * k : m + dir * 5.2 * k;
     const xm = m + dir * 13 * k;
     const xo = m + dir * 21 * k;
     const yi = browY - S.browInner - 0.5 * S.browLift;
@@ -536,8 +650,8 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
       { x: xi, y: yi + 1.5 },
     ]);
   };
-  const farK = clamp(0.93 - 0.02 * tY, 0.82, 1) * (1 - 0.7 * (S.turn < 0 ? pu : 0));
-  const nearK = clamp(1 - 0.03 * Math.max(0, tY), 0.85, 1) * (1 - 0.7 * (S.turn > 0 ? pu : 0));
+  const farK = clamp(0.93 - 0.02 * tY, 0.82, 1) * (1 - 0.7 * (turnD < 0 ? pu : 0));
+  const nearK = clamp(1 - 0.03 * Math.max(0, tY), 0.85, 1) * (1 - 0.7 * (turnD > 0 ? pu : 0));
   // In a near profile the eye on the turn side slides behind the nose bridge, narrows and fades out.
   const eyeFarX = m - 15.4 * eyeK * (tSg < 0 ? 1 - 0.5 * pu : 1);
   const eyeNearX = m + 15.2 * eyeK * (tSg > 0 ? 1 - 0.5 * pu : 1);
@@ -581,13 +695,13 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
 
       {/* Ears: both visible, big for a child: the top at brow level, the bottom at the nose tip, a simple inner fold.
           The near one slips behind the cheek as the head turns toward it. */}
-      <g transform={`translate(${(0.2 * oX + (tSg > 0 ? 12 * pu : -8 * pu)).toFixed(2)} 0)`} opacity={(tSg < 0 ? 1 - smooth(pu / 0.6) : 1).toFixed(3)}>
+      <g transform={`translate(${(0.2 * oX + (tSg > 0 ? 12 * pu : 10 * pu)).toFixed(2)} 0)`}>
         <ellipse cx={-31.6} cy={(eyeY - 0.4).toFixed(2)} rx={6.2} ry={11.4} fill={skinEdge(C.skin, C.skinShade)} />
         <ellipse cx={-32} cy={(eyeY - 1).toFixed(2)} rx={5.2} ry={10.4} fill={C.skin} />
         <path d={`M-29.2 ${(eyeY - 8.6).toFixed(2)} Q-36 ${(eyeY - 1.6).toFixed(2)} -30.4 ${(eyeY + 8.6).toFixed(2)}`} fill="none" stroke={C.skinShade} strokeWidth={1.2} strokeLinecap="round" opacity={0.7} />
         <path d={`M-31 ${(eyeY - 3).toFixed(2)} Q-33 ${(eyeY + 0.4).toFixed(2)} -30.8 ${(eyeY + 3.4).toFixed(2)}`} fill="none" stroke={C.skinShade} strokeWidth={1} strokeLinecap="round" opacity={0.5} />
       </g>
-      <g transform={`translate(${(-0.5 * tY + (tSg < 0 ? -19 * pu : 0)).toFixed(2)} 0)`} opacity={(tSg > 0 ? 1 - smooth(pu / 0.6) : 1).toFixed(3)}>
+      <g transform={`translate(${(-0.5 * tY + (tSg < 0 ? -19 * pu : -10 * pu)).toFixed(2)} 0)`}>
         <ellipse cx={35.2} cy={(eyeY - 0.2).toFixed(2)} rx={5.4} ry={11} fill={skinEdge(C.skinFar, C.skinShade)} />
         <ellipse cx={35.6} cy={(eyeY - 0.8).toFixed(2)} rx={4.4} ry={10} fill={C.skinFar} />
         <path d={`M33.4 ${(eyeY - 8).toFixed(2)} Q39.4 ${(eyeY - 1).toFixed(2)} 34.4 ${(eyeY + 8.2).toFixed(2)}`} fill="none" stroke={C.skinShade} strokeWidth={1.2} strokeLinecap="round" opacity={0.65} />
@@ -646,8 +760,8 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
         </>
       )}
       {/* Very faint child blush, lifting with a smile */}
-      <ellipse cx={(m - 17).toFixed(2)} cy={(eyeY + 11 - S.cheekUp).toFixed(2)} rx={6.2 * (1 + 0.12 * ex.joy)} ry={4} fill={`url(#${uid}-blush)`} opacity={0.35 + 0.3 * happy} />
-      <ellipse cx={(m + 17).toFixed(2)} cy={(eyeY + 11 - S.cheekUp).toFixed(2)} rx={6.4 * (1 + 0.12 * ex.joy)} ry={4.1} fill={`url(#${uid}-blush)`} opacity={0.35 + 0.3 * happy} />
+      <ellipse cx={(m - 17).toFixed(2)} cy={(eyeY + 11 - S.cheekUp).toFixed(2)} rx={6.2 * (1 + 0.12 * ex.joy)} ry={4} fill={`url(#${uid}-blush)`} opacity={0.35 + 0.3 * happy + (vivid ? 0.2 : 0)} />
+      <ellipse cx={(m + 17).toFixed(2)} cy={(eyeY + 11 - S.cheekUp).toFixed(2)} rx={6.4 * (1 + 0.12 * ex.joy)} ry={4.1} fill={`url(#${uid}-blush)`} opacity={0.35 + 0.3 * happy + (vivid ? 0.2 : 0)} />
 
       <g opacity={(1 - smooth((hideF - 0.45) / 0.4)).toFixed(3)}>{eye(eyeFarX, eyeY, 0, farK * eyeK, true)}</g>
       <g opacity={(1 - smooth((hideN - 0.45) / 0.4)).toFixed(3)}>{eye(eyeNearX, eyeY, 1, nearK * eyeK, false)}</g>

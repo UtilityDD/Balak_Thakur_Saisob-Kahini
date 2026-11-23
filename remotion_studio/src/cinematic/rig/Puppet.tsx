@@ -46,8 +46,23 @@ export interface CastMember {
   lowerTrim?: string;
   /** "hitched" (Episode 5 on): a working man's dhoti tucked up for work (malkochha), the hem above the knee. */
   dhotiLength?: "knee" | "calf" | "hitched";
-  /** "gamchha" (Episode 5 on): a checked cotton towel folded over the left shoulder, one end down the chest. */
-  scarf?: { color: string; shade: string; trim?: string; style: "drape" | "neck" | "shawl" | "check" | "gamchha" };
+  /**
+   * "gamchha" (Episode 5 on): a checked cotton towel folded over the left shoulder, one end down the chest.
+   * "waist" (Episode 6 on): a checked gamchha tied round the waist over the dhoti, knotted at the near hip with a short
+   * end hanging (the culprit friend's red gamchha).
+   */
+  scarf?: { color: string; shade: string; trim?: string; style: "drape" | "neck" | "shawl" | "check" | "gamchha" | "waist" };
+  /**
+   * A small block print on the top's cloth (Episode 6 on: the elder brother's printed cotton shirt): tiny four-petal
+   * buti (`motif` "buti", default) or dots, in `color` (and `color2` for the centres), over the body and sleeves.
+   */
+  print?: { color: string; color2?: string; motif?: "buti" | "dots" };
+  /**
+   * Head size relative to the rig's default for this age and height (Episode 6 on, CHR-08: the village children get
+   * 0.8 so they sit closer to Balak's plate proportions). Below 1 the shoulders, hips, limbs and hands slim a little
+   * with it (by about a third of the change) so the figure never looks pin-headed. Absent = 1 = exactly as before.
+   */
+  headScale?: number;
   mustache?: string;
   glasses?: boolean;
   tilak?: boolean;
@@ -142,6 +157,27 @@ export interface Pose {
   poleDrop: number;
   /** Bamboo pole: lift of its foot above the ground while planted (figure px); `bambooThump` keys it. */
   poleLift: number;
+  /* ---- Episode 6 gestures (all 0 = off; solved every frame, blend with their weight; see EPISODE 6 PEOPLE below) ---- */
+  /** -1..1 one open hand swung down onto PuppetProps.swatAt (sign = arm); drive it and swatHit with `swatPulse`. */
+  swat: number;
+  /** 0..1 the swat's travel along its arc: 0 = raised above the shoulder, 1 = the palm on swatAt. Not smoothed. */
+  swatHit: number;
+  /** 0..1 shoulders drawn up and the head sunk between them (fright, cowering). */
+  hunch: number;
+  /** -1..1 the index finger upright across the lips ("shh"); sign = arm. */
+  shush: number;
+  /** 0..1 both fists on the hips, elbows out. */
+  hips: number;
+  /** 0..1 both hands clasped behind the back (sheepish); both arms are drawn behind the body while > 0.5. */
+  behind: number;
+  /** -1..1 one hand to PuppetProps.reachAt (palm centre; sign = arm), with the pose's own hand shape. */
+  reach: number;
+  /** 0..1 with reach: 0 palm down (on a shoulder, dropping coins into a palm), 1 palm up (held out, asking). */
+  reachUp: number;
+  /** 0..1 both hands cupped together, palms up, at PuppetProps.reachAt (default: in front of the chest). */
+  cupHands: number;
+  /** -1..1 one foot lifted, knee up (sign = leg: + right, - left); drive with `stampPulse`. Not smoothed. */
+  stamp: number;
 }
 
 export const BASE_POSE: Pose = {
@@ -188,6 +224,16 @@ export const BASE_POSE: Pose = {
   poleTilt: 0,
   poleDrop: 0,
   poleLift: 0,
+  swat: 0,
+  swatHit: 0,
+  hunch: 0,
+  shush: 0,
+  hips: 0,
+  behind: 0,
+  reach: 0,
+  reachUp: 0,
+  cupHands: 0,
+  stamp: 0,
 };
 
 export interface PropCtx {
@@ -240,6 +286,14 @@ interface Body {
 }
 
 const bodyFor = (c: CastMember): Body => {
+  const b = bodyBase(c);
+  const k = c.headScale;
+  if (k === undefined || k === 1) return b;
+  const m = lerp(1, k, 0.3);
+  return { ...b, headR: b.headR * k, sw: b.sw * m, hw: b.hw * m, limbW: b.limbW * m, hand: b.hand * lerp(1, k, 0.4) };
+};
+
+const bodyBase = (c: CastMember): Body => {
   const h = c.height;
   const g = c.girth;
   if (c.age === "child") {
@@ -346,7 +400,7 @@ const poseHold = (q: Pose): number => {
   const elbow = Math.max(0, Math.max(Math.abs(q.rE - BASE_POSE.rE), Math.abs(q.lE - BASE_POSE.lE)) - 8) / 40;
   const back = Math.max(q.rBack, q.lBack);
   const hands = q.rHand !== BASE_POSE.rHand || q.lHand !== BASE_POSE.lHand || q.rProp || q.lProp ? 1 : 0;
-  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4 + q.kneel + q.bow + q.join + Math.abs(q.headHands) + Math.abs(q.scratch) + Math.abs(q.mouthHand) + q.hold + Math.abs(q.jab) + Math.abs(q.throwUp);
+  const body = Math.abs(q.lean) / 3 + q.crouch + Math.abs(q.headTurn) / 0.5 + Math.abs(q.headNod) / 4 + Math.abs(q.headTilt) / 4 + q.kneel + q.bow + q.join + Math.abs(q.headHands) + Math.abs(q.scratch) + Math.abs(q.mouthHand) + q.hold + Math.abs(q.jab) + Math.abs(q.throwUp) + Math.abs(q.swat) + q.hunch + Math.abs(q.shush) + q.hips + q.behind + Math.abs(q.reach) + q.cupHands + Math.abs(q.stamp);
   const emotion = Math.max(q.tears, q.gasp) * 2;
   const moving = Math.abs(q.stride) * 2;
   return clamp(Math.max(reach, elbow, back, hands, body, emotion, moving));
@@ -524,7 +578,7 @@ export const puppetBreath = ({ t, f, seed, child = false, stillness = 0, rate = 
  * raised-cosine kernel, so a step becomes an ease-in-out over about 9 frames and no joint jumps faster than that. */
 
 type NumKey = { [K in keyof Pose]: Pose[K] extends number ? K : never }[keyof Pose];
-const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack", "kneel", "bow", "join", "headHands", "scratch", "mouthHand", "hold", "holdTurn", "cheek", "jab", "throwUp", "poleTilt", "poleDrop", "poleLift"];
+const BODY_KEYS: NumKey[] = ["lean", "bodyX", "bodyY", "bodyTurn", "crouch", "headTurn", "headTilt", "headNod", "rS", "rE", "lS", "lE", "stride", "rBack", "lBack", "kneel", "bow", "join", "headHands", "scratch", "mouthHand", "hold", "holdTurn", "cheek", "jab", "throwUp", "poleTilt", "poleDrop", "poleLift", "swat", "hunch", "shush", "hips", "behind", "reach", "reachUp", "cupHands"];
 const EYE_KEYS: NumKey[] = ["eyeX", "eyeY"];
 /** Raised-cosine weights for offsets -r..r (window of 2r + 2 frames, so the ends carry a little weight). */
 const kernel = (r: number) => Array.from({ length: 2 * r + 1 }, (_, i) => 0.5 + 0.5 * Math.cos((Math.PI * (i - r)) / (r + 1)));
@@ -595,6 +649,18 @@ export interface PuppetProps {
    * child's arm, a dust puff at the pole's foot) AFTER this Puppet in the same tree: React renders siblings in order.
    */
   anchors?: (a: PuppetAnchors) => void;
+  /** World point (story clock) the open palm lands on under Pose.swat (the younger brother's back). */
+  swatAt?: (f: number) => { x: number; y: number };
+  /** World point (story clock) for Pose.reach (palm centre) and Pose.cupHands (the cupped palms' centre). */
+  reachAt?: (f: number) => { x: number; y: number };
+  /**
+   * Episode 6: "khadam" puts wooden sandals (খড়ম) under both feet: a flat wooden sole a little longer than the foot
+   * with a toe peg and its round knob held between the big and second toe, in the colours of the resting pair in
+   * episode05 Scene99 (KhadamOne). The figure stands on them (raised by the sole's thickness); the sole stays flat on
+   * the ground while the foot is planted and lifts with it in a walk. Standing, walking and crouching only (not seated,
+   * kneeling, or under a sari). Default: barefoot, exactly as before. See `walkPlantFrames` for the clack frames.
+   */
+  footwear?: "khadam";
 }
 
 type XY = { x: number; y: number };
@@ -609,6 +675,11 @@ export interface PuppetAnchors {
   poleGrip: XY | null;
   poleBase: XY | null;
   poleTip: XY | null;
+  /**
+   * Episode 6: each foot's sole centre on the ground plane (world px; with khadam, the wooden sole's underside) and its
+   * lift above the ground (world px, 0 = planted). The leg with the larger lift is the swinging one.
+   */
+  feet: Array<{ side: 1 | -1; x: number; y: number; lift: number }>;
 }
 
 export const Puppet: React.FC<PuppetProps> = ({
@@ -634,6 +705,9 @@ export const Puppet: React.FC<PuppetProps> = ({
   pointAt,
   poleLength,
   anchors,
+  swatAt,
+  reachAt,
+  footwear,
 }) => {
   const life = lifeF ?? f; // life clock (idle life); f stays the story clock
   const ctxLights = React.useContext(SceneLights);
@@ -784,10 +858,17 @@ export const Puppet: React.FC<PuppetProps> = ({
   // kneeling (Pose.kneel): thighs forward and down to the knees on the floor, shins straight back along the floor
   // (sp = th - kn stays at -1.5); as she bows the hips rise a little off the heels (the thigh stands up)
   const KNEEL_TH = lerp(1.3, 0.92, bowK);
-  const legAngles = (side: 1 | -1, plant = false) => {
+  const legAnglesK = (side: 1 | -1, plant = false) => {
     const a = legAnglesBase(side, plant);
     if (kneelK <= 0) return a;
     return { th: lerp(a.th, KNEEL_TH, kneelK), ab: lerp(a.ab, 0.1, kneelK), kn: lerp(a.kn, KNEEL_TH + 1.5, kneelK) };
+  };
+  // Episode 6 (Pose.stamp): one knee comes up (thigh forward, shin folded back) and the foot drops back flat
+  const stampK = seated ? 0 : clamp(Math.abs(p.stamp)) * (1 - kneelK);
+  const legAngles = (side: 1 | -1, plant = false) => {
+    const a = legAnglesK(side, plant);
+    if (stampK <= 0 || Math.sign(p.stamp) !== side) return a;
+    return { th: a.th + 0.62 * stampK, ab: a.ab, kn: a.kn + 1.15 * stampK };
   };
   function legAnglesBase(side: 1 | -1, plant = false) {
     if (seated) return { th: 1.42, ab: 0.95, kn: 2.7 };
@@ -858,11 +939,18 @@ export const Puppet: React.FC<PuppetProps> = ({
       lowest: Math.max(sole[1], knee[1] + B.limbW * 1.2),
       kneeDown: kn > 1.6 && th < 0.3,
       z: rotY(knee).z + rotY(hip).z,
+      // Episode 6 (khadam): the sole centre and the foot's own axes, in the rotated figure frame
+      soleP: rotY(sole),
+      fwdP: rotY(fv),
+      perpP: rotY(perp),
     };
   };
   const legs = [legGeo(-1), legGeo(1)];
   const ground = Math.max(...legs.map((l) => l.lowest));
-  const hipY = -ground; // hips relative to the ground (feet at y = 0)
+  // Episode 6: wooden khadam under the feet (PuppetProps.footwear); the figure stands on their soles
+  const khadamOn = footwear === "khadam" && !seated && kneelK < 0.5 && c.lower !== "saree";
+  const KH_T = B.foot * KHADAM_FOOT.thick; // the sole's thickness
+  const hipY = khadamOn ? -ground - KH_T : -ground; // hips relative to the ground (feet at y = 0)
   const legsSorted = [...legs].sort((a, b) => a.z - b.z); // far first
 
   // Bare feet below the sari: standing and walking only (kneeling, squatting and sitting keep the covered look).
@@ -871,9 +959,11 @@ export const Puppet: React.FC<PuppetProps> = ({
   const walkK = clamp(stride) * feetK; // step articulation (heel strike, toe-off, hem lift)
   const plantLegs = sareeFeet && stride > 0 ? [legGeo(-1, true), legGeo(1, true)] : legs;
 
-  const shY = hipY - B.torsoLen - breath.chest;
+  // Episode 6 (Pose.hunch): the shoulders draw up and the head sinks a little between them
+  const hunchPx = clamp(p.hunch) * B.neck * 1.15;
+  const shY = hunchPx ? hipY - B.torsoLen - breath.chest - hunchPx : hipY - B.torsoLen - breath.chest;
   // the head rides the shoulders minus the part of the breath it does not take (it follows by a fraction, later)
-  const headBreathY = breath.chest - breath.head;
+  const headBreathY = hunchPx ? breath.chest - breath.head + hunchPx * 1.3 : breath.chest - breath.head;
   const kf = Math.sqrt(cphi * cphi + 0.3 * sphi * sphi);
   const swp = B.sw * kf;
   const hwp = B.hw * Math.sqrt(cphi * cphi + 0.45 * sphi * sphi);
@@ -1038,6 +1128,75 @@ export const Puppet: React.FC<PuppetProps> = ({
     <ellipse key={`fs${g.side}`} cx={g.shadow.cx} cy={0.6} rx={g.shadow.rx} ry={g.shadow.ry} fill="#1a0e08" opacity={g.shadow.o} />
   );
 
+  /* ---------------- Episode 6: wooden khadam under the feet (PuppetProps.footwear) ---------------- */
+  // The rig has no camera pitch (the ground is edge-on), so the sole's top is shown with a slight look-down: points
+  // nearer the camera sit a little lower, about the sole's centre, as the resting pair in Episode 5's Scene99 is drawn.
+  const KH_PITCH = 0.36;
+  // the sole's outline in foot units (u along the foot from the sole centre under the ankle, v across, + = perp side)
+  const KH_OUTLINE: Array<[number, number]> = [
+    [-0.31, 0], [-0.29, 0.17], [-0.22, 0.27], [-0.1, 0.3], [0.2, 0.31], [0.52, 0.34], [0.8, 0.31], [0.94, 0.23], [1.0, 0.1],
+    [1.0, -0.1], [0.94, -0.23], [0.8, -0.31], [0.52, -0.34], [0.2, -0.31], [-0.1, -0.3], [-0.22, -0.27], [-0.29, -0.17],
+  ];
+  const khadamPt = (L: ReturnType<typeof legGeo>, u: number, v: number, h: number): [number, number] => {
+    const F = B.foot;
+    const S0 = L.soleP;
+    const X = S0.x + (L.fwdP.x * u + L.perpP.x * v) * F;
+    const Y = S0.y + (L.fwdP.y * u + L.perpP.y * v) * F - h;
+    const Z = (L.fwdP.z * u + L.perpP.z * v) * F;
+    return [X, Y + hipY + Z * KH_PITCH];
+  };
+  /** Height of a foot's sole above the ground (figure px; 0 = planted). */
+  const footLift = (L: ReturnType<typeof legGeo>) => Math.max(0, -(L.soleP.y + hipY) - (khadamOn ? KH_T : 0));
+  const khadamShadow = (L: ReturnType<typeof legGeo>) => {
+    const F = B.foot;
+    const lift = footLift(L);
+    const lk = clamp(lift / (F * 0.7));
+    const a = khadamPt(L, -0.31, 0, 0);
+    const b = khadamPt(L, 1.0, 0, 0);
+    return (
+      <ellipse key={`khs${L.side}`} cx={(a[0] + b[0]) / 2} cy={1} rx={(Math.abs(b[0] - a[0]) / 2 + F * 0.22) * (1 - 0.3 * lk)} ry={F * 0.1 * (1 - 0.3 * lk)} fill="#3a2414" opacity={0.34 * (1 - 0.7 * lk)} />
+    );
+  };
+  /** The sole (under the foot) and the toe peg with its knob (over the toes). */
+  const khadamDraw = (L: ReturnType<typeof legGeo>, far: boolean) => {
+    const F = B.foot;
+    const top = KH_OUTLINE.map(([u, v]) => khadamPt(L, u, v, 0));
+    const bot = KH_OUTLINE.map(([u, v]) => khadamPt(L, u, v, -KH_T));
+    const body = smoothPath(hull([...top, ...bot]), 1);
+    const topD = smoothPath(top, 1);
+    const inner = -L.side; // the big-toe side of this foot (v sign)
+    const heel = Array.from({ length: 10 }, (_, i) => {
+      const t = (i / 10) * Math.PI * 2;
+      return khadamPt(L, -0.1 + 0.13 * Math.cos(t), 0.17 * Math.sin(t), 0);
+    });
+    const g0 = khadamPt(L, -0.2, 0.02, 0);
+    const g1 = khadamPt(L, 0.35, 0.05, 0);
+    const g2 = khadamPt(L, 0.86, 0.01, 0);
+    const pegB = khadamPt(L, 0.68, inner * 0.07, 0);
+    const pegT = khadamPt(L, 0.68, inner * 0.07, F * 0.27);
+    const knob = khadamPt(L, 0.68, inner * 0.07, F * 0.32);
+    const kr = F * 0.095;
+    const style = far ? { filter: "brightness(0.82)" } : undefined;
+    return {
+      under: (
+        <g key={`khu${L.side}`} style={style}>
+          <path d={body} fill="#5a3a1e" />
+          <path d={topD} fill={L.side > 0 ? "#9a6a3c" : "#94643a"} />
+          <path d={`M ${g0[0]} ${g0[1]} Q ${g1[0]} ${g1[1]} ${g2[0]} ${g2[1]}`} stroke="#7a5230" strokeWidth={Math.max(0.5, F * 0.025)} fill="none" opacity={0.6} />
+          <path d={smoothPath(heel, 1)} fill="#7e5430" opacity={0.45} />
+          <path d={topD} fill="none" stroke="#c89a62" strokeWidth={Math.max(0.5, F * 0.02)} opacity={0.35} />
+        </g>
+      ),
+      over: (
+        <g key={`kho${L.side}`} style={style}>
+          <path d={`M ${pegB[0]} ${pegB[1]} L ${pegT[0]} ${pegT[1]}`} stroke="#6a4426" strokeWidth={F * 0.08} strokeLinecap="round" />
+          <circle cx={knob[0]} cy={knob[1]} r={kr} fill="#8a5a32" />
+          <circle cx={knob[0] + kr * 0.3} cy={knob[1] - kr * 0.32} r={kr * 0.4} fill="#e0b274" opacity={0.7} />
+        </g>
+      ),
+    };
+  };
+
   // feetOnly: the sari covers the leg (seated, kneeling, squatting); only the foot is drawn, tucked under the hem,
   // so no thigh, knee or shin skin can ever show past the cloth's edge
   const drawLeg = (L: ReturnType<typeof legGeo>, far: boolean, foot?: FootGeo, feetOnly = false) => {
@@ -1058,8 +1217,10 @@ export const Puppet: React.FC<PuppetProps> = ({
     ];
     const footD = smoothPath(hull(footPts), 1);
     const skin = far ? c.skinShade : c.skin;
+    const kh = khadamOn && !foot ? khadamDraw(L, far) : null;
     return (
       <g key={`leg${L.side}`}>
+        {kh && kh.under}
         {!feetOnly && <path d={t1.d} transform={t1.t} fill={skin} />}
         {!feetOnly && <path d={t2.d} transform={t2.t} fill={skin} />}
         {!feetOnly && <ellipse cx={L.knee.x} cy={yy(L.knee.y)} rx={legW2 * 1.05} ry={legW2 * 0.95} fill={skin} />}
@@ -1072,6 +1233,7 @@ export const Puppet: React.FC<PuppetProps> = ({
             opacity={0.6}
           />
         )}
+        {kh && kh.over}
       </g>
     );
   };
@@ -1373,10 +1535,12 @@ export const Puppet: React.FC<PuppetProps> = ({
         </>
       ) : c.lower === "none" ? (
         <>
+          {khadamOn && legsSorted.map((L) => khadamShadow(L))}
           {legsSorted.map((L) => drawLeg(L, L === legsSorted[0] && Math.abs(sphi) > 0.15))}
         </>
       ) : (
         <>
+          {khadamOn && legsSorted.map((L) => khadamShadow(L))}
           {legsSorted.map((L) => drawLeg(L, L === legsSorted[0] && Math.abs(sphi) > 0.15))}
           {dhoti()}
         </>
@@ -1420,6 +1584,7 @@ export const Puppet: React.FC<PuppetProps> = ({
         <path d={`M ${-B.headR * 0.24} ${shY - B.neck - 18} L ${B.headR * 0.24} ${shY - B.neck - 18} L ${B.headR * 0.22} ${shY - B.neck - 6} Q 0 ${shY - B.neck} ${-B.headR * 0.22} ${shY - B.neck - 6} Z`} fill={c.skinShade} opacity={0.55} />
         {!B.child && <path d={`M ${keySide * -B.headR * 0.12} ${shY - B.neck - 8} Q ${keySide * -B.headR * 0.06} ${shY - 8} ${keySide * B.headR * 0.04} ${shY}`} stroke={c.skinShade} strokeWidth={1.3} fill="none" opacity={0.45} />}
         <path d={path} fill={isSkin ? `url(#${uid}-skin-body)` : `url(#${uid}-topg)`} />
+        {c.print && !isSkin && <path d={path} fill={`url(#${uid}-print)`} />}
         {isSkin && (
           <g stroke={c.skinShade} fill="none" opacity={0.55} strokeLinecap="round">
             <path d={`M ${px - 3} ${shY + 3} Q ${-swp * 0.35 + px * 0.5} ${shY + 1} ${-swp * 0.8} ${shY + 6}`} strokeWidth={1.4} />
@@ -1520,6 +1685,44 @@ export const Puppet: React.FC<PuppetProps> = ({
           />
           <path d={`M ${frontX + 2} ${shY + 14} Q ${swp * 0.3 + frontX} ${shY + B.torsoLen * 0.5} ${swp * 1.12 + cs} ${shY + B.torsoLen * 0.62}`} stroke={s.trim ?? s.shade} strokeWidth={3.5} fill="none" />
           <path d={`M ${frontX + 2} ${shY + 14} Q ${-swp * 0.3 + frontX} ${shY + B.torsoLen * 0.5} ${-swp * 1.12 + cs} ${shY + B.torsoLen * 0.62}`} stroke={s.trim ?? s.shade} strokeWidth={3.5} fill="none" />
+        </g>
+      );
+    }
+    if (s.style === "waist") {
+      // Episode 6: a checked gamchha tied round the waist over the dhoti, knotted toward the near hip, one end hanging
+      const ns: 1 | -1 = sphi > 0.05 ? -1 : 1;
+      const y0 = hipY - B.torsoLen * 0.12;
+      const y1 = hipY + B.thigh * 0.06;
+      const wx = hwp * 1.14;
+      const kx = frontX * 0.55 + ns * hwp * 0.5;
+      const ky = (y0 + y1) / 2;
+      const sw3 = cs * 0.9 + pc * 1.2;
+      const endL = B.thigh * 0.55;
+      const ew = B.sw * 0.17;
+      const band = `M ${-wx} ${y0 + 2} Q 0 ${y0 - 3} ${wx} ${y0 + 2} L ${wx * 1.02} ${y1} Q 0 ${y1 + 5} ${-wx * 1.02} ${y1} Z`;
+      const endD = `M ${kx - ew * 0.6} ${ky} L ${kx + ew * 0.6} ${ky} L ${kx + ew * 0.75 + sw3} ${ky + endL} Q ${kx + sw3 * 1.05} ${ky + endL + 3} ${kx - ew * 0.75 + sw3 * 1.1} ${ky + endL} Z`;
+      const tr = s.trim ?? "#f3e6cf";
+      return (
+        <g>
+          <path d={band} fill={s.color} />
+          <path d={`M ${-wx} ${y1 - 2.5} Q 0 ${y1 + 2.5} ${wx * 1.02} ${y1 - 2.5}`} stroke={s.shade} strokeWidth={2.4} fill="none" opacity={0.8} />
+          {[0.3, 0.62].map((k) => (
+            <path key={k} d={`M ${-wx} ${lerp(y0, y1, k) + 1} Q 0 ${lerp(y0, y1, k) + 3} ${wx} ${lerp(y0, y1, k) + 1}`} stroke={tr} strokeWidth={1.5} fill="none" opacity={0.75} />
+          ))}
+          {[-0.6, -0.2, 0.2, 0.6].map((k) => (
+            <path key={`v${k}`} d={`M ${k * wx + frontX * 0.3} ${y0 + 1} L ${k * wx + frontX * 0.3} ${y1}`} stroke={tr} strokeWidth={1.1} opacity={0.55} />
+          ))}
+          <path d={endD} fill={s.shade} />
+          {[0.35, 0.7].map((k) => (
+            <path key={`e${k}`} d={`M ${kx - ew * 0.65 + sw3 * k} ${ky + endL * k} L ${kx + ew * 0.7 + sw3 * k} ${ky + endL * k}`} stroke={tr} strokeWidth={1.4} opacity={0.75} />
+          ))}
+          {[0.2, 0.5, 0.8].map((k) => {
+            const fx = lerp(kx - ew * 0.7, kx + ew * 0.7, k) + sw3 * 1.05;
+            return <path key={`r${k}`} d={`M ${fx} ${ky + endL} l ${sw3 * 0.12} 4`} stroke={s.shade} strokeWidth={1.2} strokeLinecap="round" />;
+          })}
+          {/* the knot */}
+          <ellipse cx={kx} cy={ky} rx={ew * 0.75} ry={ew * 0.6} fill={s.color} />
+          <path d={`M ${kx - ew * 0.5} ${ky - ew * 0.2} Q ${kx} ${ky + ew * 0.35} ${kx + ew * 0.55} ${ky - ew * 0.15}`} stroke={s.shade} strokeWidth={1.2} fill="none" opacity={0.85} />
         </g>
       );
     }
@@ -1629,6 +1832,7 @@ export const Puppet: React.FC<PuppetProps> = ({
     const sleeve = (len: number, wTop: number, wEnd: number) => (
       <g>
         <path d={seg(len, wTop, (wTop + wEnd) / 2 * 1.04, wEnd, 0.4)} fill={sleeveFill} />
+        {c.print && <path d={seg(len, wTop, (wTop + wEnd) / 2 * 1.04, wEnd, 0.4)} fill={`url(#${uid}-print)`} />}
         <ellipse cx={0} cy={len} rx={wEnd} ry={wEnd * 0.32} fill={c.topShade} opacity={0.9} />
         <path d={`M ${-wTop * 0.3} ${len * 0.15} Q ${wTop * 0.2} ${len * 0.55} ${-wEnd * 0.2} ${len * 0.92}`} stroke={c.topShade} strokeWidth={1.4} fill="none" opacity={0.5} />
       </g>
@@ -1762,8 +1966,8 @@ export const Puppet: React.FC<PuppetProps> = ({
   /* ---------------- assembly ---------------- */
   const S = flip ? -scale : scale;
   const brightness = (light.brightness ?? 1) * (lights.length ? 0.9 + Math.min(0.35, lightSum * 0.3) : 1);
-  const rFar = p.rBack > 0.5 || (sphi > 0.25 && !female) || sphi > 0.35;
-  const lFar = p.lBack > 0.5 || sphi < -0.35;
+  const rFar = p.rBack > 0.5 || (sphi > 0.25 && !female) || sphi > 0.35 || p.behind > 0.5;
+  const lFar = p.lBack > 0.5 || sphi < -0.35 || p.behind > 0.5;
   const upperX = weightX + antX;
   // the kneeling bow (Pose.bow): the upper body folds forward from the hips, toward the side the figure faces
   const fwd: 1 | -1 = sphi >= 0 ? 1 : -1;
@@ -1969,7 +2173,8 @@ export const Puppet: React.FC<PuppetProps> = ({
   })(); // across the pole, toward the facing side: the fist's long axis
   const gripCarry = (B.thigh + B.shin) * 0.8; // grip to the pole's foot while carried
   const fistOff = B.hand * 0.4; // wrist to the middle of the curled fingers
-  const e5On = poleSide !== 0 || Math.abs(p.headHands) + Math.abs(p.scratch) + Math.abs(p.mouthHand) + holdK + Math.abs(p.jab) + Math.abs(p.throwUp) > 1e-4;
+  const e6On = Math.abs(p.swat) + Math.abs(p.shush) + p.hips + p.behind + Math.abs(p.reach) + p.cupHands > 1e-4;
+  const e5On = e6On || poleSide !== 0 || Math.abs(p.headHands) + Math.abs(p.scratch) + Math.abs(p.mouthHand) + holdK + Math.abs(p.jab) + Math.abs(p.throwUp) > 1e-4;
   type Arm5 = { S: number; E: number; hand: HandShape; wrist: number; turn?: number };
   const arm5 = (side: 1 | -1, far: boolean, S0: number, E0: number, hand0: HandShape, w0: number): Arm5 => {
     const st: Arm5 = { S: S0, E: E0, hand: hand0, wrist: w0 };
@@ -2041,6 +2246,67 @@ export const Puppet: React.FC<PuppetProps> = ({
       const [dx, dy] = norm2(fwd * 0.35, -1);
       const [ax, ay] = norm2(fwd * 0.2, -1);
       go(tu, [shoulder[0] + dx * reachLen * 0.86, shoulder[1] + dy * reachLen * 0.86], (ex, ey) => side * ex + 0.2 * ey, angOf(ax, ay), "open", 0);
+    }
+    /* ---- Episode 6 ---- */
+    if (e6On) {
+      // the swat: an open hand swung in an arc about the shoulder, from raised above it to the palm on swatAt
+      const sw6 = clamp(Math.abs(p.swat));
+      if (sw6 > 1e-4 && Math.sign(p.swat) === side) {
+        const hitK = clamp(p.swatHit);
+        const T: [number, number] = swatAt ? fromWorld(swatAt(f)) : [shoulder[0] + fwd * reachLen * 0.8, shoulder[1] + reachLen * 0.5];
+        const [rx0, ry0] = norm2(-fwd * 0.3, -1);
+        const rR = reachLen * 0.78;
+        const [cx0, cy0] = norm2(T[0] - shoulder[0], T[1] - shoulder[1]);
+        const rC = clamp(Math.hypot(T[0] - shoulder[0], T[1] - shoulder[1]) - B.hand * 0.45, reachLen * 0.3, reachLen * 0.99);
+        const a0 = Math.atan2(ry0, rx0);
+        const a1 = Math.atan2(cy0, cx0);
+        const a = a0 + wrap5(a1 - a0) * hitK;
+        const r = lerp(rR, rC, hitK);
+        const ux = Math.cos(a);
+        const uy = Math.sin(a);
+        go(sw6, [shoulder[0] + ux * r, shoulder[1] + uy * r], elbowLow, angOf(ux, uy), "open");
+      }
+      // "shh": the index finger upright across the lips
+      const sh6 = clamp(Math.abs(p.shush));
+      if (sh6 > 1e-4 && Math.sign(p.shush) === side) {
+        const lips = mouthFig();
+        const [dx, dy] = norm2(fwd * 0.12, -1);
+        const mid: [number, number] = [lips[0] + fwd * Rh * 0.1, lips[1]];
+        go(sh6, [mid[0] - dx * B.hand * 0.62, mid[1] - dy * B.hand * 0.62], elbowLow, angOf(dx, dy), "point");
+      }
+      // fists on the hips, elbows out
+      const hp6 = clamp(p.hips);
+      if (hp6 > 1e-4) {
+        const H = toFig(side * hwp * 1.0 + frontX * 0.2, hipY - B.torsoLen * 0.08, Rnear);
+        const [dx, dy] = norm2(-side * 0.3, 1);
+        go(hp6, [H[0] - dx * B.hand * 0.3, H[1] - dy * B.hand * 0.3], elbowOut, angOf(dx, dy), "fist");
+      }
+      // both hands clasped behind the back (the arms are drawn behind the body: see rFar / lFar)
+      const bh6 = clamp(p.behind);
+      if (bh6 > 1e-4) {
+        const back = toFig(-fwd * hwp * 0.95 * Math.abs(sphi) + side * hwp * 0.35 * cphi, hipY - B.torsoLen * 0.04, Rnear);
+        const [dx, dy] = norm2(-fwd * 0.15 * Math.abs(sphi), 1);
+        go(bh6, [back[0] - dx * B.hand * 0.35, back[1] - dy * B.hand * 0.35], (ex, ey) => -fwd * ex * Math.abs(sphi) + side * ex * cphi * 0.5 + 0.3 * ey, angOf(dx, dy), "relaxed");
+      }
+      // one hand to reachAt: palm down (on a shoulder, dropping coins) or palm up (held out, asking)
+      const rc6 = clamp(Math.abs(p.reach));
+      if (rc6 > 1e-4 && Math.sign(p.reach) === side) {
+        const T: [number, number] = reachAt ? fromWorld(reachAt(f)) : [shoulder[0] + fwd * reachLen * 0.85, shoulder[1] + reachLen * 0.3];
+        const up = clamp(p.reachUp);
+        const [ax, ay] = norm2(T[0] - shoulder[0], T[1] - shoulder[1]);
+        const [dx, dy] = norm2(lerp(ax, fwd, up), lerp(ay + 0.35, -0.08, up));
+        const off = B.hand * 0.45;
+        go(rc6, [T[0] - dx * off, T[1] - dy * off], elbowLow, angOf(dx, dy), hand0, up > 0.5 ? side * fwd * (Math.PI / 2 - 0.3) : undefined);
+      }
+      // both hands cupped together, palms up (the boys holding out their palms for a lozenge)
+      const cu6 = clamp(p.cupHands);
+      if (cu6 > 1e-4) {
+        const C: [number, number] = reachAt ? fromWorld(reachAt(f)) : toFig(frontX + fwd * B.sw * 1.05, shY + B.torsoLen * 0.55, Rnear);
+        const nearArm = rFar === lFar ? side === 1 : !far;
+        const T: [number, number] = nearArm ? [C[0] + fwd * B.hand * 0.08, C[1] + B.hand * 0.04] : [C[0] - fwd * B.hand * 0.22, C[1] - B.hand * 0.06];
+        const [dx, dy] = norm2(fwd, -0.12);
+        go(cu6, [T[0] - dx * B.hand * 0.4, T[1] - dy * B.hand * 0.4], elbowLow, angOf(dx, dy), "cup", side * fwd * (Math.PI / 2 - 0.3));
+      }
     }
     // the bamboo hand: planted (poleDrop) the fist is solved onto the standing pole; the fist always grips across it
     if (side === poleSide) {
@@ -2122,6 +2388,11 @@ export const Puppet: React.FC<PuppetProps> = ({
       poleGrip: pole ? toWorld(pole.grip) : null,
       poleBase: pole ? toWorld(pole.base) : null,
       poleTip: pole ? toWorld(pole.tip) : null,
+      feet: legs.map((L) => {
+        const gx = L.soleP.x + L.fwdP.x * B.foot * 0.35;
+        const lift = footLift(L);
+        return { side: L.side, ...toWorld([gx, -lift]), lift: lift * scale };
+      }),
     });
   }
   const farT = `translate(${upperX}, ${antY})${bowDeg ? ` rotate(${bowDeg}, 0, ${hipY})` : ""}`;
@@ -2159,6 +2430,24 @@ export const Puppet: React.FC<PuppetProps> = ({
           <stop offset="78%" stopColor={rim} stopOpacity={0} />
           <stop offset="100%" stopColor={rim} stopOpacity={rimStrength} />
         </linearGradient>
+        {c.print && (
+          <pattern id={`${uid}-print`} patternUnits="userSpaceOnUse" width={B.sw * 0.3} height={B.sw * 0.3} patternTransform="rotate(8)">
+            {(c.print.motif ?? "buti") === "buti" ? (
+              <g>
+                {[0, 1, 2, 3].map((k) => (
+                  <circle key={k} cx={B.sw * (0.075 + 0.028 * Math.cos((k * Math.PI) / 2))} cy={B.sw * (0.075 + 0.028 * Math.sin((k * Math.PI) / 2))} r={B.sw * 0.018} fill={c.print!.color} opacity={0.85} />
+                ))}
+                <circle cx={B.sw * 0.075} cy={B.sw * 0.075} r={B.sw * 0.012} fill={c.print.color2 ?? c.print.color} />
+                <circle cx={B.sw * 0.225} cy={B.sw * 0.225} r={B.sw * 0.014} fill={c.print.color2 ?? c.print.color} opacity={0.8} />
+              </g>
+            ) : (
+              <g>
+                <circle cx={B.sw * 0.075} cy={B.sw * 0.075} r={B.sw * 0.022} fill={c.print.color} opacity={0.85} />
+                <circle cx={B.sw * 0.225} cy={B.sw * 0.225} r={B.sw * 0.016} fill={c.print.color2 ?? c.print.color} opacity={0.8} />
+              </g>
+            )}
+          </pattern>
+        )}
         <radialGradient id={`${uid}-ao`} cx="0.5" cy="0.5" r="0.5">
           <stop offset="0%" stopColor="#0b0608" stopOpacity={0.55} />
           <stop offset="100%" stopColor="#0b0608" stopOpacity={0} />
@@ -2551,4 +2840,232 @@ export const GESTURES5 = {
   handAtMouth: { mouthHand: -1, brow: 0.5, browTilt: 0.45, smile: 0 } as Partial<Pose>,
   /** Charu kneeling, both hands round the child's hand (PuppetProps.holdAt); key holdTurn and cheek on top. */
   holdChildHand: { kneel: 1, hold: 1, brow: 0.3, browTilt: 0.4, smile: 0.1, eyeY: 0.35 } as Partial<Pose>,
+};
+
+/* ------------------------------------------------------------------ */
+/* Episode 6 helpers: the swat, the stamp, scolding, searching, the khadam's clack frames.                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * EPISODE 6 PEOPLE: poses, gestures and props (all additive; Episodes 1 to 5 never set them, so they render as before)
+ *
+ * Pose channels (key them with ease "inOut" over 8 to 16 frames, or drive them with the pulse helpers below):
+ *   swat      -1..1  an open hand swung down in an arc onto PuppetProps.swatAt (sign = arm); with
+ *   swatHit    0..1  the travel (0 raised above the shoulder, 1 the palm on swatAt). `swatPulse` drives both; the palm
+ *                    lands on frame start + SWAT.hit (the slap sound, the younger boy's flinch).
+ *   hunch      0..1  shoulders up, head sunk (fright; GESTURES6.frightFreeze, with breathRate about 2.2)
+ *   shush     -1..1  index finger upright across the lips (sign = arm; GESTURES6.peekShush)
+ *   hips       0..1  both fists on the hips, elbows out (GESTURES6.handsOnHips)
+ *   behind     0..1  both hands clasped behind the back, the arms drawn behind the body (GESTURES6.sheepish)
+ *   reach     -1..1  one hand to PuppetProps.reachAt (palm centre; sign = arm) with the pose's own hand shape; the
+ *                    target must be within arm's reach of the shoulder (B.ua + B.fa, about 0.29 of an adult's height),
+ *                    else the arm points at it fully stretched: place the figures (or add lean / crouch) so it is;
+ *   reachUp    0..1  0 palm down (a hand on a shoulder, coins dropped into a palm), 1 palm up (held out, asking)
+ *   cupHands   0..1  both hands cupped together, palms up, at reachAt (or in front of the chest)
+ *   stamp     -1..1  one knee up and the foot back down (sign = leg); `stampPulse`, the foot lands at start + STAMP.hit
+ * Reused from earlier episodes: jab + pointAt (scolding finger: drive it with `scoldPulse`), join (pleading palms,
+ * GESTURES6.plead), throwUp + headShake (exasperation), hold + holdAt (pressing a note into a seated child's hands:
+ * GESTURES6.crouchGive), mouthHand (the whisper), walkPose kind "run" with child: true (running off).
+ * Props: PuppetProps.footwear "khadam" (wooden sandals; `walkPlantFrames` / `footPlants` give the clack frames, and
+ * anchors().feet each sole's ground point and lift). Cast: CastMember.print (block-printed shirt), scarf style "waist".
+ * Arm signs: a figure turned to +x (bodyTurn > 0) shows its LEFT arm (-1) as the near arm (a woman's only past about
+ * 0.37); lean > 0 leans toward +x. Mirror the signs for a figure turned the other way.
+ */
+
+/**
+ * The worn khadam's proportions in foot units (Puppet's B.foot = 31 x height for adults): sole length 1.31, thickness
+ * 0.15 (Episode 5's KhadamOne: 26 long, 3 thick). Colours are KhadamOne's (and Ep06Props' KhadamOne/KhadamPair).
+ */
+export const KHADAM_FOOT = { length: 1.31, thick: 0.15 } as const;
+
+/**
+ * Length in world px of the khadam a Puppet wears (footwear "khadam"), so a resting pair drawn beside him (Ep06Props
+ * KhadamPair, 52 px long at s = 1) is the same size: KhadamPair s = khadamLengthPx(cast, scale) / 52.
+ */
+export const khadamLengthPx = (c: Pick<CastMember, "age" | "height">, scale: number) => (c.age === "child" ? 21 : 31) * c.height * KHADAM_FOOT.length * scale;
+
+/** Swat timings (frames from its start): wind-up, the palm lands, held on the back, back to rest. */
+export const SWAT = { raise: 8, hit: 12, hold: 17, end: 30 } as const;
+
+/**
+ * One swat of an open hand (the elder brother's blow): the arm winds up over the shoulder, swings down fast and the
+ * palm lands on PuppetProps.swatAt at frame start + SWAT.hit, rests there a moment, then the arm drops back. Set
+ * swat = arm sign * .swat and swatHit = .swatHit; add .dLean (toward the target) to lean.
+ */
+export const swatPulse = (f: number, start: number) => {
+  const u = f - start;
+  if (u <= 0 || u >= SWAT.end) return { swat: 0, swatHit: 0, dLean: 0 };
+  const w = easeIO(u / SWAT.raise) * (1 - easeIO((u - SWAT.hold) / (SWAT.end - SWAT.hold)));
+  const k = clamp((u - SWAT.raise) / (SWAT.hit - SWAT.raise));
+  const swatHit = k * k; // accelerating into the hit
+  const after = u >= SWAT.hit ? Math.exp(-(u - SWAT.hit) / 4) : 0;
+  return { swat: w, swatHit, dLean: -2 * easeIO(u / SWAT.raise) * (1 - k) + 3.5 * k * (1 - easeIO((u - SWAT.hold) / 10)) + after };
+};
+
+/** Stamp timings (frames from its start): the knee comes up, the foot lands, settled. */
+export const STAMP = { lift: 7, hit: 11, end: 20 } as const;
+
+/**
+ * One stamp of a foot (the culprit's temper): set stamp = leg sign * .stamp and add .dY to bodyY (a jolt as the foot
+ * lands at start + STAMP.hit: put the thump there).
+ */
+export const stampPulse = (f: number, start: number) => {
+  const u = f - start;
+  if (u <= 0 || u >= STAMP.end) return { stamp: 0, dY: 0 };
+  const up = easeIO(u / STAMP.lift);
+  const down = clamp((u - STAMP.lift) / (STAMP.hit - STAMP.lift));
+  const after = u >= STAMP.hit ? u - STAMP.hit : -1;
+  return { stamp: up * (1 - down * down), dY: after >= 0 ? 3 * Math.exp(-after / 2.5) : -1.5 * up * (1 - down) };
+};
+
+/**
+ * Scolding finger (the elder brother's bluster): a weight for Pose.jab (times the arm sign, with "point" coming by
+ * itself and PuppetProps.pointAt at the other child's face) that jabs `period` frames apart between about 0.7 and 1.
+ */
+export const scoldPulse = (f: number, start: number, dur: number, period = 10) => {
+  const env = gestureEnv(f, start, dur, 8);
+  const pump = 0.5 - 0.5 * Math.cos((2 * Math.PI * (f - start)) / period);
+  return env * (0.7 + 0.3 * pump);
+};
+
+/**
+ * Searching look (the father: "where is he?"): the head turns one way, holds, sweeps to the other side, holds, and
+ * comes back, with the eyes leading by 3 frames. Add headTurn and eyeX to the pose. `dir` -1 looks left first.
+ */
+export const lookAround = (f: number, start: number, dur: number, amp = 0.45, dir: 1 | -1 = -1) => {
+  const curve = (t: number) => {
+    if (t <= 0 || t >= 1) return 0;
+    if (t < 0.14) return -easeIO(t / 0.14);
+    if (t < 0.38) return -1;
+    if (t < 0.56) return lerp(-1, 1, easeIO((t - 0.38) / 0.18));
+    if (t < 0.8) return 1;
+    return lerp(1, 0, easeIO((t - 0.8) / 0.2));
+  };
+  const at = (fr: number) => curve((fr - start) / Math.max(1, dur));
+  return { headTurn: -dir * amp * at(f), eyeX: -dir * 0.7 * at(f + 3) };
+};
+
+/** Pleading bob (from hiding, palms joined): small quick dips of the head and body. Add to headNod and lean. */
+export const pleadBob = (f: number, start: number, dur: number) => ({
+  headNod: gestureEnv(f, start, dur, 6) * 2.5 * (0.5 - 0.5 * Math.cos((2 * Math.PI * (f - start)) / 12)),
+  lean: wobble(f, start, dur, 1.4, 12, 6),
+});
+
+/** The leg model of Puppet (legAnglesBase, standing, no crouch): each sole's depth below the hips, figure px. */
+const soleDepths = (c: Pick<CastMember, "age" | "height" | "seed">, stride: number, stamp: number, fr: number) => {
+  const child = c.age === "child";
+  const thigh = (child ? 47 : 80) * c.height;
+  const shin = (child ? 44 : 74) * c.height;
+  const phase = fr * 0.3 + c.seed;
+  const ab = 0.04;
+  const out = { 1: 0, [-1]: 0 } as Record<1 | -1, number>;
+  for (const side of [-1, 1] as const) {
+    let th = 0.03;
+    let kn = 0.05;
+    if (stride > 0) {
+      const ph = phase + (side > 0 ? Math.PI : 0);
+      th += Math.sin(ph) * 0.42 * stride;
+      kn += (0.12 + Math.max(0, Math.sin(ph + 1.7)) * 0.9) * stride;
+    }
+    const sk = clamp(Math.abs(stamp));
+    if (sk > 0 && Math.sign(stamp) === side) {
+      th += 0.62 * sk;
+      kn += 1.15 * sk;
+    }
+    out[side] = thigh * Math.cos(th) * Math.cos(ab) + shin * Math.cos(th - kn);
+  }
+  return out;
+};
+
+/**
+ * The frames on which a foot comes down onto the ground (heel strike; with khadam, the wooden sole's clack): every
+ * frame in [from, to] where a sole that was lifted by more than ~0.3% of the leg is back on the ground. Uses the same
+ * leg model, leg phase (cast.seed) and pose smoothing (adults) as Puppet, so the frames match the drawn feet to within a
+ * frame. `acting` is the Puppet's acting (walkPose spread over the scene's keys; stride and stamp are read).
+ */
+export const footPlants = (c: Pick<CastMember, "age" | "height" | "seed">, acting: (f: number) => Partial<Pose>, from: number, to: number) => {
+  const adult = c.age !== "child";
+  const W = BODY_W;
+  const r = (W.length - 1) / 2;
+  const strideAt = (fr: number) => {
+    if (!adult) return acting(fr).stride ?? 0;
+    let s0 = 0;
+    let w = 0;
+    for (let i = -r; i <= r; i++) {
+      const v = acting(fr + i).stride ?? 0;
+      if (!Number.isFinite(v)) continue;
+      s0 += v * W[i + r];
+      w += W[i + r];
+    }
+    return w > 0 ? s0 / w : 0;
+  };
+  const eps = (adult ? 154 : 91) * c.height * 0.003;
+  const lifts = (fr: number) => {
+    const d = soleDepths(c, strideAt(fr), acting(fr).stamp ?? 0, fr);
+    const g = Math.max(d[1], d[-1]);
+    return { 1: g - d[1], [-1]: g - d[-1] } as Record<1 | -1, number>;
+  };
+  const out: Array<{ f: number; side: 1 | -1 }> = [];
+  let prev = lifts(from - 1);
+  for (let fr = from; fr <= to; fr++) {
+    const cur = lifts(fr);
+    for (const side of [-1, 1] as const) if (prev[side] > eps && cur[side] <= eps) out.push({ f: fr, side });
+    prev = cur;
+  }
+  return out;
+};
+
+/**
+ * The clack frames of a walk made with walkPose (Surendra's khadam: put one clack per frame returned, 0.15 to 0.45).
+ * Covers the walk from its start to 4 frames after its stop. Pass the same WalkOpts the Puppet's acting uses.
+ */
+export const walkPlantFrames = (o: WalkOpts) =>
+  footPlants({ age: o.child ? "child" : "adult", height: o.height, seed: o.seed }, (fr) => walkPose(fr, o), o.start, o.start + o.dur + 4);
+
+/** Ready-made Episode 6 gestures and expressions (spread into a pose key; arm signs and leans for bodyTurn > 0). */
+export const GESTURES6 = {
+  /** The elder brother scolding: knitted brows, chin up, leaning in; add jab: -scoldPulse(...) and pointAt. */
+  scold: { brow: -0.15, browTilt: -0.8, smile: 0, lean: 4, headNod: -2, lid: 0.06 } as Partial<Pose>,
+  /** Fright freeze at the khadam's clack: hunched, fists drawn up to the chest, eyes wide (breathRate about 2.2). */
+  frightFreeze: { hunch: 1, gasp: 0.32, brow: 0.95, browTilt: 0.55, smile: 0, lean: -5, rS: -4, rE: -112, lS: -4, lE: -112, rHand: "fist", lHand: "fist" } as Partial<Pose>,
+  /** Peeking out from hiding with a finger to the lips (near hand; leans out toward +x round the wall's edge). */
+  peekShush: { lean: 11, headTilt: 8, shush: -1, brow: 0.6, browTilt: 0.6, smile: 0, eyeX: 0.2 } as Partial<Pose>,
+  /**
+   * Palms joined, pleading ("don't tell"): brows up and drawn together, head tipped; add pleadBob. Use it turned about
+   * 0.4 to 0.8 (Pose.join's elbow choice is made for a three-quarter view; near the front the far elbow crosses the
+   * chest); the far palm then sits behind the near one, as joined hands read from the side.
+   */
+  plead: { join: 1, rHand: "pranam", lHand: "pranam", brow: 0.85, browTilt: 0.8, smile: 0.05, headTilt: 6, lean: 3 } as Partial<Pose>,
+  /** Sheepish: head down, hands behind the back, a small shy smile, eyes low. */
+  sheepish: { behind: 1, headNod: 7, headTilt: -5, eyeY: 0.45, smile: 0.25, brow: 0.3, browTilt: 0.45 } as Partial<Pose>,
+  /** The grin before he runs off (a child's face keeps it soft). */
+  grin: { smile: 0.95, brow: 0.35, eyeY: 0, headTilt: 4 } as Partial<Pose>,
+  /** The father's stern search (add lookAround). */
+  searchLook: { brow: 0.15, browTilt: -0.45, smile: 0.05 } as Partial<Pose>,
+  /** The father bends toward the child, near hand held out palm up, asking (set reachAt near the child's chest). */
+  askBend: { lean: 12, crouch: 0.08, headNod: 3, reach: -1, reachUp: 1, lHand: "open", brow: 0.3, browTilt: -0.25, smile: 0.08, eyeY: 0.4 } as Partial<Pose>,
+  /** Exasperated (the unspoken "বোকাটা…"): brows up; add throwUp: throwUpPulse(...) on the far arm and headShake. */
+  exasperated: { brow: 0.45, browTilt: 0.45, smile: 0.08, headTilt: -4 } as Partial<Pose>,
+  /** The friend crouching to press the note into a seated child's hands (both hands on PuppetProps.holdAt). */
+  crouchGive: { crouch: 0.75, hold: 1, lean: 8, eyeY: 0.3, smile: 0.35, browTilt: -0.3 } as Partial<Pose>,
+  /** The whisper: leaning in, a hand at the side of the mouth, a sly sideways glance. */
+  whisper: { lean: 10, headTilt: 9, mouthHand: -1, smile: 0.42, brow: 0.1, browTilt: -0.3, lid: 0.22, eyeX: -0.45 } as Partial<Pose>,
+  /** A sly, lively look (the culprit friend). */
+  sly: { smile: 0.5, brow: 0.1, browTilt: -0.35, lid: 0.25, eyeX: -0.4, headTilt: -5 } as Partial<Pose>,
+  /** Holding out an open palm, demanding (near hand, palm up; set reachAt or leave it straight out in front). */
+  palmOut: { reach: -1, reachUp: 1, lHand: "open", lean: 3, smile: 0.05, brow: -0.1, browTilt: -0.45 } as Partial<Pose>,
+  /** Temper before the stamp (add stampPulse). */
+  stampTemper: { brow: -0.2, browTilt: -0.85, smile: 0, lean: -2 } as Partial<Pose>,
+  /** The friend's dada: fists on the hips, chin up, stern. */
+  handsOnHips: { hips: 1, lean: -2, headTilt: 3, browTilt: -0.45, smile: 0.05 } as Partial<Pose>,
+  /** A hand laid on another's shoulder (near hand palm down; set reachAt on the shoulder). */
+  handOnShoulder: { reach: -1, reachUp: 0, lHand: "open", lean: 3 } as Partial<Pose>,
+  /** The boys holding out cupped palms for a lozenge, amazed ("থ"). */
+  cuppedPalms: { cupHands: 1, lean: 4, eyeY: 0.3, brow: 0.5, smile: 0.4, gasp: 0.12 } as Partial<Pose>,
+  /** The boudi bending to a child, warm. */
+  bendToChild: { lean: 14, crouch: 0.12, headNod: 4, headTilt: 6, eyeY: 0.45, smile: 0.45, brow: 0.25 } as Partial<Pose>,
+  /** Holding a small paper up beside the face in the near hand (lProp "note": the scene passes props.note). */
+  holdUpPaper: { lS: -32, lE: -118, lHand: "hold", lProp: "note", brow: 0.55, smile: 0.3 } as Partial<Pose>,
+  /** Placing coins in a child's palm: bent toward him, near hand palm down at reachAt (his palm). */
+  placeInPalm: { reach: -1, reachUp: 0, lHand: "relaxed", lean: 16, crouch: 0.22, headNod: 3, eyeY: 0.5, smile: 0.5 } as Partial<Pose>,
 };

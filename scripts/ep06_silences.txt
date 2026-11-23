@@ -1,0 +1,119 @@
+# Episode 6 voice clips: silences (ffmpeg silencedetect -45 dB / 0.12 s) on the played, levelled files in
+# remotion_studio/public/audio/ep06. Written by scripts/build_ep06_timing.js on every run; do not edit by hand.
+# Times are in the clip's OWN seconds (use them as `silence: [a, b]` with `clip` in a PAUSES / GAPS entry).
+# lead / trail = room tone at the clip's start / end (a pause there is a clip-boundary hold, no cut).
+# SENTENCE = interior silence >= 0.2 s (a cut candidate); short = a breath or word gap (not for a cut).
+# 'near' = the subtitle phrase whose estimated end (character share of the cue) is closest to the silence,
+# and how far its estimated end is from the silence (the generator accepts <= 0.5 s, PAUSE_TOL, else name it).
+# 'abs' = the silence's middle on the timeline WITHOUT pauses (seconds, frame at 24 fps).
+
+00_Intro.wav  (6.800 s; on the timeline at 0.000 s = frame 0)
+  lead     start 0.000  len 0.251  [0.000, 0.251]
+  SENTENCE start 2.166  len 0.537  [2.166, 2.703]  near "ছোটদের বালক ঠাকুরের গল্প।" (estimate inside) abs 2.43 s f58
+  SENTENCE start 3.529  len 0.401  [3.529, 3.930]  near "ছোটদের বালক ঠাকুরের গল্প।" (estimate 1.19 s off) abs 3.73 s f90
+  trail    start 6.447  len 0.353  [6.447, 6.800]  near "খেলার সাথী।" (estimate inside) abs 6.62 s f159
+  phrases (estimated, clip seconds):
+    0.00-2.34  ছোটদের বালক ঠাকুরের গল্প।
+    2.34-5.62  পর্ব ছয়: জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও
+    5.62-6.65  খেলার সাথী।
+
+00a_Source_Attribution.wav  (18.600 s; on the timeline at 6.948 s = frame 167)
+  lead     start 0.000  len 0.334  [0.000, 0.334]
+  SENTENCE start 2.300  len 0.299  [2.300, 2.598]
+  SENTENCE start 6.814  len 0.626  [6.814, 7.440]
+  SENTENCE start 12.278  len 0.278  [12.278, 12.556]
+  SENTENCE start 15.193  len 0.244  [15.193, 15.437]
+  short    start 15.954  len 0.141  [15.954, 16.095]
+  trail    start 18.389  len 0.211  [18.389, 18.600]
+
+01a_Narrator_Brother.wav  (17.640 s; on the timeline at 26.198 s = frame 629)
+  lead     start 0.000  len 0.333  [0.000, 0.333]
+  SENTENCE start 1.036  len 0.411  [1.036, 1.447]  near "একদিন বড় ভাই অকারণে ছোট ভাইকে মেরে" (estimate 3.03 s off) abs 27.44 s f659
+  SENTENCE start 3.969  len 0.419  [3.969, 4.388]  near "একদিন বড় ভাই অকারণে ছোট ভাইকে মেরে" (estimate 0.09 s off) abs 30.38 s f729
+  SENTENCE start 7.032  len 0.962  [7.032, 7.994]  near "লুকিয়ে পড়ল বাবার পায়ের শব্দ শুনে।" (estimate inside) abs 33.71 s f809
+  SENTENCE start 9.892  len 0.416  [9.892, 10.309]  near "লুকিয়ে পড়ল বাবার পায়ের শব্দ শুনে।" (estimate 1.90 s off) abs 36.30 s f871
+  SENTENCE start 11.506  len 0.918  [11.506, 12.424]  near "বাবা এসে জিজ্ঞেস করলেন বড় ছেলে কোথায়—" (estimate inside) abs 38.16 s f916
+  short    start 14.763  len 0.121  [14.763, 14.884]  near "কিন্তু পিঠের ব্যথা নিয়েও" (estimate 0.25 s off) abs 41.02 s f985
+  SENTENCE start 15.465  len 0.668  [15.465, 16.134]  near "কিন্তু পিঠের ব্যথা নিয়েও" (estimate 0.95 s off) abs 42.00 s f1008
+  trail    start 17.277  len 0.363  [17.277, 17.640]  near "ছোট্ট ঠাকুর দাদাকে বাঁচিয়ে দিলেন!" (estimate inside) abs 43.66 s f1048
+  phrases (estimated, clip seconds):
+    0.33-4.48  একদিন বড় ভাই অকারণে ছোট ভাইকে মেরে
+    4.48-7.99  লুকিয়ে পড়ল বাবার পায়ের শব্দ শুনে।
+    7.99-12.42  বাবা এসে জিজ্ঞেস করলেন বড় ছেলে কোথায়—
+    12.42-14.52  কিন্তু পিঠের ব্যথা নিয়েও
+    14.52-17.37  ছোট্ট ঠাকুর দাদাকে বাঁচিয়ে দিলেন!
+
+01b_Young_Thakur_Forgive.wav  (5.640 s; on the timeline at 44.014 s = frame 1056)
+  short    start 0.072  len 0.172  [0.072, 0.243]  near "যাও বাবা," (estimate 1.19 s off) abs 44.17 s f1060
+  short    start 1.296  len 0.129  [1.296, 1.425]  near "যাও বাবা," (estimate 0.00 s off) abs 45.37 s f1089
+  SENTENCE start 2.615  len 0.339  [2.615, 2.954]  near "আমি বলব না—" (estimate inside) abs 46.80 s f1123
+  trail    start 4.983  len 0.657  [4.983, 5.640]  near "বললে তো তুমি দাদাকে মারবে!" (estimate inside) abs 49.33 s f1184
+  phrases (estimated, clip seconds):
+    0.24-1.43  বীরু: যাও বাবা,
+    1.43-2.95  বীরু: আমি বলব না—
+    2.95-5.49  বীরু: বললে তো তুমি দাদাকে মারবে!
+
+02a_Narrator_Friends.wav  (22.200 s; on the timeline at 49.957 s = frame 1199)
+  lead     start 0.000  len 0.355  [0.000, 0.355]
+  short    start 2.964  len 0.134  [2.964, 3.099]  near "খেলার সাথীরা তাঁকে ভোলাভালা ভেবে" (estimate 0.00 s off) abs 52.99 s f1272
+  short    start 4.127  len 0.176  [4.127, 4.302]  near "প্রায়ই ঠকাত—" (estimate 0.24 s off) abs 54.17 s f1300
+  short    start 4.418  len 0.124  [4.418, 4.542]  near "প্রায়ই ঠকাত—" (estimate inside) abs 54.44 s f1306
+  short    start 6.656  len 0.126  [6.656, 6.782]  near "কিন্তু দামি জিনিস বা টাকা রাখতে হলে" (estimate 1.24 s off) abs 56.68 s f1360
+  SENTENCE start 9.838  len 0.581  [9.838, 10.419]  near "সবাই তাঁকেই বিশ্বাস করত!" (estimate 0.37 s off) abs 60.09 s f1442
+  short    start 10.621  len 0.167  [10.621, 10.788]  near "সবাই তাঁকেই বিশ্বাস করত!" (estimate 0.00 s off) abs 60.66 s f1456
+  SENTENCE start 16.776  len 0.237  [16.776, 17.013]  near "তাঁর কাছে রাখতে দিলে," (estimate 0.17 s off) abs 66.85 s f1604
+  short    start 17.013  len 0.164  [17.013, 17.177]  near "তাঁর কাছে রাখতে দিলে," (estimate 0.00 s off) abs 67.05 s f1609
+  trail    start 21.858  len 0.342  [21.858, 22.200]  near "ফিরিয়ে দিয়ে এলেন।" (estimate inside) abs 71.99 s f1728
+  phrases (estimated, clip seconds):
+    0.36-3.10  খেলার সাথীরা তাঁকে ভোলাভালা ভেবে
+    3.10-4.54  প্রায়ই ঠকাত—
+    4.54-8.02  কিন্তু দামি জিনিস বা টাকা রাখতে হলে
+    8.02-10.79  সবাই তাঁকেই বিশ্বাস করত!
+    10.79-13.80  একদিন এক বন্ধু দাদার পকেট থেকে
+    13.80-15.26  দশ টাকা চুরি করে
+    15.26-17.18  তাঁর কাছে রাখতে দিলে,
+    17.18-20.09  ঠাকুর চুপিচুপি সেই টাকা বৌদিকে
+    20.09-21.94  ফিরিয়ে দিয়ে এলেন।
+
+02b_Narrator_Lozenges.wav  (10.560 s; on the timeline at 72.348 s = frame 1736)
+  lead     start 0.000  len 0.212  [0.000, 0.212]
+  short    start 0.467  len 0.153  [0.467, 0.620]  near "সত্য প্রকাশ হতেই বৌদি খুশি হয়ে" (estimate 2.17 s off) abs 72.89 s f1749
+  short    start 1.501  len 0.130  [1.501, 1.631]  near "সত্য প্রকাশ হতেই বৌদি খুশি হয়ে" (estimate 1.16 s off) abs 73.91 s f1774
+  SENTENCE start 3.929  len 0.608  [3.929, 4.537]  near "তাঁকে দু'আনা দিলেন—" (estimate 0.09 s off) abs 76.58 s f1838
+  trail    start 10.307  len 0.253  [10.307, 10.560]  near "কিনে খাওয়ালেন!" (estimate inside) abs 82.78 s f1987
+  phrases (estimated, clip seconds):
+    0.21-2.79  সত্য প্রকাশ হতেই বৌদি খুশি হয়ে
+    2.79-4.63  তাঁকে দু'আনা দিলেন—
+    4.63-6.45  আর দয়ালু ঠাকুর সেই দু'আনা দিয়ে
+    6.45-8.84  সব বন্ধুদেরই মিষ্টি লজেন্স
+    8.84-10.44  কিনে খাওয়ালেন!
+
+99_Outro_Sequential.wav  (24.000 s; on the timeline at 83.240 s = frame 1998)
+  lead     start 0.000  len 0.258  [0.000, 0.258]
+  SENTENCE start 0.813  len 0.459  [0.813, 1.272]  near "ক্ষমা, সততা আর নিঃস্বার্থ বিশ্বাস—" (estimate 3.64 s off) abs 84.28 s f2023
+  SENTENCE start 4.371  len 0.543  [4.371, 4.914]  near "ক্ষমা, সততা আর নিঃস্বার্থ বিশ্বাস—" (estimate inside) abs 87.88 s f2109
+  short    start 7.649  len 0.125  [7.649, 7.774]  near "এই তিন গুণ মানুষকে সবার প্রিয় করে তোলে।" (estimate 1.73 s off) abs 90.95 s f2183
+  short    start 8.644  len 0.172  [8.644, 8.816]  near "এই তিন গুণ মানুষকে সবার প্রিয় করে তোলে।" (estimate 0.68 s off) abs 91.97 s f2207
+  SENTENCE start 8.816  len 0.682  [8.816, 9.498]  near "এই তিন গুণ মানুষকে সবার প্রিয় করে তোলে।" (estimate 0.00 s off) abs 92.40 s f2218
+  SENTENCE start 11.213  len 0.218  [11.213, 11.431]  near "ছোটদের বালক ঠাকুরের গল্প—" (estimate inside) abs 94.56 s f2269
+  short    start 12.183  len 0.123  [12.183, 12.306]  near "ছোটদের বালক ঠাকুরের গল্প—" (estimate 0.75 s off) abs 95.48 s f2292
+  short    start 12.990  len 0.198  [12.990, 13.188]  near "ছোটদের বালক ঠাকুরের গল্প—" (estimate 1.56 s off) abs 96.33 s f2312
+  short    start 14.176  len 0.137  [14.176, 14.313]  near "আসছে পরের পর্ব: লববাবুর পাঠশালা!" (estimate 0.77 s off) abs 97.48 s f2340
+  short    start 14.888  len 0.192  [14.888, 15.080]  near "আসছে পরের পর্ব: লববাবুর পাঠশালা!" (estimate 0.00 s off) abs 98.22 s f2357
+  short    start 17.056  len 0.121  [17.056, 17.177]  near "শুরু হচ্ছে সিজন দুই!" (estimate 0.73 s off) abs 100.36 s f2409
+  SENTENCE start 17.179  len 0.370  [17.179, 17.549]  near "শুরু হচ্ছে সিজন দুই!" (estimate 0.36 s off) abs 100.60 s f2415
+  SENTENCE start 17.549  len 0.363  [17.549, 17.912]  near "শুরু হচ্ছে সিজন দুই!" (estimate inside) abs 100.97 s f2423
+  short    start 20.366  len 0.147  [20.366, 20.513]  near "কড়া পণ্ডিত লববাবুর পাঠশালায় গিয়ে" (estimate inside) abs 103.68 s f2488
+  SENTENCE start 21.939  len 0.329  [21.939, 22.268]  near "কী করলেন বালক ঠাকুর," (estimate 0.00 s off) abs 105.34 s f2528
+  short    start 22.888  len 0.135  [22.888, 23.023]  near "কী করলেন বালক ঠাকুর," (estimate 0.62 s off) abs 106.20 s f2549
+  trail    start 23.707  len 0.293  [23.707, 24.000]  near "দেখুন পরের পর্বে!" (estimate inside) abs 107.09 s f2570
+  phrases (estimated, clip seconds):
+    0.26-4.91  ক্ষমা, সততা আর নিঃস্বার্থ বিশ্বাস—
+    4.91-9.50  এই তিন গুণ মানুষকে সবার প্রিয় করে তোলে।
+    9.50-11.43  ছোটদের বালক ঠাকুরের গল্প—
+    11.43-15.08  আসছে পরের পর্ব: লববাবুর পাঠশালা!
+    15.08-17.91  শুরু হচ্ছে সিজন দুই!
+    17.91-20.51  কড়া পণ্ডিত লববাবুর পাঠশালায় গিয়ে
+    20.51-22.27  কী করলেন বালক ঠাকুর,
+    22.27-23.84  দেখুন পরের পর্বে!
+

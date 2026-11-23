@@ -426,3 +426,61 @@ export const breakState5 = (absFrame: number): BreakState => {
   const elapsed = absFrame - b.startFrame;
   return { inBreak: true, brk: b, t: b.frames > 0 ? elapsed / b.frames : 0, elapsed };
 };
+
+/* Episode 6 (added 2026-11-22; scripts/build_ep06_timing.js, EP06_* in ../episode06/timing; the approved table STO-21:
+   6 pauses, 2 action gaps, 1 chapter break). The same helpers with a "6" suffix (useStory6, cueLocalStory6, clipSpan6,
+   clipLocalStory6, pausesFor6, absToStory6, gapsFor6, gapState6, breakState6) or EP06_CLOCK, exactly as Episode 5's.
+   Episode 2 to 5 exports above unchanged (this block is appended, its imports with it).
+   Action gaps: scene 01 has an "end" gap (AG1+AG2, beats a_father_leaves and b_brother_comes_out) that runs FIRST at
+   the scene's end-pause point, then P3 holds right after it, then chapter break 1; scene 02 has an "after" gap (AG3, at
+   the 02a/02b boundary, beats a_friend_returns and b_friend_stalks_off). Story frames include every gap (f runs
+   through them); key the gap's action on f and its beats (gapState6 / useStory6(...).gap), the P3 tableaux on pause. */
+import { EP06_AUDIO, EP06_BREAKS, EP06_CLIP_PARTS, EP06_GAPS, EP06_PAUSES, EP06_SCENES } from "../episode06/timing";
+import type { Ep06Gap } from "../episode06/timing";
+import { EP06_CUES } from "../episode06/subtitles";
+export const EP06_CLOCK = makeStoryClock({
+  scenes: EP06_SCENES,
+  pauses: EP06_PAUSES,
+  cues: EP06_CUES,
+  audio: EP06_AUDIO,
+  clipParts: EP06_CLIP_PARTS,
+});
+/** Episode 6: the pauses of one scene, sorted by atStory. */
+export const pausesFor6 = EP06_CLOCK.pausesFor;
+/** Episode 6: story frame (scene-local, authored timing) of an absolute real frame. */
+export const absToStory6 = EP06_CLOCK.absToStory;
+/** Episode 6: a subtitle phrase's start and end in the scene's story frames. */
+export const cueLocalStory6 = EP06_CLOCK.cueLocalStory;
+/** Episode 6: an original voice clip's whole window in absolute real frames (first part start, last part end). */
+export const clipSpan6 = EP06_CLOCK.clipSpan;
+/** Episode 6: an original voice clip's window in a scene's story frames. */
+export const clipLocalStory6 = EP06_CLOCK.clipLocalStory;
+const gapCache6: Record<string, Ep06Gap[]> = {};
+/** Episode 6: the action gaps of one scene (story frames, sorted by fromStory; open, after and end kinds). */
+export const gapsFor6 = (sceneId: string): Ep06Gap[] =>
+  (gapCache6[sceneId] ??= EP06_GAPS.filter((g) => g.sceneId === sceneId).sort((a, b) => a.fromStory - b.fromStory));
+/** Episode 6 gap state: the generic GapState plus the current gap's kind ("open" | "after" | "end"; null outside). */
+export interface GapState6 extends GapState {
+  kind: Ep06Gap["kind"] | null;
+}
+/** Episode 6: whether story frame `f` of a scene lies inside an action gap (which beat, and the gap's kind). */
+export const gapState6 = (sceneId: string, f: number): GapState6 => {
+  const gaps = gapsFor6(sceneId);
+  const g = gapState(f, gaps);
+  return { ...g, kind: g.inGap ? gaps[g.index].kind : null };
+};
+/**
+ * Episode 6 scene hook: { f: story frame (runs through action gaps, end gaps included; holds in pauses), lifeF: real
+ * local frame, pause: PauseState, gap: GapState6 }.
+ */
+export const useStory6 = (sceneId: string): { f: number; lifeF: number; pause: PauseState; gap: GapState6 } => {
+  const s = EP06_CLOCK.useStory(sceneId);
+  return { ...s, gap: gapState6(sceneId, s.f) };
+};
+/** Episode 6: whether an ABSOLUTE frame lies inside a chapter break (EP06_BREAKS; same shape as Episode 4's). */
+export const breakState6 = (absFrame: number): BreakState => {
+  const b = EP06_BREAKS.find((x) => absFrame >= x.startFrame && absFrame < x.startFrame + x.frames);
+  if (!b) return { inBreak: false, brk: null, t: 0, elapsed: 0 };
+  const elapsed = absFrame - b.startFrame;
+  return { inBreak: true, brk: b, t: b.frames > 0 ? elapsed / b.frames : 0, elapsed };
+};

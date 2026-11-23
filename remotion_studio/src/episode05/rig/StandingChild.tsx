@@ -2,11 +2,14 @@ import React, { useId } from "react";
 import { Hand, type HandShape } from "../../cinematic/rig/Hand";
 import {
   PLATE_COLORS,
+  PLATE_COLORS_HEALTHY,
   PLATE_HAIR_TOP,
   ThakurHeadPlate,
   ThakurNeckPlate,
   plateChinY,
+  plateEyeAt,
   plateFaceState,
+  type PlateColors,
   type PlateExpression,
   type PlateFaceState,
 } from "../../cinematic/rig/ThakurHeadPlate";
@@ -78,6 +81,51 @@ import {
  * head top, chin, chest and the halo anchor (glowAnchor), so scenes can attach things. All follow `headScale`. The palm
  * points are the palm centres of the hands as drawn (equal to the targets whenever the targets are within reach). standingLocal() converts a world point to figure units.
  * turnTortoiseRim(t, at) gives the demo roll's rim points.
+ *
+ * EPISODE 6 (2026-11-22; all opt-in: every Episode 5 pose, expression and default renders byte-identically):
+ *   standScolded  upright, head a little low (neck forward), hands loosely together in front, eyes down; default
+ *                 expression "thoughtful" (closed, quiet mouth).
+ *   hurtBack      after the swat: bent forward HURT_BEND (prop `hurtBend`) at the waist, knees soft, the near hand round
+ *                 at the small of his back (palm on the back, fingers down), the far hand on the far thigh just above
+ *                 the knee (as near the knee as the arm reaches). Both targets come from the body every frame (contact
+ *                 kept). Over an arm turned back the chadar stays a short cap on the shoulder (no wing or panel on the
+ *                 back: STO-20a). Key it with prevPose "standScolded", blendFrames about 8: the flinch (forward lurch,
+ *                 the head lags, eyes squeeze; HURT_T, prop `flinch` 0..1, 0 when cutting in on him already bent) and
+ *                 quick, uneven breathing that settles over about 2 s (`hurtBreath` overrides). Expression "hurt".
+ *   wipeEye       hurtBack body; the back of the far hand rises to his far eye (WIPE_T.up), rubs, comes down to the
+ *                 thigh (WIPE_T.down), then the small forgiving smile (expression hurt > forgiving at WIPE_T.smile,
+ *                 unless the scene sets `expression`). The near hand stays at his back. The far hand is drawn over the
+ *                 face. Blend from hurtBack with blendFrames about 8.
+ *   holdOut       both hands hold a small folded note out at chest height: thumb-and-finger pinches at its two side
+ *                 edges. `noteAt` (centre, default NOTE_AT), `noteW` (NOTE_W), `noteAngle` (degrees). Joints `note`
+ *                 gives the contacts, anchor, angle and width for the props agent's note; draw it in `layerMid` so the
+ *                 near hand lies over it.
+ *   giveOut       the far hand holds a paper twist at the chest (`twistAt`, TWIST_AT; draw it in `layerFar`); the near
+ *                 hand takes a lozenge from the twist's mouth and puts it in the palm at each `gives` key
+ *                 ({ at, start, yaw? }, GIVE_T cycle: pick, carry, put, release, withdraw). He turns on the spot from
+ *                 boy to boy (body yaw from giveYaw(key), no walk cycle: the feet pivot in place); the eyes lead to each
+ *                 palm. Joints `twist` and `give` (current lozenge: in the hand at pinchNear, or released at the palm).
+ *   Gaze (any pose): `gaze` keys { at?, start } (figure units): the eyes arrive in GAZE_T.eyes frames, the head follows
+ *                 (turn, chin up or down, neck), the eyes counter as it arrives. glanceHideThenFather({ hideAt,
+ *                 fatherAt, start, gap?, back? }) builds the two glances of shot 4.
+ *   headShake 0..1 a small slow "no" (period 22 f, story clock), the eyes stay on their target; with `mouth` the breath
+ *                 is the quiet speaking breath (also in hurtBack). `teary` 0..1 (ThakurHeadPlate `tear`: wet lower lids,
+ *                 slightly reddened rim, a second catchlight; no streaming). `sniffAt` [life frames]: a quick double
+ *                 inhale with a small lift of the head. Expressions "hurt" (brows raised and drawn, mouth closed, eyes
+ *                 soft) and "forgiving" (a small closed-lip smile, soft eyes); never a grin (BAL-22).
+ *   Joints also give pinchNear / pinchFar (thumb-and-index pinch of each hand) for any pose.
+ *
+ * BAL-26c (2026-11-23), opt-in `build="healthy"` (default "classic" = byte-identical): HEALTHY_BUILD proportions
+ * (shoulders about 34% wider, torso 30% fuller with a rounder chest and slight belly, arms x1.5 and legs x1.3 thicker,
+ * a thicker neck, legs about 10% shorter and the torso 11% longer, so the overall height is about 3% less), hands 15%
+ * larger, smaller sturdy feet; upright open posture (head up, weight on one leg with an easy sway, arms clear of the body
+ * with a soft elbow); the chadar across the chest and over the shoulders ending above the dhoti's rolled waist and tuck,
+ * the drape over both shoulders and the whole upper arms to the elbow (BAL-26d, plate 01; forearms and hands free, a
+ * slim drape hem where the forearm comes out), a fuller mid-calf dhoti with front pleats and a little rise between the legs;
+ * PLATE_COLORS_HEALTHY (warm skin, warm cotton shading) and ThakurHeadPlate `vivid` (open bright eyes). Gestures: wrists
+ * trail and settle; holdOut elbows at the sides with the forearms angled up and the note at the fingertips; giveOut
+ * leans in and turns the palm up toward each boy; wipeEye with the back of the fingers; the hurt bend smaller (0.34)
+ * with the back of the hand resting at the waist. Works with `look="painted"`.
  */
 
 /* ------------------------------------------------------------------ */
@@ -92,13 +140,34 @@ export type StandingPose =
   | "reachGrab"
   | "bitten"
   | "rise"
-  | "handInHands";
+  | "handInHands"
+  // Episode 6 (opt-in additions; see EPISODE 6 in the header)
+  | "standScolded"
+  | "hurtBack"
+  | "wipeEye"
+  | "holdOut"
+  | "giveOut";
 
-export type StandingExpression = "serene" | "joyful" | "thoughtful" | "compassionate" | "playful" | "surprised-calm";
+export type StandingExpression = "serene" | "joyful" | "thoughtful" | "compassionate" | "playful" | "surprised-calm" | "hurt" | "forgiving";
 
 export interface V {
   x: number;
   y: number;
+}
+
+/** A gaze key (Episode 6): from `start` (story frame) the eyes go to `at` (figure units before flip, like the hand
+ * targets), the head follows a few frames later. `at` undefined hands the look back to the pose. */
+export interface GazeKey {
+  at?: V;
+  start: number;
+}
+
+/** A giveOut key (Episode 6): from `start` he takes a lozenge from the paper twist and puts it in the palm at `at`
+ * (figure units before flip). `yaw` (0 front .. 1 three-quarter) is the body turn toward that boy; default from `at`. */
+export interface GiveKey {
+  at: V;
+  start: number;
+  yaw?: number;
 }
 
 export interface StandingChildProps {
@@ -150,32 +219,125 @@ export interface StandingChildProps {
    * head-derived point of standingChildJoints (head, headTop, chin, glowAnchor, headScale) follows.
    */
   headScale?: number;
+
+  /* ---------------- Episode 6 (all opt-in; absent = the Episode 5 behaviour) ---------------- */
+  /** Gaze keys: eyes lead, the head follows (MOT-13). See glanceHideThenFather(). Works on every pose. */
+  gaze?: GazeKey[];
+  /** Small slow head shake 0..1 (a "no" while talking); the eyes stay on their target. Story clock. */
+  headShake?: number;
+  /** Teary eyes 0..1 (ThakurHeadPlate `tear`): wet lower lids, reddened rim, glistening catchlight. Fade it out. */
+  teary?: number;
+  /** Sniffs at these LIFE frames: a quick double inhale with a small lift of the head. */
+  sniffAt?: number[];
+  /** Override of the quick uneven hurt breathing 0..1 (default: hurtBack 1 at the swat, settling over about 2 s). */
+  hurtBreath?: number;
+  /** hurtBack: the flinch at the swat 0..1 (default 1; 0 when a scene cuts in on him already bent). */
+  flinch?: number;
+  /** hurtBack / wipeEye: forward bend of the back in radians (default HURT_BEND). */
+  hurtBend?: number;
+  /** holdOut: the note's centre (figure units before flip), its width and in-plane angle (degrees). */
+  noteAt?: V;
+  noteW?: number;
+  noteAngle?: number;
+  /** giveOut: the keyed gives (boy to boy) and where the far hand holds the paper twist (figure units). */
+  gives?: GiveKey[];
+  twistAt?: V;
+  /**
+   * Prop layers in WORLD coordinates, drawn inside the figure: `layerFar` just before the far forearm and hand (the far
+   * fingers close over it: the paper twist), `layerMid` after the far hand and before the near arm (the near hand lies
+   * over it: the note). Absent = the Episode 5 drawing order.
+   */
+  layerFar?: React.ReactNode;
+  layerMid?: React.ReactNode;
+  /**
+   * BAL-26c (2026-11-23), opt-in: "healthy" = a healthy, lively six-year-old: sturdier child proportions (broader
+   * shoulders, rounder chest and a slight belly, thicker limbs and neck, legs a little shorter), an upright open posture
+   * with weight on one leg at rest, the chadar across the chest and shoulders with a dhoti waist and pleats showing,
+   * warm cotton and skin (PLATE_COLORS_HEALTHY), bright open eyes (ThakurHeadPlate `vivid`), hands about 15% larger
+   * with wrists that lead and settle. Every pose, prop and helper works with it. Default "classic" = the Episode 5 build,
+   * byte-identical.
+   */
+  build?: "classic" | "healthy";
 }
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
 /* ------------------------------------------------------------------ */
 
-const C = PLATE_COLORS;
+// Per-build values (BAL-26c): `let`, set by applyBuild() at every entry point (StandingChild, standingChildJoints); the
+// child components (ArmEl, FootEl) get their sizes as props, so nothing reads them after the entry returns.
+let C: PlateColors = PLATE_COLORS;
 export const STANDING_HEIGHT = 485;
 const HEAD_K = 0.97;
 const YAW_MAX = (55 * Math.PI) / 180;
-const THIGH = 116;
-const SHIN = 112;
+let THIGH = 116;
+let SHIN = 112;
 const ANKLE_H = 15;
-const HIP_Y = -(ANKLE_H + (THIGH + SHIN) * 0.994); // upright pelvis height (legs almost straight)
-const HIP_HALF = 12;
-const TORSO = 126; // pelvis to the shoulder line
-const SH_HALF = 32; // shoulder joints, half width (front)
+let HIP_Y = -(ANKLE_H + (THIGH + SHIN) * 0.994); // upright pelvis height (legs almost straight)
+let HIP_HALF = 12;
+let TORSO = 126; // pelvis to the shoulder line
+let SH_HALF = 32; // shoulder joints, half width (front)
 const NECK_TO_HEAD = 57; // shoulder-line centre to head centre
-const UPPER = 76;
-const FORE = 68;
-const REACH = (UPPER + FORE) * 0.95;
-const HAND_L = 50;
+let UPPER = 76;
+let FORE = 68;
+let REACH = (UPPER + FORE) * 0.95;
+let HAND_L = 50;
 const HAND_SX = 1.06;
 const HAND_SY = 0.97;
-const PALM_OFF = 0.24 * HAND_L * HAND_SY; // wrist to palm centre
-const FOOT_K = 1.55;
+let PALM_OFF = 0.24 * HAND_L * HAND_SY; // wrist to palm centre
+/** Episode 6: palm centre to the thumb-and-index pinch (where a note edge or a lozenge is held). */
+let PINCH_OFF = 0.3 * HAND_L;
+let FOOT_K = 1.55;
+/** BAL-26c healthy build active, and its thickness factors (1 in the classic build). */
+let HB = false;
+let ARM_R = 1;
+let LEG_R = 1;
+let NECK_L = 1;
+let NECK_R = 1;
+let TORSO_W = 1;
+/** BAL-26c: the healthy build's proportions (figure units at s = 1; the classic build is the Episode 5 one). */
+export const HEALTHY_BUILD = {
+  thigh: 106,
+  shin: 100,
+  hipHalf: 14,
+  torso: 140,
+  shoulderHalf: 43,
+  upper: 72,
+  fore: 64,
+  hand: 57.5,
+  foot: 1.42,
+  armR: 1.5,
+  legR: 1.3,
+  neckLen: 0.95,
+  neckR: 1.45,
+  torsoW: 1.3,
+};
+const applyBuild = (p: StandingChildProps): void => {
+  const h = p.build === "healthy";
+  if (h === HB) return;
+  HB = h;
+  const B = HEALTHY_BUILD;
+  C = h ? PLATE_COLORS_HEALTHY : PLATE_COLORS;
+  THIGH = h ? B.thigh : 116;
+  SHIN = h ? B.shin : 112;
+  HIP_Y = -(ANKLE_H + (THIGH + SHIN) * 0.994);
+  HIP_HALF = h ? B.hipHalf : 12;
+  TORSO = h ? B.torso : 126;
+  SH_HALF = h ? B.shoulderHalf : 32;
+  UPPER = h ? B.upper : 76;
+  FORE = h ? B.fore : 68;
+  REACH = (UPPER + FORE) * 0.95;
+  HAND_L = h ? B.hand : 50;
+  PALM_OFF = 0.24 * HAND_L * HAND_SY;
+  // healthy: the note is held lightly at the fingertips
+  PINCH_OFF = (h ? 0.4 : 0.3) * HAND_L;
+  FOOT_K = h ? B.foot : 1.55;
+  ARM_R = h ? B.armR : 1;
+  LEG_R = h ? B.legR : 1;
+  NECK_L = h ? B.neckLen : 1;
+  NECK_R = h ? B.neckR : 1;
+  TORSO_W = h ? B.torsoW : 1;
+};
 const TILT = 0.1; // a camera a little above: far points sit a touch higher
 
 export const BEND_AT: V = { x: 112, y: -34 };
@@ -184,6 +346,24 @@ const HELD_AT: V = { x: 74, y: -262 };
 export const REACH_T = { reach: 12, grip: 16 };
 export const RISE_LEN = 26;
 export const TURN_TORTOISE_LEN = 56;
+
+/* Episode 6 */
+/** hurtBack: forward bend of the back (radians, about 26 degrees). */
+export const HURT_BEND = 0.46;
+/** hurtBack: the flinch (frames from poseStart): peak at `peak`, settled by `settle`; the hurt breathing settles by `breath`. */
+export const HURT_T = { peak: 3, settle: 20, breath: 56 };
+/** hurtBack: the near upper arm hangs down and back at this angle from vertical (degrees). */
+export const HURT_ELBOW_DEG = 48;
+/** wipeEye (frames from poseStart): the hand at the eye by `up`, rubs to `rubEnd`, back down by `down`; the smile from `smile`. */
+export const WIPE_T = { up: 12, rubEnd: 30, down: 44, smile: 42 };
+/** holdOut defaults (figure units). */
+export const NOTE_AT: V = { x: 70, y: -318 };
+export const NOTE_W = 40;
+/** giveOut: the paper twist in the far hand (palm centre) and the give cycle (frames from each key's start). */
+export const TWIST_AT: V = { x: 30, y: -292 };
+export const GIVE_T = { pick: 8, lift: 12, over: 24, put: 29, release: 27, withdraw: 42, turn0: 3, turn1: 18 };
+/** Gaze timing: the eyes arrive in `eyes` frames, the head starts `headDelay` later and takes `head` frames. */
+export const GAZE_T = { eyes: 4, headDelay: 4, head: 14 };
 
 /* ------------------------------------------------------------------ */
 /* Small maths                                                          */
@@ -387,6 +567,198 @@ export const turnTortoiseRim = (t: number, at: V = BEND_AT): { near: V; far: V; 
 };
 
 /* ------------------------------------------------------------------ */
+/* Episode 6 helpers: give cycle, gaze, hurt breathing, sniffs           */
+/* ------------------------------------------------------------------ */
+
+const giveKeys = (p: StandingChildProps): GiveKey[] => (p.gives ?? []).slice().sort((a, b) => a.start - b.start);
+const keyIndex = (starts: number[], f: number): number => {
+  let idx = -1;
+  for (let i = 0; i < starts.length; i++) if (starts[i] <= f) idx = i;
+  return idx;
+};
+/** Body turn toward a boy at `at` (figure units): 0 front .. 1 three-quarter. */
+export const giveYaw = (k: GiveKey): number => k.yaw ?? clamp(0.3 + k.at.x / 150, 0.1, 1);
+const twistMouthOf = (tw: V): V => add(tw, { x: 3, y: -27 });
+
+interface GiveHand {
+  P: V;
+  D: V;
+  curl: number;
+  turn: number;
+  contact: number;
+  idx: number;
+  inHand: boolean;
+  released: boolean;
+  /** BAL-26c: how far he leans in toward the boy (0..1). */
+  lean: number;
+}
+
+const giveHandAt = (keys: GiveKey[], idx: number, t: number, tw: V, L: number): GiveHand => {
+  const restD = unit({ x: 0.3, y: 1 });
+  if (idx < 0) {
+    return { P: add(tw, { x: 30 + 0.8 * wob(L, 1.1, 0.5), y: 32 }), D: restD, curl: 0.32, turn: -2.35, contact: 0, idx, inHand: false, released: false, lean: 0 };
+  }
+  const k = keys[idx];
+  const G = GIVE_T;
+  const dDown = unit({ x: 0.12, y: 1 });
+  const dOut = unit({ x: 0.62, y: 0.78 });
+  // palm centres for the pinch (fingertips) at the twist's mouth and just above the boy's palm
+  const PM = sub(twistMouthOf(tw), mul(dDown, PINCH_OFF));
+  const PA = sub(add(k.at, { x: 0, y: -6 }), mul(dOut, PINCH_OFF));
+  const PAup = add(PA, { x: -3, y: -14 });
+  const PW = add(lerpV(PA, PM, 0.5), { x: 2, y: 10 });
+  const from = idx > 0 ? giveHandAt(keys, idx - 1, k.start - keys[idx - 1].start, tw, L) : giveHandAt(keys, -1, 0, tw, L);
+  const base = { idx, inHand: false, released: false, contact: 0, lean: 0 };
+  if (t < G.pick) {
+    const u = easeIO(t / G.pick);
+    return { ...base, P: add(lerpV(from.P, PM, u), { x: 0, y: -8 * Math.sin(Math.PI * u) }), D: unit(lerpV(from.D, dDown, u)), curl: lerp(from.curl, 0.2, u), turn: lerpA(from.turn, -2.3, u) };
+  }
+  if (t < G.lift) {
+    const u = smooth((t - G.pick) / (G.lift - G.pick));
+    return { ...base, P: add(PM, { x: 0, y: 3 * Math.sin(Math.PI * u) }), D: dDown, curl: lerp(0.2, 0.55, u), turn: -2.3, inHand: u > 0.5 };
+  }
+  if (t < G.over) {
+    const u = easeIO((t - G.lift) / (G.over - G.lift));
+    return { ...base, P: add(lerpV(PM, PAup, u), { x: 0, y: -10 * Math.sin(Math.PI * u) }), D: unit(lerpV(dDown, dOut, u)), curl: 0.55, turn: HB ? lerpA(-2.3, -1.3, u) : -2.3, inHand: true, lean: 0.6 * u };
+  }
+  if (t < G.put) {
+    const u = easeIO((t - G.over) / (G.put - G.over));
+    const rel = t >= G.release;
+    return { ...base, P: lerpV(PAup, PA, u), D: dOut, curl: rel ? lerp(0.55, 0.14, smooth((t - G.release) / 2)) : 0.55, turn: HB ? lerpA(-1.3, -0.75, u) : -2.3, contact: u, inHand: !rel, released: rel, lean: 0.6 + 0.4 * u };
+  }
+  if (t < G.withdraw) {
+    const u = easeIO((t - G.put) / (G.withdraw - G.put));
+    return { ...base, P: lerpV(PA, PW, u), D: unit(lerpV(dOut, restD, u)), curl: lerp(0.14, 0.3, u), turn: HB ? lerpA(-0.75, -2.2, u) : -2.3, contact: 1 - u, released: true, lean: 1 - easeIO(u) };
+  }
+  return { ...base, P: add(PW, { x: 0.8 * wob(L, 5.3, 0.5), y: 0.6 * wob(L, 8.2, 0.4) }), D: restD, curl: 0.3 + 0.05 * wob(L, 3.9, 0.6), turn: HB ? -2.2 : -2.3, released: true };
+};
+
+const giveHand = (p: StandingChildProps, f: number, tw: V, L: number): GiveHand => {
+  const keys = giveKeys(p);
+  const idx = keyIndex(
+    keys.map((k) => k.start),
+    f,
+  );
+  return giveHandAt(keys, idx, idx < 0 ? 0 : f - keys[idx].start, tw, L);
+};
+
+/** Body yaw: the prop, or in giveOut with keyed gives the turn from boy to boy (turning on the spot, no walk). */
+const yawOf = (props: StandingChildProps, sf: number): number => {
+  if (props.pose === "giveOut" && props.gives && props.gives.length) {
+    const keys = giveKeys(props);
+    const idx = keyIndex(
+      keys.map((k) => k.start),
+      sf,
+    );
+    if (idx < 0) return props.yaw ?? 1;
+    const y0 = idx > 0 ? giveYaw(keys[idx - 1]) : props.yaw ?? 1;
+    const u = easeIO((sf - keys[idx].start - GIVE_T.turn0) / (GIVE_T.turn1 - GIVE_T.turn0));
+    return lerp(y0, giveYaw(keys[idx]), u);
+  }
+  return props.yaw ?? 1;
+};
+
+interface GazeOut {
+  eyeX: number;
+  eyeY: number;
+  up: number;
+  turn: number;
+  tilt: number;
+  neck: number;
+}
+/** Look values toward T from the head centre H (figure units, facing +x). */
+const gazeTo = (H: V, T: V): GazeOut => {
+  const d = sub(T, H);
+  const l = len(d) || 1;
+  const ux = d.x / l;
+  const uy = d.y / l;
+  return {
+    eyeX: clamp(1.15 * ux, -1, 1),
+    eyeY: uy > 0 ? clamp(0.9 * uy, 0, 1) : 0,
+    up: uy < 0 ? clamp(-1.2 * uy, 0, 1) : 0,
+    turn: clamp(0.9 * (ux - 0.55), -1.3, 0.35),
+    tilt: uy < 0 ? 13 * uy : 6 * uy,
+    neck: uy < 0 ? 0.32 * uy : 0.12 * uy,
+  };
+};
+const gazeKeysOf = (props: StandingChildProps): GazeKey[] | undefined => {
+  if (props.gaze && props.gaze.length) return props.gaze.slice().sort((a, b) => a.start - b.start);
+  if (props.pose === "giveOut" && props.gives && props.gives.length) return giveKeys(props).map((k) => ({ at: add(k.at, { x: 0, y: -4 }), start: k.start - 2 }));
+  return undefined;
+};
+/** Gaze at story frame sf: the eyes arrive first, the head follows (MOT-13). Null before the first key. */
+const gazeFor = (keys: GazeKey[], sf: number, H: V, own: GazeOut): GazeOut | null => {
+  const idx = keyIndex(
+    keys.map((k) => k.start),
+    sf,
+  );
+  if (idx < 0) return null;
+  const t = sf - keys[idx].start;
+  const at = keys[idx].at;
+  const to = at ? gazeTo(H, at) : own;
+  const pAt = idx > 0 ? keys[idx - 1].at : undefined;
+  const from = idx > 0 && pAt ? gazeTo(H, pAt) : own;
+  const ke = smooth(t / GAZE_T.eyes);
+  const kh = easeIO((t - GAZE_T.headDelay) / GAZE_T.head);
+  return {
+    eyeX: lerp(from.eyeX, to.eyeX, ke),
+    eyeY: lerp(from.eyeY, to.eyeY, ke),
+    up: lerp(from.up, to.up, ke),
+    turn: lerp(from.turn, to.turn, kh),
+    tilt: lerp(from.tilt, to.tilt, kh),
+    neck: lerp(from.neck, to.neck, kh),
+  };
+};
+
+/**
+ * Gaze keys for Episode 6 shot 4: the eyes (then the head) go to the hiding place, then up to the father's face.
+ * Points in figure units before flip (convert scene points with standingLocal). `gap` frames between the glances,
+ * `back` (optional) frames after the second glance to hand the look back to the pose.
+ */
+export const glanceHideThenFather = (o: { hideAt: V; fatherAt: V; start: number; gap?: number; back?: number }): GazeKey[] => {
+  const keys: GazeKey[] = [
+    { at: o.hideAt, start: o.start },
+    { at: o.fatherAt, start: o.start + (o.gap ?? 30) },
+  ];
+  if (o.back !== undefined) keys.push({ start: o.start + (o.gap ?? 30) + o.back });
+  return keys;
+};
+
+/** A quick, uneven breath (hurt, after crying): about 1.3 s, some inhales caught in two steps. */
+const quickBreath = (L: number): number => {
+  const ph = L / 31 + 0.2 * Math.sin(L * 0.05 + 0.9) + 0.1 * Math.sin(L * 0.13 + 2.2);
+  const n = Math.floor(ph);
+  const u = ph - n;
+  const depth = 1 + 0.55 * hash01(n, 71);
+  const inF = 0.36;
+  if (u < inF) {
+    const w = u / inF;
+    const hitch = hash01(n, 83) < 0.45;
+    const inh = hitch ? (w < 0.5 ? 0.6 * easeSin(w / 0.5) : w < 0.62 ? 0.6 : 0.6 + 0.4 * easeSin((w - 0.62) / 0.38)) : easeSin(w);
+    return depth * inh;
+  }
+  return depth * Math.pow(1 - easeSin((u - inF) / (1 - inF)), 1.2);
+};
+const hurtBreathW = (props: StandingChildProps, sf: number): number => {
+  if (props.hurtBreath !== undefined) return clamp(props.hurtBreath, 0, 1);
+  if (props.pose !== "hurtBack") return 0;
+  const t = sf - (props.poseStart ?? 0);
+  return t < 0 ? 0 : 1 - smooth((t - 8) / (HURT_T.breath - 8));
+};
+/** A sniff: two quick little inhales, then out (life frames). */
+const sniffAt = (list: number[] | undefined, L: number): number => {
+  if (!list) return 0;
+  let s = 0;
+  for (const s0 of list) {
+    const t = L - s0;
+    if (t < 0 || t >= 15) continue;
+    const v = t < 3 ? 0.6 * smooth(t / 3) : t < 5 ? 0.6 - 0.15 * smooth((t - 3) / 2) : t < 8 ? 0.45 + 0.55 * smooth((t - 5) / 3) : 1 - smooth((t - 8) / 7);
+    s = Math.max(s, v);
+  }
+  return s;
+};
+
+/* ------------------------------------------------------------------ */
 /* Pose solving                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -417,6 +789,14 @@ interface PoseVals {
   turnAdd: number;
   close: number;
   surprise: number;
+  // Episode 6 (all 0 in the Episode 5 poses)
+  nBack: number; // near palm to the small of the back (weight; target from the body each frame)
+  fThigh: number; // far palm on the far thigh, as near the knee as the arm reaches
+  fFace: number; // far hand at his far eye (the back of the hand: wipeEye)
+  fRub: number; // small rub offset while at the eye (units)
+  fIk: number; // far elbow chosen by the bend's sense (1) instead of the Episode 5 rule (0): for the hand to the face
+  neckAdd: number; // extra neck pitch (radians, + = head lower)
+  eyesUp: number;
 }
 
 interface Ctx {
@@ -515,9 +895,114 @@ const BASE: Omit<PoseVals, "nP" | "fP" | "nD" | "fD" | "nTurn" | "fTurn" | "nCur
   turnAdd: 0,
   close: 0,
   surprise: 0,
+  nBack: 0,
+  fThigh: 0,
+  fFace: 0,
+  fRub: 0,
+  fIk: 0,
+  neckAdd: 0,
+  eyesUp: 0,
+};
+
+/** Hands hanging loose, healthy build (BAL-26c): a small gap from the body, a soft elbow bend, relaxed curls. */
+const looseHandsH = (ctx: Ctx, theta: number, shiftX: number) => {
+  const sh = shoulders2(theta, ctx.yaw, shiftX);
+  const L = ctx.life;
+  const sw = trackAt(SWAY_TRACK, L);
+  const fd = trackAt(FIDGET_TRACK, L);
+  const ca = cosA(ctx.yaw);
+  return {
+    nP: add(sh.n, { x: -15 * ca + 4 + 2.5 * sw, y: 126 }),
+    fP: add(sh.f, { x: 13 * ca + 4 - 2 * sw, y: 124 }),
+    nD: unit({ x: 0.16 + 0.04 * sw, y: 1 }),
+    fD: unit({ x: 0.2 - 0.04 * sw, y: 1 }),
+    nTurn: -2.2 + 0.08 * fd,
+    fTurn: -0.85 - 0.08 * fd,
+    nCurl: clamp(0.4 + 0.1 * fd, 0.2, 0.62),
+    fCurl: clamp(0.42 - 0.08 * fd, 0.2, 0.62),
+  };
+};
+
+/**
+ * BAL-26c healthy build: the same poses held upright and open (head up, weight on one leg with an easy sway, arms clear
+ * of the body), the hurt bend less collapsed, holdOut with the elbows at the sides, giveOut leaning in. Classic: unchanged.
+ */
+const healthyAdjust = (pose: StandingPose, v: PoseVals, f: number, ctx: Ctx): PoseVals => {
+  const p = ctx.props;
+  const L = ctx.life;
+  const o: PoseVals = { ...v };
+  const fd = trackAt(FIDGET_TRACK, L);
+  if (pose === "standIdle" || pose === "rise") {
+    const w = trackAt(WEIGHT_TRACK, L);
+    o.shiftX = 6.8 * w + 1.3 * wob(L, 2.9, 0.22);
+    o.hipTilt = 4.4 * w;
+    o.headTilt = -1.6 * w - 2;
+    Object.assign(o, looseHandsH(ctx, 0, o.shiftX));
+  } else if (pose === "handInHands") {
+    const h = looseHandsH(ctx, 0.12, 0);
+    if (!p.handTargets?.far) o.fP = h.fP;
+    o.fD = h.fD;
+    o.headTilt = v.headTilt - 2;
+  } else if (pose === "standQuiet") {
+    const dy = HIP_Y - 8 + 238;
+    o.nP = add(v.nP, { x: 2, y: dy });
+    o.fP = add(v.fP, { x: 2, y: dy });
+    o.headTilt = v.headTilt - 3;
+    o.eyesDown = 0.15;
+    o.nCurl = v.nCurl + 0.06;
+  } else if (pose === "standScolded") {
+    const dy = HIP_Y + 4 + 229;
+    o.nP = add(v.nP, { x: 2, y: dy });
+    o.fP = add(v.fP, { x: 2, y: dy });
+    o.headTilt = v.headTilt - 2.5;
+    o.neckAdd = 0.12;
+    o.eyesDown = 0.8;
+  } else if (pose === "hurtBack" || pose === "wipeEye") {
+    // a hurt child, not an ill one: a smaller bend, the head up, the back of the hand resting at the waist
+    if (p.hurtBend === undefined) o.theta = 0.34;
+    o.drop = 3;
+    o.headTilt = v.headTilt - 3;
+    o.neckAdd = -0.06;
+    o.nTurn = -1.75;
+    o.nCurl = 0.44 + 0.04 * fd;
+    if (pose === "wipeEye") {
+      // the back of the fingers to the eye, not the fist
+      o.fCurl = lerp(0.4, 0.3, v.fFace);
+      o.fTurn = lerpA(-2.5, 0.35, v.fFace);
+    }
+  } else if (pose === "holdOut") {
+    // elbows at the sides, forearms angled up, wrists tilted, the note held lightly at the fingertips
+    const N0 = p.noteAt ?? { x: 50, y: HIP_Y - 108 };
+    const N = add(N0, { x: 0.6 * wob(L, 4.4, 0.5), y: 0.5 * wob(L, 7.1, 0.45) });
+    const hw = (p.noteW ?? 34) / 2;
+    const a = ((p.noteAngle ?? -6) * Math.PI) / 180;
+    const ux: V = { x: Math.cos(a), y: Math.sin(a) };
+    const nD = unit({ x: 0.42, y: -0.9 });
+    const fD = unit({ x: 0.18, y: -0.98 });
+    o.nP = sub(sub(N, mul(ux, hw)), mul(nD, PINCH_OFF));
+    o.fP = sub(add(N, mul(ux, hw)), mul(fD, PINCH_OFF));
+    o.nD = nD;
+    o.fD = fD;
+    o.nTurn = -2.55;
+    o.fTurn = -0.45;
+    o.nCurl = 0.42 + 0.03 * fd;
+    o.fCurl = 0.44;
+    o.theta = 0.04;
+    o.headTilt = -1.5;
+  } else if (pose === "giveOut") {
+    const h = giveHand(p, f, p.twistAt ?? TWIST_AT, L);
+    o.theta = 0.05 + 0.09 * h.lean;
+    o.headTilt = v.headTilt - 1.5 + 2 * h.lean;
+  }
+  return o;
 };
 
 function solvePose(pose: StandingPose, f: number, poseStart: number, ctx: Ctx): PoseVals {
+  const v = solvePoseBase(pose, f, poseStart, ctx);
+  return HB ? healthyAdjust(pose, v, f, ctx) : v;
+}
+
+function solvePoseBase(pose: StandingPose, f: number, poseStart: number, ctx: Ctx): PoseVals {
   const p = ctx.props;
   const t = f - poseStart;
   const L = ctx.life;
@@ -588,6 +1073,146 @@ function solvePose(pose: StandingPose, f: number, poseStart: number, ctx: Ctx): 
       lookX: 0.5,
       lookY: 0.15,
       eyesDown: 0.25,
+    };
+  }
+  // ---- Episode 6 poses ----
+  if (pose === "standScolded") {
+    // upright, head a little low, hands loosely together in front, eyes down (he takes the scolding silently)
+    const w = trackAt(WEIGHT_TRACK, L) * 0.45;
+    const shiftX = 2 * w;
+    const fd = trackAt(FIDGET_TRACK, L);
+    const front = 20 * sinA(ctx.yaw);
+    const c: V = { x: shiftX * cosA(ctx.yaw) + front + 3, y: -229 };
+    return {
+      ...BASE,
+      theta: 0.035,
+      shiftX,
+      hipTilt: 1.1 * w,
+      stance: p.stance ?? 0.28,
+      nP: add(c, { x: -4, y: 3 + 0.8 * fd }),
+      fP: add(c, { x: 5, y: -3 + 0.4 * fd }),
+      nD: unit({ x: 0.72, y: 0.7 }),
+      fD: unit({ x: -0.5, y: 0.87 }),
+      nTurn: -2.5,
+      fTurn: -0.5,
+      nCurl: 0.4 + 0.07 * fd,
+      fCurl: 0.42 - 0.05 * fd,
+      headNeck: 0.5,
+      headTilt: 6.5 - 0.7 * w,
+      neckAdd: 0.2,
+      eyesDown: 0.9,
+      lookX: 0.1 + 0.08 * trackAt(GLANCE_TRACK, L),
+    };
+  }
+  if (pose === "hurtBack" || pose === "wipeEye") {
+    // bent forward a little at the waist, the near hand round at the small of his back, the far hand on his far thigh
+    // just above the knee (targets from the body every frame: nBack, fThigh)
+    const w = trackAt(WEIGHT_TRACK, L) * 0.3;
+    const fd = trackAt(FIDGET_TRACK, L);
+    const body: PoseVals = {
+      ...BASE,
+      theta: p.hurtBend ?? HURT_BEND,
+      drop: 6,
+      shiftX: 1.4 * w,
+      hipTilt: 0.8 * w,
+      stance: p.stance ?? 0.55,
+      // placeholders: the path the hands take on the way to the computed targets
+      nP: { x: -36, y: -262 },
+      fP: { x: 44, y: -226 },
+      nD: unit({ x: -0.15, y: 1 }),
+      fD: unit({ x: 0.45, y: 1 }),
+      nTurn: -2.95,
+      fTurn: -2.5,
+      nCurl: 0.24 + 0.04 * fd,
+      fCurl: 0.4 - 0.05 * fd,
+      nContact: 1,
+      fContact: 1,
+      nBack: 1,
+      fThigh: 1,
+      headNeck: 0.55,
+      headTilt: 2 - 0.5 * w,
+      lookX: 0.3 + 0.12 * trackAt(GLANCE_TRACK, L),
+      lookY: 0.15,
+      eyesDown: 0.45,
+    };
+    if (pose === "hurtBack") return body;
+    // wipeEye: the back of the far hand up to his far eye, a small rub, then down to the thigh again
+    const up = easeIO(t / WIPE_T.up);
+    const down = easeIO((t - WIPE_T.rubEnd) / (WIPE_T.down - WIPE_T.rubEnd));
+    const face = up * (1 - down);
+    const rubEnv = smooth((t - WIPE_T.up + 3) / 5) * (1 - smooth((t - WIPE_T.rubEnd + 5) / 5));
+    return {
+      ...body,
+      fP: { x: 40, y: -312 }, // through the front of the chest on the way up and down
+      fD: unit({ x: 0.1, y: -1 }),
+      fThigh: 1 - face,
+      fFace: face,
+      fRub: rubEnv * 2.4 * Math.sin((t - WIPE_T.up) * 0.62),
+      fIk: 1,
+      fCurl: lerp(0.4, 0.7, face),
+      fTurn: lerp(-2.5, -0.9, face),
+      close: 0.42 * rubEnv,
+      headTilt: body.headTilt + 3.5 * face,
+      eyesDown: lerp(0.45, 0.25, face),
+    };
+  }
+  if (pose === "holdOut") {
+    // both hands hold a small folded note out at chest height (thumb-and-finger pinch at its two side edges)
+    const N0 = p.noteAt ?? NOTE_AT;
+    const N = add(N0, { x: 0.6 * wob(L, 4.4, 0.5), y: 0.5 * wob(L, 7.1, 0.45) });
+    const hw = (p.noteW ?? NOTE_W) / 2;
+    const a = ((p.noteAngle ?? -4) * Math.PI) / 180;
+    const ux: V = { x: Math.cos(a), y: Math.sin(a) };
+    const cN = sub(N, mul(ux, hw));
+    const cF = add(N, mul(ux, hw));
+    const nD = unit({ x: 0.62, y: -0.78 });
+    const fD = unit({ x: 0.05, y: -1 });
+    return {
+      ...BASE,
+      theta: 0.07,
+      stance: p.stance ?? 0.35,
+      nP: sub(cN, mul(nD, PINCH_OFF)),
+      fP: sub(cF, mul(fD, PINCH_OFF)),
+      nD,
+      fD,
+      nTurn: -2.75,
+      fTurn: -0.35,
+      nCurl: 0.5,
+      fCurl: 0.52,
+      nContact: 1,
+      fContact: 1,
+      headNeck: 0.55,
+      headTilt: -1,
+      lookX: 0.45,
+      lookY: -0.05,
+      eyesDown: 0.05,
+    };
+  }
+  if (pose === "giveOut") {
+    // the far hand holds the paper twist at the chest; the near hand takes a lozenge from it and puts it in a palm
+    const tw = p.twistAt ?? TWIST_AT;
+    const h = giveHand(p, f, tw, L);
+    return {
+      ...BASE,
+      theta: 0.08,
+      stance: p.stance ?? 0.4,
+      nP: h.P,
+      nD: h.D,
+      nTurn: h.turn,
+      nCurl: h.curl,
+      nShape: "relaxed",
+      nContact: h.contact,
+      fP: add(tw, { x: 0, y: 0.5 * wob(L, 2.2, 0.4) }),
+      fD: unit({ x: -0.78, y: 0.62 }),
+      fTurn: -1.7,
+      fCurl: 0.66,
+      fShape: "hold",
+      fContact: 1,
+      headNeck: 0.6,
+      headTilt: 3,
+      lookX: 0.5,
+      lookY: 0.35,
+      eyesDown: 0.35,
     };
   }
   // ---- bend family ----
@@ -719,6 +1344,13 @@ const blendVals = (a: PoseVals, b: PoseVals, k: number, kHead: number): PoseVals
     turnAdd: lerp(a.turnAdd, b.turnAdd, kHead),
     close: lerp(a.close, b.close, k),
     surprise: lerp(a.surprise, b.surprise, k),
+    nBack: lerp(a.nBack, b.nBack, k),
+    fThigh: lerp(a.fThigh, b.fThigh, k),
+    fFace: lerp(a.fFace, b.fFace, k),
+    fRub: lerp(a.fRub, b.fRub, k),
+    fIk: k < 0.5 ? a.fIk : b.fIk,
+    neckAdd: lerp(a.neckAdd, b.neckAdd, kHead),
+    eyesUp: lerp(a.eyesUp, b.eyesUp, kHead),
   };
 };
 
@@ -767,6 +1399,9 @@ interface Geom {
   breath: number;
   vals: PoseVals;
   gravity: number; // 0 upright .. 1 fully bent (how much free cloth hangs off the body)
+  /** Episode 6: the gaze (null without keys) and the head-shake turn (0 without headShake). */
+  gz: GazeOut | null;
+  shakeTurn: number;
 }
 
 /** Two-bone IK in 2D; side picks the bend (+1 = elbow toward +x). */
@@ -793,6 +1428,28 @@ const ik2 = (S: V, T: V, a: number, b: number, side: number): { E: V; H: V } => 
   return { E, H: add(S, d) };
 };
 
+/** Episode 6: two-bone IK in 2D that keeps the elbow on one side of the shoulder-to-hand line (by the bend's sense),
+ * continuous as the hand rises past the shoulder; equals ik2(..., -1) whenever the hand is below the shoulder. */
+const ikSense = (S: V, T: V, a: number, b: number): { E: V; H: V } => {
+  let d = sub(T, S);
+  let dl = len(d);
+  const maxD = a + b - 0.5;
+  const minD = Math.abs(a - b) + 0.5;
+  if (dl > maxD) {
+    d = mul(d, maxD / dl);
+    dl = maxD;
+  }
+  if (dl < minD) {
+    d = dl < 0.01 ? { x: 0, y: minD } : mul(d, minD / dl);
+    dl = minD;
+  }
+  const u = mul(d, 1 / dl);
+  const aa = (a * a - b * b + dl * dl) / (2 * dl);
+  const h = Math.sqrt(Math.max(a * a - aa * aa, 0));
+  const B = add(S, mul(u, aa));
+  return { E: { x: B.x - u.y * h, y: B.y + u.x * h }, H: add(S, d) };
+};
+
 /** Two-bone IK in 3D with a pole direction (the knee bends toward it). */
 const ik3 = (S: V3, T: V3, a: number, b: number, pole: V3): V3 => {
   const d = { x: T.x - S.x, y: T.y - S.y, z: T.z - S.z };
@@ -817,6 +1474,11 @@ const POSE_EXPR: Record<StandingPose, StandingExpression> = {
   bitten: "surprised-calm",
   rise: "serene",
   handInHands: "serene",
+  standScolded: "thoughtful",
+  hurtBack: "hurt",
+  wipeEye: "hurt",
+  holdOut: "serene",
+  giveOut: "compassionate",
 };
 
 /** Blended pose values at story frame sf (life frame L). */
@@ -840,6 +1502,21 @@ const valsAt = (props: StandingChildProps, sf: number, L: number, yaw: number): 
   } else if (cur.theta < 0) {
     cur.theta = thetaFor(cur, yaw);
   }
+  if (pose === "hurtBack") {
+    // the swat: a quick flinch forward (the head lags, the eyes squeeze), then the settle into the hurt bend
+    const amp = props.flinch ?? 1;
+    const t = sf - ps;
+    if (amp > 0 && t >= 0 && t < HURT_T.settle) {
+      const imp = t < HURT_T.peak ? smooth(t / HURT_T.peak) : 1 - smooth((t - HURT_T.peak) / (HURT_T.settle - HURT_T.peak));
+      cur = {
+        ...cur,
+        theta: cur.theta + 0.24 * amp * imp,
+        drop: cur.drop + 5 * amp * imp,
+        headTilt: cur.headTilt - 6 * amp * Math.sin(Math.PI * clamp(t / 9, 0, 1)),
+        close: Math.max(cur.close, 0.8 * amp * Math.sin(Math.PI * clamp((t - 1) / 10, 0, 1))),
+      };
+    }
+  }
   return cur;
 };
 
@@ -851,7 +1528,7 @@ const thetaFor = (v: PoseVals, yaw: number): number => {
 };
 
 const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
-  const yaw = clamp(props.yaw ?? 1, 0, 1);
+  const yaw = clamp(yawOf(props, sf), 0, 1);
   const v = valsAt(props, sf, L, yaw);
   const theta = v.theta;
   const drop = bendDrop(theta) + v.drop;
@@ -866,8 +1543,20 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
 
   // breath (life clock; shallow while speaking)
   const speak = props.talk ?? ((props.mouth ?? 0) > 0.02 ? 1 : 0);
-  const b = breathAt(L, speak, props.sigh, sf);
-  const bLate = breathAt(L - 4, speak, props.sigh, sf - 4);
+  let b = breathAt(L, speak, props.sigh, sf);
+  let bLate = breathAt(L - 4, speak, props.sigh, sf - 4);
+  // Episode 6: quick uneven breathing after the swat, settling (quieter while speaking); sniffs
+  const hb = hurtBreathW(props, sf);
+  if (hb > 0) {
+    const w = hb * (1 - 0.6 * clamp(speak, 0, 1));
+    b = lerp(b, quickBreath(L), w);
+    bLate = lerp(bLate, quickBreath(L - 4), w);
+  }
+  const sn = sniffAt(props.sniffAt, L);
+  if (props.sniffAt) {
+    b += 0.9 * sn;
+    bLate += 0.9 * sniffAt(props.sniffAt, L - 4);
+  }
   const rise = 1.1 * b; // shoulder rise in units (about 1 px at the QA scale ... 2 px)
 
   // legs (3D, feet planted)
@@ -898,6 +1587,81 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   const shF = add(proj({ ...Sc3, x: Sc3.x + SH_HALF }, yaw), { x: 0, y: -rise });
   const Sc = add(ScRaw, { x: 0, y: -rise * 0.8 });
 
+  // neck and head. Upright the head sits on the neck. In the bend the neck continues the spine's line with a slight
+  // lift and joins the back of the skull; the head (a three-quarter face) rolls only a little (at most about 13
+  // degrees) and looks DOWN at the hands with the eyes, seen a little from above.
+  const gvH = smooth(theta / 1.4);
+  const neckPitch0 = lerp(theta * lerp(0.35, 0.62, v.headNeck), Math.max(0, theta - 0.62), gvH);
+  const neckBase = add(Sc, mul(ax, -4));
+  const headBreath = 0.35 * bLate;
+  const headRot0 = 13 * gvH + v.headTilt + 0.6 * wob(L, 3.3, 0.4);
+  const neckTopLocal = lerpV({ x: 2, y: 20 }, { x: -13, y: 15 }, gvH);
+  const hs = props.headScale ?? 1;
+  const headAt = (neckPitch: number, headRot: number) => {
+    const nd3 = axis3(neckPitch);
+    const ndP = proj(nd3, yaw);
+    const rr = (headRot * Math.PI) / 180;
+    const rotL = (p: V): V => ({ x: p.x * Math.cos(rr) - p.y * Math.sin(rr), y: p.x * Math.sin(rr) + p.y * Math.cos(rr) });
+    const neckTop = add(add(neckBase, mul(ndP, HB ? lerp(34, 22, gvH) * hs * NECK_L : lerp(34, 22, gvH) * hs)), { x: 0, y: -headBreath });
+    const head = sub(neckTop, mul(rotL(neckTopLocal), HEAD_K * hs));
+    return { neckTop, head, rotL };
+  };
+  // Episode 6 additions (opt-in): extra neck pitch, the gaze (eyes lead, the head follows), a head shake, a sniff
+  let neckPitch = v.neckAdd ? neckPitch0 + v.neckAdd : neckPitch0;
+  let headRot = headRot0;
+  let hd = headAt(neckPitch, headRot);
+  const gKeys = gazeKeysOf(props);
+  const gz = gKeys ? gazeFor(gKeys, sf, hd.head, { eyeX: v.lookX, eyeY: v.lookY, up: v.eyesUp, turn: 0, tilt: 0, neck: 0 }) : null;
+  const shakeAmt = clamp(props.headShake ?? 0, 0, 1);
+  const shakeTurn = shakeAmt > 0 ? shakeAmt * 0.3 * Math.sin((2 * Math.PI * sf) / 22) : 0;
+  if (gz || shakeAmt > 0 || sn > 0) {
+    if (gz) {
+      neckPitch += gz.neck;
+      headRot += gz.tilt;
+    }
+    if (shakeAmt > 0) headRot += shakeAmt * 1.2 * Math.sin((2 * Math.PI * sf) / 22 + 0.6);
+    if (sn > 0) headRot -= 1.6 * sn;
+    hd = headAt(neckPitch, headRot);
+  }
+  const { neckTop, head } = hd;
+
+  // Episode 6 computed hand targets (used only when the pose's weights are on)
+  const hwBk = (w: number) => 1.08 * Math.hypot(w * cosA(yaw), 0.82 * w * sinA(yaw)) * lerp(1, 0.8, smooth(theta / 1.4)) * (HB ? TORSO_W : 1);
+  const backTarget = (): { p: V; d: V } => {
+    const c = proj({ x: P3.x, y: P3.y + ax3.y * 14, z: P3.z + ax3.z * 14 }, yaw);
+    const pa = perpL(ax);
+    return { p: sub(c, mul(pa, hwBk(24) - 2)), d: unit(add(mul(ax, -1), mul(pa, 0.6))) };
+  };
+  const thighTarget = (sh: V): { p: V; d: V } => {
+    const td = unit(sub(legF.knee, legF.hip));
+    let n = perpL(td);
+    if (n.x < 0) n = mul(n, -1);
+    const d = unit(add(mul(td, 0.8), mul(n, 0.3)));
+    const Q = (fr: number) => add(lerpV(legF.hip, legF.knee, fr), mul(n, 9));
+    const ok = (fr: number) => len(sub(wristOf(Q(fr), d), sh)) <= UPPER + FORE - 2;
+    let fr = 0.9;
+    if (!ok(fr)) {
+      let lo = 0.2;
+      let hi = 0.9;
+      for (let i = 0; i < 18; i++) {
+        const m = (lo + hi) / 2;
+        if (ok(m)) lo = m;
+        else hi = m;
+      }
+      fr = lo;
+    }
+    return { p: Q(fr), d };
+  };
+  const faceTarget = (rub: number): { p: V; d: V } => {
+    const T = 1.35 * yaw + 0.22 * v.lookX + v.turnAdd + (gz ? gz.turn : 0) + shakeTurn;
+    const age = props.age ?? 6;
+    const e0 = props.flip ? plateEyeAt(-T, age, -1) : plateEyeAt(T, age, 1);
+    const eL = props.flip ? { x: -e0.x, y: e0.y } : e0;
+    const eye = add(head, mul(hd.rotL(eL), HEAD_K * hs));
+    const d = HB ? unit({ x: -0.42, y: -0.9 }) : unit({ x: -0.3, y: -1 });
+    return HB ? { p: add(add(eye, { x: 9, y: 5 }), add(mul(d, -20), mul(perpL(d), rub))), d } : { p: add(add(eye, { x: 7, y: 4 }), add(mul(d, -12), mul(perpL(d), rub))), d };
+  };
+
   // arms: upper arm leads (targets at sf), forearm trails 3 f, fingers 6 f, unless in contact
   const solveArm = (side: "n" | "f", vv: PoseVals, vLag3: PoseVals, vLag6: PoseVals): Arm => {
     const near = side === "n";
@@ -909,15 +1673,65 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
     const lagW = 1 - contact;
     let palmLag = near ? vLag3.nP : vLag3.fP;
     if (Number.isNaN(palmLag.x)) palmLag = palm;
+    let dirLag = near ? vLag3.nD : vLag3.fD;
+    // Episode 6: targets computed from the body (back, thigh, eye), blended in by the pose's weights
+    const e6 = (vals: PoseVals, p0: V, d0: V): { p: V; d: V } => {
+      let p1 = p0;
+      let d1 = d0;
+      if (near && vals.nBack > 0) {
+        const bt = backTarget();
+        p1 = lerpV(p1, bt.p, vals.nBack);
+        d1 = unit(lerpV(d1, bt.d, vals.nBack));
+      }
+      if (!near && vals.fThigh > 0) {
+        const tt = thighTarget(sh);
+        p1 = lerpV(p1, tt.p, vals.fThigh);
+        d1 = unit(lerpV(d1, tt.d, vals.fThigh));
+      }
+      if (!near && vals.fFace > 0) {
+        const ft = faceTarget(vals.fRub);
+        p1 = lerpV(p1, ft.p, vals.fFace);
+        d1 = unit(lerpV(d1, ft.d, vals.fFace));
+      }
+      return { p: p1, d: d1 };
+    };
+    if (vv.nBack > 0 || vv.fThigh > 0 || vv.fFace > 0) {
+      const c = e6(vv, palm, dir);
+      palm = c.p;
+      dir = c.d;
+    }
+    if (vLag3.nBack > 0 || vLag3.fThigh > 0 || vLag3.fFace > 0) {
+      const c = e6(vLag3, palmLag, dirLag);
+      palmLag = c.p;
+      dirLag = c.d;
+    }
     const W = wristOf(palm, dir);
-    const WLag = lerpV(W, wristOf(palmLag, near ? vLag3.nD : vLag3.fD), lagW);
-    const { E } = ik2(sh, W, UPPER, FORE, -1);
+    const WLag = lerpV(W, wristOf(palmLag, dirLag), lagW);
+    // Episode 6: the far hand to the face keeps the elbow on the bend's own side (continuous while the hand rises)
+    const ikArm = !near && vv.fIk > 0.5 ? ikSense : (S: V, T: V, a: number, b: number) => ik2(S, T, a, b, -1);
+    let { E } = ikArm(sh, W, UPPER, FORE);
+    // Episode 6 hurtBack: the hand at the small of the back. The upper arm hangs down and back (HURT_ELBOW_DEG from
+    // vertical), the elbow bent behind the hip line; the forearm runs round the body to the back, so it is drawn
+    // foreshortened (shorter than FORE) instead of the 2D IK lifting the elbow up into a wing.
+    if (near && vv.nBack > 0) {
+      // the elbow swings by angle (from vertical, + = back) from where the IK put it to the hanging-back angle; never
+      // above that angle (no wing on the way)
+      const aB = ((HB ? 38 : HURT_ELBOW_DEG) * Math.PI) / 180;
+      const d0 = sub(E, sh);
+      const a0 = Math.min(Math.atan2(-d0.x, d0.y), aB);
+      const a = lerp(a0, aB, vv.nBack);
+      const l = lerp(len(d0), UPPER * 0.96, vv.nBack);
+      let Eb = add(sh, mul({ x: -Math.sin(a), y: Math.cos(a) }, l));
+      const dW = len(sub(W, Eb));
+      if (dW > FORE * 0.97) Eb = add(W, mul(unit(sub(Eb, W)), FORE * 0.97));
+      E = Eb;
+    }
     // forearm from the elbow toward the lagging wrist (keeps the length)
     const fa = unit(sub(WLag, E));
     let Wd = add(E, mul(fa, FORE));
     // in contact the wrist is exactly where the target puts it
     if (contact > 0.01) {
-      const ex = ik2(sh, W, UPPER, FORE, -1);
+      const ex = ikArm(sh, W, UPPER, FORE);
       Wd = lerpV(Wd, ex.H, contact);
     }
     // keep the hand within a natural wrist bend of the forearm
@@ -926,6 +1740,13 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
     const fang = Math.atan2(faDir.y, faDir.x);
     const dA = clamp(wrapA(ang - fang), -1.1, 1.1);
     dir = { x: Math.cos(fang + dA), y: Math.sin(fang + dA) };
+    // BAL-26c healthy: the hand's angle trails the forearm a little, then settles (the wrist leads and follows through)
+    if (HB && lagW > 0.01) {
+      const dl = near ? vLag6.nD : vLag6.fD;
+      const dd = unit(lerpV(dir, dl, 0.45 * lagW));
+      const a2 = clamp(wrapA(Math.atan2(dd.y, dd.x) - fang), -1.1, 1.1);
+      dir = { x: Math.cos(fang + a2), y: Math.sin(fang + a2) };
+    }
     // the palm centre of the hand as drawn (wrist + hand direction); equals the target whenever it is in reach
     const P = add(Wd, mul(dir, PALM_OFF));
     const curlLag = near ? vLag6.nCurl : vLag6.fCurl;
@@ -947,23 +1768,6 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   const armN = solveArm("n", v, v3, v6);
   const armF = solveArm("f", v, v3, v6);
 
-  // neck and head. Upright the head sits on the neck. In the bend the neck continues the spine's line with a slight
-  // lift and joins the back of the skull; the head (a three-quarter face) rolls only a little (at most about 13
-  // degrees) and looks DOWN at the hands with the eyes, seen a little from above.
-  const gvH = smooth(theta / 1.4);
-  const neckPitch = lerp(theta * lerp(0.35, 0.62, v.headNeck), Math.max(0, theta - 0.62), gvH);
-  const nd3 = axis3(neckPitch);
-  const ndP = proj(nd3, yaw);
-  const neckBase = add(Sc, mul(ax, -4));
-  const headBreath = 0.35 * bLate;
-  const headRot = 13 * gvH + v.headTilt + 0.6 * wob(L, 3.3, 0.4);
-  const rr = (headRot * Math.PI) / 180;
-  const rotL = (p: V): V => ({ x: p.x * Math.cos(rr) - p.y * Math.sin(rr), y: p.x * Math.sin(rr) + p.y * Math.cos(rr) });
-  const neckTopLocal = lerpV({ x: 2, y: 20 }, { x: -13, y: 15 }, gvH);
-  const hs = props.headScale ?? 1;
-  const neckTop = add(add(neckBase, mul(ndP, lerp(34, 22, gvH) * hs)), { x: 0, y: -headBreath });
-  const head = sub(neckTop, mul(rotL(neckTopLocal), HEAD_K * hs));
-
   return {
     yaw,
     theta,
@@ -984,6 +1788,8 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
     breath: b,
     vals: v,
     gravity: smooth(theta / 1.4),
+    gz,
+    shakeTurn,
   };
 };
 
@@ -996,25 +1802,53 @@ const toPlateExpr = (e: StandingExpression): PlateExpression => (e === "surprise
 const faceFor = (props: StandingChildProps, g: Geom, L: number, sf: number): PlateFaceState => {
   const pose = props.pose ?? "standIdle";
   const v = g.vals;
-  const expr = props.expression ?? POSE_EXPR[pose];
-  const prevE = props.prevExpression ?? (props.prevPose ? POSE_EXPR[props.prevPose] : undefined);
+  let expr = props.expression ?? POSE_EXPR[pose];
+  let prevE = props.prevExpression ?? (props.prevPose ? POSE_EXPR[props.prevPose] : undefined);
+  let exprStart = props.expressionStart ?? props.poseStart ?? 0;
+  // wipeEye: hurt, then the small forgiving smile after the hand comes down (unless the scene sets the expression)
+  if (pose === "wipeEye" && props.expression === undefined) {
+    expr = "forgiving";
+    prevE = props.prevExpression ?? "hurt";
+    exprStart = props.expressionStart ?? (props.poseStart ?? 0) + WIPE_T.smile;
+  }
   // eyes lead: gaze uses the current look; the head turn follows about 5 frames later (valsAt at sf - 5)
   const vh = valsAt(props, sf - 5, L - 5, g.yaw);
-  const lookX = props.face?.lookX ?? v.lookX;
-  const headLookX = props.face?.lookX ?? vh.lookX;
+  let lookX = props.face?.lookX ?? v.lookX;
+  let headLookX = props.face?.lookX ?? vh.lookX;
+  let lookY = props.face?.lookY ?? v.lookY;
+  let eyesDown = props.face?.eyesDown ?? v.eyesDown;
+  let eyesUp: number | undefined;
+  let turnX = 0;
+  // Episode 6: gaze keys (the head turn comes from the gaze, the eyes counter it as it arrives) and the head shake
+  if (g.gz) {
+    const gz = g.gz;
+    headLookX = 0;
+    lookX = props.face?.lookX ?? clamp(gz.eyeX - 0.35 * gz.turn, -1, 1);
+    lookY = props.face?.lookY ?? gz.eyeY;
+    eyesUp = gz.up;
+    eyesDown = props.face?.eyesDown ?? eyesDown * (1 - gz.up);
+    turnX += gz.turn;
+  }
+  if (g.shakeTurn) {
+    turnX += g.shakeTurn;
+    lookX = clamp(lookX - 1.5 * g.shakeTurn, -1, 1);
+  }
+  const turnBase = 1.35 * g.yaw + 0.22 * headLookX + v.turnAdd; // past three-quarter toward profile (ThakurHeadPlate allows up to 1.8)
   const st = plateFaceState({
     f: sf,
     lifeF: L,
     expression: toPlateExpr(expr),
     prevExpression: prevE ? toPlateExpr(prevE) : undefined,
-    expressionStart: props.expressionStart ?? props.poseStart ?? 0,
+    expressionStart: exprStart,
     mouth: props.mouth ?? 0,
-    turn: 1.35 * g.yaw + 0.22 * headLookX + v.turnAdd, // past three-quarter toward profile (ThakurHeadPlate allows up to 1.8)
+    turn: turnX ? turnBase + turnX : turnBase,
     lookX: clamp(lookX - 0.25 * headLookX, -1, 1),
-    lookY: props.face?.lookY ?? v.lookY,
-    eyesDown: props.face?.eyesDown ?? v.eyesDown,
+    lookY,
+    eyesDown,
+    eyesUp: eyesUp ?? (v.eyesUp ? v.eyesUp : undefined),
     smile: props.face?.smile,
     close: v.close,
+    tear: props.teary,
   });
   if (expr === "surprised-calm" || v.surprise > 0) {
     const sp = v.surprise;
@@ -1061,6 +1895,22 @@ export interface StandingJoints {
   headScale: number;
   /** Torso pitch in radians (0 upright). */
   theta: number;
+  /** Episode 6: the thumb-and-index pinch point of each hand (a note edge, a lozenge). */
+  pinchNear: V;
+  pinchFar: V;
+  /**
+   * Episode 6 holdOut: the note between the two pinches. `near`/`far` = the near and far hand's contact, `anchor` = the
+   * note's centre, `angle` = degrees from the left contact to the right one (world, -90..90), `width` = the distance
+   * between the contacts (world px). Present while the pose (or the pose it blends from) is holdOut.
+   */
+  note?: { near: V; far: V; anchor: V; angle: number; width: number };
+  /** Episode 6 giveOut: the paper twist in the far hand: `grip` (the fist), `mouth` (its open top), world. */
+  twist?: { grip: V; mouth: V };
+  /**
+   * Episode 6 giveOut: the current lozenge. `inHand` = carried at pinchNear; `released` = it now lies in the boy's palm
+   * at `palm` (world); `index` = which give key (-1 before the first). Keys before `index` are all given.
+   */
+  give?: { index: number; inHand: boolean; released: boolean; palm: V | null; lozenge: V | null };
 }
 
 /** World point (scene px) to figure units for this rig's placement. */
@@ -1077,6 +1927,7 @@ const handEdge = (a: Arm): V => {
 };
 
 export const standingChildJoints = (props: StandingChildProps): StandingJoints => {
+  applyBuild(props);
   const sf = props.f;
   const L = props.lifeF ?? props.f;
   const g = buildGeom(props, sf, L);
@@ -1089,6 +1940,31 @@ export const standingChildJoints = (props: StandingChildProps): StandingJoints =
   const up = { x: Math.sin(rot), y: -Math.cos(rot) };
   const age = props.age ?? 6;
   const hs = props.headScale ?? 1;
+  // Episode 6 attachment points
+  const pinchNear = W(add(g.armN.P, mul(g.armN.dir, PINCH_OFF)));
+  const pinchFar = W(add(g.armF.P, mul(g.armF.dir, PINCH_OFF)));
+  const pose = props.pose ?? "standIdle";
+  let note: StandingJoints["note"];
+  if (pose === "holdOut" || props.prevPose === "holdOut") {
+    const [l, r] = pinchNear.x <= pinchFar.x ? [pinchNear, pinchFar] : [pinchFar, pinchNear];
+    note = {
+      near: pinchNear,
+      far: pinchFar,
+      anchor: lerpV(pinchNear, pinchFar, 0.5),
+      angle: (Math.atan2(r.y - l.y, r.x - l.x) * 180) / Math.PI,
+      width: len(sub(r, l)),
+    };
+  }
+  let twist: StandingJoints["twist"];
+  let give: StandingJoints["give"];
+  if (pose === "giveOut") {
+    const tw = props.twistAt ?? TWIST_AT;
+    twist = { grip: W(g.armF.P), mouth: W(add(g.armF.P, sub(twistMouthOf(tw), tw))) };
+    const h = giveHand(props, sf, tw, L);
+    const keys = giveKeys(props);
+    const palm = h.idx >= 0 ? W(keys[h.idx].at) : null;
+    give = { index: h.idx, inHand: h.inHand, released: h.released, palm, lozenge: h.inHand ? pinchNear : h.released ? palm : null };
+  }
   return {
     handNear: W(g.armN.P),
     handFar: W(g.armF.P),
@@ -1114,6 +1990,11 @@ export const standingChildJoints = (props: StandingChildProps): StandingJoints =
     pelvis: W(g.P),
     headScale: HEAD_K * hs * s,
     theta: g.theta,
+    pinchNear,
+    pinchFar,
+    ...(note ? { note } : {}),
+    ...(twist ? { twist } : {}),
+    ...(give ? { give } : {}),
   };
 };
 
@@ -1121,7 +2002,7 @@ export const standingChildJoints = (props: StandingChildProps): StandingJoints =
 /* Drawing pieces                                                       */
 /* ------------------------------------------------------------------ */
 
-const wristRadius = (turn: number): number => (0.15 * HAND_L * Math.abs(Math.cos(turn)) + 0.11 * HAND_L * Math.abs(Math.sin(turn))) * HAND_SX + 0.4;
+const wristRadius = (turn: number, hl: number = HAND_L): number => (0.15 * hl * Math.abs(Math.cos(turn)) + 0.11 * hl * Math.abs(Math.sin(turn))) * HAND_SX + 0.4;
 
 const SHAPE_CURL: Record<HandShape, [number, number]> = {
   relaxed: [0.3, 13],
@@ -1134,9 +2015,11 @@ const SHAPE_CURL: Record<HandShape, [number, number]> = {
   cup: [0.45, 6],
 };
 
+type StandingPal = Record<keyof typeof C, string>;
+
 /** The child's arm (shoulder to wrist) and the shared Hand (MOT-19), seamless at the wrist. */
-const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?: string; edgeK?: number }> = ({ a, id, lit, fore = false, cloth, edgeK }) => {
-  const wristR = wristRadius(a.turn);
+const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?: string; edgeK?: number; upFrom?: number; pal?: StandingPal; hl?: number; rk?: number }> = ({ a, id, lit, fore = false, cloth, edgeK, upFrom, pal = C, hl = 50, rk = 1 }) => {
+  const wristR = wristRadius(a.turn, hl);
   // Centre line: upper arm, a soft curve through the elbow, forearm
   const E1 = lerpV(a.sh, a.E, 0.8);
   const E2 = lerpV(a.E, a.W, 0.2);
@@ -1147,8 +2030,16 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
   }
   // fore: only the forearm (from just past the elbow) and the hand, drawn again over the chadar that hides the elbow
   const F0 = lerpV(a.E, a.W, 0.1);
-  const pts = fore ? [F0, lerpV(F0, a.W, 0.5), a.W] : [a.sh, lerpV(a.sh, E1, 0.5), E1, ...curve, E2, lerpV(E2, a.W, 0.55), a.W];
-  const R = fore ? [9.8, 9.3, wristR] : [12.8, 11.8, 10.6, 10.2, 10, 9.8, 9.6, 9.4, 9, wristR];
+  // upFrom (Episode 6): the fore piece starts this far down the upper arm, so the elbow bend shows over the drape
+  const U0 = upFrom !== undefined ? lerpV(a.sh, a.E, upFrom) : F0;
+  const pts = fore
+    ? upFrom !== undefined
+      ? [U0, lerpV(U0, a.E, 0.5), a.E, lerpV(a.E, a.W, 0.5), a.W]
+      : [F0, lerpV(F0, a.W, 0.5), a.W]
+    : [a.sh, lerpV(a.sh, E1, 0.5), E1, ...curve, E2, lerpV(E2, a.W, 0.55), a.W];
+  const R0 = fore ? (upFrom !== undefined ? [11.2, 10.6, 10, 9.6, wristR] : [9.8, 9.3, wristR]) : [12.8, 11.8, 10.6, 10.2, 10, 9.8, 9.6, 9.4, 9, wristR];
+  // BAL-26c healthy: thicker arms (rk), tapering into the wrist so the wrist reads
+  const R = rk === 1 ? R0 : R0.map((r, i) => (i === R0.length - 1 ? r : r * rk * (fore ? 1 : 1 - 0.12 * (i / (R0.length - 1)))));
   const faAng = (Math.atan2(a.W.y - a.E.y, a.W.x - a.E.x) * 180) / Math.PI;
   const rot = (Math.atan2(-a.dir.x, a.dir.y) * 180) / Math.PI;
   const [c0, k] = SHAPE_CURL[a.shape];
@@ -1158,17 +2049,17 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
   const B = add(a.W, mul(a.dir, 3));
   const stub = [A, a.W, B];
   const stubR = [wristR + 0.2, wristR, wristR * 0.96];
-  const shade = C.skinShade;
+  const shade = pal.skinShade;
   return (
     <g>
-      <path d={chainD(pts, R)} fill={skinEdge(C.skin, shade)} />
-      <path d={chainD(pts, R, { grow: -1.3, dx: -1, dy: -1.2 })} fill={C.skin} />
-      {!fore && <path d={smoothOpen([lerpV(a.sh, E1, 0.35), E1, lerpV(a.E, E2, 0.5), lerpV(E2, a.W, 0.7)].map((p) => add(p, { x: -4.5, y: -3 })))} fill="none" stroke={C.skinLit} strokeWidth={2.2} strokeLinecap="round" opacity={0.28 * lit} />}
+      <path d={chainD(pts, R)} fill={skinEdge(pal.skin, shade)} />
+      <path d={chainD(pts, R, { grow: -1.3, dx: -1, dy: -1.2 })} fill={pal.skin} />
+      {!fore && <path d={smoothOpen([lerpV(a.sh, E1, 0.35), E1, lerpV(a.E, E2, 0.5), lerpV(E2, a.W, 0.7)].map((p) => add(p, { x: -4.5, y: -3 })))} fill="none" stroke={pal.skinLit} strokeWidth={2.2} strokeLinecap="round" opacity={0.28 * lit} />}
       {fore && (edgeK === undefined || edgeK > 0.01) && (
         // the chadar's edge lying over the elbow: a soft tongue of cloth with a curved hem, the forearm comes out below it
         <g transform={`translate(${pt(F0)}) rotate(${faAng.toFixed(2)})${edgeK === undefined ? "" : ` scale(${edgeK.toFixed(3)})`}`}>
-          <path d="M-12 -12.4 L-2 -12.2 C0.6 -10.6 0.4 -8 0.4 -8 C2.6 -5.6 0.2 -3.4 1.6 -1 C3.4 1.8 0.4 3.6 1.4 6.2 C2.2 8.8 -0.6 10.8 -3 12.4 L-12 12.6 Z" fill={cloth ?? C.cloth} />
-          <path d="M-2 -12.2 C0.6 -10.6 0.4 -8 0.4 -8 C2.6 -5.6 0.2 -3.4 1.6 -1 C3.4 1.8 0.4 3.6 1.4 6.2 C2.2 8.8 -0.6 10.8 -3 12.4" fill="none" stroke={C.clothShade} strokeWidth={1.1} strokeLinecap="round" />
+          <path d="M-12 -12.4 L-2 -12.2 C0.6 -10.6 0.4 -8 0.4 -8 C2.6 -5.6 0.2 -3.4 1.6 -1 C3.4 1.8 0.4 3.6 1.4 6.2 C2.2 8.8 -0.6 10.8 -3 12.4 L-12 12.6 Z" fill={cloth ?? pal.cloth} />
+          <path d="M-2 -12.2 C0.6 -10.6 0.4 -8 0.4 -8 C2.6 -5.6 0.2 -3.4 1.6 -1 C3.4 1.8 0.4 3.6 1.4 6.2 C2.2 8.8 -0.6 10.8 -3 12.4" fill="none" stroke={pal.clothShade} strokeWidth={1.1} strokeLinecap="round" />
         </g>
       )}
       <g transform={`translate(${pt(a.W)}) rotate(${rot.toFixed(2)}) scale(${HAND_SX} ${HAND_SY})`}>
@@ -1178,7 +2069,7 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
           </clipPath>
         </defs>
         <g clipPath={`url(#${id}-hc)`}>
-          <Hand shape={a.shape} L={HAND_L} skin={C.skin} shade={shade} side={a.side} flex={flex} turn={a.turn} />
+          <Hand shape={a.shape} L={hl} skin={pal.skin} shade={shade} side={a.side} flex={flex} turn={a.turn} />
         </g>
       </g>
       <defs>
@@ -1193,22 +2084,22 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
         </mask>
       </defs>
       <g mask={`url(#${id}-wm)`}>
-        <path d={chainD(stub, stubR, { sub: 2 })} fill={skinEdge(C.skin, shade)} />
-        <path d={chainD(stub, stubR, { grow: -1.3, dx: -1, dy: -1.2, sub: 2 })} fill={C.skin} />
+        <path d={chainD(stub, stubR, { sub: 2 })} fill={skinEdge(pal.skin, shade)} />
+        <path d={chainD(stub, stubR, { grow: -1.3, dx: -1, dy: -1.2, sub: 2 })} fill={pal.skin} />
       </g>
     </g>
   );
 };
 
 /** Bare foot flat on the ground (sole at `ground`), toes along toeDir (signed, foreshortened), separated toes. */
-const FootEl: React.FC<{ l: Leg; far: boolean }> = ({ l, far }) => {
-  const k = FOOT_K;
+const FootEl: React.FC<{ l: Leg; far: boolean; pal?: StandingPal; fk?: number }> = ({ l, far, pal = C, fk = 1.55 }) => {
+  const k = fk;
   const td = l.toeDir;
   const a = l.ankle;
   const P = (u: number, v: number): V => ({ x: a.x + u * td * k, y: l.ground + v * k });
-  const col = far ? C.skinFar : C.skin;
-  const shade = C.skinShade;
-  const sole = far ? C.soleFar : C.soleNear;
+  const col = far ? pal.skinFar : pal.skin;
+  const shade = pal.skinShade;
+  const sole = far ? pal.soleFar : pal.soleNear;
   const outline = [
     P(-9.2, -2.6),
     P(-9.8, -6.2),
@@ -1241,7 +2132,7 @@ const FootEl: React.FC<{ l: Leg; far: boolean }> = ({ l, far }) => {
       <path d={smoothClosed(outline)} fill={skinEdge(col, shade)} />
       <path d={smoothClosed(outline.map((p) => ({ x: p.x - 0.6 * td, y: p.y - 1 })))} fill={col} />
       <path d={smoothClosed(soleBand)} fill={mixHex(col, sole, 0.7)} />
-      <path d={smoothOpen([P(-6, -9.8), P(0.6, -11.1), P(8, -9.6), P(15, -7)])} fill="none" stroke={C.skinLit} strokeWidth={1.3} strokeLinecap="round" opacity={0.3} />
+      <path d={smoothOpen([P(-6, -9.8), P(0.6, -11.1), P(8, -9.6), P(15, -7)])} fill="none" stroke={pal.skinLit} strokeWidth={1.3} strokeLinecap="round" opacity={0.3} />
       <path d={smoothOpen([P(-6.6, -10), P(-3.2, -8.4), P(0.8, -8.9), P(3.6, -10.4)])} fill="none" stroke={shade} strokeWidth={0.9} strokeLinecap="round" opacity={0.4} />
       {toes.map(([u, v, r], j) => {
         const c = P(u, v);
@@ -1250,7 +2141,7 @@ const FootEl: React.FC<{ l: Leg; far: boolean }> = ({ l, far }) => {
           <g key={j}>
             <circle cx={c.x.toFixed(2)} cy={c.y.toFixed(2)} r={rr.toFixed(2)} fill={col} />
             <path d={`M${pt(P(u - r * 0.95, v - r * 0.2))} Q${pt(P(u - r * 0.75, v + r * 0.6))} ${pt(P(u - r * 0.2, v + r * 0.95))}`} fill="none" stroke={shade} strokeWidth={0.6} strokeLinecap="round" opacity={0.55} />
-            <circle cx={P(u + r * 0.25, v - r * 0.3).x.toFixed(2)} cy={P(u, v - r * 0.3).y.toFixed(2)} r={(r * 0.35 * k).toFixed(2)} fill={C.skinLit} opacity={0.42} />
+            <circle cx={P(u + r * 0.25, v - r * 0.3).x.toFixed(2)} cy={P(u, v - r * 0.3).y.toFixed(2)} r={(r * 0.35 * k).toFixed(2)} fill={pal.skinLit} opacity={0.42} />
           </g>
         );
       })}
@@ -1262,10 +2153,17 @@ const FootEl: React.FC<{ l: Leg; far: boolean }> = ({ l, far }) => {
  * Opaque cloth (BAL-26 palette, PLATE_COLORS, shared with SeatedChild): the outer silhouette in the deep shade with a
  * soft darker contour, a warm-grey shade band on the side away from the light, the cream body nudged toward the light.
  */
-const clothPaint = (d: (dx: number, dy: number) => string, base: string = C.cloth, key?: string): React.ReactElement => (
+const clothPaint = (d: (dx: number, dy: number) => string, base: string = C.cloth, key?: string, pal: StandingPal = C, painted = false): React.ReactElement => (
   <g key={key}>
-    <path d={d(0, 0)} fill={C.clothShade} stroke={C.clothInner} strokeWidth={1.5} strokeLinejoin="round" />
-    <path d={d(-1.2, -1.3)} fill={C.clothFold} />
+    <path
+      d={d(0, 0)}
+      fill={pal.clothShade}
+      stroke={pal.clothInner}
+      strokeWidth={painted ? 0.95 : 1.5}
+      strokeOpacity={painted ? 0.55 : undefined}
+      strokeLinejoin="round"
+    />
+    <path d={d(-1.2, -1.3)} fill={pal.clothFold} />
     <path d={d(-3.6, -3.4)} fill={base} />
   </g>
 );
@@ -1281,8 +2179,10 @@ const hang = (rest: V, anchor: V, length: number, g: number, trail: V): V => {
 /* ------------------------------------------------------------------ */
 
 export const StandingChild: React.FC<StandingChildProps> = (props) => {
+  applyBuild(props);
   const uid = "sc" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const { x, y, s = 1, flip = false } = props;
+  const PAL = C;
   const sf = props.f;
   const L = props.lifeF ?? props.f;
   const age = props.age ?? 6;
@@ -1312,7 +2212,7 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
     const fw3 = { x: 0, y: Math.sin(g.theta), z: Math.cos(g.theta) }; // body forward, pitched
     return proj({ x: P3.x + u, y: P3.y + ax3.y * v + fw3.y * dz, z: P3.z + ax3.z * v + fw3.z * dz }, yaw);
   };
-  const hwOf = (w: number) => 1.08 * Math.hypot(w * ca, 0.82 * w * sa);
+  const hwOf = (w: number) => (HB ? 1.08 * Math.hypot(w * ca, 0.82 * w * sa) * TORSO_W : 1.08 * Math.hypot(w * ca, 0.82 * w * sa));
   // in the bend the wrap lies close on the back (a child bending, not a bundle of cloth)
   const hwB = (w: number) => hwOf(w) * lerp(1, 0.8, smooth(g.theta / 1.4));
   const bR = 0.6 * g.breath;
@@ -1325,7 +2225,7 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   const hemOf = (l: Leg): { hem: V; dir: V } => {
     const shin = unit(sub(l.ankle, l.knee));
     const dir = unit(add(lerpV(shin, { x: 0, y: 1 }, 0.5 + 0.3 * gv), mul(trailP, 0.02)));
-    return { hem: add(l.knee, mul(dir, 40 + 1.5 * wind)), dir };
+    return { hem: add(l.knee, mul(dir, (HB ? 38 : 40) + 1.5 * wind)), dir };
   };
   const hN = hemOf(g.legN);
   const hF = hemOf(g.legF);
@@ -1343,19 +2243,24 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   // gb: 0 upright (and in handInHands) .. 1 in a full bend. In the bend the hips are one modest curve continuous with
   // the back and the backs of the thighs, the dhoti lying close over them (no separate seat shape, no seam).
   const gb = smooth((g.theta - 0.3) / 0.9);
-  const pA1 = add(lerpV(lA.hip, lA.knee, 0.45), mul(outN(thA, -1), lerp(21, 14.5, gb)));
-  const pA2 = add(lA.knee, mul(outN(unit(add(thA, hA.dir)), -1), lerp(18.5, 15, gb)));
-  const pA3 = add(hA.hem, mul(outN(hA.dir, -1), 19.5));
+  // BAL-26c healthy: a fuller dhoti over sturdier legs, a little flare at the hem (classic: LK = HK = 1)
+  const LK = HB ? 1.22 : 1;
+  const HK = HB ? 1.32 : 1;
+  const pA1 = add(lerpV(lA.hip, lA.knee, 0.45), mul(outN(thA, -1), lerp(21, 14.5, gb) * LK));
+  const pA2 = add(lA.knee, mul(outN(unit(add(thA, hA.dir)), -1), lerp(18.5, 15, gb) * LK));
+  const pA3 = add(hA.hem, mul(outN(hA.dir, -1), 19.5 * HK));
   const pA4 = add(hA.hem, mul(hA.dir, 2.5));
-  const pB1 = add(lerpV(lB.hip, lB.knee, 0.45), mul(outN(thB, 1), 21));
-  const pB2 = add(lB.knee, mul(outN(unit(add(thB, hB.dir)), 1), 18.5));
-  const pB3 = add(hB.hem, mul(outN(hB.dir, 1), 19.5));
+  const pB1 = add(lerpV(lB.hip, lB.knee, 0.45), mul(outN(thB, 1), 21 * LK));
+  const pB2 = add(lB.knee, mul(outN(unit(add(thB, hB.dir)), 1), 18.5 * LK));
+  const pB3 = add(hB.hem, mul(outN(hB.dir, 1), 19.5 * HK));
   const pB4 = add(hB.hem, mul(hB.dir, 2.5));
   // the hem between the legs dips a little (the pleat fall hangs there)
   const hemDirM = unit(lerpV(hA.dir, hB.dir, 0.5));
-  const dip = add(lerpV(hA.hem, hB.hem, 0.5), mul(hemDirM, 8));
+  const dip0 = add(lerpV(hA.hem, hB.hem, 0.5), mul(hemDirM, 8));
+  const dip = HB ? add(lerpV(hA.hem, hB.hem, 0.5), mul(hemDirM, -9)) : dip0;
   // the waist on the back: in the bend it starts on the wrap's back line, so the back runs on into the hip curve
-  const wL = lerpV(add(Tp(20), mul(pa, -hwOf(24))), add(Tp(16), mul(pa, -hwB(19))), gb);
+  const WV = HB ? 30 : 20;
+  const wL = lerpV(add(Tp(WV), mul(pa, -hwOf(24))), add(Tp(16), mul(pa, -hwB(19))), gb);
   // the round of the hip, never higher than the back line
   // the corner where the back line (through wL, along the spine) meets the back of the thigh (through pA1), pulled in
   // toward the pelvis: a rounded hip that never stands out beyond either line
@@ -1372,28 +2277,29 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   const hipK = lerpV(lerpV(wL, pA1, 0.5), lerpV(hipCorner, g.P, 0.2), gb);
   const qArc = (t: number): V => add(add(mul(wL, (1 - t) * (1 - t)), mul(hipK, 2 * t * (1 - t))), mul(pA1, t * t));
   const hipArc = [qArc(0.3), qArc(0.55), qArc(0.8)];
-  const wR = add(Tp(20), mul(pa, hwOf(24)));
+  const wR = add(Tp(WV), mul(pa, hwOf(24)));
   const skirt = gb > 0 ? [wL, ...hipArc, pA1, pA2, pA3, pA4, dip, pB4, pB3, pB2, pB1, wR] : [wL, pA1, pA2, pA3, pA4, dip, pB4, pB3, pB2, pB1, wR];
   const crotch = lerpV(g.P, lerpV(lA.knee, lB.knee, 0.5), 0.38);
   const seat = [Tp(-2, 0, -7), Tp(12, 0, -3)];
   // the seat shape is only for the upright figure (hidden under the cloth there); it melts away in the bend
   const seatR = [lerp(hwOf(20), 0.2, gb), lerp(hwOf(21), 0.2, gb)];
   // the front pleat fall (kochi): hangs from the waist front to the hem dip, with gravity, trailing motion
-  const pleatTop = Tp(14, 2, 0.8 * 22);
-  const pleatRest = sub(dip, mul(hemDirM, 6));
+  const pleatTop = HB ? Tp(21, 3, 20) : Tp(14, 2, 0.8 * 22);
+  const pleatRest = sub(HB ? dip0 : dip, mul(hemDirM, 6));
   const pleatLen = len(sub(pleatRest, pleatTop));
   const pleatBot = hang(pleatRest, pleatTop, pleatLen, gv * (1 - gb), add(trailP, { x: 1.2 * wind, y: 0 }));
   const pleatMid = add(lerpV(pleatTop, pleatBot, 0.5), { x: 1.5 * wind, y: 0 });
   const pdir = unit(sub(pleatBot, pleatTop));
   const pn = perpL(pdir);
+  const PK = HB ? 1.3 : 1;
   const pleatShape = [
-    add(pleatTop, mul(pn, 6)),
-    add(pleatMid, mul(pn, 8.5)),
-    add(pleatBot, mul(pn, 11)),
+    add(pleatTop, mul(pn, 6 * PK)),
+    add(pleatMid, mul(pn, 8.5 * PK)),
+    add(pleatBot, mul(pn, 11 * PK)),
     add(pleatBot, mul(pdir, 3)),
-    add(pleatBot, mul(pn, -10)),
-    add(pleatMid, mul(pn, -7.5)),
-    add(pleatTop, mul(pn, -5)),
+    add(pleatBot, mul(pn, -10 * PK)),
+    add(pleatMid, mul(pn, -7.5 * PK)),
+    add(pleatTop, mul(pn, -5 * PK)),
   ];
 
   /* ---------- chadar: opaque white cotton wrapped across the chest (V at the neck), lying close over the shoulders and
@@ -1410,47 +2316,123 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
       [114, 27 + bR],
       [TORSO - 2, 23.5],
     ] as Array<[number, number]>).map(([v, w]) => add(Tp(v), mul(pa, sgn * hwB(w))));
-  const wrapPoly = [...wrapSide(1), Tp(TORSO + 6, 0, 0), ...wrapSide(-1).reverse(), add(Tp(11), mul(pa, -hwOf(17))), add(Tp(10), mul(pa, hwOf(17)))];
+  const wrapSideH = (sgn: number) =>
+    ([
+      [lerp(sgn > 0 ? 26 : 33, 30, gb), lerp(24.5, 20, gb) + (sgn > 0 ? 2.5 : 0)],
+      [44, lerp(25, 22.5, gb) + (sgn > 0 ? 3.2 : 0)],
+      [70, 26 + (sgn > 0 ? 2.6 : 0)],
+      [96, 27.5 + bR + (sgn > 0 ? 1.4 : 0)],
+      [116, 29.5 + bR],
+      [TORSO - 2, 27.5],
+    ] as Array<[number, number]>).map(([v, w]) => add(Tp(v), mul(pa, sgn * hwB(w))));
+  const wrapPoly = HB
+    ? [...wrapSideH(1), Tp(TORSO + 6, 0, 0), ...wrapSideH(-1).reverse(), add(Tp(31), mul(pa, -hwOf(21))), add(Tp(25), mul(pa, hwOf(22)))]
+    : [
+        ...wrapSide(1),
+        Tp(TORSO + 6, 0, 0),
+        ...wrapSide(-1).reverse(),
+        add(Tp(11), mul(pa, -hwOf(17))),
+        add(Tp(10), mul(pa, hwOf(17))),
+      ];
+  // healthy: the dhoti's rolled waist (with the pleats tucked in at the front) shows below the chadar's hem
+  const waistRoll = HB ? [add(Tp(24), mul(pa, -hwOf(24.5))), Tp(22.5, -2, 19), Tp(23, 6, 20), add(Tp(25), mul(pa, hwOf(24.5)))] : null;
+  const chadarHem = HB ? [add(Tp(33), mul(pa, -hwB(24))), Tp(29, 0, 21), add(Tp(26), mul(pa, hwB(27)))] : null;
   // one drape per side: neck, close over the shoulder and the upper arm to the elbow, then hanging with gravity to
   // about the hip (in the bend it falls from the shoulders and the chest toward the ground), the front edge up the chest
-  const capeFor = (a: Arm, sgn: number): V[] => {
+  // tight (Episode 6, 0 = Episode 5 drape): over an arm turned back (hand at the back) or raised (hand at the face) the
+  // drape stays a short cap on the shoulder and its hem returns to the body's side, so no cloth wing or panel forms.
+  // BAL-26d healthy shawl: the arm part of each drape (where the forearm comes out from under the cloth) and the edge
+  // line for the contact shadow, filled in by capeFor
+  const shawlArm: Record<string, { sleeve: V[]; edge: V[]; fa: V } | undefined> = {};
+  const capeFor = (a: Arm, sgn: number, tight = 0, aPrev?: Arm, key?: string): V[] => {
     const ua = unit(sub(a.E, a.sh));
     let n = perpL(ua);
     const outV = sub(a.sh, g.Sc);
     if (n.x * outV.x + n.y * outV.y < 0) n = mul(n, -1);
-    const neckF = Tp(TORSO + 4, sgn * 9, 11);
-    const neckT = Tp(TORSO + 8, sgn * 17, -3);
+    // BAL-26c healthy: the drape lies lower round the neck, so the head sits up out of it
+    const neckF = Tp(TORSO + (HB ? 0 : 4), sgn * (HB ? 11 : 9), 11);
+    const neckT = Tp(TORSO + (HB ? 1 : 8), sgn * (HB ? 19 : 17), -3);
     const shTop = add(sub(a.sh, mul(ua, 14)), mul(n, 5));
-    const shO = add(sub(a.sh, mul(ua, 3)), mul(n, 14.5));
-    const midO = add(lerpV(a.sh, a.E, 0.5), mul(n, 12.8));
+    const shO = add(sub(a.sh, mul(ua, 3)), mul(n, tight ? lerp(14.5, 10.5, tight) : 14.5));
+    const midO = add(lerpV(a.sh, a.E, tight ? lerp(0.5, 0.36, tight) : 0.5), mul(n, tight ? lerp(12.8, 9.5, tight) : 12.8));
     // in the bend the drape covers the upper arm only to about 60 % and its hem is short
-    const elO = add(add(lerpV(a.sh, a.E, lerp(1, 0.6, gb)), mul(n, lerp(12, 13, gb))), mul(ua, lerp(4, 0, gb)));
-    const hemO = add(add(elO, { x: 0, y: lerp(lerp(50, 24, gv), 14, gb) }), add(mul(trailS, 0.6), { x: 1.2 * wind * sgn, y: 0 }));
-    const frontBot = hang(Tp(12, sgn * 17, 20), Tp(lerp(84, 34, gb), sgn * 14, lerp(19, 10, gb)), lerp(40, 20, gb), gv, add(trailS, { x: 1.4 * wind, y: 0 }));
+    // BAL-26d: the healthy drape covers the shoulder and the whole upper arm to the elbow (plate 01); forearms free
+    const cov0 = HB ? lerp(1.02, 0.7, gb) : lerp(1, 0.6, gb);
+    const cov = tight ? lerp(cov0, 0.52, tight) : cov0;
+    const elO = add(add(lerpV(a.sh, a.E, cov), mul(n, tight ? lerp(lerp(12, 13, gb), 9, tight) : lerp(12, 13, gb))), mul(ua, lerp(4, 0, gb)));
+    let hemO = add(add(elO, { x: 0, y: HB ? lerp(lerp(11, 9, gv), 8, gb) : lerp(lerp(50, 24, gv), 14, gb) }), add(mul(trailS, 0.6), { x: 1.2 * wind * sgn, y: 0 }));
+    if (tight) hemO = lerpV(hemO, lerpV(add(elO, { x: 0, y: 8 }), Tp(84, sgn * 19, 2), 0.6), tight);
+    const frontBot = HB
+      ? hang(Tp(sgn > 0 ? 30 : 36, sgn * 18, 20), Tp(lerp(88, 42, gb), sgn * 14, lerp(19, 10, gb)), lerp(28, 16, gb), gv, add(trailS, { x: 1.4 * wind, y: 0 }))
+      : hang(Tp(12, sgn * 17, 20), Tp(lerp(84, 34, gb), sgn * 14, lerp(19, 10, gb)), lerp(40, 20, gb), gv, add(trailS, { x: 1.4 * wind, y: 0 }));
     const hemMid = add(lerpV(hemO, frontBot, 0.5), { x: 0, y: 6 + 4 * gv });
     const dzF = lerp(21, 12, gb);
-    return [neckF, neckT, shTop, shO, midO, elO, hemO, hemMid, frontBot, Tp(40, sgn * 16.5, dzF), Tp(76, sgn * 15, dzF), Tp(104, sgn * 12.5, lerp(19, 11, gb))];
+    if (HB) {
+      // BAL-26d: one soft shawl over the shoulder and the upper arm (plate 01). Its lower edge is a soft diagonal curve:
+      // a little below the elbow on the outside of the arm, higher on the inside, sagging a touch unevenly between,
+      // swinging after the elbow (follow-through); no hem band, the forearm comes out from under it.
+      const inner = mul(n, -1);
+      const fa = unit(sub(a.W, a.E));
+      const tE = aPrev ? (() => {
+        const d = sub(aPrev.E, a.E);
+        const l = len(d);
+        return l > 14 ? mul(d, 14 / l) : d;
+      })() : { x: 0, y: 0 };
+      const cv = tight ? lerp(1, 0.6, tight) : 1;
+      const rA = 10.2 * ARM_R;
+      const hO = add(add(add(lerpV(a.sh, a.E, lerp(1, 0.75, gb) * cv), mul(n, rA + 2.5)), { x: 0, y: 7 * cv }), mul(tE, 0.7));
+      const hIn = add(add(lerpV(a.sh, a.E, lerp(0.84, 0.62, gb) * cv), mul(inner, rA + 2)), mul(tE, 0.35));
+      const hW = add(add(lerpV(hO, hIn, 0.5), mul(ua, 3 + 1.1 * wind)), add(mul(perpL(ua), 1.2 * Math.sin(L * 0.05 + sgn)), mul(tE, 0.5)));
+      const sleeve = [shTop, shO, midO, elO, hO, hW, hIn, add(lerpV(a.sh, a.E, 0.45), mul(inner, rA + 4)), add(a.sh, mul(inner, 9))];
+      if (key) shawlArm[key] = { sleeve, edge: [hO, hW, hIn], fa };
+      return [neckF, neckT, shTop, shO, midO, elO, hO, hW, hIn, frontBot, Tp(48, sgn * 16.5, dzF), Tp(76, sgn * 15, dzF), Tp(104, sgn * 12.5, lerp(19, 11, gb))];
+    }
+    return [neckF, neckT, shTop, shO, midO, elO, hemO, hemMid, frontBot, Tp(HB ? 48 : 40, sgn * 16.5, dzF), Tp(76, sgn * 15, dzF), Tp(104, sgn * 12.5, lerp(19, 11, gb))];
   };
-  const capeN = capeFor(g.armN, -1);
-  const capeF = capeFor(g.armF, 1);
+  // healthy (BAL-26d): the drape stays on the upper arm even with the hand at the back or at the face (a lighter tight)
+  const capeN = HB
+    ? capeFor(g.armN, -1, 0.3 * g.vals.nBack, gPrev.armN, "n")
+    : g.vals.nBack
+      ? capeFor(g.armN, -1, 0.5 * g.vals.nBack)
+      : capeFor(g.armN, -1);
+  const capeF = HB
+    ? capeFor(g.armF, 1, clamp(g.vals.fFace, 0, 1), gPrev.armF, "f")
+    : g.vals.fFace
+      ? capeFor(g.armF, 1, clamp(g.vals.fFace * 1.6, 0, 1))
+      : capeFor(g.armF, 1);
   const capeEl = (pts: V[], lit: boolean, key: string): React.ReactElement => {
-    const [neckF, neckT, , shO, midO, elO, hemO, hemMid, frontBot] = pts;
-    const front = [pts[11], pts[10], pts[9], frontBot];
+    const sh13 = pts.length === 13;
+    const [neckF, neckT, , shO, midO, elO, hemO] = pts;
+    const hemMid = sh13 ? pts[8] : pts[7];
+    const frontBot = sh13 ? pts[9] : pts[8];
+    const front = sh13 ? [pts[12], pts[11], pts[10], frontBot] : [pts[11], pts[10], pts[9], frontBot];
     const foldA = [lerpV(neckT, shO, 0.6), lerpV(midO, elO, 0.3), add(lerpV(elO, hemO, 0.6), mul(sub(hemMid, hemO), 0.15)), add(hemO, mul(sub(hemMid, hemO), 0.2))];
-    const foldB = [lerpV(neckF, neckT, 0.5), lerpV(midO, pts[10], 0.5), lerpV(hemO, hemMid, 0.7)];
-    const foldC = [lerpV(pts[10], midO, 0.25), lerpV(pts[9], hemMid, 0.4), lerpV(frontBot, hemMid, 0.35)];
+    const p10 = sh13 ? pts[11] : pts[10];
+    const p9 = sh13 ? pts[10] : pts[9];
+    const foldB = [lerpV(neckF, neckT, 0.5), lerpV(midO, p10, 0.5), lerpV(hemO, hemMid, 0.7)];
+    const foldC = [lerpV(p10, midO, 0.25), lerpV(p9, hemMid, 0.4), lerpV(frontBot, hemMid, 0.35)];
+    // healthy shawl: loose folds radiating from the shoulder down toward the soft edge
+    const radFolds = sh13
+      ? [
+          [lerpV(pts[2], shO, 0.4), lerpV(midO, elO, 0.45), lerpV(hemO, pts[7], 0.3)],
+          [lerpV(neckT, shO, 0.35), lerpV(midO, pts[8], 0.4), lerpV(pts[7], pts[8], 0.55)],
+        ]
+      : [];
     return (
       <g key={key}>
-        <path d={smoothClosed(pts.map((q) => add(q, { x: 0.8, y: 1.8 })))} fill={C.skinDeep} opacity={0.07} />
-        {clothPaint((dx, dy) => smoothClosed(pts.map((q) => add(q, { x: dx, y: dy }))), lit ? C.cloth : C.clothMid)}
-        <path d={smoothOpen(foldA)} fill="none" stroke={C.clothShade} strokeWidth={2} strokeLinecap="round" />
-        <path d={smoothOpen(foldA.map((q) => add(q, { x: -2, y: -0.7 })))} fill="none" stroke={C.clothLit} strokeWidth={1.4} strokeLinecap="round" />
-        <path d={smoothOpen(foldB)} fill="none" stroke={C.clothFold} strokeWidth={1.8} strokeLinecap="round" />
-        <path d={smoothOpen(foldC)} fill="none" stroke={C.clothFold} strokeWidth={1.6} strokeLinecap="round" />
-        <path d={smoothOpen([neckT, shO, lerpV(shO, midO, 0.5)].map((q) => add(q, { x: 0, y: 2.4 })))} fill="none" stroke={C.clothLit} strokeWidth={2} strokeLinecap="round" />
+        <path d={smoothClosed(pts.map((q) => add(q, { x: 0.8, y: 1.8 })))} fill={PAL.skinDeep} opacity={0.07} />
+        {clothPaint((dx, dy) => smoothClosed(pts.map((q) => add(q, { x: dx, y: dy }))), lit ? PAL.cloth : PAL.clothMid, undefined, PAL)}
+        <path d={smoothOpen(foldA)} fill="none" stroke={PAL.clothShade} strokeWidth={2} strokeLinecap="round" />
+        <path d={smoothOpen(foldA.map((q) => add(q, { x: -2, y: -0.7 })))} fill="none" stroke={PAL.clothLit} strokeWidth={1.4} strokeLinecap="round" />
+        <path d={smoothOpen(foldB)} fill="none" stroke={PAL.clothFold} strokeWidth={1.8} strokeLinecap="round" />
+        <path d={smoothOpen(foldC)} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} strokeLinecap="round" />
+        <path d={smoothOpen([neckT, shO, lerpV(shO, midO, 0.5)].map((q) => add(q, { x: 0, y: 2.4 })))} fill="none" stroke={PAL.clothLit} strokeWidth={2} strokeLinecap="round" />
+        {radFolds.map((fp, i) => (
+          <path key={i} d={smoothOpen(fp)} fill="none" stroke={PAL.clothFold} strokeWidth={1.5} strokeLinecap="round" opacity={0.75} />
+        ))}
         {/* the rolled front edge */}
-        <path d={smoothOpen(front)} fill="none" stroke={C.clothLit} strokeWidth={2.6} strokeLinecap="round" />
-        <path d={smoothOpen(front.map((q) => add(q, { x: 2.8, y: 0 })))} fill="none" stroke={C.clothShade} strokeWidth={1.4} strokeLinecap="round" />
+        <path d={smoothOpen(front)} fill="none" stroke={PAL.clothLit} strokeWidth={2.6} strokeLinecap="round" />
+        <path d={smoothOpen(front.map((q) => add(q, { x: 2.8, y: 0 })))} fill="none" stroke={PAL.clothShade} strokeWidth={1.4} strokeLinecap="round" />
       </g>
     );
   };
@@ -1459,62 +2441,146 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   const shinEl = (l: Leg, hem: V, far: boolean, key: string) => {
     const kn = lerpV(l.knee, hem, 0.55);
     const pts = [kn, lerpV(kn, l.ankle, 0.45), l.ankle];
-    const r = [12.4, 11.6, 7.8];
-    return skinLimb(pts, r, far ? C.skinFar : C.skin, C.skinShade, key);
+    const r = HB ? [16.6, 15.2, 9.8] : [12.4, 11.6, 7.8];
+    return skinLimb(pts, r, far ? PAL.skinFar : PAL.skin, PAL.skinShade, key);
   };
 
   const clothTube = (pts: V[], r: number[], base: string, key?: string) =>
-    clothPaint((dx, dy) => chainD(pts, r, { grow: dx === 0 ? 0 : -2, dx, dy }), base, key);
+    clothPaint((dx, dy) => chainD(pts, r, { grow: dx === 0 ? 0 : -2, dx, dy }), base, key, PAL);
 
   const fl = flip ? -1 : 1;
   const farArmFront = g.theta > 0.6;
   const legFold = (l: Leg, h: { hem: V }, k: number, key: string) => (
-    <path key={key} d={smoothOpen([lerpV(l.hip, l.knee, 0.25), add(l.knee, { x: 5 * k, y: 0 }), add(h.hem, { x: 7 * k, y: -3 })])} fill="none" stroke={C.clothFold} strokeWidth={2.2} strokeLinecap="round" />
+    <path
+      key={key}
+      d={smoothOpen([lerpV(l.hip, l.knee, 0.25), add(l.knee, { x: 5 * k, y: 0 }), add(h.hem, { x: 7 * k, y: -3 })])}
+      fill="none"
+      stroke={PAL.clothFold}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  );
+
+  // Episode 6: prop layers inside the figure (absent = the Episode 5 drawing order), the hand over the face (wipeEye)
+  const bodyT = `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(s * fl).toFixed(4)} ${s.toFixed(4)})`;
+  const layered = props.layerFar !== undefined || props.layerMid !== undefined;
+  const faceHand = g.vals.fFace > 0.04;
+  // the chadar's edge over the elbow goes with the tight drape (Episode 6: hand at the back / at the face)
+  // healthy: a slim drape hem across the top of the forearm where it comes out from under the chadar
+  const shawlFore = (side: "n" | "f", el: React.ReactElement): React.ReactElement => {
+    const sa2 = shawlArm[side];
+    if (!sa2) return el;
+    const a = side === "n" ? g.armN : g.armF;
+    const mid = `${uid}-sm${side}`;
+    const cid = `${uid}-sc${side}`;
+    const sh = sa2.edge.map((q) => add(q, mul(sa2.fa, 3)));
+    return (
+      <g>
+        <defs>
+          <mask id={mid} maskUnits="userSpaceOnUse" x={-3000} y={-3000} width={6000} height={6000}>
+            <rect x={-3000} y={-3000} width={6000} height={6000} fill="#fff" />
+            <path d={smoothClosed(sa2.sleeve)} fill="#000" />
+          </mask>
+          <clipPath id={cid}>
+            <path d={chainD([a.E, lerpV(a.E, a.W, 0.5), a.W], [11 * ARM_R, 10 * ARM_R, 9 * ARM_R])} />
+          </clipPath>
+        </defs>
+        <g mask={`url(#${mid})`}>{el}</g>
+        <g clipPath={`url(#${cid})`}>
+          <path d={smoothOpen(sh.map((q) => add(q, mul(sa2.fa, 2))))} fill="none" stroke={PAL.skinDeep} strokeWidth={9} strokeLinecap="round" opacity={0.1} />
+          <path d={smoothOpen(sh)} fill="none" stroke={PAL.skinDeep} strokeWidth={4.5} strokeLinecap="round" opacity={0.24} />
+        </g>
+      </g>
+    );
+  };
+  const edgeOf = (tight: number) => (tight ? (gb > 0 ? 1 - gb : 1) * clamp(1 - 1.4 * tight, 0, 1) : gb > 0 ? 1 - gb : undefined);
+  const farFore = HB ? (
+    shawlFore("f", <ArmEl a={g.armF} id={`${uid}-aff`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />)
+  ) : (
+    <ArmEl a={g.armF} id={`${uid}-aff`} lit={0.6} fore cloth={PAL.clothMid} edgeK={edgeOf(g.vals.fFace)} pal={PAL} hl={HAND_L} rk={ARM_R} />
+  );
+  const nearArm = (
+    <>
+      {/* near arm, its drape, the near forearm coming out below it */}
+      <ArmEl a={g.armN} id={`${uid}-an`} lit={1} pal={PAL} hl={HAND_L} rk={ARM_R} />
+      {capeEl(capeN, true, "capeN")}
+      {g.vals.nBack > 0.02 && !HB ? (
+        <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={0} upFrom={0.62} pal={PAL} hl={HAND_L} rk={ARM_R} />
+      ) : (
+        HB ? (
+          shawlFore("n", <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />)
+        ) : (
+          <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={edgeOf(g.vals.nBack)} pal={PAL} hl={HAND_L} rk={ARM_R} />
+        )
+      )}
+    </>
   );
 
   return (
     <g>
-      <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(s * fl).toFixed(4)} ${s.toFixed(4)})`}>
+      <g transform={bodyT}>
         {/* far leg: bare shin and foot */}
         {shinEl(g.legF, hF.hem, true, "shinF")}
-        <FootEl l={g.legF} far />
-        {gb < 0.995 && clothTube(seat, seatR, C.cloth, "seat")}
-        {!farArmFront && <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} />}
+        <FootEl l={g.legF} far pal={PAL} fk={FOOT_K} />
+        {gb < 0.995 && clothTube(seat, seatR, PAL.cloth, "seat")}
+        {!farArmFront && <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} pal={PAL} hl={HAND_L} rk={ARM_R} />}
         {/* near leg */}
         {shinEl(g.legN, hN.hem, false, "shinN")}
-        <FootEl l={g.legN} far={false} />
+        <FootEl l={g.legN} far={false} pal={PAL} fk={FOOT_K} />
         {/* the dhoti: one soft cloth, the legs read under it, the hem dips between them */}
-        {clothPaint((dx, dy) => smoothClosed(skirt.map((q) => add(q, { x: dx, y: dy }))), C.cloth, "skirt")}
-        <path d={smoothOpen([lerpV(lB.hip, lB.knee, 0.2), lB.knee, hB.hem].map((q) => add(q, { x: -3, y: 0 })))} fill="none" stroke={C.clothMid} strokeWidth={12} strokeLinecap="round" />
-        <path d={smoothOpen([crotch, lerpV(crotch, dip, 0.6), add(dip, mul(hemDirM, -6))])} fill="none" stroke={C.clothFold} strokeWidth={3.4} strokeLinecap="round" />
+        {clothPaint((dx, dy) => smoothClosed(skirt.map((q) => add(q, { x: dx, y: dy }))), PAL.cloth, "skirt", PAL)}
+        <path d={smoothOpen([lerpV(lB.hip, lB.knee, 0.2), lB.knee, hB.hem].map((q) => add(q, { x: -3, y: 0 })))} fill="none" stroke={PAL.clothMid} strokeWidth={12} strokeLinecap="round" />
+        <path d={smoothOpen([crotch, lerpV(crotch, dip, 0.6), add(dip, mul(hemDirM, -6))])} fill="none" stroke={PAL.clothFold} strokeWidth={3.4} strokeLinecap="round" />
         {legFold(lA, hA, -1, "lfA")}
         {legFold(lB, hB, 1, "lfB")}
-        <path d={smoothOpen([pA3, pA4, dip, pB4, pB3].map((q) => add(q, { x: 0, y: -2.6 })))} fill="none" stroke={C.clothFold} strokeWidth={2} strokeLinecap="round" />
+        <path d={smoothOpen([pA3, pA4, dip, pB4, pB3].map((q) => add(q, { x: 0, y: -2.6 })))} fill="none" stroke={PAL.clothFold} strokeWidth={2} strokeLinecap="round" />
         {/* the front pleat fall (kochi) */}
-        {clothPaint((dx, dy) => smoothClosed(pleatShape.map((q) => add(q, { x: dx * 0.6, y: dy * 0.6 }))), C.cloth, "pleat")}
-        <path d={smoothOpen([add(pleatTop, mul(pn, 1.5)), add(pleatMid, mul(pn, 2.5)), add(pleatBot, mul(pn, 3.5))])} fill="none" stroke={C.clothFold} strokeWidth={2} />
-        <path d={smoothOpen([add(pleatTop, mul(pn, -2)), add(pleatMid, mul(pn, -3)), add(pleatBot, mul(pn, -4.5))])} fill="none" stroke={C.clothFold} strokeWidth={1.6} />
+        {clothPaint((dx, dy) => smoothClosed(pleatShape.map((q) => add(q, { x: dx * 0.6, y: dy * 0.6 }))), PAL.cloth, "pleat", PAL)}
+        <path d={smoothOpen([add(pleatTop, mul(pn, 1.5)), add(pleatMid, mul(pn, 2.5)), add(pleatBot, mul(pn, 3.5))])} fill="none" stroke={PAL.clothFold} strokeWidth={2} />
+        <path d={smoothOpen([add(pleatTop, mul(pn, -2)), add(pleatMid, mul(pn, -3)), add(pleatBot, mul(pn, -4.5))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} />
+        {HB && waistRoll && (
+          <g>
+            {/* the dhoti's front pleats (kacha folds) running down from the waist, and its rolled waist */}
+            <path d={smoothOpen([Tp(23, -6, 19), lerpV(crotch, hA.hem, 0.35), add(hA.hem, { x: 3, y: -3 })])} fill="none" stroke={PAL.clothFold} strokeWidth={1.8} strokeLinecap="round" opacity={0.8} />
+            <path d={smoothOpen([Tp(23, 9, 19), lerpV(crotch, hB.hem, 0.4), add(hB.hem, { x: -2, y: -3 })])} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} strokeLinecap="round" opacity={0.7} />
+            <path d={smoothOpen(waistRoll)} fill="none" stroke={PAL.clothMid} strokeWidth={8} strokeLinecap="round" />
+            <path d={smoothOpen(waistRoll.map((q) => add(q, { x: 0, y: -3.4 })))} fill="none" stroke={PAL.clothShade} strokeWidth={1.3} strokeLinecap="round" opacity={0.85} />
+            <path d={smoothOpen(waistRoll.map((q) => add(q, { x: -0.6, y: 1.6 })))} fill="none" stroke={PAL.clothLit} strokeWidth={1.6} strokeLinecap="round" opacity={0.9} />
+            <ellipse cx={Tp(23, 6, 21).x} cy={Tp(23, 6, 21).y} rx={4.6} ry={3.4} fill={PAL.clothMid} stroke={PAL.clothShade} strokeWidth={0.9} />
+          </g>
+        )}
         {/* far arm in the bend: the arms hang forward of the knees (and the free hand rests on the far knee) */}
-        {farArmFront && <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} />}
+        {farArmFront && <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} pal={PAL} hl={HAND_L} rk={ARM_R} />}
         {/* torso skin (shows only at the V), the neck */}
-        <path d={chainD(torsoPts, torsoR)} fill={skinEdge(C.skin, C.skinShade)} />
-        <ThakurNeckPlate base={g.neckBase} top={g.neckTop} scale={HEAD_K * (props.headScale ?? 1)} />
+        <path d={chainD(torsoPts, torsoR)} fill={skinEdge(PAL.skin, PAL.skinShade)} />
+        <ThakurNeckPlate base={g.neckBase} top={g.neckTop} scale={HB ? HEAD_K * (props.headScale ?? 1) * NECK_R : HEAD_K * (props.headScale ?? 1)} colors={HB ? C : undefined} />
         {/* the wrap across the chest, the V at the neck, the overlapping edge and soft diagonal folds */}
-        {clothPaint((dx, dy) => smoothClosed(wrapPoly.map((q) => add(q, { x: dx, y: dy }))), C.cloth, "wrap")}
-        <path d={`M${pt(vL)} L${pt(vApex)} L${pt(vR)} Q${pt(add(lerpV(vL, vR, 0.5), mul(g.ax, 6)))} ${pt(vL)} Z`} fill={C.skin} />
-        <path d={`M${pt(add(vL, { x: 0, y: 2 }))} Q${pt(lerpV(vL, vR, 0.5))} ${pt(add(vR, { x: 0, y: 2 }))}`} fill="none" stroke={C.skinShade} strokeWidth={2} opacity={0.22} />
-        <path d={smoothOpen([vL, add(vApex, mul(g.ax, -1))])} fill="none" stroke={C.clothLit} strokeWidth={2.4} strokeLinecap="round" opacity={0.95} />
-        <path d={smoothOpen([vR, add(vApex, mul(g.ax, -1))])} fill="none" stroke={C.clothFold} strokeWidth={1.6} strokeLinecap="round" opacity={0.8} />
-        <path d={smoothOpen([vApex, Tp(76, 9, 21), Tp(48, 15, 21), Tp(22, 19, 20)])} fill="none" stroke={C.clothShade} strokeWidth={2} strokeLinecap="round" />
-        <path d={smoothOpen([Tp(TORSO - 6, -14, 13), Tp(96, -4, 20), Tp(70, 4, 21)])} fill="none" stroke={C.clothFold} strokeWidth={1.8} strokeLinecap="round" />
+        {clothPaint((dx, dy) => smoothClosed(wrapPoly.map((q) => add(q, { x: dx, y: dy }))), PAL.cloth, "wrap", PAL)}
+        {HB && chadarHem && (
+          <g>
+            <path d={smoothOpen(chadarHem.map((q) => add(q, { x: 0, y: 1.8 })))} fill="none" stroke={PAL.clothShade} strokeWidth={2.2} strokeLinecap="round" opacity={0.75} />
+            <path d={smoothOpen(chadarHem)} fill="none" stroke={PAL.clothLit} strokeWidth={1.8} strokeLinecap="round" />
+          </g>
+        )}
+        <path d={`M${pt(vL)} L${pt(vApex)} L${pt(vR)} Q${pt(add(lerpV(vL, vR, 0.5), mul(g.ax, 6)))} ${pt(vL)} Z`} fill={PAL.skin} />
+        <path d={`M${pt(add(vL, { x: 0, y: 2 }))} Q${pt(lerpV(vL, vR, 0.5))} ${pt(add(vR, { x: 0, y: 2 }))}`} fill="none" stroke={PAL.skinShade} strokeWidth={2} opacity={0.22} />
+        <path d={smoothOpen([vL, add(vApex, mul(g.ax, -1))])} fill="none" stroke={PAL.clothLit} strokeWidth={2.4} strokeLinecap="round" opacity={0.95} />
+        <path d={smoothOpen([vR, add(vApex, mul(g.ax, -1))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} strokeLinecap="round" opacity={0.8} />
+        <path d={smoothOpen([vApex, Tp(76, 9, 21), Tp(48, 15, 21), Tp(HB ? 30 : 22, 19, 20)])} fill="none" stroke={PAL.clothShade} strokeWidth={2} strokeLinecap="round" />
+        <path d={smoothOpen([Tp(TORSO - 6, -14, 13), Tp(96, -4, 20), Tp(70, 4, 21)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.8} strokeLinecap="round" />
         {/* far drape and the far forearm coming out below it */}
         {capeEl(capeF, false, "capeF")}
-        <ArmEl a={g.armF} id={`${uid}-aff`} lit={0.6} fore cloth={C.clothMid} edgeK={gb > 0 ? 1 - gb : undefined} />
-        {/* near arm, its drape, the near forearm coming out below it */}
-        <ArmEl a={g.armN} id={`${uid}-an`} lit={1} />
-        {capeEl(capeN, true, "capeN")}
-        <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={gb > 0 ? 1 - gb : undefined} />
+        {!layered && farFore}
+        {!layered && nearArm}
       </g>
+      {layered && (
+        <>
+          {props.layerFar}
+          <g transform={bodyT}>{farFore}</g>
+          {props.layerMid}
+          <g transform={bodyT}>{nearArm}</g>
+        </>
+      )}
       {/* the one plate head, drawn unmirrored so the side part stays on his right */}
       <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${s.toFixed(4)})`}>
         <ThakurHeadPlate
@@ -1523,9 +2589,15 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
           rot={fl * g.headRot}
           scale={HEAD_K * (props.headScale ?? 1)}
           age={age}
+          {...(HB ? { colors: C, vivid: true } : {})}
           state={flip ? { ...face, turn: -face.turn, gazeX: -face.gazeX } : face}
         />
       </g>
+      {faceHand && (
+        <g transform={bodyT} opacity={smooth((g.vals.fFace - 0.04) / 0.3).toFixed(3)}>
+          {HB ? shawlFore("f", <ArmEl a={g.armF} id={`${uid}-afx`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />) : <ArmEl a={g.armF} id={`${uid}-afx`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />}
+        </g>
+      )}
     </g>
   );
 };

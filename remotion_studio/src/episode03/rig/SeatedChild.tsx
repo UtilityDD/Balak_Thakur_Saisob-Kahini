@@ -1,7 +1,7 @@
 import React, { useId } from "react";
 import { Hand, type HandShape } from "../../cinematic/rig/Hand";
 import { STONE_BOWL_UNITS, stoneBowlArt as sharedStoneBowlArt } from "../../cinematic/sets/VedicHouseDay";
-import { PLATE_COLORS, ThakurHeadPlate, ThakurNeckPlate, plateChinY, plateMouthAt } from "../../cinematic/rig/ThakurHeadPlate";
+import { PLATE_COLORS, PLATE_COLORS_HEALTHY, PLATE_HAIR_TOP, ThakurHeadPlate, ThakurNeckPlate, plateChinY, plateMouthAt } from "../../cinematic/rig/ThakurHeadPlate";
 
 /**
  * Episode 3 seated child rig. Balak Thakur at about five, sitting cross-legged on the ground, drawn
@@ -112,6 +112,21 @@ import { PLATE_COLORS, ThakurHeadPlate, ThakurNeckPlate, plateChinY, plateMouthA
  *                  the near side a little. Default expression compassionate.
  *   - headShake    a prop (start frame on the story clock), not a pose: a slow, small compassionate head shake of
  *                  HEAD_SHAKE_LEN frames over any pose.
+ *
+ * EPISODE 6 (added 2026-11-22, opt-in; Episodes 3 to 5 render byte-identically). All self-timed from poseStart, starting
+ * from the resting hands (from sitCross / idle the prevPose blend is only 6 frames). Props for the scene: seatedEp6Anchors()
+ * (same props object) gives the palms, the pinch point, the ball, the note and the head top; draw the ball / note through
+ * the `propInHands` slot (world coordinates, between the far and the near hand). Plate design: the far arm reaching in
+ * front is drawn over the chest wrap (farArmFront) and over the near cape (farOverCape).
+ *   - takeBall     TAKE_BALL_T: both hands come up under the ball at `giveAt` (default TAKE_BALL_AT), the giver lets go at
+ *                  `take`, he draws it to his lap and keeps it there; joyful. Ball radius BALL_R.
+ *   - treasurer    TREASURER_T per step of `pickPlace` (default TREASURER_STEPS on TREASURY_CLOTH): the near hand picks the
+ *                  item at `from` and sets it on the heap at `to`; the far hand rests; serene. treasurerAt(t, steps).
+ *   - takeNote     TAKE_NOTE_T: palms up for the note at `giveAt` (default TAKE_NOTE_AT), drawn to his chest, he looks at it
+ *                  troubled (thoughtful + gentle inner brows); at `foldAt` his hands close round it and he nods (decided).
+ *                  `watchHeld` 0 + face.lookX lets him look away (to the village) with the note in his hands. NOTE_SIZE.
+ *   - handOnHead   HAND_ON_HEAD_T: the near hand claps to the top of his head (palm on the hair, fingers on the crown), then
+ *                  both palms open, empty, held out (the near elbow swings down through depth, elbowSwingF); playful.
  */
 
 export type SeatedPose =
@@ -137,7 +152,12 @@ export type SeatedPose =
   // Episode 5 (see "EPISODE 5" below)
   | "playPebbles"
   | "strokeCow"
-  | "handsTo";
+  | "handsTo"
+  // Episode 6 (see "EPISODE 6" below)
+  | "takeBall"
+  | "treasurer"
+  | "takeNote"
+  | "handOnHead";
 
 /**
  * Objects Balak can hold (Episode 4), drawn simply in the series style, no glow on any of them (BAL-05):
@@ -264,6 +284,12 @@ export interface SeatedChildProps {
    * design, unchanged pixel for pixel.
    */
   design?: SeatedDesign;
+  /**
+   * BAL-26d (2026-11-23), "plate" design only, opt-in: "healthy" colours seated Balak like StandingChild build="healthy"
+   * (the warmer PLATE_COLORS_HEALTHY skin and warm cotton shading, and ThakurHeadPlate `vivid`: bright open eyes), so the
+   * seated and the standing boy read as the same child. Body shapes are unchanged. Default "classic" = byte-identical.
+   */
+  build?: "classic" | "healthy";
   /** "plate" design only: age in years (default 5, 4 to 12). Older lengthens the face and the neck a little. */
   age?: number;
   /**
@@ -295,6 +321,26 @@ export interface SeatedChildProps {
   palmUp?: number;
   /** Episode 5: story frame of a forced quick blink (about 5 frames), e.g. the blink of surprise at the bite. */
   blinkAt?: number;
+  /**
+   * Episode 6, takeBall / takeNote: where the giver's hands hold the ball's centre / the folded note when his hands
+   * arrive (figure units, before `flip`, ground at y = 0). Defaults TAKE_BALL_AT and TAKE_NOTE_AT. Keep the giver's
+   * hands there from TAKE_*_T.reach to TAKE_*_T.take.
+   */
+  giveAt?: { x: number; y: number };
+  /**
+   * Episode 6, treasurer: the pick-and-place steps in order, one every TREASURER_T.cycle frames from poseStart: the near
+   * hand picks the item lying at `from` and sets it on the heap at `to` (ground points, figure units, before `flip`).
+   * Default TREASURER_STEPS. After the last step the hand goes back to rest.
+   */
+  pickPlace?: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }>;
+  /** Episode 6, takeNote: story frame at which he folds his hands round the note (default poseStart + TAKE_NOTE_T.fold). */
+  foldAt?: number;
+  /**
+   * Episode 6: the scene's art for what is in his hands (the ball, the note), in WORLD coordinates (the same frame as
+   * x, y), drawn by the rig between the far hand and the near hand, so the near fingers come in front of it. Place it
+   * from seatedEp6Anchors() for the very same props. Not drawn when unset.
+   */
+  propInHands?: React.ReactNode;
 }
 
 export type SeatedHandShape = "open" | "cup" | "grip";
@@ -358,15 +404,15 @@ const speechBreath = (L: number): number => {
  */
 export const sighCurve =
   (start: number, inhale = 30, exhale = 56, hold = 5) =>
-  (f: number): number => {
-    const t = f - start;
-    if (t <= 0) return 0;
-    if (t < inhale) return easeSin(t / inhale);
-    if (t < inhale + hold) return 1;
-    const e = (t - inhale - hold) / exhale;
-    if (e >= 1) return 0;
-    return Math.pow(1 - easeSin(e), 1.25);
-  };
+    (f: number): number => {
+      const t = f - start;
+      if (t <= 0) return 0;
+      if (t < inhale) return easeSin(t / inhale);
+      if (t < inhale + hold) return 1;
+      const e = (t - inhale - hold) / exhale;
+      if (e >= 1) return 0;
+      return Math.pow(1 - easeSin(e), 1.25);
+    };
 
 /** Breath of the sigh at its top, relative to a normal inhale. */
 const SIGH_DEPTH = 2.3;
@@ -427,6 +473,10 @@ export const POSE_EXPRESSION: Record<SeatedPose, SeatedExpression> = {
   playPebbles: "serene",
   strokeCow: "compassionate",
   handsTo: "serene",
+  takeBall: "joyful",
+  treasurer: "serene",
+  takeNote: "thoughtful",
+  handOnHead: "playful",
 };
 
 /** Expression weights; serene is what is left (all zero = serene). */
@@ -489,6 +539,26 @@ interface SolveOpts {
   handShapes?: { near?: SeatedHandShape; far?: SeatedHandShape };
   handTurns?: { near?: number; far?: number };
   palmUp?: number;
+  /** Episode 6 (see SeatedChildProps). */
+  giveAt?: V;
+  pickPlace?: Array<{ from: V; to: V }>;
+  foldAt?: number;
+}
+
+/**
+ * Episode 6: the ball or the note in his hands. Placed like HeldPose (from the drawn wrists, `ofsF` / `ofsB`, `farW`);
+ * `free` = still in the giver's hands at x, y (not yet taken). `fold` 0..1: the hands closed round the note.
+ */
+interface Hold6 {
+  kind: "ball" | "note";
+  x: number;
+  y: number;
+  rot: number;
+  farW: number;
+  ofsF: V;
+  ofsB: V;
+  free: boolean;
+  fold: number;
 }
 
 /**
@@ -557,6 +627,19 @@ interface Solve {
   pebble?: Prop;
   /** Episode 5: head turn toward the near side, 0..1 (strokeCow). Undefined = 0. */
   turn?: number;
+  /** Episode 6: the ball / note in the hands (takeBall, takeNote). */
+  hold6?: Hold6;
+  /** Episode 6: a troubled knit, added to the brows' inner rise (takeNote). Undefined = none. */
+  worry?: number;
+  /** Episode 6: the near elbow's swing through depth, 0..1 (see ikSwing in seatedRig). Undefined = the usual bend. */
+  elbowSwingF?: number;
+  /**
+   * Episode 6: plate design, the whole far arm is drawn over the chest wrap (under the far cape), 0..1, so a far hand
+   * reaching forward is joined to its shoulder (no forearm floating on the chest). Undefined = behind the torso.
+   */
+  farArmFront?: number;
+  /** Episode 6: plate design, the joined far forearm and hand are drawn again over the near side of the chadar. */
+  farOverCape?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -684,6 +767,25 @@ const PLATE_PAL: Pal = {
   clothFold: PLATE_COLORS.clothFold,
   clothShade: PLATE_COLORS.clothShade,
   clothInner: PLATE_COLORS.clothInner,
+};
+
+/** BAL-26d: the plate palette in the healthy colours (PLATE_COLORS_HEALTHY), for build="healthy". */
+const PLATE_HEALTHY_PAL: Pal = {
+  skin: PLATE_COLORS_HEALTHY.skin,
+  skinLit: PLATE_COLORS_HEALTHY.skinLit,
+  skinFar: PLATE_COLORS_HEALTHY.skinFar,
+  skinShade: PLATE_COLORS_HEALTHY.skinShade,
+  skinDeep: PLATE_COLORS_HEALTHY.skinDeep,
+  skinUnder: PLATE_COLORS_HEALTHY.skinUnder,
+  rim: PLATE_COLORS_HEALTHY.rim,
+  soleNear: PLATE_COLORS_HEALTHY.soleNear,
+  soleFar: PLATE_COLORS_HEALTHY.soleFar,
+  clothLit: PLATE_COLORS_HEALTHY.clothLit,
+  cloth: PLATE_COLORS_HEALTHY.cloth,
+  clothMid: PLATE_COLORS_HEALTHY.clothMid,
+  clothFold: PLATE_COLORS_HEALTHY.clothFold,
+  clothShade: PLATE_COLORS_HEALTHY.clothShade,
+  clothInner: PLATE_COLORS_HEALTHY.clothInner,
 };
 
 /* ------------------------------------------------------------------ */
@@ -1326,8 +1428,10 @@ type HandSet = Pick<
  * down and in (thumbs to the camera); 1 = cupped under it, palms up against its lower flanks, fingers rising up
  * its sides (used once the bowl is lifted, so the far forearm stays below his chin while he drinks).
  */
-const gripSet = (kind: HeldObject | undefined, O: V, rot: number, under = 0): HandSet => {
-  const g = kind ? GRIP[kind] : GRIP_DEFAULT;
+const gripSet = (kind: HeldObject | undefined, O: V, rot: number, under = 0): HandSet =>
+  gripSetSpec(kind ? GRIP[kind] : GRIP_DEFAULT, O, rot, under);
+/** gripSet for any grip spec (Episode 6: the ball and the note). */
+const gripSetSpec = (g: GripSpec, O: V, rot: number, under = 0): HandSet => {
   const u = clamp(under, 0, 1);
   const sF: V = { x: g.hw + 2.5, y: g.gy - 8 };
   const sB: V = { x: -(g.hw + 2.5), y: g.gy - 8 };
@@ -1402,6 +1506,9 @@ const ikPref = (S: V, T: V, side: number, down: number): { E: V; H: V } => {
   return sa >= sb ? a : b;
 };
 
+/** Episode 6 poses (solveEp6). */
+const EP6_POSES = new Set<SeatedPose>(["takeBall", "treasurer", "takeNote", "handOnHead"]);
+
 const EP4_POSES = new Set<SeatedPose>(["kneelReach", "holdInLap", "holdToChest", "offerUp", "drinkBowl", "pointIn", "rollClay", "toss"]);
 
 /**
@@ -1455,6 +1562,7 @@ function solveAny(pose: SeatedPose, f: number, breath: number, poseStart: number
   const seat = clamp(opts.seat ?? 0, 0, 2);
   const p: SeatedPose = (pose === "sitCross" || pose === "idle") && opts.holding ? "holdInLap" : pose;
   if (p === "playPebbles" || p === "strokeCow" || p === "handsTo") return solveEp5(p, f, breath, poseStart, opts, seat);
+  if (p === "takeBall" || p === "treasurer" || p === "takeNote" || p === "handOnHead") return solveEp6(p, f, breath, poseStart, opts, seat);
   if (EP4_POSES.has(p)) return solveEp4(p, f, breath, poseStart, opts, seat);
   const res = solveCore(pose, f, breath, poseStart, opts);
   if (seat > 0) {
@@ -1722,6 +1830,326 @@ function solveEp5(pose: SeatedPose, f: number, breath: number, poseStart: number
     gazeW: 0.9 * raise,
     turn: 0.7 * raise,
     elbowDown: 1,
+    kneel: seat || undefined,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Episode 6: takeBall, treasurer, takeNote, handOnHead                 */
+/* ------------------------------------------------------------------ */
+
+/** The stitched ball's radius in figure units: about 14 cm across at a six-year-old's hand scale (hand about 21 units). */
+export const BALL_R = 11.5;
+/**
+ * takeBall clock (frames from poseStart): both hands come forward and up to the ball at `giveAt` (0 to `reach`, palms
+ * up under it), the giver lets go at `take`, and he draws it to his lap (take to `lap`), where he keeps it in both hands.
+ */
+export const TAKE_BALL_T = { reach: 14, take: 18, lap: 38 } as const;
+/** Default giveAt for takeBall: the ball's centre in the giver's hands, in front of him at chest height. */
+export const TAKE_BALL_AT = { x: 88, y: -104 } as const;
+const BALL_GRIP: GripSpec = gripOf(1, BALL_R, 0, BALL_R, "cup", 0.48);
+const BALL_LAP: V = { x: 20, y: lapTop(0) - BALL_R + 3 };
+
+/** The ten-rupee note folded once (figure units): about 11 x 6 cm, small enough to close both hands round. */
+export const NOTE_SIZE = { w: 18, h: 10 } as const;
+/**
+ * takeNote clock (frames from poseStart): both hands come forward, palms up (0 to `reach`), the friend presses the note in
+ * (he lets go at `take`), the hands draw it to his chest (take to `chest`) and he looks down at it, troubled. At `fold`
+ * (or the `foldAt` prop) his hands close round it over `foldLen` frames, then a small decided nod.
+ */
+export const TAKE_NOTE_T = { reach: 14, take: 18, chest: 36, fold: 80, foldLen: 12 } as const;
+/** Default giveAt for takeNote: the note in the friend's fingers, in front of him at chest height. */
+export const TAKE_NOTE_AT = { x: 90, y: -106 } as const;
+const NOTE_CHEST: V = { x: 26, y: -96 };
+
+/**
+ * treasurer clock (frames from poseStart), per step of `pickPlace`: the near hand goes to the item (0 to 12), pinches it
+ * (picked at `grip`), carries it in a small arc to its heap (16 to `place`), sets it down and lets go at `release`, and
+ * lifts to hover over that heap (34 to `cycle`). The far hand rests (in the lap in the plate design, on the knee in the classic).
+ */
+export const TREASURER_T = { cycle: 40, grip: 14, place: 28, release: 31 } as const;
+/**
+ * The spread gamchha on the ground in front of his knees (figure units, before flip): four corners of a perspective-
+ * flattened quad, near edge first. Draw it BEFORE the SeatedChild (his hand reaches over it); it reaches under his feet a
+ * little, so draw his seat on top.
+ */
+export const TREASURY_CLOTH: ReadonlyArray<{ x: number; y: number }> = [
+  { x: 46, y: 8 },
+  { x: 128, y: 8 },
+  { x: 121, y: -10 },
+  { x: 52, y: -10 },
+];
+/** Default pick-and-place steps (ground points on the cloth): the loose things from the middle into three small heaps. */
+export const TREASURER_STEPS: ReadonlyArray<{ from: { x: number; y: number }; to: { x: number; y: number } }> = [
+  { from: { x: 96, y: 1 }, to: { x: 64, y: -2 } },
+  { from: { x: 102, y: 3 }, to: { x: 80, y: 2 } },
+  { from: { x: 92, y: -3 }, to: { x: 64, y: -2 } },
+  { from: { x: 106, y: -2 }, to: { x: 112, y: -4 } },
+];
+/**
+ * treasurer state at t = f - poseStart for the steps: `picked` items have left their `from` point, `placed` items lie on
+ * their heaps, and while `carrying` item `step` is between his fingers (draw it at seatedEp6Anchors().nearPinch, AFTER
+ * the SeatedChild, as a pebble in the fingers).
+ */
+export const treasurerAt = (
+  t: number,
+  steps: ReadonlyArray<{ from: { x: number; y: number }; to: { x: number; y: number } }> = TREASURER_STEPS,
+): { step: number; carrying: boolean; picked: number; placed: number } => {
+  const T = TREASURER_T;
+  const n = steps.length;
+  if (t < T.grip || n === 0) return { step: 0, carrying: false, picked: 0, placed: 0 };
+  const c = Math.floor(t / T.cycle);
+  const u = t - c * T.cycle;
+  return {
+    step: Math.min(c, n - 1),
+    carrying: c < n && u >= T.grip && u < T.release,
+    picked: Math.min(n, c + (u >= T.grip ? 1 : 0)),
+    placed: Math.min(n, c + (u >= T.release ? 1 : 0)),
+  };
+};
+
+/**
+ * handOnHead clock (frames from poseStart): the near hand claps up to the top of his head (0 to `up`, palm flat on the
+ * hair, fingers over the crown), stays there, comes off at `off` while both palms open, empty, and are held out a
+ * little by `open` ("ওটা কি এখনও আছে নাকি?"). A light comic beat, never a grimace.
+ */
+export const HAND_ON_HEAD_T = { up: 6, off: 16, open: 28 } as const;
+
+/** 0..1..0 over [0, 1] (a soft bump). */
+const bump01 = (u: number): number => (u <= 0 || u >= 1 ? 0 : Math.sin(Math.PI * u));
+
+/** Episode 6 poses (see the header, "EPISODE 6"). */
+function solveEp6(pose: SeatedPose, f: number, breath: number, poseStart: number, opts: SolveOpts, seat: number): Solve {
+  const fl = f + (opts.lifeOff ?? 0);
+  const idleLean = 3 + 0.8 * wob(fl, 3.1);
+  const t = f - poseStart;
+  const lift = kneelLift(seat);
+  const r0 = restHands(fl, KNEE_REST_FRONT);
+  // Plate design: the resting hands lie in the lap (plateRestHands), so every move starts and ends there directly
+  // (never via the knees); the lap points keep a share of the idle drift, as plateRestHands does.
+  const r = opts.plateRest
+    ? {
+      ...r0,
+      front: { x: PLATE_LAP_FRONT.x + 0.4 * (r0.front.x - KNEE_REST_FRONT.x), y: PLATE_LAP_FRONT.y + 0.4 * (r0.front.y - KNEE_REST_FRONT.y) },
+      back: { x: PLATE_LAP_BACK.x + 0.4 * (r0.back.x - KNEE_REST_BACK.x), y: PLATE_LAP_BACK.y + 0.4 * (r0.back.y - KNEE_REST_BACK.y) },
+      frontDir: PLATE_LAP_DIR_F,
+      backDir: PLATE_LAP_DIR_B,
+    }
+    : r0;
+  const watch = clamp(opts.watchHeld ?? 1, 0, 1);
+  /** Hands of a grip set, travelling from rest by w (with a small lift on the way). */
+  const fromRest = (hs: HandSet, w: number, arc: number) => ({
+    front: { x: lerp(r.front.x, hs.front.x, w), y: lerp(r.front.y, hs.front.y, w) - arc * bump01(w) },
+    back: { x: lerp(r.back.x, hs.back.x, w), y: lerp(r.back.y, hs.back.y, w) - arc * bump01(w) },
+    frontDir: unit(lerp(r.frontDir.x, hs.frontDir.x, w), lerp(r.frontDir.y, hs.frontDir.y, w)),
+    backDir: unit(lerp(r.backDir.x, hs.backDir.x, w), lerp(r.backDir.y, hs.backDir.y, w)),
+    turnF: lerpA(r.turnF ?? REST_TURN, hs.turnF ?? REST_TURN, w),
+    turnB: lerpA(r.turnB ?? REST_TURN, hs.turnB ?? REST_TURN, w),
+  });
+
+  if (pose === "takeBall") {
+    const T = TAKE_BALL_T;
+    const G = opts.giveAt ?? TAKE_BALL_AT;
+    const reach = smooth(t / T.reach);
+    const draw = smooth((t - T.take) / (T.lap - T.take));
+    const lapB: V = { x: BALL_LAP.x + 0.8 * wob(fl, 14.2, 0.4), y: BALL_LAP.y - lift + 0.4 * wob(fl, 15.9, 0.4) };
+    // In the giver's hands until `take`, then drawn to the lap in a soft, happy arc.
+    const O: V = { x: lerp(G.x, lapB.x, draw), y: lerp(G.y, lapB.y, draw) - 10 * bump01(draw) };
+    const rot = -8 * draw + 2 * wob(fl, 31.3, 0.4) * draw;
+    // Palms up under it to receive; round its sides once it is in his lap.
+    const hs = gripSetSpec(BALL_GRIP, O, rot, lerp(0.78, 0.2, draw));
+    const fit = reachFit(hs.front, hs.back, lift, Math.round(idleLean), 36, 24);
+    const lean = lerp(idleLean, Math.max(idleLean, fit.lean), reach) + 3 * draw;
+    const m = fromRest(hs, reach, 8);
+    return {
+      lean,
+      drop: fit.drop * reach,
+      headTilt: -0.35 * lean + (4 * reach + 6 * draw) * watch + 1.2 * wob(f, 6.6),
+      eyeUp: 0,
+      eyeDown: (0.15 * reach + 0.3 * draw) * watch,
+      ...m,
+      spread: 0.5,
+      curl: lerp(r.curl ?? 0.3, BALL_GRIP.curl, reach),
+      curlB: lerp(r.curlB ?? 0.3, BALL_GRIP.curl, reach),
+      shapeF: reach > 0.5 ? "cup" : "relaxed",
+      shapeB: reach > 0.5 ? "cup" : "relaxed",
+      joinW: reach,
+      gazeAt: O,
+      gazeW: 0.9 * reach * watch,
+      rigid: reach,
+      farOverCape: true,
+      farArmFront: 1,
+      hold6: { kind: "ball", x: O.x, y: O.y, rot, farW: 0.5, ofsF: hs.ofsF, ofsB: hs.ofsB, free: t < T.take, fold: 0 },
+      kneel: seat || undefined,
+    };
+  }
+
+  if (pose === "takeNote") {
+    const T = TAKE_NOTE_T;
+    const G = opts.giveAt ?? TAKE_NOTE_AT;
+    const foldT = (opts.foldAt ?? poseStart + T.fold) - poseStart;
+    const reach = smooth(t / T.reach);
+    const draw = smooth((t - T.take) / (T.chest - T.take));
+    const fold = smooth((t - foldT) / T.foldLen);
+    const chest: V = {
+      x: NOTE_CHEST.x + 0.6 * wob(fl, 18.3, 0.35) - 4 * fold,
+      y: NOTE_CHEST.y - lift - 0.35 * breath + 0.4 * wob(fl, 19.1, 0.35) + 3 * fold,
+    };
+    const O: V = { x: lerp(G.x, chest.x, draw), y: lerp(G.y, chest.y, draw) - 6 * bump01(draw) };
+    // The note tips toward his eyes while he looks at it; it levels as he closes his hands round it.
+    const rot = lerp(0, -12, draw) + 9 * fold;
+    // Palms up to receive; fingers at its two ends while he looks at it; then both hands cupped round it.
+    const hw = lerp(NOTE_SIZE.w / 2 + 0.5, 2.6, fold);
+    const spec = gripOf(1, hw, 0, NOTE_SIZE.h / 2, "cup", 0.5);
+    const under = t < T.take ? 0.75 : lerp(lerp(0.75, 0.12, draw), 0.85, fold);
+    const hs = gripSetSpec(spec, O, rot, under);
+    const fit = reachFit(hs.front, hs.back, lift, Math.round(idleLean), 34, 20);
+    const lean = lerp(idleLean, Math.max(idleLean, fit.lean), reach * (1 - draw)) + 3 * draw;
+    const m = fromRest(hs, reach, 6);
+    const holdEnds = draw * (1 - fold);
+    // Troubled while he looks at it (gentle brows, the book's "মহা ফ্যাসাদে"); it eases as he decides.
+    const worry = 0.8 * smooth((t - T.chest + 6) / 14) * (1 - fold);
+    // The decided nod: a small slow dip of the head after the hands close.
+    const nod = 4 * bump01((t - foldT - 6) / 16);
+    return {
+      lean,
+      drop: fit.drop * reach * (1 - draw),
+      headTilt: -0.35 * lean + (3 * reach + 8 * draw) * watch + nod + 1.2 * wob(f, 6.6),
+      eyeUp: 0,
+      eyeDown: (0.15 * reach + 0.45 * draw) * watch,
+      ...m,
+      spread: 0.5,
+      curl: lerp(lerp(r.curl ?? 0.3, 0.42, reach), 0.6, holdEnds) + 0.1 * fold,
+      curlB: lerp(lerp(r.curlB ?? 0.3, 0.42, reach), 0.6, holdEnds) + 0.1 * fold,
+      shapeF: reach < 0.5 ? "relaxed" : holdEnds > 0.5 ? "hold" : "cup",
+      shapeB: reach < 0.5 ? "relaxed" : holdEnds > 0.5 ? "hold" : "cup",
+      joinW: reach,
+      gazeAt: O,
+      gazeW: 0.9 * reach * watch,
+      rigid: reach,
+      farOverCape: true,
+      farArmFront: 1,
+      worry,
+      hold6: { kind: "note", x: O.x, y: O.y, rot, farW: 0.5, ofsF: hs.ofsF, ofsB: hs.ofsB, free: t < T.take, fold },
+      kneel: seat || undefined,
+    };
+  }
+
+  if (pose === "treasurer") {
+    const T = TREASURER_T;
+    const steps = opts.pickPlace && opts.pickPlace.length ? opts.pickPlace : TREASURER_STEPS;
+    const n = steps.length;
+    // Wrist targets: the fingertips (wrist + about 20 along DIR_DOWN) reach the ground point; hover a little above it.
+    const atGround = (p: V): V => ({ x: p.x - 7, y: p.y - 19 });
+    const hover = (p: V): V => ({ x: p.x - 7, y: p.y - 31 });
+    const tt = Math.max(0, t);
+    const c = Math.floor(tt / T.cycle);
+    const u = tt - c * T.cycle;
+    let front: V;
+    let reachW: number;
+    let hold = 0;
+    if (c >= n) {
+      const k = smooth((tt - n * T.cycle) / 18);
+      front = lerpV(hover(steps[n - 1].to), r.front, k);
+      reachW = 1 - k;
+    } else {
+      const fromW = atGround(steps[c].from);
+      const toW = atGround(steps[c].to);
+      const start = c === 0 ? r.front : hover(steps[c - 1].to);
+      if (u < 12) {
+        const s = smooth(u / 12);
+        front = { x: lerp(start.x, fromW.x, s), y: lerp(start.y, fromW.y, s) - (c === 0 ? 10 : 4) * bump01(s) };
+      } else if (u < 16) front = fromW;
+      else if (u < T.place) {
+        const s = smooth((u - 16) / (T.place - 16));
+        front = { x: lerp(fromW.x, toW.x, s), y: lerp(fromW.y, toW.y, s) - 9 * bump01(s) };
+      } else if (u < 34) front = toW;
+      else front = lerpV(toW, hover(steps[c].to), smooth((u - 34) / (T.cycle - 34)));
+      reachW = c === 0 && u < 12 ? smooth(u / 12) : 1;
+      hold = smooth((u - 12) / 3) * (1 - smooth((u - T.release + 1) / 3));
+    }
+    // Careful: a very small living jiggle only.
+    front = { x: front.x + 0.3 * wob(fl, 41.3, 0.8) * reachW, y: front.y + 0.25 * wob(fl, 43.9, 0.8) * reachW };
+    const curl = lerp(lerp(r.curl ?? 0.3, 0.1, reachW), 0.55, hold);
+    const fit = reachFit(front, null, lift, Math.round(idleLean), 30, 8);
+    const lean = lerp(idleLean, Math.max(idleLean, fit.lean), reachW) + 2 * reachW;
+    return {
+      lean,
+      drop: fit.drop * reachW,
+      headTilt: -0.4 * lean + 7 * reachW + 1.2 * wob(f, 6.6),
+      eyeUp: 0,
+      eyeDown: 0.6 * reachW,
+      front,
+      back: r.back,
+      frontDir: unit(lerp(r.frontDir.x, DIR_DOWN.x, reachW), lerp(r.frontDir.y, DIR_DOWN.y, reachW)),
+      backDir: r.backDir,
+      spread: 1,
+      curl,
+      curlB: r.curlB,
+      shapeF: reachW < 0.3 ? "relaxed" : hold > 0.5 ? "hold" : curl < 0.17 ? "open" : "relaxed",
+      shapeB: "relaxed",
+      turnF: REST_TURN,
+      turnB: r.turnB,
+      gazeAt: { x: front.x + 6, y: Math.min(-2, front.y + 18) },
+      gazeW: 0.9 * reachW,
+      kneel: seat || undefined,
+    };
+  }
+
+  // handOnHead
+  const T = HAND_ON_HEAD_T;
+  const up = smooth(t / T.up);
+  const off = smooth((t - T.off) / (T.open - T.off));
+  const onHead = up * (1 - off);
+  // The slap lands: a quick small dip of the head and shoulders, then it settles.
+  const impact = clamp(1 - Math.abs(t - T.up - 1) / 4, 0, 1);
+  const lean = idleLean - 1.5 * onHead + 1.2 * impact - 1.5 * off;
+  const headTilt = -0.35 * lean + 2.5 * impact + 3 * off + 1.2 * wob(f, 6.6);
+  // Top of the hair this frame (the head turns with the expression's playful tilt, about 2.5 degrees, added by the rig).
+  const plateHead = opts.headCY !== undefined;
+  const hairTop = (plateHead ? PLATE_HAIR_TOP : -41.5) * HEAD_K;
+  const hc = bodyPoint({ x: 0, y: opts.headCY ?? HEAD_CY }, lean, lift, 0);
+  const rotH = headTilt + 2.5;
+  const dHead = unit(rotV({ x: -0.94, y: 0.34 }, rotH).x, rotV({ x: -0.94, y: 0.34 }, rotH).y);
+  // Palm centre a little inside the hair's top edge, toward the near (front) side: the hand lies ON the hair.
+  const palmHead = addV(hc, rotV({ x: 5, y: hairTop + 7.5 }, rotH));
+  const wristHead: V = { x: palmHead.x - dHead.x * PALM_OFS, y: palmHead.y - dHead.y * PALM_OFS };
+  // Open palms, empty, held out a little in front of him.
+  const dOpenF = unit(0.45, -0.89);
+  const dOpenB = unit(0.12, -0.99);
+  const palmOpenF: V = { x: 68 + 0.5 * wob(fl, 21.7, 0.6), y: -92 - lift + 0.4 * wob(fl, 23.1, 0.6) };
+  const palmOpenB: V = { x: 16 + 0.5 * wob(fl, 25.3, 0.6), y: -104 - lift + 0.4 * wob(fl, 27.9, 0.6) };
+  const wOpenF: V = { x: palmOpenF.x - dOpenF.x * PALM_OFS, y: palmOpenF.y - dOpenF.y * PALM_OFS };
+  const wOpenB: V = { x: palmOpenB.x - dOpenB.x * PALM_OFS, y: palmOpenB.y - dOpenB.y * PALM_OFS };
+  // Near hand: rest -> head (swinging out round the face, never across it) -> open.
+  const toHead: V = { x: lerp(r.front.x, wristHead.x, up) + 34 * bump01(up), y: lerp(r.front.y, wristHead.y, up) };
+  const front: V = { x: lerp(toHead.x, wOpenF.x, off) + 16 * bump01(off), y: lerp(toHead.y, wOpenF.y, off) };
+  const back: V = lerpV(r.back, wOpenB, off);
+  const dirTo = unit(lerp(r.frontDir.x, dHead.x, up), lerp(r.frontDir.y, dHead.y, up));
+  return {
+    lean,
+    headTilt,
+    eyeUp: 0.45 * onHead,
+    eyeDown: 0,
+    front,
+    back,
+    frontDir: unit(lerp(dirTo.x, dOpenF.x, off), lerp(dirTo.y, dOpenF.y, off)),
+    backDir: unit(lerp(r.backDir.x, dOpenB.x, off), lerp(r.backDir.y, dOpenB.y, off)),
+    spread: 1,
+    curl: lerp(lerp(r.curl ?? 0.3, 0.2, up), 0.07, off),
+    curlB: lerp(r.curlB ?? 0.3, 0.07, off),
+    shapeF: up > 0.5 && off < 0.5 ? "open" : off >= 0.5 ? "open" : "relaxed",
+    shapeB: off > 0.5 ? "open" : "relaxed",
+    turnF: lerpA(lerpA(r.turnF ?? REST_TURN, -2.0, up), 0.35, off),
+    turnB: lerpA(r.turnB ?? REST_TURN, 0.35, off),
+    gazeAt: { x: 230, y: -150 },
+    gazeW: 0.45 * off,
+    joinW: off,
+    farOverCape: true,
+    farArmFront: off,
+    rigid: onHead,
+    // Open palms: the near elbow swings down through depth to his side (the forearm rises to the open hand).
+    elbowSwingF: off,
     kneel: seat || undefined,
   };
 }
@@ -2437,9 +2865,9 @@ const blendSolve = (a: Solve, b: Solve, e: number): Solve => {
     pot:
       a.pot || b.pot
         ? {
-            tilt: lerp(tiltA, tiltB, e),
-            opacity: a.pot && b.pot ? 1 : b.pot ? smooth((e - 0.5) / 0.5) : 1 - smooth(e / 0.5),
-          }
+          tilt: lerp(tiltA, tiltB, e),
+          opacity: a.pot && b.pot ? 1 : b.pot ? smooth((e - 0.5) / 0.5) : 1 - smooth(e / 0.5),
+        }
         : undefined,
     leaf: pickProp(a.leaf, b.leaf),
     flower: pickProp(a.flower, b.flower),
@@ -2452,6 +2880,23 @@ const blendSolve = (a: Solve, b: Solve, e: number): Solve => {
     // Episode 5 (undefined in Episodes 3 and 4).
     pebble: pickProp(a.pebble, b.pebble),
     turn: a.turn === undefined && b.turn === undefined ? undefined : lerp(a.turn ?? 0, b.turn ?? 0, e),
+    // Episode 6 (undefined in Episodes 3 to 5).
+    hold6:
+      a.hold6 && b.hold6 && a.hold6.kind === b.hold6.kind
+        ? {
+          ...b.hold6,
+          x: lerp(a.hold6.x, b.hold6.x, e),
+          y: lerp(a.hold6.y, b.hold6.y, e),
+          rot: lerp(a.hold6.rot, b.hold6.rot, e),
+          ofsF: lerpV(a.hold6.ofsF, b.hold6.ofsF, e),
+          ofsB: lerpV(a.hold6.ofsB, b.hold6.ofsB, e),
+          fold: lerp(a.hold6.fold, b.hold6.fold, e),
+        }
+        : (b.hold6 ?? a.hold6),
+    worry: a.worry === undefined && b.worry === undefined ? undefined : lerp(a.worry ?? 0, b.worry ?? 0, e),
+    farArmFront: a.farArmFront === undefined && b.farArmFront === undefined ? undefined : lerp(a.farArmFront ?? 0, b.farArmFront ?? 0, e),
+    elbowSwingF: a.elbowSwingF === undefined && b.elbowSwingF === undefined ? undefined : lerp(a.elbowSwingF ?? 0, b.elbowSwingF ?? 0, e),
+    farOverCape: e < 0.5 ? a.farOverCape : b.farOverCape,
   };
 };
 
@@ -3436,6 +3881,10 @@ const CALM: Record<SeatedPose, number> = {
   playPebbles: 0.3,
   strokeCow: 0,
   handsTo: 0,
+  takeBall: 0.3,
+  treasurer: 0.3,
+  takeNote: 0.4,
+  handOnHead: 0,
 };
 
 /** React useId values contain ':' (or other punctuation), which breaks url(#...) references. */
@@ -3531,10 +3980,14 @@ function seatedRig(props: SeatedChildProps) {
     handTurns,
     palmUp,
     blinkAt,
+    giveAt,
+    pickPlace,
+    foldAt,
+    build,
   } = props;
   // BAL-26: the "plate" design (Episode 5 on). Everything below is the classic design unless `plate` is set.
   const plate = design === "plate";
-  const PAL = plate ? PLATE_PAL : CLASSIC_PAL;
+  const PAL = plate ? (build === "healthy" ? PLATE_HEALTHY_PAL : PLATE_PAL) : CLASSIC_PAL;
   const ageY = clamp(age - 5, -1, 7);
   /** Plate: the head sits higher on a slim, visible neck (more with age); 0 in the classic design. */
   const headUp = plate ? PLATE_HEAD_UP + 1.2 * ageY : 0;
@@ -3562,6 +4015,9 @@ function seatedRig(props: SeatedChildProps) {
     handShapes,
     handTurns,
     palmUp: palmUp === undefined ? undefined : clamp(palmUp, 0, 1),
+    giveAt: giveAt ? { x: giveAt.x, y: giveAt.y } : undefined,
+    pickPlace: pickPlace ? pickPlace.map((q) => ({ from: { x: q.from.x, y: q.from.y }, to: { x: q.to.x, y: q.to.y } })) : undefined,
+    foldAt,
   };
   const look = clamp(face?.lookX ?? 0, -1, 1);
   const smileBase = clamp(face?.smile ?? 0.5, 0, 1);
@@ -3605,7 +4061,9 @@ function seatedRig(props: SeatedChildProps) {
     const br = breathAt(ff).b;
     const cur = solve(pose, ff, br, poseStart, solveOpts);
     if (prevPose && prevPose !== pose) {
-      const u = clamp((ff - poseStart) / 16, 0, 1);
+      // Episode 6 poses start from the resting hands themselves: from sitCross / idle they take only a 6-frame blend,
+      // so a quick gesture (the clap to the head) keeps its own timing. Every other blend is 16 frames, as before.
+      const u = clamp((ff - poseStart) / (EP6_POSES.has(pose) && (prevPose === "sitCross" || prevPose === "idle") ? 6 : 16), 0, 1);
       if (u < 1) {
         // The pose being left runs on its own clock (prevPoseStart), so at u = 0 the blend starts from
         // exactly the pose shown on the frame before the switch and keeps moving as it fades out.
@@ -3737,9 +4195,23 @@ function seatedRig(props: SeatedChildProps) {
   const lagK = sol.rigid ? 0.75 * (1 - 0.85 * clamp(sol.rigid, 0, 1)) : 0.75;
   const elbowDown = (sol.elbowDown ?? 0) > 0.5 ? 1.2 : 0;
   const ikA = (S: V, T: V, side: number) => (elbowDown > 0 ? ikPref(S, T, side, elbowDown) : ik(S, T, side));
+  // Episode 6: the near elbow swings through depth about the shoulder-wrist line (0 = the usual bend, 1 = the opposite
+  // bend; in between the upper arm and forearm foreshorten), so it can go from raised to low without a jump. The wrist
+  // stays exactly on its target. Undefined in every earlier pose (the usual IK, unchanged).
+  const ikSwing = (S: V, T: V, side: number, sw: number | undefined) => {
+    const r0 = ikA(S, T, side);
+    if (sw === undefined) return r0;
+    const d = unit(r0.H.x - S.x, r0.H.y - S.y);
+    const k = (r0.E.x - S.x) * d.x + (r0.E.y - S.y) * d.y;
+    const b = { x: S.x + d.x * k, y: S.y + d.y * k };
+    const c = Math.cos(Math.PI * clamp(sw, 0, 1));
+    return { E: { x: b.x + (r0.E.x - b.x) * c, y: b.y + (r0.E.y - b.y) * c }, H: r0.H };
+  };
+  const swingF = sol.elbowSwingF;
   const overlapArm = (sh: V, tgt: V, lagTgt: V, side: number): { E: V; H: V } => {
-    const now = ikA(sh, tgt, side);
-    const lag = ikA(sh, lagTgt, side);
+    const sw = side > 0 ? swingF : undefined;
+    const now = ikSwing(sh, tgt, side, sw);
+    const lag = ikSwing(sh, lagTgt, side, sw);
     const dn = unit(now.H.x - now.E.x, now.H.y - now.E.y);
     const dl = unit(lag.H.x - lag.E.x, lag.H.y - lag.E.y);
     const dd = unit(lerp(dn.x, dl.x, lagK), lerp(dn.y, dl.y, lagK));
@@ -3865,6 +4337,11 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   handTurns,
   palmUp,
   blinkAt,
+  giveAt,
+  pickPlace,
+  foldAt,
+  propInHands,
+  build,
 }) => {
   const uid = safeId(useId());
   const {
@@ -3968,6 +4445,10 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
     handTurns,
     palmUp,
     blinkAt,
+    giveAt,
+    pickPlace,
+    foldAt,
+    build,
   });
 
   const torso = TORSO_REL.map(up);
@@ -4168,7 +4649,8 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   // inner ends rise very softly when compassionate (kind, never worried).
   const browLift = 1.4 * eyeUp + 0.8 * ex.joy + 0.2 * ex.thought + 0.7 * ex.play;
   const browLiftN = browLift;
-  const browInner = 0.45 * ex.comp;
+  // Episode 6: a pose's troubled knit (takeNote) adds to the inner rise; exactly the old value when unset.
+  const browInner = sol.worry === undefined ? 0.45 * ex.comp : 0.45 * ex.comp + lerp(sol.worry, headLag.worry ?? sol.worry, 0.5);
   // Mouth shape.
   const mW = 1 + 0.12 * ex.joy + 0.05 * ex.comp + 0.08 * ex.play - 0.1 * ex.thought; // pressed lips are a touch narrower
   const mx = (v: number) => fx(6.3 + (v - 6.3) * mW);
@@ -4203,6 +4685,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
         rot={headRot}
         scale={HEAD_K}
         age={age}
+        {...(build === "healthy" ? { colors: PLATE_COLORS_HEALTHY, vivid: true } : {})}
         state={{
           turn: sx / 3,
           gazeX,
@@ -4422,7 +4905,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
             {over > 0.01 && (
               <g opacity={over.toFixed(3)}>
                 {armPaint(sh2, A.E, A.H, scaleA, base, shade, lit, wristRadius(turn), 6, PAL.skinLit)}
-                {/* the chadar's edge lying over the elbow: a soft tongue of cloth with a curved hem */}
+                {/* the chadar's edge lying over the elbow */}
                 <g transform={`translate(${fc.x.toFixed(2)} ${fc.y.toFixed(2)}) rotate(${ang.toFixed(2)})`}>
                   <path d="M-9 -10.5 L1.4 -10.5 Q5.4 -3 2.6 0 Q5.4 3 1.4 10.5 L-9 10.5 Z" fill={side < 0 ? PAL.cloth : PAL.clothMid} />
                   <path d="M1.4 -10.5 Q5.4 -3 2.6 0 Q5.4 3 1.4 10.5" fill="none" stroke={PAL.clothShade} strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
@@ -4484,6 +4967,28 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
     );
   }
 
+  // Episode 6: the scene's art for what is in his hands, drawn in world coordinates (undone rig transform).
+  const propEl = propInHands ? (
+    <g transform={`scale(${(1 / (flip ? -s : s)).toFixed(6)} ${(1 / s).toFixed(6)}) translate(${(-x).toFixed(3)} ${(-y).toFixed(3)})`}>{propInHands}</g>
+  ) : null;
+  // Episode 6 (plate): the far forearm and hand that work in front of the chest come over the near side of the chadar
+  // too (drawn again with the near forearm), so a ball or note held in both hands is never cut by the cape's edge.
+  const farOverEl =
+    plate && sol.farOverCape && joinOp > 0.01 ? (
+      <g opacity={joinOp.toFixed(3)}>
+        <g mask={`url(#${uid}-joinmask)`}>{armPaint(shB, armB.E, armB.H, 0.98, PAL.skinFar, PAL.skinDeep, 0.55, wristRadius(turnB), 6, PAL.skinLit)}</g>
+        {childHand(`${uid}-hcB4`, armB.H, backDir, shapeB, turnB, -1, PAL.skinFar, PAL.skinDeep, curlB, wristRadius(turnB), armB.E)}
+      </g>
+    ) : null;
+  const heldAll = propEl ? (
+    <>
+      {heldEl}
+      {propEl}
+    </>
+  ) : (
+    heldEl
+  );
+
   return (
     <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(flip ? -s : s).toFixed(4)} ${s.toFixed(4)})`}>
       {/* Balak glow: drawn by BirulGlow (src/episode03/rig/BirulGlow.tsx), placed by the scene. Nothing is drawn here. */}
@@ -4519,20 +5024,20 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       {/* Uttariya end falling down the back, behind everything */}
       {!plate && (
         <>
-      <path d={smoothClosed(tail)} fill={PAL.clothMid} />
-      <path d={smoothClosed(tail.map((p) => ({ x: p.x - 1.2, y: p.y - 0.6 })))} fill={PAL.cloth} opacity={0.9} />
-      <path
-        d={smoothOpen([
-          lerpV(tA, tB, 0.6),
-          { x: tB.x - 2 + 0.7 * swing + 0.5 * tv.x, y: tB.y + TAIL * 0.5 + 0.5 * tv.y },
-          { x: tB.x - 1 + swing + tv.x, y: tB.y + TAIL - 2 + tv.y },
-        ])}
-        fill="none"
-        stroke={PAL.clothInner}
-        strokeWidth={1.2}
-        strokeLinecap="round"
-        opacity={0.55}
-      />
+          <path d={smoothClosed(tail)} fill={PAL.clothMid} />
+          <path d={smoothClosed(tail.map((p) => ({ x: p.x - 1.2, y: p.y - 0.6 })))} fill={PAL.cloth} opacity={0.9} />
+          <path
+            d={smoothOpen([
+              lerpV(tA, tB, 0.6),
+              { x: tB.x - 2 + 0.7 * swing + 0.5 * tv.x, y: tB.y + TAIL * 0.5 + 0.5 * tv.y },
+              { x: tB.x - 1 + swing + tv.x, y: tB.y + TAIL - 2 + tv.y },
+            ])}
+            fill="none"
+            stroke={PAL.clothInner}
+            strokeWidth={1.2}
+            strokeLinecap="round"
+            opacity={0.55}
+          />
         </>
       )}
 
@@ -4552,16 +5057,16 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
         </>
       ) : (
         <>
-      {legs.soleUp ? soleUpFoot(foot(legs.ankleF, legs.toeF, PAL.skinFar, PAL.skinDeep, PAL.soleFar, PAL.skinLit)) : foot(legs.ankleF, legs.toeF, PAL.skinFar, PAL.skinDeep, PAL.soleFar, PAL.skinLit)}
-      {legPaint(legs.farShin, SHIN_R, PAL.skinFar, skinEdge(PAL.skinFar, PAL.skinDeep))}
-      <path d={limbD(legs.nearShin, SHIN_R, { dx: 2, dy: 3, grow: 0.8 })} fill={PAL.skinUnder} opacity={0.3} />
-      {legs.soleUp ? soleUpFoot(foot(legs.ankleN, legs.toeN, PAL.skin, PAL.skinShade, PAL.soleNear, PAL.skinLit)) : foot(legs.ankleN, legs.toeN, PAL.skin, PAL.skinShade, PAL.soleNear, PAL.skinLit)}
-      {legPaint(legs.nearShin, SHIN_R, PAL.skin, skinEdge(PAL.skin, PAL.skinShade))}
-      {edgeLine(legs.nearShin, SHIN_R, PAL.rim)}
-      {/* Round calves: a soft light on the lit side of each shin, deeper core shade below */}
-      <path d={topEdgeD(legs.farShin, SHIN_R, { grow: -2.6 })} fill="none" stroke={PAL.skin} strokeWidth={1.6} strokeLinecap="round" opacity={0.28} />
-      <path d={topEdgeD(legs.nearShin, SHIN_R, { grow: -2.8 })} fill="none" stroke={PAL.skinLit} strokeWidth={2} strokeLinecap="round" opacity={0.3} />
-      <path d={bottomEdgeD(legs.nearShin, SHIN_R, { grow: -2.6 })} fill="none" stroke={PAL.skinShade} strokeWidth={2.6} strokeLinecap="round" opacity={0.1} />
+          {legs.soleUp ? soleUpFoot(foot(legs.ankleF, legs.toeF, PAL.skinFar, PAL.skinDeep, PAL.soleFar, PAL.skinLit)) : foot(legs.ankleF, legs.toeF, PAL.skinFar, PAL.skinDeep, PAL.soleFar, PAL.skinLit)}
+          {legPaint(legs.farShin, SHIN_R, PAL.skinFar, skinEdge(PAL.skinFar, PAL.skinDeep))}
+          <path d={limbD(legs.nearShin, SHIN_R, { dx: 2, dy: 3, grow: 0.8 })} fill={PAL.skinUnder} opacity={0.3} />
+          {legs.soleUp ? soleUpFoot(foot(legs.ankleN, legs.toeN, PAL.skin, PAL.skinShade, PAL.soleNear, PAL.skinLit)) : foot(legs.ankleN, legs.toeN, PAL.skin, PAL.skinShade, PAL.soleNear, PAL.skinLit)}
+          {legPaint(legs.nearShin, SHIN_R, PAL.skin, skinEdge(PAL.skin, PAL.skinShade))}
+          {edgeLine(legs.nearShin, SHIN_R, PAL.rim)}
+          {/* Round calves: a soft light on the lit side of each shin, deeper core shade below */}
+          <path d={topEdgeD(legs.farShin, SHIN_R, { grow: -2.6 })} fill="none" stroke={PAL.skin} strokeWidth={1.6} strokeLinecap="round" opacity={0.28} />
+          <path d={topEdgeD(legs.nearShin, SHIN_R, { grow: -2.8 })} fill="none" stroke={PAL.skinLit} strokeWidth={2} strokeLinecap="round" opacity={0.3} />
+          <path d={bottomEdgeD(legs.nearShin, SHIN_R, { grow: -2.6 })} fill="none" stroke={PAL.skinShade} strokeWidth={2.6} strokeLinecap="round" opacity={0.1} />
         </>
       )}
 
@@ -4598,19 +5103,19 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
               <path d="M-50 -39 Q-28 -29 -6 -31.5" fill="none" stroke={PAL.clothLit} strokeWidth={1.1} strokeLinecap="round" opacity={0.85} />
               {!plate && (
                 <>
-              {/* Front pleats (kochi): a narrow fan falling from the tuck, darker inner folds */}
-              <path
-                d={smoothClosed([
-                  { x: -1, y: -56 },
-                  { x: 11, y: -56 },
-                  { x: 16, y: -20 + flut(81, 0.4) },
-                  { x: 7, y: -18 },
-                  { x: -3, y: -19.5 + flut(83, 0.4) },
-                ])}
-                fill={PAL.clothMid}
-              />
-              <path d="M3.5 -55 Q3 -37 2 -19 M7.5 -55 Q9 -37 10.5 -19" fill="none" stroke={PAL.clothInner} strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
-              <path d="M0 -55 Q-1 -37 -2 -19.5 M5.5 -55 Q6 -37 6.2 -18.5" fill="none" stroke={PAL.clothLit} strokeWidth={1} strokeLinecap="round" opacity={0.8} />
+                  {/* Front pleats (kochi): a narrow fan falling from the tuck, darker inner folds */}
+                  <path
+                    d={smoothClosed([
+                      { x: -1, y: -56 },
+                      { x: 11, y: -56 },
+                      { x: 16, y: -20 + flut(81, 0.4) },
+                      { x: 7, y: -18 },
+                      { x: -3, y: -19.5 + flut(83, 0.4) },
+                    ])}
+                    fill={PAL.clothMid}
+                  />
+                  <path d="M3.5 -55 Q3 -37 2 -19 M7.5 -55 Q9 -37 10.5 -19" fill="none" stroke={PAL.clothInner} strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
+                  <path d="M0 -55 Q-1 -37 -2 -19.5 M5.5 -55 Q6 -37 6.2 -18.5" fill="none" stroke={PAL.clothLit} strokeWidth={1} strokeLinecap="round" opacity={0.8} />
                 </>
               )}
             </>
@@ -4672,7 +5177,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
 
       {/* Neck: short and soft, behind the torso so only its top shows */}
       {plate ? (
-        <ThakurNeckPlate base={neckBase} top={neckTop} scale={HEAD_K} />
+        <ThakurNeckPlate base={neckBase} top={neckTop} scale={HEAD_K} {...(build === "healthy" ? { colors: PLATE_COLORS_HEALTHY } : {})} />
       ) : (
         limb([neckBase, neckTop], [8.6, 8.2], PAL.skin, skinEdge(PAL.skin, PAL.skinShade))
       )}
@@ -4721,77 +5226,77 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       {plate && plateWrapEl}
       {!plate && (
         <>
-      <path d={smoothClosed(bandShadow)} fill={PAL.skinDeep} opacity={0.3} />
-      <path d={smoothClosed(bandPts)} fill={PAL.clothShade} />
-      <path d={smoothClosed(bandPts.map((p) => ({ x: p.x - 0.9, y: p.y - 1.1 })))} fill={`url(#${uid}-cloth)`} />
-      <path d={smoothClosed(innerFold)} fill={PAL.clothInner} opacity={0.5} />
-      <path
-        d={relUp([
-          { x: -32, y: -96 },
-          { x: -18, y: -97 },
-          { x: -2, y: -84 },
-          { x: 14, y: -64 },
-          { x: 25, y: -44 },
-        ])}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1.25}
-        strokeLinecap="round"
-        opacity={0.85}
-      />
-      <path
-        d={relUp([
-          { x: -34, y: -88 },
-          { x: -20, y: -84 },
-          { x: -6, y: -71 },
-          { x: 8, y: -54 },
-          { x: 18, y: -40 },
-        ])}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1.1}
-        strokeLinecap="round"
-        opacity={0.7}
-      />
-      <path
-        d={relUp(upperRel.slice(2, 9).map((p) => ({ x: p.x + 1.4, y: p.y + 1.6 })))}
-        fill="none"
-        stroke={PAL.clothLit}
-        strokeWidth={1.4}
-        strokeLinecap="round"
-        opacity={0.95}
-      />
-      {/* Fold where the cloth turns over the far shoulder */}
-      <path
-        d={relUp([
-          { x: -35, y: -95 },
-          { x: -29, y: -100 },
-          { x: -21, y: -103 },
-        ])}
-        fill="none"
-        stroke={PAL.clothShade}
-        strokeWidth={1.1}
-        strokeLinecap="round"
-        opacity={0.7}
-      />
-      {/* Folds that answer the body: the cloth bunches at the near hip when he bends forward, and pulls
+          <path d={smoothClosed(bandShadow)} fill={PAL.skinDeep} opacity={0.3} />
+          <path d={smoothClosed(bandPts)} fill={PAL.clothShade} />
+          <path d={smoothClosed(bandPts.map((p) => ({ x: p.x - 0.9, y: p.y - 1.1 })))} fill={`url(#${uid}-cloth)`} />
+          <path d={smoothClosed(innerFold)} fill={PAL.clothInner} opacity={0.5} />
+          <path
+            d={relUp([
+              { x: -32, y: -96 },
+              { x: -18, y: -97 },
+              { x: -2, y: -84 },
+              { x: 14, y: -64 },
+              { x: 25, y: -44 },
+            ])}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1.25}
+            strokeLinecap="round"
+            opacity={0.85}
+          />
+          <path
+            d={relUp([
+              { x: -34, y: -88 },
+              { x: -20, y: -84 },
+              { x: -6, y: -71 },
+              { x: 8, y: -54 },
+              { x: 18, y: -40 },
+            ])}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1.1}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+          <path
+            d={relUp(upperRel.slice(2, 9).map((p) => ({ x: p.x + 1.4, y: p.y + 1.6 })))}
+            fill="none"
+            stroke={PAL.clothLit}
+            strokeWidth={1.4}
+            strokeLinecap="round"
+            opacity={0.95}
+          />
+          {/* Fold where the cloth turns over the far shoulder */}
+          <path
+            d={relUp([
+              { x: -35, y: -95 },
+              { x: -29, y: -100 },
+              { x: -21, y: -103 },
+            ])}
+            fill="none"
+            stroke={PAL.clothShade}
+            strokeWidth={1.1}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+          {/* Folds that answer the body: the cloth bunches at the near hip when he bends forward, and pulls
           over the far shoulder toward the elbow when that arm rises */}
-      <path
-        d={`${relUp([{ x: 14, y: -50 }, { x: 20, y: -47 }, { x: 26, y: -48 }])} ${relUp([{ x: 9, y: -44 }, { x: 17, y: -40 }, { x: 25, y: -41 }])}`}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1.1}
-        strokeLinecap="round"
-        opacity={(0.8 * leanW).toFixed(3)}
-      />
-      <path
-        d={`M${pt(up({ x: -30, y: -100 }))} Q${pt(lerpV(up({ x: -34, y: -94 }), armB.E, 0.15))} ${pt(lerpV(up({ x: -36, y: -88 }), armB.E, 0.25))}`}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1.1}
-        strokeLinecap="round"
-        opacity={(0.25 + 0.5 * farArmRaise).toFixed(3)}
-      />
+          <path
+            d={`${relUp([{ x: 14, y: -50 }, { x: 20, y: -47 }, { x: 26, y: -48 }])} ${relUp([{ x: 9, y: -44 }, { x: 17, y: -40 }, { x: 25, y: -41 }])}`}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1.1}
+            strokeLinecap="round"
+            opacity={(0.8 * leanW).toFixed(3)}
+          />
+          <path
+            d={`M${pt(up({ x: -30, y: -100 }))} Q${pt(lerpV(up({ x: -34, y: -94 }), armB.E, 0.15))} ${pt(lerpV(up({ x: -36, y: -88 }), armB.E, 0.25))}`}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1.1}
+            strokeLinecap="round"
+            opacity={(0.25 + 0.5 * farArmRaise).toFixed(3)}
+          />
         </>
       )}
       {/* The near shoulder's skin creases softly toward the armpit when the near arm lifts */}
@@ -4810,52 +5315,59 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       <path d={smoothOpen(hipWrap.slice(6, 11))} fill="none" stroke={PAL.clothShade} strokeWidth={1.1} strokeLinecap="round" opacity={0.45} />
       {!plate && (
         <>
-      <path
-        d={relUp([
-          { x: 3, y: -31 },
-          { x: 0, y: -20 },
-          { x: -5, y: -9 },
-        ])}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1.15}
-        strokeLinecap="round"
-      />
-      <path
-        d={relUp([
-          { x: 5, y: -31 },
-          { x: 10, y: -20 },
-          { x: 15, y: -9.5 },
-        ])}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1.15}
-        strokeLinecap="round"
-      />
-      <path
-        d={relUp([
-          { x: -27, y: -30 },
-          { x: -18, y: -21 },
-          { x: -9, y: -10 },
-        ])}
-        fill="none"
-        stroke={PAL.clothFold}
-        strokeWidth={1}
-        strokeLinecap="round"
-        opacity={0.7}
-      />
-      <path d={smoothOpen(hipWrap.slice(0, 5).map((p) => ({ x: p.x, y: p.y + 2 })))} fill="none" stroke={PAL.clothMid} strokeWidth={3.2} strokeLinecap="round" />
-      <path d={smoothOpen(hipWrap.slice(0, 5).map((p) => ({ x: p.x - 0.3, y: p.y + 0.9 })))} fill="none" stroke={PAL.clothLit} strokeWidth={1.4} strokeLinecap="round" />
-      <ellipse
-        cx={knot.x.toFixed(2)}
-        cy={knot.y.toFixed(2)}
-        rx={4.4}
-        ry={3}
-        fill={PAL.clothMid}
-        transform={`rotate(${sol.lean.toFixed(2)} ${knot.x.toFixed(2)} ${knot.y.toFixed(2)})`}
-      />
-      <ellipse cx={(knot.x - 0.8).toFixed(2)} cy={(knot.y - 0.8).toFixed(2)} rx={2.4} ry={1.4} fill={PAL.clothLit} opacity={0.9} />
+          <path
+            d={relUp([
+              { x: 3, y: -31 },
+              { x: 0, y: -20 },
+              { x: -5, y: -9 },
+            ])}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1.15}
+            strokeLinecap="round"
+          />
+          <path
+            d={relUp([
+              { x: 5, y: -31 },
+              { x: 10, y: -20 },
+              { x: 15, y: -9.5 },
+            ])}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1.15}
+            strokeLinecap="round"
+          />
+          <path
+            d={relUp([
+              { x: -27, y: -30 },
+              { x: -18, y: -21 },
+              { x: -9, y: -10 },
+            ])}
+            fill="none"
+            stroke={PAL.clothFold}
+            strokeWidth={1}
+            strokeLinecap="round"
+            opacity={0.7}
+          />
+          <path d={smoothOpen(hipWrap.slice(0, 5).map((p) => ({ x: p.x, y: p.y + 2 })))} fill="none" stroke={PAL.clothMid} strokeWidth={3.2} strokeLinecap="round" />
+          <path d={smoothOpen(hipWrap.slice(0, 5).map((p) => ({ x: p.x - 0.3, y: p.y + 0.9 })))} fill="none" stroke={PAL.clothLit} strokeWidth={1.4} strokeLinecap="round" />
+          <ellipse
+            cx={knot.x.toFixed(2)}
+            cy={knot.y.toFixed(2)}
+            rx={4.4}
+            ry={3}
+            fill={PAL.clothMid}
+            transform={`rotate(${sol.lean.toFixed(2)} ${knot.x.toFixed(2)} ${knot.y.toFixed(2)})`}
+          />
+          <ellipse cx={(knot.x - 0.8).toFixed(2)} cy={(knot.y - 0.8).toFixed(2)} rx={2.4} ry={1.4} fill={PAL.clothLit} opacity={0.9} />
         </>
+      )}
+      {/* Episode 6 (plate): the far arm over the chest wrap, under the far cape, while it reaches in front of him */}
+      {plate && (sol.farArmFront ?? 0) > 0.3 && (
+        <g opacity={smooth(((sol.farArmFront ?? 0) - 0.3) / 0.4).toFixed(3)}>
+          {armPaint(shB, armB.E, armB.H, 0.98, PAL.skinFar, PAL.skinDeep, 0.55, wristRadius(turnB), 0, PAL.skinLit)}
+          {childHand(`${uid}-hcB5`, armB.H, backDir, shapeB, turnB, -1, PAL.skinFar, PAL.skinDeep, curlB, wristRadius(turnB), armB.E)}
+        </g>
       )}
       {plateCapeShadows}
       {plateCapeB}
@@ -4887,119 +5399,119 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       {plate ? (
         plateHeadEl
       ) : (
-      <g transform={`translate(${headC.x.toFixed(2)} ${headC.y.toFixed(2)}) rotate(${headRot.toFixed(2)}) scale(${HEAD_K})`}>
-        {/* Hair mass, fuller toward the back of the head */}
-        <circle cx={-3} cy={-6} r={33} fill={HAIR} />
-        <ellipse cx={-13} cy={-2} rx={26} ry={30} fill={HAIR} />
-        {NAPE.map(([cx, cy, r], i) => curl(cx, cy, r, `n${i}`))}
+        <g transform={`translate(${headC.x.toFixed(2)} ${headC.y.toFixed(2)}) rotate(${headRot.toFixed(2)}) scale(${HEAD_K})`}>
+          {/* Hair mass, fuller toward the back of the head */}
+          <circle cx={-3} cy={-6} r={33} fill={HAIR} />
+          <ellipse cx={-13} cy={-2} rx={26} ry={30} fill={HAIR} />
+          {NAPE.map(([cx, cy, r], i) => curl(cx, cy, r, `n${i}`))}
 
-        {/* Face: shade silhouette, then the lit face with a soft radial falloff; round cheeks */}
-        <circle r={31} fill={PAL.skinShade} />
-        <ellipse cx={4.5} cy={9} rx={27} ry={22} fill={PAL.skinShade} />
-        <circle cx={-1.4} cy={-1.3} r={29.6} fill={`url(#${uid}-face)`} />
-        <ellipse cx={3.3} cy={7.8} rx={25.8} ry={20.8} fill={`url(#${uid}-face)`} />
-        {/* Forehead glow */}
-        <ellipse cx={fx(0)} cy={-12} rx={14} ry={7} fill={PAL.skinLit} opacity={0.3} />
+          {/* Face: shade silhouette, then the lit face with a soft radial falloff; round cheeks */}
+          <circle r={31} fill={PAL.skinShade} />
+          <ellipse cx={4.5} cy={9} rx={27} ry={22} fill={PAL.skinShade} />
+          <circle cx={-1.4} cy={-1.3} r={29.6} fill={`url(#${uid}-face)`} />
+          <ellipse cx={3.3} cy={7.8} rx={25.8} ry={20.8} fill={`url(#${uid}-face)`} />
+          {/* Forehead glow */}
+          <ellipse cx={fx(0)} cy={-12} rx={14} ry={7} fill={PAL.skinLit} opacity={0.3} />
 
-        {/* Ear on the far side */}
-        <ellipse cx={-26.5} cy={3} rx={5} ry={7} fill={PAL.skinFar} />
-        <path d="M-25 -1.5 Q-28.5 2.5 -25.5 7" fill="none" stroke={PAL.skinShade} strokeWidth={1.2} strokeLinecap="round" />
+          {/* Ear on the far side */}
+          <ellipse cx={-26.5} cy={3} rx={5} ry={7} fill={PAL.skinFar} />
+          <path d="M-25 -1.5 Q-28.5 2.5 -25.5 7" fill="none" stroke={PAL.skinShade} strokeWidth={1.2} strokeLinecap="round" />
 
-        {/* Hair cap with a soft shadow on the forehead, then the curly fringe */}
-        <path
-          d="M-35 9.6 L-24.5 5.6 C-22.5 -4.4 -18.5 -14.4 -9.5 -19.4 C-0.5 -23.9 12 -23.9 20 -19.4 C26 -15.4 29 -9.4 31 -2.4 L35 -6.4 C35 -31 18 -41.5 -4 -41.5 C-27 -41.5 -38 -27 -36.5 -6.4 Z"
-          fill={PAL.skinShade}
-          opacity={0.3}
-        />
-        <path
-          d="M-35 8 L-24.5 4 C-22.5 -6 -18.5 -16 -9.5 -21 C-0.5 -25.5 12 -25.5 20 -21 C26 -17 29 -11 31 -4 L35 -8 C35 -31 18 -41.5 -4 -41.5 C-27 -41.5 -38 -27 -36.5 -8 Z"
-          fill={HAIR}
-        />
-        <ellipse cx={-8} cy={-35.5} rx={13} ry={3.4} fill={HAIR_SHEEN} opacity={0.24} transform="rotate(-8 -8 -35.5)" />
-
-        {/* Eyes: far eye a little narrower (three-quarter turn) */}
-        {eyeAt(sx - 5.4, 2.4, 0, 0.88)}
-        {eyeAt(sx + 13, 2.4, 1, 1)}
-
-        {/* Brows: thin, soft, gently arched; shaped by the expression */}
-        <path
-          d={`M${fx(-10.2)} ${(-7.6 - 0.3 * browLift).toFixed(2)} Q${fx(-5.4)} ${(-10.6 - browLift).toFixed(2)} ${fx(-0.8)} ${(-8.6 - browInner - 0.5 * browLift).toFixed(2)} M${fx(7.6)} ${(-8.6 - browInner - 0.5 * browLiftN).toFixed(2)} Q${fx(13)} ${(-11 - browLiftN).toFixed(2)} ${fx(18.6)} ${(-7.8 - 0.3 * browLiftN).toFixed(2)}`}
-          fill="none"
-          stroke={BROW}
-          strokeWidth={1.35}
-          strokeLinecap="round"
-          opacity={0.72}
-        />
-
-        {/* Blush on the round cheeks, which lift and catch the light when he smiles */}
-        <ellipse cx={fx(-8)} cy={(10.5 - cheekUp).toFixed(2)} rx={6 * (1 + 0.12 * ex.joy)} ry={4.2} fill={`url(#${uid}-blush)`} />
-        <ellipse cx={fx(17.5)} cy={(10.5 - cheekUp).toFixed(2)} rx={7 * (1 + 0.12 * ex.joy)} ry={4.6} fill={`url(#${uid}-blush)`} />
-        {cheekUp > 0.05 && (
-          <ellipse cx={fx(16.5)} cy={(8.6 - cheekUp).toFixed(2)} rx={4.2} ry={2.2} fill={PAL.skinLit} opacity={(0.18 * cheekUp).toFixed(3)} />
-        )}
-
-        {/* Small soft nose */}
-        <path d={`M${fx(6.4)} 7.6 Q${fx(8.8)} 11 ${fx(5.6)} 12.3`} fill="none" stroke={PAL.skinShade} strokeWidth={1.25} strokeLinecap="round" opacity={0.7} />
-        <circle cx={fx(5.3)} cy={8.8} r={1.1} fill={PAL.skinLit} opacity={0.7} />
-
-        {/* Mouth. Closed: a calm, faint smile with a soft lower lip (pressed and narrower in thought,
-            lifted on the near side when playful). Open: rounded, crossfaded by mouthOpen (speech or a soft laugh). */}
-        <g opacity={(1 - mouthOpen).toFixed(3)}>
+          {/* Hair cap with a soft shadow on the forehead, then the curly fringe */}
           <path
-            d={`M${mx(2)} ${(16.8 - cornerUp).toFixed(2)} Q${mx(6.3)} ${(18.4 + 1.8 * smile - 0.9 * pressed).toFixed(2)} ${mx(10.6)} ${(16.8 - cornerUp).toFixed(2)}`}
-            fill="none"
-            stroke={MOUTH}
-            strokeWidth={1.4}
-            strokeLinecap="round"
+            d="M-35 9.6 L-24.5 5.6 C-22.5 -4.4 -18.5 -14.4 -9.5 -19.4 C-0.5 -23.9 12 -23.9 20 -19.4 C26 -15.4 29 -9.4 31 -2.4 L35 -6.4 C35 -31 18 -41.5 -4 -41.5 C-27 -41.5 -38 -27 -36.5 -6.4 Z"
+            fill={PAL.skinShade}
+            opacity={0.3}
           />
-          {/* Tiny matching upturns at BOTH corners: a symmetric, gentle smile (never a one-sided smirk) */}
           <path
-            d={`M${mx(10.5)} ${(16.85 - cornerUp).toFixed(2)} Q${mx(11.3)} ${(16.5 - cornerUp).toFixed(2)} ${mx(11.6)} ${(15.9 - cornerUp).toFixed(2)} M${mx(2.1)} ${(16.85 - cornerUp).toFixed(2)} Q${mx(1.3)} ${(16.5 - cornerUp).toFixed(2)} ${mx(1)} ${(15.9 - cornerUp).toFixed(2)}`}
+            d="M-35 8 L-24.5 4 C-22.5 -6 -18.5 -16 -9.5 -21 C-0.5 -25.5 12 -25.5 20 -21 C26 -17 29 -11 31 -4 L35 -8 C35 -31 18 -41.5 -4 -41.5 C-27 -41.5 -38 -27 -36.5 -8 Z"
+            fill={HAIR}
+          />
+          <ellipse cx={-8} cy={-35.5} rx={13} ry={3.4} fill={HAIR_SHEEN} opacity={0.24} transform="rotate(-8 -8 -35.5)" />
+
+          {/* Eyes: far eye a little narrower (three-quarter turn) */}
+          {eyeAt(sx - 5.4, 2.4, 0, 0.88)}
+          {eyeAt(sx + 13, 2.4, 1, 1)}
+
+          {/* Brows: thin, soft, gently arched; shaped by the expression */}
+          <path
+            d={`M${fx(-10.2)} ${(-7.6 - 0.3 * browLift).toFixed(2)} Q${fx(-5.4)} ${(-10.6 - browLift).toFixed(2)} ${fx(-0.8)} ${(-8.6 - browInner - 0.5 * browLift).toFixed(2)} M${fx(7.6)} ${(-8.6 - browInner - 0.5 * browLiftN).toFixed(2)} Q${fx(13)} ${(-11 - browLiftN).toFixed(2)} ${fx(18.6)} ${(-7.8 - 0.3 * browLiftN).toFixed(2)}`}
             fill="none"
-            stroke={MOUTH}
-            strokeWidth={0.8}
+            stroke={BROW}
+            strokeWidth={1.35}
             strokeLinecap="round"
-            opacity={clamp(0.45 * smile, 0, 0.6).toFixed(3)}
+            opacity={0.72}
           />
-          <ellipse
-            cx={mx(6.3)}
-            cy={(20.2 - 0.6 * pressed).toFixed(2)}
-            rx={(2.5 * mW * (1 - 0.15 * pressed)).toFixed(2)}
-            ry={0.95}
-            fill={LIP}
-            opacity={(0.45 - 0.1 * pressed).toFixed(3)}
-          />
-          {pressed > 0.02 && (
-            <path d={`M${mx(4.6)} 22.6 Q${mx(6.3)} 23.4 ${mx(8)} 22.6`} fill="none" stroke={PAL.skinShade} strokeWidth={0.7} strokeLinecap="round" opacity={(0.25 * pressed).toFixed(3)} />
+
+          {/* Blush on the round cheeks, which lift and catch the light when he smiles */}
+          <ellipse cx={fx(-8)} cy={(10.5 - cheekUp).toFixed(2)} rx={6 * (1 + 0.12 * ex.joy)} ry={4.2} fill={`url(#${uid}-blush)`} />
+          <ellipse cx={fx(17.5)} cy={(10.5 - cheekUp).toFixed(2)} rx={7 * (1 + 0.12 * ex.joy)} ry={4.6} fill={`url(#${uid}-blush)`} />
+          {cheekUp > 0.05 && (
+            <ellipse cx={fx(16.5)} cy={(8.6 - cheekUp).toFixed(2)} rx={4.2} ry={2.2} fill={PAL.skinLit} opacity={(0.18 * cheekUp).toFixed(3)} />
           )}
-        </g>
-        {mouthOpen > 0.01 && (
-          <g opacity={mouthOpen.toFixed(3)}>
-            <path
-              d={`M${mx(2.4)} ${(16.8 - cornerUp - 0.3 * ex.joy).toFixed(2)} Q${mx(6.2)} ${(16.2 + 0.4 * ex.joy).toFixed(2)} ${mx(10.2)} ${(16.8 - cornerUp - 0.3 * ex.joy).toFixed(2)} Q${mx(9.8)} ${(17.6 + 4 * mouthOpen).toFixed(2)} ${mx(6.2)} ${(18 + 4.6 * mouthOpen).toFixed(2)} Q${mx(2.6)} ${(17.6 + 4 * mouthOpen).toFixed(2)} ${mx(2.4)} ${(16.8 - cornerUp - 0.3 * ex.joy).toFixed(2)} Z`}
-              fill={MOUTH_DARK}
-            />
-            {/* A glimpse of small upper teeth in a soft laugh */}
-            {ex.joy > 0.05 && mouthOpen > 0.15 && (
-              <path
-                d={`M${mx(3.6)} ${(17 - 0.5 * cornerUp).toFixed(2)} Q${mx(6.2)} ${(17.1 + 0.4 * ex.joy).toFixed(2)} ${mx(8.9)} ${(17 - 0.5 * cornerUp).toFixed(2)} Q${mx(6.2)} ${(18.1 + 0.4 * ex.joy).toFixed(2)} ${mx(3.6)} ${(17 - 0.5 * cornerUp).toFixed(2)} Z`}
-                fill={EYE_WHITE}
-                opacity={(0.6 * ex.joy * smooth((mouthOpen - 0.15) / 0.15)).toFixed(3)}
-              />
-            )}
-            <ellipse cx={mx(6.2)} cy={(17.5 + 3 * mouthOpen).toFixed(2)} rx={2.3 * mW} ry={(0.6 + 1.1 * mouthOpen).toFixed(2)} fill={MOUTH_INNER} />
-          </g>
-        )}
-        {/* Soft chin */}
-        <path d={`M${fx(3.6)} 24 Q${fx(6.2)} 25.4 ${fx(8.8)} 24`} fill="none" stroke={PAL.skinShade} strokeWidth={0.9} strokeLinecap="round" opacity={0.3} />
 
-        {/* Curly fringe along the hairline, then the crown curls on the silhouette */}
-        {FRINGE.map(([cx, cy, r], i) => curl(cx, cy, r, `f${i}`))}
-        {CROWN.map(([a, r], i) => {
-          const rad = (a * Math.PI) / 180;
-          return curl(-3 + Math.cos(rad) * 31.5, -6 + Math.sin(rad) * 31.5, r, `c${i}`);
-        })}
-      </g>
+          {/* Small soft nose */}
+          <path d={`M${fx(6.4)} 7.6 Q${fx(8.8)} 11 ${fx(5.6)} 12.3`} fill="none" stroke={PAL.skinShade} strokeWidth={1.25} strokeLinecap="round" opacity={0.7} />
+          <circle cx={fx(5.3)} cy={8.8} r={1.1} fill={PAL.skinLit} opacity={0.7} />
+
+          {/* Mouth. Closed: a calm, faint smile with a soft lower lip (pressed and narrower in thought,
+            lifted on the near side when playful). Open: rounded, crossfaded by mouthOpen (speech or a soft laugh). */}
+          <g opacity={(1 - mouthOpen).toFixed(3)}>
+            <path
+              d={`M${mx(2)} ${(16.8 - cornerUp).toFixed(2)} Q${mx(6.3)} ${(18.4 + 1.8 * smile - 0.9 * pressed).toFixed(2)} ${mx(10.6)} ${(16.8 - cornerUp).toFixed(2)}`}
+              fill="none"
+              stroke={MOUTH}
+              strokeWidth={1.4}
+              strokeLinecap="round"
+            />
+            {/* Tiny matching upturns at BOTH corners: a symmetric, gentle smile (never a one-sided smirk) */}
+            <path
+              d={`M${mx(10.5)} ${(16.85 - cornerUp).toFixed(2)} Q${mx(11.3)} ${(16.5 - cornerUp).toFixed(2)} ${mx(11.6)} ${(15.9 - cornerUp).toFixed(2)} M${mx(2.1)} ${(16.85 - cornerUp).toFixed(2)} Q${mx(1.3)} ${(16.5 - cornerUp).toFixed(2)} ${mx(1)} ${(15.9 - cornerUp).toFixed(2)}`}
+              fill="none"
+              stroke={MOUTH}
+              strokeWidth={0.8}
+              strokeLinecap="round"
+              opacity={clamp(0.45 * smile, 0, 0.6).toFixed(3)}
+            />
+            <ellipse
+              cx={mx(6.3)}
+              cy={(20.2 - 0.6 * pressed).toFixed(2)}
+              rx={(2.5 * mW * (1 - 0.15 * pressed)).toFixed(2)}
+              ry={0.95}
+              fill={LIP}
+              opacity={(0.45 - 0.1 * pressed).toFixed(3)}
+            />
+            {pressed > 0.02 && (
+              <path d={`M${mx(4.6)} 22.6 Q${mx(6.3)} 23.4 ${mx(8)} 22.6`} fill="none" stroke={PAL.skinShade} strokeWidth={0.7} strokeLinecap="round" opacity={(0.25 * pressed).toFixed(3)} />
+            )}
+          </g>
+          {mouthOpen > 0.01 && (
+            <g opacity={mouthOpen.toFixed(3)}>
+              <path
+                d={`M${mx(2.4)} ${(16.8 - cornerUp - 0.3 * ex.joy).toFixed(2)} Q${mx(6.2)} ${(16.2 + 0.4 * ex.joy).toFixed(2)} ${mx(10.2)} ${(16.8 - cornerUp - 0.3 * ex.joy).toFixed(2)} Q${mx(9.8)} ${(17.6 + 4 * mouthOpen).toFixed(2)} ${mx(6.2)} ${(18 + 4.6 * mouthOpen).toFixed(2)} Q${mx(2.6)} ${(17.6 + 4 * mouthOpen).toFixed(2)} ${mx(2.4)} ${(16.8 - cornerUp - 0.3 * ex.joy).toFixed(2)} Z`}
+                fill={MOUTH_DARK}
+              />
+              {/* A glimpse of small upper teeth in a soft laugh */}
+              {ex.joy > 0.05 && mouthOpen > 0.15 && (
+                <path
+                  d={`M${mx(3.6)} ${(17 - 0.5 * cornerUp).toFixed(2)} Q${mx(6.2)} ${(17.1 + 0.4 * ex.joy).toFixed(2)} ${mx(8.9)} ${(17 - 0.5 * cornerUp).toFixed(2)} Q${mx(6.2)} ${(18.1 + 0.4 * ex.joy).toFixed(2)} ${mx(3.6)} ${(17 - 0.5 * cornerUp).toFixed(2)} Z`}
+                  fill={EYE_WHITE}
+                  opacity={(0.6 * ex.joy * smooth((mouthOpen - 0.15) / 0.15)).toFixed(3)}
+                />
+              )}
+              <ellipse cx={mx(6.2)} cy={(17.5 + 3 * mouthOpen).toFixed(2)} rx={2.3 * mW} ry={(0.6 + 1.1 * mouthOpen).toFixed(2)} fill={MOUTH_INNER} />
+            </g>
+          )}
+          {/* Soft chin */}
+          <path d={`M${fx(3.6)} 24 Q${fx(6.2)} 25.4 ${fx(8.8)} 24`} fill="none" stroke={PAL.skinShade} strokeWidth={0.9} strokeLinecap="round" opacity={0.3} />
+
+          {/* Curly fringe along the hairline, then the crown curls on the silhouette */}
+          {FRINGE.map(([cx, cy, r], i) => curl(cx, cy, r, `f${i}`))}
+          {CROWN.map(([a, r], i) => {
+            const rad = (a * Math.PI) / 180;
+            return curl(-3 + Math.cos(rad) * 31.5, -6 + Math.sin(rad) * 31.5, r, `c${i}`);
+          })}
+        </g>
       )}
 
       {/* Pranam: the far forearm and hand in front of the chest and the cloth, so both palms read joined.
@@ -5028,8 +5540,9 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
         </g>
       )}
 
-      {/* Episode 4: the held object, between the far hand (behind it) and the near hand (in front) */}
-      {heldEl}
+      {/* Episode 4: the held object, between the far hand (behind it) and the near hand (in front); Episode 6: the
+          scene's propInHands in the same slot */}
+      {heldAll}
 
       {/* Near arm and hand, in front of the head so the thinking hand reads at the chin */}
       {armPaint(shF, armF.E, armF.H, 1.02, PAL.skin, PAL.skinShade, 1, wristRadius(turnF), 0, PAL.skinLit)}
@@ -5037,7 +5550,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       {/* Plate design: the near side of the shawl over the near upper arm, then the forearm, hand and held object again
           in front of it where it would hide them */}
       {plateCapeF}
-      {plateArmOverF && plateArmOverF(heldEl)}
+      {plateArmOverF && plateArmOverF(farOverEl ? <>{farOverEl}{heldAll}</> : heldAll)}
 
       {/* Leaf (pickLeaf) and flower (placeFlowerOnFoot): drawn after the hand so they read in it */}
       {sol.leaf && leafPos && leafOpacity > 0.01 && (
@@ -5131,4 +5644,72 @@ export const seatedChildHands = (props: SeatedChildProps): SeatedHandPoints => {
     head,
     glowAnchor: { cx: head.x, cy: head.y, r: 140 * s },
   };
+};
+
+/* ------------------------------------------------------------------ */
+/* Episode 6: anchors for the ball, the note, the pinched item, the head */
+/* ------------------------------------------------------------------ */
+
+export interface SeatedEp6Anchors {
+  /** Palm centres of the near and far hands (world), exactly as drawn this frame: the ball's two contact points. */
+  nearPalm: { x: number; y: number };
+  farPalm: { x: number; y: number };
+  /**
+   * Between the near hand's fingertips (world): where a small item sits while the treasurer carries it (draw it AFTER the
+   * SeatedChild, centred here), and the hand's contact point on the cloth when it picks or sets one down.
+   */
+  nearPinch: { x: number; y: number };
+  /** takeBall: the ball's centre and radius (world). `inHands` false while the giver still holds it (at giveAt). */
+  ball?: { x: number; y: number; r: number; inHands: boolean };
+  /**
+   * takeNote: the folded note's centre (world), its angle in degrees (mirrored when flipped), its size (world units), and
+   * `fold` 0..1 (his hands closed round it: draw it a little smaller or let the near hand hide it). `inHands` as for ball.
+   */
+  note?: { x: number; y: number; rot: number; w: number; h: number; inHands: boolean; fold: number };
+  /** Top of the hair on the head's axis (world): where the palm lands in handOnHead. */
+  headTop: { x: number; y: number };
+  /** Head centre (world) and the BirulGlow placement, as seatedChildHands. */
+  head: { x: number; y: number };
+  glowAnchor: { cx: number; cy: number; r: number };
+}
+
+/**
+ * Episode 6 anchors for the same props as the <SeatedChild> they describe (pass the very same object, including
+ * `design`, `age` and the clocks). Uses the rig's own solve, so the points match the drawing exactly (forearm overlap,
+ * pose blends, breath, flip). Draw the ball / note at these points through the rig's `propInHands` slot (between the far
+ * and the near hand), and the treasurer's carried item at `nearPinch` after the rig.
+ */
+export const seatedEp6Anchors = (props: SeatedChildProps): SeatedEp6Anchors => {
+  const R = seatedRig(props);
+  const s = props.s ?? 1;
+  const kx = props.flip ? -s : s;
+  const W = (p: V) => ({ x: props.x + kx * p.x, y: props.y + s * p.y });
+  const palm = (H: V, d: V): V => ({ x: H.x + d.x * PALM_OFS, y: H.y + d.y * PALM_OFS });
+  const head = W(R.headC);
+  const hairTop = (R.plate ? PLATE_HAIR_TOP : -41.5) * HEAD_K;
+  const out: SeatedEp6Anchors = {
+    nearPalm: W(palm(R.armF.H, R.frontDir)),
+    farPalm: W(palm(R.armB.H, R.backDir)),
+    nearPinch: W({ x: R.armF.H.x + R.frontDir.x * 16, y: R.armF.H.y + R.frontDir.y * 16 }),
+    headTop: W(addV(R.headC, rotV({ x: 0, y: hairTop }, R.headRot))),
+    head,
+    glowAnchor: { cx: head.x, cy: head.y, r: 140 * s },
+  };
+  const h6 = R.sol.hold6;
+  if (h6) {
+    const P: V = h6.free ? { x: h6.x, y: h6.y } : lerpV(subV(R.armF.H, h6.ofsF), subV(R.armB.H, h6.ofsB), h6.farW);
+    const c = W(P);
+    if (h6.kind === "ball") out.ball = { x: c.x, y: c.y, r: BALL_R * s, inHands: !h6.free };
+    else
+      out.note = {
+        x: c.x,
+        y: c.y,
+        rot: props.flip ? -h6.rot : h6.rot,
+        w: NOTE_SIZE.w * s,
+        h: NOTE_SIZE.h * s,
+        inHands: !h6.free,
+        fold: h6.fold,
+      };
+  }
+  return out;
 };
