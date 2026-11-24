@@ -974,10 +974,11 @@ export const S01_EVENTS: SceneSoundEvent[] = [
   { id: "slates_down", f: W1B + 2, file: "sfx/ep06/slate_tap.wav", volume: 0.15 },
   ...PLATE_TAPS.map((t, i) => ({ id: `plate_clink_${i + 1}`, f: t, file: "sfx/ep06/plate_clink.wav", volume: 0.2 })),
   { id: "hens_cluck_loop", f: W1A, file: "sfx/ep06/hens_cluck_loop.wav", volume: 0.15, loopFrames: CLACK1 + 3 - W1A },
-  { id: "hens_scatter", f: CLACK1 + 3, file: "sfx/ep06/hens_scatter.wav", volume: 0.3 },
-  { id: "crow_caw_1", f: CLACK1 + 4, file: "sfx/ep06/crow_caw.wav", volume: 0.3 },
-  { id: "crow_takeoff", f: CLACK1 + 5, file: "sfx/ep06/crow_takeoff.wav", volume: 0.25 },
-  { id: "crow_caw_2", f: CLACK1 + 13, file: "sfx/ep06/crow_caw.wav", volume: 0.22 },
+  // K1 thinned so "লুকিয়ে পড়ল…" stays clear (sound-pass measurement: speech only 9-11 dB above the rest here):
+  // scatter and caw at 0.2, the second caw dropped (crow_takeoff already carries a caw).
+  { id: "hens_scatter", f: CLACK1 + 3, file: "sfx/ep06/hens_scatter.wav", volume: 0.2 },
+  { id: "crow_caw_1", f: CLACK1 + 4, file: "sfx/ep06/crow_caw.wav", volume: 0.2 },
+  { id: "crow_takeoff", f: CLACK1 + 5, file: "sfx/ep06/crow_takeoff.wav", volume: 0.2 },
   ...G1.chirps.map((t, i) => ({ id: `sparrow_chirp_${i + 1}`, f: t, file: "sfx/ep06/sparrow_chirp.wav", volume: 0.18 })),
 ];
 /** Other scene-local real frames Episode06.tsx may want (cue sheet anchors S01.swat, S01.fatherStops, ...). */

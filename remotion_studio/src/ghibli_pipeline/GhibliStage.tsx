@@ -310,13 +310,13 @@ export const GhibliCharFilterDefs: React.FC<{
           />
           <feComposite in="interiorEdges" in2="SourceAlpha" operator="in" result="interiorInkClipped" />
           <feComponentTransfer in="interiorInkClipped" result="interiorInk">
-            <feFuncA type="linear" slope="0.40" intercept="0" />
+            <feFuncA type="linear" slope="0.14" intercept="0" />
           </feComponentTransfer>
 
           {/* 4. Outer sepia-charcoal silhouette contour */}
-          <feMorphology in="SourceAlpha" operator="dilate" radius="1.15" result="dilated" />
-          <feGaussianBlur in="dilated" stdDeviation="0.32" result="softOutline" />
-          <feFlood floodColor="#382115" floodOpacity="0.72" result="inkColor" />
+          <feMorphology in="SourceAlpha" operator="dilate" radius="0.72" result="dilated" />
+          <feGaussianBlur in="dilated" stdDeviation="0.28" result="softOutline" />
+          <feFlood floodColor="#382115" floodOpacity="0.46" result="inkColor" />
           <feComposite in="inkColor" in2="softOutline" operator="in" result="outerInk" />
 
           {/* 5. Composite outer ink + watercolor-painted fills + cool bounce + interior ink + warm rim */}
@@ -339,7 +339,7 @@ export const GhibliCharFilterDefs: React.FC<{
           <feDisplacementMap
             in="celPainted"
             in2="boilNoise"
-            scale="0.82"
+            scale="0.28"
             xChannelSelector="R"
             yChannelSelector="G"
             result="boiledCel"

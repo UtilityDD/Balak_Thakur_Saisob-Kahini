@@ -1,0 +1,35 @@
+{
+  "size": [
+    5040,
+    1320
+  ],
+  "parapetTop": 45,
+  "pillarBase": 724,
+  "capitalTop": 433,
+  "pillarHalfWidth": 43,
+  "pillarCentres": [
+    19,
+    273,
+    532,
+    792,
+    1012,
+    1266,
+    1525,
+    1785,
+    2005,
+    2259,
+    2518,
+    2778,
+    2998,
+    3252,
+    3511,
+    3771,
+    3991,
+    4245,
+    4504,
+    4764,
+    4984
+  ],
+  "bayWidth": 258,
+  "source": "Gemini_Generated_Image_xjz57hxjz57hxjz5 (1).png"
+}

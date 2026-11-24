@@ -1408,7 +1408,7 @@ const GRIP: Record<HeldObject, GripSpec> = {
   clayLump: gripOf(1.35, 8.5, 1, 8.5, "cup", 0.55),
   clayShiva: gripOf(1.3, 12, 4, 9.5, "cup", 0.5),
   doll: gripOf(1.2, 9.5, 2, 21, "hold", 0.62),
-  gobinda: gripOf(1.15, 8.5, 6, 28.5, "hold", 0.62),
+  gobinda: gripOf(1.15, 12.5, 23, 28.5, "cup", 0.16),
   incense: gripOf(1.3, 10.5, 2, 10, "hold", 0.62),
   // the big stone bowl: wrists on its sides just under the thick rim, fingers round the carved belly
   stoneBowl: gripOf(STONE_BOWL_K, 23.6, 7.4, STONE_BOWL_UNITS.bottom, "cup", 0.55),

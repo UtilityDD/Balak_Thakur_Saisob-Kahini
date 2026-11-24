@@ -416,8 +416,8 @@ const BREAK_CHIMES: PlacedSfx[] = BREAKS.map((b) => ({ file: "sfx/chime_pop", vo
 /** Every sound cue on the absolute timeline. The intro chime and the outro shimmer are the series template. */
 const PLACED_SFX: PlacedSfx[] = [
   { file: "sfx/chime_pop", volume: 0.4, from: 0 },
-  // AUD-08 (director 2026-11-23): the outro shimmer at 0.2 (template 0.4) so the narration stays clearly on top.
-  { file: "sfx/soft_magical_shimmer", volume: 0.2, from: sceneStart(OUTRO) },
+  // AUD-08 / AUD-08a (2026-11-23): the outro shimmer at 0.12 (template 0.4) so the narration stays clearly on top.
+  { file: "sfx/soft_magical_shimmer", volume: 0.12, from: sceneStart(OUTRO) },
   ...BREAK_CHIMES,
   ...S01_EVENTS.map((e) => placeEvent(S01, e)),
   ...S02_EVENTS.map((e) => placeEvent(S02, e)),

@@ -2088,7 +2088,8 @@ export const S02_EVENTS: S02Event[] = [
   evR("d2_breeze", DLM.breeze + T1.frames, "sfx/ep02/wind_soft", 0.15),
   evR("note_fold", NOTE_FOLD + T1.frames, "sfx/ep02/paper_rustle", 0.15),
   // L1: his quick steps along the lane, the duck behind the haystack, the culprit's running steps far ahead
-  ev("l1_steps", L1.fromStory, "sfx/ep02/footsteps_mud", 0.18, L1_B - L1.fromStory),
+  // L1 shares its first story frame with P2, so real(L1.fromStory) is P2's start: start the steps after P2.
+  evR("l1_steps", P2_REAL + P2.frames, "sfx/ep02/footsteps_mud", 0.18, L1_B - L1.fromStory),
   ev("haystack_duck", L1_B, "sfx/ep02/cloth_rustle", 0.2),
   ev("culprit_far_run", L1_CROSS.start, "sfx/ep02/footsteps_mud", 0.12, L1_CROSS.dur),
   // shot 5: the note into the boudi's hand

@@ -2202,7 +2202,7 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   const trailP = trailOf(g.P, gPrev.P);
   const trailS = trailOf(g.Sc, gPrev.Sc);
   const gv = g.gravity;
-  const wind = wob(L, 1.7, 0.7); // the faint stir of free edges
+  const wind = 0.28 * wob(L, 1.7, 0.22); // the faint stir of free edges
 
   /* ---------- torso centre line (3D sections projected) ---------- */
   const Tp = (v: number, u = 0, dz = 0): V => {
@@ -2246,13 +2246,13 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   // BAL-26c healthy: a fuller dhoti over sturdier legs, a little flare at the hem (classic: LK = HK = 1)
   const LK = HB ? 1.22 : 1;
   const HK = HB ? 1.32 : 1;
-  const pA1 = add(lerpV(lA.hip, lA.knee, 0.45), mul(outN(thA, -1), lerp(21, 14.5, gb) * LK));
-  const pA2 = add(lA.knee, mul(outN(unit(add(thA, hA.dir)), -1), lerp(18.5, 15, gb) * LK));
-  const pA3 = add(hA.hem, mul(outN(hA.dir, -1), 19.5 * HK));
+  const pA1 = add(lerpV(lA.hip, lA.knee, 0.45), mul(outN(thA, -1), lerp(26, 16, gb) * LK));
+  const pA2 = add(lA.knee, mul(outN(unit(add(thA, hA.dir)), -1), lerp(23, 16.5, gb) * LK));
+  const pA3 = add(hA.hem, mul(outN(hA.dir, -1), 23 * HK));
   const pA4 = add(hA.hem, mul(hA.dir, 2.5));
-  const pB1 = add(lerpV(lB.hip, lB.knee, 0.45), mul(outN(thB, 1), 21 * LK));
-  const pB2 = add(lB.knee, mul(outN(unit(add(thB, hB.dir)), 1), 18.5 * LK));
-  const pB3 = add(hB.hem, mul(outN(hB.dir, 1), 19.5 * HK));
+  const pB1 = add(lerpV(lB.hip, lB.knee, 0.45), mul(outN(thB, 1), 26 * LK));
+  const pB2 = add(lB.knee, mul(outN(unit(add(thB, hB.dir)), 1), 23 * LK));
+  const pB3 = add(hB.hem, mul(outN(hB.dir, 1), 23 * HK));
   const pB4 = add(hB.hem, mul(hB.dir, 2.5));
   // the hem between the legs dips a little (the pleat fall hangs there)
   const hemDirM = unit(lerpV(hA.dir, hB.dir, 0.5));
@@ -2529,15 +2529,13 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
         <FootEl l={g.legN} far={false} pal={PAL} fk={FOOT_K} />
         {/* the dhoti: one soft cloth, the legs read under it, the hem dips between them */}
         {clothPaint((dx, dy) => smoothClosed(skirt.map((q) => add(q, { x: dx, y: dy }))), PAL.cloth, "skirt", PAL)}
-        <path d={smoothOpen([lerpV(lB.hip, lB.knee, 0.2), lB.knee, hB.hem].map((q) => add(q, { x: -3, y: 0 })))} fill="none" stroke={PAL.clothMid} strokeWidth={12} strokeLinecap="round" />
-        <path d={smoothOpen([crotch, lerpV(crotch, dip, 0.6), add(dip, mul(hemDirM, -6))])} fill="none" stroke={PAL.clothFold} strokeWidth={3.4} strokeLinecap="round" />
+        <path d={smoothOpen([crotch, lerpV(crotch, dip, 0.6), add(dip, mul(hemDirM, -6))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.4} strokeLinecap="round" opacity={0.35} />
         {legFold(lA, hA, -1, "lfA")}
         {legFold(lB, hB, 1, "lfB")}
         <path d={smoothOpen([pA3, pA4, dip, pB4, pB3].map((q) => add(q, { x: 0, y: -2.6 })))} fill="none" stroke={PAL.clothFold} strokeWidth={2} strokeLinecap="round" />
         {/* the front pleat fall (kochi) */}
         {clothPaint((dx, dy) => smoothClosed(pleatShape.map((q) => add(q, { x: dx * 0.6, y: dy * 0.6 }))), PAL.cloth, "pleat", PAL)}
-        <path d={smoothOpen([add(pleatTop, mul(pn, 1.5)), add(pleatMid, mul(pn, 2.5)), add(pleatBot, mul(pn, 3.5))])} fill="none" stroke={PAL.clothFold} strokeWidth={2} />
-        <path d={smoothOpen([add(pleatTop, mul(pn, -2)), add(pleatMid, mul(pn, -3)), add(pleatBot, mul(pn, -4.5))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} />
+        <path d={smoothOpen([add(pleatTop, mul(pn, 1.5)), add(pleatMid, mul(pn, 2.5)), add(pleatBot, mul(pn, 3.5))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.2} opacity={0.45} />
         {HB && waistRoll && (
           <g>
             {/* the dhoti's front pleats (kacha folds) running down from the waist, and its rolled waist */}

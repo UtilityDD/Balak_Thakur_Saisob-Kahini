@@ -37,6 +37,9 @@ import { Episode03Ghibli } from "./ghibli_pipeline/episode03/Episode03Ghibli";
 import { SourceAttributionQA } from "./episode/SourceAttributionQA";
 import { EP03_TOTAL_FRAMES } from "./episode03/timing";
 import { Episode04 } from "./episode04/Episode04";
+import { Episode04Ghibli } from "./ghibli_pipeline/episode04/Episode04Ghibli";
+import { GhibliLifeKitQA } from "./ghibli_pipeline/core/GhibliLifeKitQA";
+import { EP04G_TOTAL_FRAMES } from "./ghibli_pipeline/episode04/timing";
 import { Episode05 } from "./episode05/Episode05";
 import { Episode05Ghibli } from "./ghibli_pipeline/episode05/Episode05Ghibli";
 import { Episode06Ghibli } from "./ghibli_pipeline/episode06/Episode06Ghibli";
@@ -67,6 +70,8 @@ export const RemotionRoot: React.FC = () => {
       />
       <Composition id="SourceAttributionQA" component={SourceAttributionQA} durationInFrames={150} fps={24} width={1920} height={1080} />
       <Composition id="Episode04" component={Episode04} durationInFrames={EP04_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode04GhibliFull" component={Episode04Ghibli} durationInFrames={EP04G_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="GhibliLifeKitQA" component={GhibliLifeKitQA} durationInFrames={360} fps={24} width={1920} height={1080} />
       <Composition id="Episode05" component={Episode05} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode05GhibliTest" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode06" component={Episode06} durationInFrames={EP06_TOTAL_FRAMES} fps={24} width={1920} height={1080} />

@@ -1,0 +1,33 @@
+{
+  "episode": "ep04",
+  "publicSubdir": "ghibli_ep04",
+  "srcSubdir": "episode04",
+  "fullPlates": [
+    { "raw": "sky_ep04_morning_courtyard.png", "out": "sky_ep04_morning_courtyard.png", "width": 2560, "height": 1440 },
+    { "raw": "sky_ep04_pond_day.png", "out": "sky_ep04_pond_day.png", "width": 2560, "height": 1440 },
+    { "raw": "sky_ep04_afternoon_gold.png", "out": "sky_ep04_afternoon_gold.png", "width": 2560, "height": 1440 },
+    { "raw": "sky_ep04_purnima_dusk.png", "out": "sky_ep04_purnima_dusk.png", "width": 2560, "height": 1440 },
+    { "raw": "thakur_ghar_interior_sketch.png", "out": "thakur_ghar_interior_sketch.png", "width": 3840, "height": 2160 },
+    { "raw": "ants_cutaway_vignette_sketch.png", "out": "ants_cutaway_vignette_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "card_intro_bg_sketch.png", "out": "card_intro_bg_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "card_source_bg_sketch.png", "out": "card_source_bg_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "card_outro_padma_sketch.png", "out": "card_outro_padma_sketch.png", "width": 2560, "height": 1440 },
+    { "raw": "glimpse_ep05_cow_grove_sketch.png", "out": "glimpse_ep05_cow_grove_sketch.png", "width": 2560, "height": 1440 }
+  ],
+  "panoramas": [
+    { "kind": "far_trees", "raw": "far_trees_ep04_sketch.png", "out": "far_trees_ep04_sketch.png" },
+    { "kind": "far_trees", "raw": "pond_far_bank_baidik_sketch.png", "out": "pond_far_bank_baidik_sketch.png" },
+    { "kind": "courtyard_back", "raw": "courtyard_back_panel.png", "out": "courtyard_back_ep04_morning.png" },
+    { "kind": "courtyard_floor", "raw": "courtyard_floor_ep04_sketch.png", "out": "courtyard_floor_ep04_sketch.png" },
+    { "kind": "courtyard_floor", "raw": "pond_water_emerald_sketch.png", "out": "pond_water_emerald_sketch.png" }
+  ],
+  "cutouts": [
+    { "name": "tulsi_mancha_ep04_sketch", "raw": "tulsi_mancha_ep04_sketch.png", "targetHeight": 1400, "softShadowBotFrac": 0.14, "holeMinArea": 55, "holeMaxYFrac": 0.46, "chokeLightHalo": true },
+    { "name": "tree_mandar_bloom_sketch", "raw": "tree_mandar_bloom_sketch.png", "targetHeight": 1350, "softShadowBotFrac": 0.22, "holeMinArea": 55, "holeMaxYFrac": 0.82, "chokeLightHalo": true },
+    { "name": "brick_ghat_steps_sketch", "raw": "brick_ghat_steps_sketch.png", "targetHeight": 1100, "softShadowBotFrac": 0.14, "holeMinArea": 120, "holeMaxYFrac": 0.70, "chokeLightHalo": true },
+    { "name": "deity_khat_shrine_sketch", "raw": "deity_khat_shrine_sketch.png", "targetHeight": 1200, "softShadowBotFrac": 0.14, "holeMinArea": 80, "holeMaxYFrac": 0.78, "chokeLightHalo": true },
+    { "name": "shrine_arch_frame_sketch", "raw": "shrine_arch_frame_sketch.png", "targetHeight": 1440, "softShadowBotFrac": 0.08, "holeMinArea": 30000, "holeMaxYFrac": 0.92, "chokeLightHalo": true },
+    { "name": "madur_mat_veranda_sketch", "raw": "madur_mat_veranda_sketch.png", "targetHeight": 600, "softShadowBotFrac": 0.10, "holeMinArea": 200, "holeMaxYFrac": 0.80, "chokeLightHalo": true },
+    { "name": "banana_clump_pond_sketch", "raw": "banana_clump_pond_sketch.png", "targetHeight": 1150, "softShadowBotFrac": 0.20, "holeMinArea": 55, "holeMaxYFrac": 0.82, "chokeLightHalo": true }
+  ]
+}

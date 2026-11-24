@@ -54,10 +54,10 @@ interface HandPreset {
 const PRESETS: Record<HandShape, HandPreset> = {
   // soft natural curl, three-quarter back view, thumb resting beside the index
   relaxed: { curls: [0.2, 0.26, 0.32, 0.4], mcp: 0.7, spread: 0.05, thumb: { s: 0.2, a: 0.38, f1: 0.32, f2: 0.28 }, turn: -2.3 },
-  // straight, gently fanned fingers, palm to camera, thumb out to the side
-  open: { curls: [0.03, 0.03, 0.05, 0.08], spread: 0.12, thumb: { s: 0.8, a: 0.3, f1: 0.05, f2: 0.1 }, turn: 0, flexK: 0.5 },
-  // index extended, the other three folded, thumb over the folded middle finger
-  point: { curls: [0.02, 0.95, 1, 1], spread: 0.02, thumb: { s: 0.34, a: 0.42, f1: 0.62, f2: 0.75 }, turn: -2.0, flexK: 0.3 },
+  // fingers together, a little curled so the long middle finger does not lead, palm at three-quarter
+  open: { curls: [0.1, 0.16, 0.2, 0.24], spread: 0.03, thumb: { s: 0.42, a: 0.2, f1: 0.18, f2: 0.16 }, turn: -0.42, flexK: 0.12 },
+  // index only, fully straight; middle, ring and little shut; thumb beside the index, not across it
+  point: { curls: [0, 1, 1, 1], spread: 0, thumb: { s: 0.18, a: 0.16, f1: 0.28, f2: 0.32 }, turn: -0.5, flexK: 0 },
   // fingers folded into the palm, thumb wrapped over them
   fist: { curls: [1, 1, 1, 1], spread: 0, thumb: { s: 0.36, a: 0.42, f1: 0.7, f2: 0.9 }, turn: -2.2, flexK: 0 },
   // fingers hooked round a grip (handle / pole), thumb on the other side of it, seen from the thumb side
