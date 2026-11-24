@@ -386,6 +386,11 @@ export const CAST: Record<string, CastEntry> = {
     look: FACE_LOOKS.manorama,
     seed: 89,
   },
+  /**
+   * Bhagabati Thakur (house priest / Thakurmoshai): white kurta like Sundar jyetha so arm/torso
+   * gestures read cleanly (bare chest + upper dhoti fold looked odd in every sit/reach beat).
+   * Keeps the red-bordered dhoti, uttariya drape, tilak; paita is under the kurta and unused.
+   */
   bhagabati: {
     id: "bhagabati",
     age: "elder",
@@ -395,11 +400,12 @@ export const CAST: Record<string, CastEntry> = {
     hair: "#d9d4cc",
     hairLight: "#ffffff",
     hairStyle: "parted",
-    outfit: "bare",
-    top: "#d9a07a",
-    topLight: "#f0c4a0",
-    topShade: "#b47853",
-    sleeve: "none",
+    outfit: "kurta",
+    top: "#f2ead8",
+    topLight: "#fffaf0",
+    topShade: "#cbbda2",
+    topTrim: "#b08a3a",
+    sleeve: "full",
     lower: "dhoti",
     lowerColor: "#faf5eb",
     lowerShade: "#d8cdb9",
@@ -408,7 +414,6 @@ export const CAST: Record<string, CastEntry> = {
     scarf: { color: "#a82424", shade: "#7a1818", trim: "#e8b84a", style: "drape" },
     mustache: "#d9d4cc",
     tilak: true,
-    paita: true,
     look: FACE_LOOKS.bhagabati,
     seed: 97,
   },
@@ -524,7 +529,7 @@ export const CAST: Record<string, CastEntry> = {
   },
   /**
    * Harendra Thakur, an elder of the house (Ep 4, silent: a head shake and open palms). Distinct from Bhagabati
-   * (bare-chested, white hair), Sundar (balding, spectacles, white kurta, brown shawl) and Kedarkaka: tall, darker,
+   * (white kurta, white hair, red uttariya), Sundar (balding, spectacles, white kurta, brown shawl) and Kedarkaka: tall, darker,
    * salt-and-pepper parted hair, thick grey-black mustache, beige khadi fatua with an olive uttariya, no spectacles.
    */
   harendra: {
@@ -974,8 +979,8 @@ export const CAST: Record<string, CastEntry> = {
  * Binoy's mother (Episode 5) is CAST.womanA as it stands (married: sindoor, maroon blouse, red-bordered sari), with
  * GESTURES5.handAtMouth from Puppet.tsx.
  *
- * The house priest in Episode 4 (STO-19) is CAST.bhagabati as it stands: bare-chested elder in a red-bordered dhoti
- * with an uttariya over the shoulder and the sacred thread (paita: right for HIM; Balak never wears one, BAL-03).
+ * The house priest in Episode 4 (STO-19) is CAST.bhagabati: white kurta (Sundar-like) over a red-bordered dhoti
+ * with an uttariya over the shoulder (Balak never wears a paita, BAL-03).
  *
  * Episode 6: Surendra (the father) wears the wooden khadam through the Puppet prop footwear="khadam" (CAST.surendra is
  * unchanged); his clack frames come from walkPlantFrames / footPlants in Puppet.tsx.

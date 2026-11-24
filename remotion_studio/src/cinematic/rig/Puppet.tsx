@@ -406,6 +406,24 @@ const poseHold = (q: Pose): number => {
   return clamp(Math.max(reach, elbow, back, hands, body, emotion, moving));
 };
 
+/**
+ * Head roll (degrees, the sum of the pose's headTilt, idle tilt and speech emphasis), softly limited to about +-14 deg:
+ * unchanged up to 10 deg, so ordinary tilts look exactly as before; a stronger roll no longer swings the head off the
+ * neck line (Episode 4 audit: a 20 deg roll read as a sheared, detached head).
+ */
+const headRoll = (t: number) => {
+  const a = Math.abs(t);
+  return a <= 10 ? t : Math.sign(t) * (10 + 4 * Math.tanh((a - 10) / 4));
+};
+/**
+ * How far a rolled head pivots at the neck top instead of its own centre: 0 below 6 deg (exactly as before), 1 from
+ * 14 deg (the jaw stays over the neck, the crown swings), eased between.
+ */
+const neckPivotW = (rollDeg: number) => {
+  const k = clamp((Math.abs(rollDeg) - 6) / 8);
+  return k * k * (3 - 2 * k);
+};
+
 /* Idle-layer helpers (adults only). Deterministic in frame and seed; timings assume 24 fps. */
 
 /** Ease in and out over the unit interval. */
@@ -661,6 +679,36 @@ export interface PuppetProps {
    * kneeling, or under a sari). Default: barefoot, exactly as before. See `walkPlantFrames` for the clack frames.
    */
   footwear?: "khadam";
+  /**
+   * Episode 4 (Ghibli) on, opt-in floor-sitting bodies (absent = exactly the older looks):
+   *  - "crossLegged": sitting cross-legged on the floor (sukhasana / the priest's puja seat): two thighs out to the
+   *    knees, the shins crossed in front with the feet tucked under the opposite knees, a compact folded dhoti lap
+   *    (knee lobes, front pleats, the hem over the shins, bare feet), seen a little from above. The upper body bends
+   *    at the waist over planted hips. Weight: 1 with `seated`, else Pose.kneel (so a scene that keys kneel 1 -> 0
+   *    gets up out of it).
+   *  - "kneel": a woman kneeling sitting back on her heels (vajrasana) under her sari: compact knee volume and the
+   *    soles behind, not a flat cloth pool; with Pose.bow the kneeling pranam (panchanga) reads as hips back on the
+   *    heels, the back rounded forward over the knees and the forehead and joined hands on the floor. Weight:
+   *    Pose.kneel (with or without `seated`).
+   */
+  sitStyle?: "crossLegged" | "kneel";
+  /**
+   * Episode 4 (Ghibli) on, opt-in: softer fitted blouse sleeves (a woman's half sleeve ends above the elbow, tapers
+   * and carries a fold and an inner shade), so the upper arms no longer read as rigid coloured tubes. Absent = as before.
+   */
+  softSleeves?: boolean;
+  /**
+   * Episode 4 (Ghibli) on, opt-in: Pose.reach lands ON reachAt. The hand's grip (curled fingers) closes on the point
+   * instead of the palm centre stopping a little before it, and a target just past the straight arm is still met: the
+   * arm stretches up to 15% (imperceptible at that length) rather than stopping short. Use with rHand / lHand "hold"
+   * to grip (a brother taking a child's wrist). Absent = the older reach, unchanged.
+   */
+  reachExact?: boolean;
+  /**
+   * Episode 4 (Ghibli) on, opt-in: how far a pointing arm (Pose.jab) extends toward pointAt, as a fraction of the arm's
+   * length (default 0.93, nearly straight). About 0.8 keeps a soft elbow bend for a scolding finger.
+   */
+  pointReach?: number;
 }
 
 type XY = { x: number; y: number };
@@ -708,7 +756,12 @@ export const Puppet: React.FC<PuppetProps> = ({
   swatAt,
   reachAt,
   footwear,
+  sitStyle: sitStyleProp,
+  softSleeves = false,
+  reachExact = false,
+  pointReach = 0.93,
 }) => {
+  const sitStyle = sitStyleProp;
   const life = lifeF ?? f; // life clock (idle life); f stays the story clock
   const ctxLights = React.useContext(SceneLights);
   const lights = ctxLights.length ? [...ctxLights, ...ownLights] : ownLights;
@@ -809,7 +862,16 @@ export const Puppet: React.FC<PuppetProps> = ({
   const wNow = weightAt(life, c.seed);
   const kneelK = clamp(p.kneel); // kneeling on both knees (see Pose.kneel)
   const bowK = clamp(p.bow); // the kneeling bow (see Pose.bow)
-  const shift = seated ? 0 : idle * 3 * wNow * (1 - kneelK);
+  // PuppetProps.sitStyle (opt-in floor sits): their weights; 0 = the older bodies, unchanged
+  const crossW = sitStyle === "crossLegged" ? (seated ? 1 : kneelK) : 0;
+  const crossOn = crossW > 0.5;
+  const vajraW = sitStyle === "kneel" && c.lower === "saree" ? kneelK : 0;
+  const vajraOn = vajraW > 0.5;
+  // in the kneeling pranam (sitStyle "kneel") the head turns on to full profile, so the forehead (not a cheek) is down
+  const bowProfile = sitStyle === "kneel" ? (p.bodyTurn >= 0 ? 1 : -1) * 0.6 * clamp(p.bow) : 0;
+  // ... and the neck bends on down, so the forehead (not the crown) meets the floor
+  const bowNeck = sitStyle === "kneel" ? (p.bodyTurn >= 0 ? 1 : -1) * 18 * clamp(p.bow) : 0;
+  const shift = seated || crossW > 0 ? 0 : idle * 3 * wNow * (1 - kneelK);
   // slow side-to-side drift of the upper body, about 2.5 px, irregular per figure, plus the weight transfer
   const weightX = idle * 2.5 * noise1(life / 144, c.seed + 11) + shift;
   // shoulders tip toward the bearing side, up to about 0.9 deg
@@ -846,7 +908,8 @@ export const Puppet: React.FC<PuppetProps> = ({
   const clothSway = Math.sin(life * 0.07 + c.seed) * 2.2 * (1 - 0.6 * idle) - swingVel * 3 + clothWeight + idle * 1.2 * noise1(life / 58, c.seed + 41) + clothTrail;
 
   /* ---------------- legs in 3D ---------------- */
-  const hipX = B.hw * 0.48;
+  // Wider hip sockets when seated / kneeling so the lower cloth base reads as a stable lap, not a tube.
+  const hipX = B.hw * (seated || kneelK > 0.35 ? 0.88 : 0.48);
   const phase = f * 0.3 + c.seed;
   const stride = p.stride;
   const crouch = clamp(p.crouch);
@@ -858,10 +921,17 @@ export const Puppet: React.FC<PuppetProps> = ({
   // kneeling (Pose.kneel): thighs forward and down to the knees on the floor, shins straight back along the floor
   // (sp = th - kn stays at -1.5); as she bows the hips rise a little off the heels (the thigh stands up)
   const KNEEL_TH = lerp(1.3, 0.92, bowK);
+  // Seated + dhoti (male purohit): keep cross-legged seat — do not let kneel override into a flat wedge.
+  // Saree seated+kneel (Charu / Thakurma pranam) still blends kneel for vajrasana under the cloth pool.
+  const kneelLegs = seated && c.lower !== "saree" ? 0 : kneelK;
   const legAnglesK = (side: 1 | -1, plant = false) => {
     const a = legAnglesBase(side, plant);
-    if (kneelK <= 0) return a;
-    return { th: lerp(a.th, KNEEL_TH, kneelK), ab: lerp(a.ab, 0.1, kneelK), kn: lerp(a.kn, KNEEL_TH + 1.5, kneelK) };
+    if (kneelLegs <= 0) return a;
+    // Ep04 adults sit with kneel=1 (not seated=true). Male dhoti village squat: knees open wide (not a closed
+    // women's cloth balloon). Saree floor-sit: wider knees so two cloth mounds read under the pool.
+    const kneelAb = c.lower === "saree" ? (seated ? 0.92 : 0.62) : seated ? 1.05 : 1.42;
+    const kneelTh = c.lower === "saree" && seated ? lerp(KNEEL_TH, 1.12, 0.55) : c.lower === "dhoti" && !seated ? lerp(KNEEL_TH, 1.05, 0.35) : KNEEL_TH;
+    return { th: lerp(a.th, kneelTh, kneelLegs), ab: lerp(a.ab, kneelAb, kneelLegs), kn: lerp(a.kn, kneelTh + 1.5, kneelLegs) };
   };
   // Episode 6 (Pose.stamp): one knee comes up (thigh forward, shin folded back) and the foot drops back flat
   const stampK = seated ? 0 : clamp(Math.abs(p.stamp)) * (1 - kneelK);
@@ -871,7 +941,8 @@ export const Puppet: React.FC<PuppetProps> = ({
     return { th: a.th + 0.62 * stampK, ab: a.ab, kn: a.kn + 1.15 * stampK };
   };
   function legAnglesBase(side: 1 | -1, plant = false) {
-    if (seated) return { th: 1.42, ab: 0.95, kn: 2.7 };
+    // Cross-legged / floor seat: dhoti keeps a wide lap; saree sits with knees forward under a soft cloth crown (ref lady sit).
+    if (seated) return c.lower === "saree" ? { th: 1.12, ab: 0.98, kn: 2.42 } : { th: 1.42, ab: 1.12, kn: 2.72 };
     let th = 0.03;
     let kn = 0.05;
     let ab = 0.04;
@@ -909,14 +980,19 @@ export const Puppet: React.FC<PuppetProps> = ({
     const tdir: V3 = [Math.sin(ab) * side, Math.cos(th) * Math.cos(ab), Math.sin(th) * Math.cos(ab)];
     const knee = add3(hip, mul3(tdir, B.thigh));
     const sp = th - kn;
-    const sdir: V3 = [Math.sin(ab) * side * (kneelK > 0 ? lerp(seated ? -1.2 : 0.3, 0.3, kneelK) : seated ? -1.2 : 0.3), Math.cos(sp), Math.sin(sp)];
+    // Kneeling: keep shins folded back under a wide knee spread (do not pull ankles inward).
+    const sdir: V3 = [
+      Math.sin(ab) * side * (kneelLegs > 0 ? lerp(seated ? -1.2 : -0.85, seated ? -1.05 : -0.7, kneelLegs) : seated ? -1.2 : 0.3),
+      Math.cos(sp),
+      Math.sin(sp),
+    ];
     const ankle = add3(knee, mul3(sdir, B.shin));
     let fv: V3 = [0, 0, 1];
     if (seated) fv = [-side * 0.9, 0, 0.45];
     else if (sp < -1.0) fv = [0, 0.25, -1];
-    if (kneelK > 0 && (seated || sp < -1.0)) {
+    if (kneelLegs > 0 && (seated || sp < -1.0)) {
       // kneeling: the top of the foot lies on the floor, toes pointing back
-      const kv: V3 = [lerp(fv[0], 0, kneelK), lerp(fv[1], 0.05, kneelK), lerp(fv[2], -1, kneelK)];
+      const kv: V3 = [lerp(fv[0], 0, kneelLegs), lerp(fv[1], 0.05, kneelLegs), lerp(fv[2], -1, kneelLegs)];
       const n = Math.hypot(kv[0], kv[1], kv[2]) || 1;
       fv = [kv[0] / n, kv[1] / n, kv[2] / n];
     }
@@ -946,7 +1022,13 @@ export const Puppet: React.FC<PuppetProps> = ({
     };
   };
   const legs = [legGeo(-1), legGeo(1)];
-  const ground = Math.max(...legs.map((l) => l.lowest));
+  // cross-legged (sitStyle): the hip joints sit about a thigh's thickness above the floor
+  const crossSeatH = B.limbW * 1.45 * 1.55;
+  const groundLegacy = Math.max(...legs.map((l) => l.lowest));
+  // kneeling on the heels (sitStyle "kneel"): heel + shin + a little seat under the hip joints; the hips lift off the
+  // heels as she bows (pranam)
+  const vajraSeatH = B.limbW * 1.05 * 1.1 + B.limbW * 1.45 * 1.45 + B.thigh * 0.72 * bowK;
+  const ground = crossW > 0 ? lerp(groundLegacy, crossSeatH, crossW) : vajraW > 0 ? lerp(groundLegacy, vajraSeatH, vajraW) : groundLegacy;
   // Episode 6: wooden khadam under the feet (PuppetProps.footwear); the figure stands on their soles
   const khadamOn = footwear === "khadam" && !seated && kneelK < 0.5 && c.lower !== "saree";
   const KH_T = B.foot * KHADAM_FOOT.thick; // the sole's thickness
@@ -1244,24 +1326,60 @@ export const Puppet: React.FC<PuppetProps> = ({
     // malkochha (Episode 5): tucked up for work, the hem a little above the knee, close round the thigh
     const hitched = c.dhotiLength === "hitched";
     const panels = legsSorted.map((L) => {
-      const hx = hitched ? lerp(L.knee.x, L.hip.x, 0.2) : lerp(L.knee.x, L.ankle.x, hemK);
-      const hy = hitched ? yy(lerp(L.knee.y, L.hip.y, 0.2)) : yy(lerp(L.knee.y, L.ankle.y, hemK));
+      // Hitched + village squat: wrap cloth along each open thigh (malkochha), not a short hip tutu.
+      const squatOpen = !seated && kneelK > 0.35;
+      const hitchK = hitched ? (squatOpen ? 0.72 : 0.2) : hemK;
+      const hx = hitched || squatOpen ? lerp(L.knee.x, L.hip.x, 1 - hitchK) : lerp(L.knee.x, L.ankle.x, hemK);
+      const hy0 = hitched || squatOpen ? yy(lerp(L.knee.y, L.hip.y, 1 - hitchK)) : yy(lerp(L.knee.y, L.ankle.y, hemK));
       const top: [number, number] = [L.hip.x, yy(L.hip.y) - 6];
-      const flare = hitched ? legW1 * 1.32 : legW2 * (seated ? 2.4 : 2.05);
-      const pts: Array<[number, number]> = hitched
+      // Seated: fuller lap cloth. Kneeling open squat: tube along thigh so knees stay readable.
+      const seatWide = seated || kneelK > 0.35;
+      const flare = hitched
+        ? legW1 * (squatOpen ? 1.05 : 1.32)
+        : legW2 * (seatWide ? (seated ? 2.05 : 1.2) : 2.05);
+      const hipSpread = squatOpen ? legW1 * 1.05 : seatWide ? legW1 * (seated ? 2.7 : 1.75) : legW1 * 1.5;
+      const kneeSpread = squatOpen ? legW1 * 1.1 : seatWide ? legW1 * (seated ? 1.95 : 1.55) : legW1 * 1.35;
+      const hy = seated ? Math.max(hy0 + legW1 * 0.25, -legW1 * 0.12) : squatOpen ? hy0 : seatWide ? hy0 + legW1 * 0.22 : hy0;
+      const thighMx = lerp(L.hip.x, L.knee.x, 0.48);
+      const thighMy = yy(lerp(L.hip.y, L.knee.y, 0.48));
+      const mound = seatWide && !squatOpen ? legW1 * (seated ? 3.25 : 2.55) : 0;
+      const pts: Array<[number, number]> = hitched && !squatOpen
         ? [
-            [top[0] - legW1 * 1.5, top[1]],
-            [top[0] + legW1 * 1.5, top[1]],
+            [top[0] - hipSpread, top[1]],
+            [top[0] + hipSpread, top[1]],
             [hx - flare, hy],
             [hx + flare, hy],
           ]
-        : [
-            [top[0] - legW1 * 1.5, top[1]],
-            [top[0] + legW1 * 1.5, top[1]],
-            [L.knee.x - legW1 * 1.35, yy(L.knee.y)],
-            [L.knee.x + legW1 * 1.35, yy(L.knee.y)],
+        : squatOpen
+          ? [
+              // Thin thigh wrap — open knees read as legs, not a skirt balloon.
+              [top[0] - hipSpread, top[1]],
+              [top[0] + hipSpread, top[1]],
+              [L.knee.x - kneeSpread, yy(L.knee.y) - legW1 * 0.15],
+              [L.knee.x + kneeSpread, yy(L.knee.y) - legW1 * 0.15],
+              [hx - flare, hy],
+              [hx + flare, hy],
+            ]
+          : [
+            [top[0] - hipSpread, top[1]],
+            [top[0] + hipSpread, top[1]],
+            [L.knee.x - kneeSpread, yy(L.knee.y)],
+            [L.knee.x + kneeSpread, yy(L.knee.y)],
             [hx - flare, hy],
             [hx + flare, hy],
+            ...(seatWide
+              ? ([
+                  [thighMx, thighMy - mound],
+                  [thighMx - kneeSpread * 0.8, thighMy - mound * 0.78],
+                  [thighMx + kneeSpread * 0.8, thighMy - mound * 0.78],
+                  [L.hip.x, yy(L.hip.y) - mound * 0.35],
+                  [L.knee.x, yy(L.knee.y) - mound * 0.65],
+                  [L.knee.x - flare * 0.45, hy - legW1 * 0.45],
+                  [L.knee.x + flare * 0.45, hy - legW1 * 0.45],
+                  [hx, hy + legW1 * (seated ? 0.5 : 0.25)],
+                  ...(seated ? ([[hx - flare * 0.45, 0], [hx + flare * 0.45, 0]] as Array<[number, number]>) : []),
+                ] as Array<[number, number]>)
+              : []),
           ];
       const d = smoothPath(hull(pts), 1);
       return (
@@ -1269,71 +1387,306 @@ export const Puppet: React.FC<PuppetProps> = ({
           <path d={d} fill={`url(#${uid}-lowg)`} />
           <path d={d} fill={`url(#${uid}-rim)`} />
           <path d={`M ${hx - flare} ${hy - 2} L ${hx + flare} ${hy - 2}`} stroke={c.lowerTrim ?? c.lowerShade} strokeWidth={c.lowerTrim ? 3 : 1.6} strokeLinecap="round" />
-          <path d={`M ${top[0]} ${top[1] + 10} Q ${L.knee.x + clothSway * 0.3} ${yy(L.knee.y) - 10} ${hx + clothSway * 0.4} ${hy - 4}`} stroke={c.lowerShade} strokeWidth={1.6} fill="none" opacity={0.6} />
+          <path d={`M ${top[0]} ${top[1] + 10} Q ${L.knee.x + clothSway * 0.3} ${yy(L.knee.y) - 10 - (seatWide && !squatOpen ? mound * 0.35 : 0)} ${hx + clothSway * 0.4} ${hy - 4}`} stroke={c.lowerShade} strokeWidth={1.6} fill="none" opacity={0.6} />
         </g>
       );
     });
     // waist + crotch bridge
     const waistY = hipY - 8;
     const crotchY = hipY + B.thigh * 0.32;
-    const bridge = `M ${-hwp * 1.08} ${waistY} L ${hwp * 1.08} ${waistY} L ${hwp * 0.6} ${crotchY} L ${-hwp * 0.6} ${crotchY} Z`;
-    // front pleats (kochi)
+    const squatOpen = !seated && kneelK > 0.35;
+    const seatBridge = seated || kneelK > 0.35;
+    // Hitched open squat: tiny waist bridge only — no skirt fill between the open knees.
+    const bridgeW = squatOpen ? 1.05 : seatBridge ? (seated ? 1.55 : 1.22) : 1.08;
+    const crotchW = squatOpen ? 0.55 : seatBridge ? (seated ? 1.28 : 0.85) : 0.6;
+    const bridge = `M ${-hwp * bridgeW} ${waistY} L ${hwp * bridgeW} ${waistY} L ${hwp * crotchW} ${crotchY} L ${-hwp * crotchW} ${crotchY} Z`;
+    // Seated: fuller lap cloth. Kneeling open squat: light crotch only (skip when hitched malkochha — thighs stay bare).
+    let lapFill: React.ReactNode = null;
+    if (seatBridge && !(hitched && squatOpen)) {
+      const L0 = legs[0];
+      const L1 = legs[1];
+      const knL = L0.side < 0 ? L0 : L1;
+      const knR = L0.side > 0 ? L0 : L1;
+      const midX = (knL.knee.x + knR.knee.x) * 0.5 + shift * 0.35;
+      const kneeY = (yy(knL.knee.y) + yy(knR.knee.y)) * 0.5;
+      const kneeSpan = Math.abs(knR.knee.x - knL.knee.x);
+      // Open squat: follow the wide knees with a shallow cloth, not a women's balloon mound.
+      const rx = seated
+        ? Math.max(B.hw * 3.05, kneeSpan * 0.68 + B.limbW * 4.2)
+        : Math.max(B.hw * 1.55, kneeSpan * 0.42 + B.limbW * 2.1);
+      const ry = seated ? Math.max(B.hw * 1.5, rx * 0.46) : Math.max(B.hw * 0.72, rx * 0.28);
+      const cy = Math.max(waistY + ry * (seated ? 0.66 : 0.42), kneeY + ry * (seated ? 0.08 : -0.15));
+      const lapTop = cy - ry;
+      const lapBot = seated ? Math.max(cy + ry * 0.85, -legW1 * 0.05) : cy + ry * 0.75;
+      const lapPts: Array<[number, number]> = seated
+        ? [
+            [-hwp * bridgeW + shift, waistY],
+            [hwp * bridgeW + shift, waistY],
+            [midX - rx * 0.35, waistY + 2],
+            [midX + rx * 0.35, waistY + 2],
+            [midX - rx * 0.55, lapTop + ry * 0.35],
+            [midX + rx * 0.55, lapTop + ry * 0.35],
+            [midX - rx, cy],
+            [midX + rx, cy],
+            [midX - rx * 0.85, lapBot - ry * 0.25],
+            [midX + rx * 0.85, lapBot - ry * 0.25],
+            [midX, lapBot],
+            [knR.knee.x + legW1 * 1.35, kneeY + legW1 * 0.4],
+            [knL.knee.x - legW1 * 1.35, kneeY + legW1 * 0.4],
+            [midX - rx * 0.5, 0],
+            [midX + rx * 0.5, 0],
+            [midX, legW1 * 0.12],
+          ]
+        : [
+            // Shallow crotch cloth between open knees (no ellipse balloon).
+            [-hwp * 1.15 + shift, waistY],
+            [hwp * 1.15 + shift, waistY],
+            [midX - rx * 0.55, waistY + ry * 0.55],
+            [midX + rx * 0.55, waistY + ry * 0.55],
+            [knL.knee.x + legW1 * 0.35, kneeY - legW1 * 0.15],
+            [knR.knee.x - legW1 * 0.35, kneeY - legW1 * 0.15],
+            [midX, kneeY + legW1 * 0.35],
+          ];
+      const lapD = smoothPath(hull(lapPts), 1);
+      lapFill = (
+        <g>
+          {seated && <path d={lapD} fill={`url(#${uid}-lowg)`} />}
+          {seated && <path d={lapD} fill={`url(#${uid}-rim)`} opacity={0.5} />}
+          {!seated && <path d={lapD} fill={`url(#${uid}-lowg)`} opacity={0.88} />}
+          {!seated && <path d={lapD} fill={`url(#${uid}-rim)`} opacity={0.35} />}
+          {seated && (
+            <>
+              <path
+                d={`M ${midX - rx * 0.7} ${cy - ry * 0.15} Q ${midX} ${lapBot - ry * 0.2} ${midX + rx * 0.7} ${cy - ry * 0.15}`}
+                stroke={c.lowerShade}
+                strokeWidth={1.7}
+                fill="none"
+                opacity={0.48}
+              />
+              <path
+                d={`M ${midX - rx * 0.45} ${cy - ry * 0.45} Q ${midX} ${lapTop + ry * 0.35} ${midX + rx * 0.45} ${cy - ry * 0.45}`}
+                stroke={c.lowerShade}
+                strokeWidth={1.35}
+                fill="none"
+                opacity={0.4}
+              />
+            </>
+          )}
+          {!seated && (
+            <path
+              d={`M ${knL.knee.x + legW1 * 0.2} ${kneeY - legW1 * 0.1} Q ${midX} ${kneeY + legW1 * 0.55} ${knR.knee.x - legW1 * 0.2} ${kneeY - legW1 * 0.1}`}
+              stroke={c.lowerShade}
+              strokeWidth={1.4}
+              fill="none"
+              opacity={0.4}
+            />
+          )}
+        </g>
+      );
+    }
+    // front pleats (kochi) — seated/kneeling get a short wide lap tuck instead of hanging folds
     const kx = frontX * 0.7 - B.hw * 0.12;
     const kLen0 = Math.max(20, Math.min(...legs.map((L) => yy(L.knee.y))) - waistY + 14);
-    const kLen = hitched ? Math.max(16, kLen0 * 0.45) : kLen0; // malkochha: the front pleats are tucked up
+    const kLen = hitched ? Math.max(16, kLen0 * 0.45) : seated || kneelK > 0.5 ? Math.max(22, kLen0 * 0.62) : kLen0;
+    const showKochi = !seated || kneelK > 0.4;
+    // Open squat: narrow front tuck so it doesn't re-inflate a skirt balloon between the knees.
+    const kochiW = seated ? 18 : kneelK > 0.35 ? 11 : 8;
     return (
       <g>
         {panels[0]}
         <path d={bridge} transform={`translate(${shift}, 0)`} fill={`url(#${uid}-lowg)`} />
         {panels[1]}
-        {!seated && (
+        {lapFill}
+        {showKochi && (
           <g transform={`translate(${kx}, ${waistY + 4}) rotate(${clothSway * 0.8})`}>
-            <path d={`M -8 0 L 8 0 L 14 ${kLen} L -12 ${kLen + 4} Z`} fill={c.lowerColor} />
-            {[-6, -1, 4, 9].map((px) => (
+            <path d={`M ${-kochiW} 0 L ${kochiW} 0 L ${kochiW + 4} ${kLen} L ${-kochiW - 2} ${kLen + 4} Z`} fill={c.lowerColor} />
+            {[-8, -2, 4, 10].map((px) => (
               <path key={px} d={`M ${px * 0.5} 4 L ${px} ${kLen}`} stroke={c.lowerShade} strokeWidth={1.3} opacity={0.75} />
             ))}
-            {c.lowerTrim && <path d={`M -12 ${kLen + 4} L 14 ${kLen}`} stroke={c.lowerTrim} strokeWidth={3} />}
+            {c.lowerTrim && <path d={`M ${-kochiW - 2} ${kLen + 4} L ${kochiW + 4} ${kLen}`} stroke={c.lowerTrim} strokeWidth={3} />}
           </g>
         )}
-        <path d={`M ${-hwp * 1.1} ${waistY + 2} Q 0 ${waistY + 8} ${hwp * 1.1} ${waistY + 2}`} transform={`translate(${shift}, 0)`} stroke={c.lowerShade} strokeWidth={4} fill="none" opacity={0.65} />
+        <path d={`M ${-hwp * (seatBridge ? (seated ? 1.55 : 1.2) : 1.1)} ${waistY + 2} Q 0 ${waistY + 10} ${hwp * (seatBridge ? (seated ? 1.55 : 1.2) : 1.1)} ${waistY + 2}`} transform={`translate(${shift}, 0)`} stroke={c.lowerShade} strokeWidth={4} fill="none" opacity={0.65} />
       </g>
     );
   };
 
   /* ---------------- sari: the hem and its border follow the cloth ---------------- */
   // 0 = hanging cloth (standing, walking), 1 = cloth draped on the floor (kneeling, sitting)
-  const drapeK = c.lower === "saree" ? (seated ? 1 : clamp((lowK - 0.35) / 0.4)) : 0;
+  const drapeK = c.lower === "saree" ? (seated ? 1 : clamp((lowK - 0.25) / 0.45)) : 0;
   const sareeSkirt = () => {
     const yy = (v: number) => v + hipY;
     const waistY = hipY - 10;
+    // Floor-sit (ref: soft cloth pool over folded knees) vs standing hang.
+    const floorSit = drapeK > 0.35;
+    const waistSpread = floorSit ? 1.28 : drapeK > 0.2 ? 1.5 : 1.05;
     const pts: Array<[number, number]> = [
-      [-hwp * 1.05, waistY],
-      [hwp * 1.05, waistY],
+      [-hwp * waistSpread, waistY],
+      [hwp * waistSpread, waistY],
     ];
     const footHems: Array<{ x: number; y: number; r: number }> = [];
+    const knL0 = legs[0].side < 0 ? legs[0] : legs[1];
+    const knR0 = legs[0].side > 0 ? legs[0] : legs[1];
+    const midSitX = (knL0.knee.x + knR0.knee.x) * 0.5 + shift * 0.2;
+    const kneeSitY = (yy(knL0.knee.y) + yy(knR0.knee.y)) * 0.5;
+
+    // Floor-sit: build a concave silhouette (waist → knee lobes → soft floor pool). Convex hull alone
+    // collapses to a pancake / beanbag and cannot show the sitting gesture (ref lady sit).
+    if (floorSit) {
+      const knLx = knL0.knee.x;
+      const knRx = knR0.knee.x;
+      const knLy = yy(knL0.knee.y);
+      const knRy = yy(knR0.knee.y);
+      const kneeY = (knLy + knRy) * 0.5;
+      const poolRx = B.hw * lerp(3.15, 3.85, drapeK);
+      const floorY = Math.min(B.foot * 0.22, Math.max(legW1 * 0.15, kneeY + legW1 * 2.05));
+      const lobeR = legW1 * 1.55;
+      const sideX = poolRx * 0.92;
+      // Closed ring, clockwise from left waist: left hip → left lobe → front dip → right lobe → right hip → waist.
+      const ring: Array<[number, number]> = [
+        [-hwp * waistSpread, waistY],
+        [-hwp * waistSpread * 1.05, waistY + B.hw * 0.55],
+        [midSitX - sideX, kneeY - lobeR * 0.15],
+        [knLx - lobeR * 0.95, kneeY + lobeR * 0.15],
+        [knLx - lobeR * 0.2, kneeY + lobeR * 0.95],
+        [knLx + lobeR * 0.35, kneeY + lobeR * 1.05],
+        [midSitX - B.hw * 0.55, kneeY + lobeR * 0.72],
+        [midSitX, kneeY + lobeR * 0.55],
+        [midSitX + B.hw * 0.55, kneeY + lobeR * 0.72],
+        [knRx - lobeR * 0.35, kneeY + lobeR * 1.05],
+        [knRx + lobeR * 0.2, kneeY + lobeR * 0.95],
+        [knRx + lobeR * 0.95, kneeY + lobeR * 0.15],
+        [midSitX + sideX, kneeY - lobeR * 0.15],
+        [hwp * waistSpread * 1.05, waistY + B.hw * 0.55],
+        [hwp * waistSpread, waistY],
+      ];
+      // Soft floor hem under the lobes (scalloped), left → right.
+      const hemN = 18;
+      const hemPts: Array<[number, number]> = [];
+      for (let i = 0; i <= hemN; i++) {
+        const t = i / hemN;
+        const xv = midSitX + lerp(-sideX * 1.02, sideX * 1.02, t);
+        const u = t * 2 - 1;
+        const scallop = Math.sin(t * Math.PI * 3.2 + c.seed) * B.foot * 0.11;
+        const dip = Math.abs(u) < 0.22 ? -B.foot * 0.08 : 0; // slight tuck between the feet
+        const yv = floorY - (1 - u * u) * B.foot * 0.06 + scallop + dip;
+        hemPts.push([xv, Math.min(yv, B.foot * 0.28)]);
+      }
+      // Full cloth path: left waist down left side to hem start, along hem, up right side to right waist, close on waist.
+      const leftDown: Array<[number, number]> = [
+        ring[0],
+        ring[1],
+        ring[2],
+        [hemPts[0][0], lerp(kneeY + lobeR * 0.4, hemPts[0][1], 0.55)],
+        hemPts[0],
+      ];
+      const rightUp: Array<[number, number]> = [
+        hemPts[hemPts.length - 1],
+        [hemPts[hemPts.length - 1][0], lerp(kneeY + lobeR * 0.4, hemPts[hemPts.length - 1][1], 0.55)],
+        ring[12],
+        ring[13],
+        ring[14],
+      ];
+      const bodyPts: Array<[number, number]> = [...ring.slice(0, 3), ...ring.slice(3, 12)];
+      const dBody = smoothPath(bodyPts, 1, false);
+      // Prefer a single closed fill: waist → sides → hem → back.
+      const fillPts: Array<[number, number]> = [...leftDown, ...hemPts.slice(1), ...rightUp.slice(1), [-hwp * waistSpread, waistY]];
+      const d = `${smoothPath(fillPts, 1, false)} Z`;
+      const bw = 6.5;
+      const edge: Array<[number, number]> = [[hemPts[0][0] - 10, hemPts[0][1]], ...hemPts, [hemPts[hemPts.length - 1][0] + 10, hemPts[hemPts.length - 1][1]]];
+      const shiftY = (dy: number) => edge.map(([xv, yv]): [number, number] => [xv, yv + dy]);
+      const band = `${smoothPath(shiftY(-bw), 1, false)} ${smoothPath(shiftY(2).reverse(), 1, false).replace(/^M/, "L")} Z`;
+      const stripe = smoothPath(shiftY(-bw - 2.2), 1, false);
+      const trim = c.lowerTrim || c.topTrim ? c.lowerTrim ?? c.lowerShade : null;
+      const clipId = `${uid}-hemclip`;
+      const crownPeak = waistY + Math.max(B.hw * 0.95, (kneeY - waistY) * 0.4);
+      const crownPath = `M ${-hwp * waistSpread * 0.9} ${waistY + 1}
+        Q ${midSitX} ${waistY + B.hw * 0.5} ${hwp * waistSpread * 0.9} ${waistY + 1}
+        Q ${knRx + lobeR * 0.55} ${crownPeak} ${knRx} ${kneeY + lobeR * 0.2}
+        Q ${midSitX} ${kneeY + lobeR * 0.85} ${knLx} ${kneeY + lobeR * 0.2}
+        Q ${knLx - lobeR * 0.55} ${crownPeak} ${-hwp * waistSpread * 0.9} ${waistY + 1} Z`;
+      const shadePath = `M ${knLx} ${kneeY + lobeR * 0.15}
+        Q ${midSitX} ${kneeY + lobeR * 1.15} ${knRx} ${kneeY + lobeR * 0.15}
+        Q ${midSitX} ${kneeY + lobeR * 0.4} ${knLx} ${kneeY + lobeR * 0.15} Z`;
+      const pleatX = frontX * 0.55;
+      const pleatYs = [waistY + B.hw * 0.7, kneeY + lobeR * 0.35, floorY - B.foot * 0.15];
+      return (
+        <g>
+          <defs>
+            <clipPath id={clipId}>
+              <path d={d} />
+            </clipPath>
+          </defs>
+          <path d={d} fill={`url(#${uid}-lowg)`} />
+          <path d={d} fill={`url(#${uid}-rim)`} />
+          {/* Knee lobes + lap crown read as folded legs under the sari (ref lady sit). */}
+          <ellipse cx={knLx} cy={kneeY + lobeR * 0.15} rx={lobeR * 1.05} ry={lobeR * 0.72} fill={`url(#${uid}-lowg)`} opacity={0.98} />
+          <ellipse cx={knRx} cy={kneeY + lobeR * 0.15} rx={lobeR * 1.05} ry={lobeR * 0.72} fill={`url(#${uid}-lowg)`} opacity={0.98} />
+          <path d={crownPath} fill={`url(#${uid}-lowg)`} opacity={0.9} />
+          <path d={crownPath} fill={`url(#${uid}-rim)`} opacity={0.32} />
+          <path d={shadePath} fill={c.lowerShade} opacity={0.2} />
+          <ellipse cx={midSitX} cy={crownPeak + legW1 * 0.1} rx={B.hw * 1.2} ry={legW1 * 0.45} fill={c.lowerShade} opacity={0.12} />
+          <g opacity={0.52}>
+            <path d={`M ${knLx - lobeR * 0.7} ${waistY + B.hw * 0.5} Q ${knLx} ${kneeY + lobeR * 0.35} ${midSitX - B.hw * 0.4} ${kneeY + lobeR * 0.85}`} fill="none" stroke={c.lowerShade} strokeWidth={1.25} strokeLinecap="round" />
+            <path d={`M ${knRx + lobeR * 0.7} ${waistY + B.hw * 0.5} Q ${knRx} ${kneeY + lobeR * 0.35} ${midSitX + B.hw * 0.4} ${kneeY + lobeR * 0.85}`} fill="none" stroke={c.lowerShade} strokeWidth={1.25} strokeLinecap="round" />
+            <path d={`M ${midSitX - B.hw * 1.45} ${waistY + B.hw * 0.65} Q ${midSitX} ${kneeY} ${midSitX + B.hw * 1.45} ${waistY + B.hw * 0.65}`} fill="none" stroke={c.lowerShade} strokeWidth={1.15} strokeLinecap="round" />
+            <path d={`M ${midSitX - B.hw * 0.95} ${waistY + B.hw * 1.05} Q ${midSitX} ${kneeY + lobeR * 0.55} ${midSitX + B.hw * 0.95} ${waistY + B.hw * 1.05}`} fill="none" stroke={c.lowerShade} strokeWidth={1.0} strokeLinecap="round" />
+          </g>
+          {[-7, -2, 3, 8].map((px) => (
+            <path
+              key={px}
+              d={`M ${pleatX + px * 0.55} ${pleatYs[0]} Q ${pleatX + px * 1.1} ${pleatYs[1]} ${pleatX + px * 1.55} ${pleatYs[2]}`}
+              fill="none"
+              stroke={c.lowerShade}
+              strokeWidth={1.05}
+              opacity={0.4}
+            />
+          ))}
+          {/* Keep body ring stroke soft so the concave waist→knee silhouette stays readable. */}
+          <path d={dBody} fill="none" stroke={c.lowerShade} strokeWidth={0.7} opacity={0.18} />
+          {trim && (
+            <g clipPath={`url(#${clipId})`}>
+              <path d={band} fill={trim} />
+              <path d={stripe} fill="none" stroke={trim} strokeWidth={1.1} opacity={0.85} />
+            </g>
+          )}
+        </g>
+      );
+    }
+
     for (const L of legs) {
-      const m = legW1 * 1.5;
+      const m = legW1 * (drapeK > 0.2 ? 2.85 : 1.5);
       pts.push([L.knee.x - m, yy(L.knee.y)], [L.knee.x + m, yy(L.knee.y)]);
       if (drapeK > 0) {
-        // seated / kneeling: the cloth rises over the thigh and wraps round the knee in a soft mound (the lap)
         const ky = yy(L.knee.y);
         const mx = lerp(L.hip.x, L.knee.x, 0.55);
         const my = yy(lerp(L.hip.y, L.knee.y, 0.55));
-        const up = legW1 * 1.25 * drapeK;
-        pts.push([L.knee.x, ky - up], [L.knee.x - m * 0.75, ky - up * 0.75], [L.knee.x + m * 0.75, ky - up * 0.75], [mx, my - up * 1.05]);
+        const up = legW1 * 2.45 * drapeK;
+        pts.push(
+          [L.knee.x, ky - up],
+          [L.knee.x - m * 0.95, ky - up * 0.82],
+          [L.knee.x + m * 0.95, ky - up * 0.82],
+          [mx - m * 0.4, my - up * 1.25],
+          [mx + m * 0.4, my - up * 1.25],
+          [mx, my - up * 1.45],
+          [L.hip.x - m * 0.65, yy(L.hip.y) + 2],
+          [L.hip.x + m * 0.65, yy(L.hip.y) + 2],
+          [L.knee.x - m * 0.7, ky + legW1 * 0.85 * drapeK],
+          [L.knee.x + m * 0.7, ky + legW1 * 0.85 * drapeK],
+        );
       }
       const fx = (L.toeTip.x + L.heelL.x) / 2;
-      const oy = yy(L.ankle.y) + 4;
+      const oy = yy(L.ankle.y) + 4 + (drapeK > 0.2 ? legW1 * 0.45 * drapeK : 0);
       const ft = feetMap?.get(L.side);
+      const hemM = drapeK > 0.2 ? m * 1.7 : m * 1.35;
       if (ft && feetK > 0) {
-        // raised hem over the bare foot: lifts and sways with each stride (blends back to the covering hem as she crouches)
         const hy = lerp(oy, ft.hemY, feetK);
-        const x1 = lerp(fx - m * 1.35, ft.hemX - hemR, feetK);
-        const x2 = lerp(fx + m * 1.35, ft.hemX + hemR, feetK);
+        const x1 = lerp(fx - hemM, ft.hemX - hemR, feetK);
+        const x2 = lerp(fx + hemM, ft.hemX + hemR, feetK);
         pts.push([x1, hy], [x2, hy]);
         footHems.push({ x: (x1 + x2) / 2, y: hy, r: Math.max(1, (x2 - x1) / 2) });
       } else {
-        pts.push([fx - m * 1.35, oy], [fx + m * 1.35, oy]);
+        pts.push([fx - hemM, oy], [fx + hemM, oy]);
       }
     }
     const H0 = hull(pts);
@@ -1385,9 +1738,9 @@ export const Puppet: React.FC<PuppetProps> = ({
     const strideLag = walkK * Math.sin(phase - 1.2); // ~4 frames behind the step
     const hemShift = hemLive * (clothSway * 0.4 + drag * 0.5);
     const hemTilt = hemLive * (-1.3 * wLag + B.foot * 0.05 * strideLag); // px at the ends; the bearing side hangs higher
-    const roundK = B.foot * lerp(0.07, 0.1, drapeK); // the hem wraps round the body: its sides sit a little higher
+    const roundK = B.foot * lerp(0.07, floorSit ? 0.22 : 0.1, drapeK); // floor-sit: softer oval sides (ref lady sit)
     const foldUp = B.foot * (0.06 + 0.04 * walkK); // hanging folds lift the edge in soft scallops
-    const foldFloor = B.foot * 0.09; // folds lying on the floor ripple both ways
+    const foldFloor = B.foot * (floorSit ? 0.14 : 0.09); // folds lying on the floor ripple both ways
     const seedH = c.seed * 1.37;
     const drift = (life * 0.012 * (1 - 0.6 * clamp(stillness)) + 0.9 * strideLag) * hemLive + hemShift * 0.05;
     const fold = (xv: number) => {
@@ -1425,7 +1778,7 @@ export const Puppet: React.FC<PuppetProps> = ({
       const yv =
         yb -
         roundK * u * u +
-        drapeK * B.foot * 0.16 * (1 - u * u) + // spread on the floor towards the camera
+        drapeK * B.foot * (floorSit ? 0.28 : 0.16) * (1 - u * u) + // floor-sit: fuller soft pool toward camera
         hemTilt * u +
         lerp(-foldUp * (0.5 + 0.5 * wv), foldFloor * wv, drapeK) +
         vDip(xv);
@@ -1523,7 +1876,300 @@ export const Puppet: React.FC<PuppetProps> = ({
     );
   };
 
-  const lowerBody = () => (
+  /* ---------------- cross-legged floor sit (PuppetProps.sitStyle "crossLegged") ---------------- */
+  // Own geometry, seen a little from above (a point nearer the camera sits lower on screen), so the crossed shins
+  // read in front of the knees instead of flattening into one line with them.
+  const crossLower = () => {
+    const CT = 0.42; // camera look-down: screen drop per unit of depth toward the camera
+    const zMid = B.thigh * 0.3;
+    type Q = { x: number; y: number; z: number };
+    const P = (v: V3): Q => {
+      const r = rotY(v);
+      return { x: r.x, y: hipY + v[1] + CT * (r.z - zMid), z: r.z };
+    };
+    const sH = crossSeatH;
+    const hipXc = B.hw * 0.66;
+    const kneeH = legW1 * 1.6;
+    const frontSide: 1 | -1 = 1; // the right shin crosses in front (mirrors with flip)
+    const legC = (side: 1 | -1) => {
+      const isF = side === frontSide;
+      const hip: V3 = [side * hipXc, 0, 0];
+      const knee: V3 = [side * (hipXc + B.thigh * 0.7), sH - kneeH, B.thigh * 0.34];
+      const ankle: V3 = isF ? [-side * B.shin * 0.1, sH - legW2 * 1.5, B.thigh * 0.84] : [-side * B.shin * 0.16, sH - legW2 * 1.0, B.thigh * 0.54];
+      const n = Math.hypot(1, 0.3);
+      const fd: V3 = [-side / n, 0, -0.3 / n];
+      return {
+        side,
+        isF,
+        hip: P(hip),
+        knee: P(knee),
+        ankle: P(ankle),
+        heel: P(add3(ankle, mul3(fd, -B.foot * 0.2))),
+        toe: P(add3(ankle, mul3(fd, B.foot * 0.8))),
+      };
+    };
+    const LB = legC(-frontSide as 1 | -1);
+    const LF = legC(frontSide);
+    const tube = (a: Q, b: Q, w1: number, w2: number, fill: string, key: string, opacity = 1) => {
+      const t = limb(a.x, a.y, b.x, b.y, w1, w2);
+      return <path key={key} d={t.d} transform={t.t} fill={fill} opacity={opacity} />;
+    };
+    const mix = (a: Q, b: Q, k: number): Q => ({ x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), z: lerp(a.z, b.z, k) });
+    const soleCol = lerpColor(c.skin, "#f4dcc4", 0.45);
+    const foot = (L: ReturnType<typeof legC>, skin: string, key: string) => {
+      const fw = B.foot * 0.27;
+      const t = limb(L.heel.x, L.heel.y, L.toe.x, L.toe.y, fw * 0.95, fw * 0.82);
+      const ux = L.toe.x - L.heel.x;
+      const uy = L.toe.y - L.heel.y;
+      const ul = Math.hypot(ux, uy) || 1;
+      // the sole faces up and back: a pale strip along the foot's upper edge
+      const nx = (uy / ul) * (ux > 0 ? 1 : -1);
+      const ny = (-ux / ul) * (ux > 0 ? 1 : -1);
+      const s0 = { x: lerp(L.heel.x, L.toe.x, 0.08) + nx * fw * 0.35, y: lerp(L.heel.y, L.toe.y, 0.08) + ny * fw * 0.35 };
+      const s1 = { x: lerp(L.heel.x, L.toe.x, 0.9) + nx * fw * 0.3, y: lerp(L.heel.y, L.toe.y, 0.9) + ny * fw * 0.3 };
+      return (
+        <g key={key}>
+          <path d={t.d} transform={t.t} fill={skin} />
+          <path d={`M ${s0.x} ${s0.y} L ${s1.x} ${s1.y}`} stroke={soleCol} strokeWidth={fw * 0.75} strokeLinecap="round" opacity={0.85} />
+          {/* toes at the far end */}
+          {[0, 1, 2].map((k) => {
+            const tx = lerp(L.heel.x, L.toe.x, 0.86 + k * 0.045) - nx * fw * (0.2 - k * 0.2);
+            const ty = lerp(L.heel.y, L.toe.y, 0.86 + k * 0.045) - ny * fw * (0.2 - k * 0.2);
+            return <circle key={k} cx={tx} cy={ty} r={fw * 0.2} fill={skin} stroke={c.skinShade} strokeWidth={0.6} strokeOpacity={0.5} />;
+          })}
+          <ellipse cx={L.ankle.x} cy={L.ankle.y} rx={legW2 * 0.62} ry={legW2 * 0.55} fill={skin} />
+        </g>
+      );
+    };
+    const shin = (L: ReturnType<typeof legC>, skin: string, key: string) => (
+      <g key={key}>
+        {tube(L.knee, L.ankle, legW2 * 1.12, legW2 * 0.74, skin, "s")}
+        {/* calf swell on the under side */}
+        {tube(mix(L.knee, L.ankle, 0.08), mix(L.knee, L.ankle, 0.62), legW2 * 0.5, legW2 * 0.2, c.skinShade, "c", 0.3)}
+      </g>
+    );
+    const thighSkin = (L: ReturnType<typeof legC>, key: string) => (
+      <g key={key}>
+        {tube(L.hip, L.knee, legW1 * 1.3, legW2 * 1.22, c.skin, "t")}
+        <ellipse cx={L.knee.x} cy={L.knee.y} rx={legW2 * 1.28} ry={legW2 * 1.12} fill={c.skin} />
+        <path d={`M ${L.knee.x - legW2 * 0.5} ${L.knee.y - legW2 * 0.2} q ${legW2 * 0.5} ${-legW2 * 0.45} ${legW2 * 1.0} 0`} stroke={c.skinShade} strokeWidth={1.1} fill="none" opacity={0.55} />
+      </g>
+    );
+    const backSkin = c.skinShade;
+    const hitched = c.dhotiLength === "hitched";
+    const clothed = c.lower === "dhoti";
+    const waistY = hipY - 8;
+    const lowg = `url(#${uid}-lowg)`;
+    const rimg = `url(#${uid}-rim)`;
+    const rT = legW1 * 1.42; // cloth radius round the thigh at the hip
+    const rK = legW1 * (hitched ? 1.22 : 1.38); // ... and at the knee (or the malkochha's end)
+    const wrapEnd = (L: ReturnType<typeof legC>) => (hitched ? mix(L.hip, L.knee, 0.68) : L.knee);
+    const thighCloth = (L: ReturnType<typeof legC>, key: string) => {
+      const e = wrapEnd(L);
+      const t = limb(L.hip.x, L.hip.y - legW1 * 0.25, e.x, e.y, rT, rK);
+      const ux = e.x - L.hip.x;
+      return (
+        <g key={key}>
+          <path d={t.d} transform={t.t} fill={lowg} />
+          <path d={t.d} transform={t.t} fill={rimg} />
+          {/* the cloth's shaded underside along the thigh, and the fold from the crotch toward the knee */}
+          <path d={`M ${L.hip.x + ux * 0.1} ${L.hip.y + rT * 0.75} Q ${lerp(L.hip.x, e.x, 0.55)} ${lerp(L.hip.y, e.y, 0.55) + rK * 1.05} ${e.x - Math.sign(ux) * rK * 0.2} ${e.y + rK * 0.85}`} stroke={c.lowerShade} strokeWidth={2.4} fill="none" opacity={0.6} strokeLinecap="round" />
+          <path d={`M ${L.hip.x + ux * 0.05} ${L.hip.y - rT * 0.2} Q ${lerp(L.hip.x, e.x, 0.5)} ${lerp(L.hip.y, e.y, 0.5) - rK * 0.1} ${e.x - Math.sign(ux) * rK * 0.6} ${e.y - rK * 0.05}`} stroke={c.lowerShade} strokeWidth={1.3} fill="none" opacity={0.45} strokeLinecap="round" />
+          {hitched && <path d={`M ${e.x - (e.y - L.hip.y) * 0.0 - rK * 0.15} ${e.y - rK * 0.95} L ${e.x + rK * 0.15} ${e.y + rK * 0.95}`} stroke={c.lowerTrim ?? c.lowerShade} strokeWidth={2.2} strokeLinecap="round" opacity={0.85} />}
+        </g>
+      );
+    };
+    // central lap cloth: the waist, between the thighs and (a long dhoti) draped over the crossed shins
+    const midF = mix(LF.knee, LF.ankle, 0.55);
+    const midB = mix(LB.knee, LB.ankle, 0.5);
+    const lapPts: Array<[number, number]> = hitched
+      ? [
+          [-hwp * 1.1, waistY],
+          [hwp * 1.1, waistY],
+          [LB.hip.x, LB.hip.y + legW1 * 0.7],
+          [LF.hip.x, LF.hip.y + legW1 * 0.7],
+          [(LB.hip.x + LF.hip.x) / 2, hipY + legW1 * 1.15],
+        ]
+      : [
+          [-hwp * 1.12, waistY],
+          [hwp * 1.12, waistY],
+          [LB.hip.x, LB.hip.y + rT * 0.6],
+          [LF.hip.x, LF.hip.y + rT * 0.6],
+          [LB.knee.x, LB.knee.y + rK * 0.5],
+          [LF.knee.x, LF.knee.y + rK * 0.5],
+          [midF.x, midF.y + legW2 * 1.15],
+          [midB.x, midB.y + legW2 * 1.05],
+          [(midF.x + midB.x) / 2, (midF.y + midB.y) / 2 + legW2 * 1.25],
+        ];
+    const lapD = smoothPath(hull(lapPts), 1);
+    // the hem across the shins (long dhoti): from the back shin's middle, under the front-centre, to the front shin
+    const hemD = `M ${midB.x} ${midB.y + legW2 * 1.0} Q ${(midF.x + midB.x) / 2} ${(midF.y + midB.y) / 2 + legW2 * 1.5} ${midF.x} ${midF.y + legW2 * 1.1}`;
+    // front pleats (kochi) falling from the waist into the lap
+    const kx = frontX * 0.6;
+    const kBot = hitched ? hipY + legW1 * 1.3 : (midF.y + midB.y) / 2 + legW2 * 0.9;
+    const kw0 = B.hw * 0.22;
+    const kw1 = B.hw * (hitched ? 0.3 : 0.42);
+    const kochi = (
+      <g>
+        <path d={`M ${kx - kw0} ${waistY + 3} L ${kx + kw0} ${waistY + 3} L ${kx + kw1} ${kBot} Q ${kx} ${kBot + 3} ${kx - kw1} ${kBot} Z`} fill={c.lowerColor} />
+        <path d={`M ${kx - kw0} ${waistY + 3} L ${kx + kw0} ${waistY + 3} L ${kx + kw1} ${kBot} Q ${kx} ${kBot + 3} ${kx - kw1} ${kBot} Z`} fill={rimg} opacity={0.6} />
+        {[-0.6, -0.2, 0.2, 0.6].map((k) => (
+          <path key={k} d={`M ${kx + k * kw0} ${waistY + 5} L ${kx + k * kw1} ${kBot}`} stroke={c.lowerShade} strokeWidth={1.2} opacity={0.7} />
+        ))}
+        {c.lowerTrim && <path d={`M ${kx - kw1} ${kBot - 1} Q ${kx} ${kBot + 2} ${kx + kw1} ${kBot - 1}`} stroke={c.lowerTrim} strokeWidth={2.6} fill="none" />}
+      </g>
+    );
+    const kneeLobe = (L: ReturnType<typeof legC>, key: string) => (
+      <g key={key}>
+        <ellipse cx={L.knee.x} cy={L.knee.y} rx={rK * 1.08} ry={rK * 0.92} fill={lowg} />
+        <ellipse cx={L.knee.x} cy={L.knee.y} rx={rK * 1.08} ry={rK * 0.92} fill={rimg} opacity={0.7} />
+        <ellipse cx={L.knee.x - Math.sign(L.knee.x) * rK * 0.1} cy={L.knee.y - rK * 0.38} rx={rK * 0.55} ry={rK * 0.28} fill={lerpColor(c.lowerColor, "#ffffff", 0.5)} opacity={0.45} />
+        <path d={`M ${L.knee.x - rK * 0.85} ${L.knee.y + rK * 0.35} Q ${L.knee.x} ${L.knee.y + rK * 1.05} ${L.knee.x + rK * 0.85} ${L.knee.y + rK * 0.35}`} stroke={c.lowerShade} strokeWidth={1.6} fill="none" opacity={0.55} />
+      </g>
+    );
+    // the feet tuck under the opposite knee: draw the back foot first, the front one over the cloth's hem
+    return (
+      <g>
+        {shin(LB, backSkin, "shB")}
+        {foot(LB, backSkin, "ftB")}
+        {(!clothed || hitched) && thighSkin(LB, "thB")}
+        {(!clothed || hitched) && thighSkin(LF, "thF")}
+        {shin(LF, c.skin, "shF")}
+        {clothed && (
+          <g>
+            <path d={lapD} fill={lowg} />
+            <path d={lapD} fill={rimg} opacity={0.6} />
+            {thighCloth(LB, "tcB")}
+            {thighCloth(LF, "tcF")}
+            {!hitched && kneeLobe(LB, "klB")}
+            {!hitched && kneeLobe(LF, "klF")}
+            {!hitched && <path d={hemD} stroke={c.lowerTrim ?? c.lowerShade} strokeWidth={c.lowerTrim ? 3 : 1.8} fill="none" strokeLinecap="round" />}
+            {!hitched && (
+              <path
+                d={`M ${(LB.hip.x + LF.hip.x) / 2} ${hipY + legW1 * 0.5} Q ${lerp(LB.knee.x, LF.knee.x, 0.5)} ${(LB.knee.y + LF.knee.y) / 2 + legW1 * 0.9} ${midF.x} ${midF.y + legW2 * 0.4}`}
+                stroke={c.lowerShade}
+                strokeWidth={1.4}
+                fill="none"
+                opacity={0.45}
+              />
+            )}
+            {kochi}
+            <path d={`M ${-hwp * 1.12} ${waistY + 2} Q 0 ${waistY + 9} ${hwp * 1.12} ${waistY + 2}`} stroke={c.lowerShade} strokeWidth={4} fill="none" opacity={0.65} />
+          </g>
+        )}
+        {clothed && !hitched ? (
+          <g>
+            {tube(mix(LF.knee, LF.ankle, 0.62), LF.ankle, legW2 * 0.86, legW2 * 0.74, c.skin, "ankF")}
+            {foot(LF, c.skin, "ftF")}
+          </g>
+        ) : (
+          foot(LF, c.skin, "ftF")
+        )}
+      </g>
+    );
+  };
+
+  /* ---------------- kneeling on the heels under the sari (PuppetProps.sitStyle "kneel") ---------------- */
+  const vajraLower = () => {
+    const CT = 0.44;
+    type Q = { x: number; y: number; z: number };
+    const zMid = B.thigh * 0.35;
+    const P = (v: V3): Q => {
+      const r = rotY(v);
+      return { x: r.x, y: hipY + v[1] + CT * (r.z - zMid), z: r.z };
+    };
+    const sH = vajraSeatH;
+    const hx = B.hw * 0.6;
+    const kneeR = legW1 * 1.4;
+    const kneeZ = B.thigh * lerp(0.9, 0.58, bowK);
+    const pts: Q[] = [];
+    const side = (sd: 1 | -1) => {
+      const hip = P([sd * hx, 0, -legW1 * 0.2]);
+      const knee = P([sd * hx * 1.3, sH - kneeR * 0.85, kneeZ]);
+      const ankle = P([sd * hx * 0.75, sH - legW2 * 0.85, -B.thigh * 0.02]);
+      const toe = P([sd * hx * 0.7, sH - legW2 * 0.35, -B.thigh * 0.02 - B.foot * 0.85]);
+      const buttock = P([sd * (hx + legW1 * 0.4), legW1 * 0.25, -legW1 * 1.35]);
+      const floorK = P([sd * (hx * 1.3 + kneeR * 1.05), sH, kneeZ + kneeR * 0.35]);
+      const floorB = P([sd * (hx * 0.9 + legW2), sH, -B.thigh * 0.1 - B.foot * 0.4]);
+      // the sari spreads on the floor beside the folded legs (a frontal view then widens toward the floor)
+      const floorS = P([sd * (hx + legW1 * 2.2), sH, B.thigh * 0.2]);
+      return { sd, hip, knee, ankle, toe, buttock, floorK, floorB, floorS };
+    };
+    const S1 = side(-1);
+    const S2 = side(1);
+    const waistY = hipY - 10;
+    const ws = 1.15;
+    const all = [S1, S2];
+    for (const S of all) {
+      pts.push(S.buttock, S.floorK, S.floorB, S.floorS);
+      pts.push({ x: S.knee.x - kneeR, y: S.knee.y, z: S.knee.z }, { x: S.knee.x + kneeR, y: S.knee.y, z: S.knee.z }, { x: S.knee.x, y: S.knee.y - kneeR * 0.95, z: S.knee.z });
+      pts.push({ x: S.hip.x, y: S.hip.y - legW1 * 1.1, z: S.hip.z });
+    }
+    pts.push({ x: -hwp * ws, y: waistY, z: 0 }, { x: hwp * ws, y: waistY, z: 0 });
+    const H = hull(pts.map((q) => [q.x, q.y] as [number, number]));
+    const d = smoothPath(H, 1);
+    const lowg = `url(#${uid}-lowg)`;
+    const rimg = `url(#${uid}-rim)`;
+    const clipId = `${uid}-vjclip`;
+    // the hem lies on the floor: the part of the outline near the floor line
+    const floorLine = hipY + sH;
+    const nearFloor = H.filter((q) => q[1] > floorLine - legW1 * 1.6).sort((a, b) => a[0] - b[0]);
+    const trim = c.lowerTrim ?? c.topTrim ?? c.lowerShade;
+    const soleCol = lerpColor(c.skin, "#f2d6bc", 0.5);
+    const kneeMid = { x: (S1.knee.x + S2.knee.x) / 2, y: (S1.knee.y + S2.knee.y) / 2 };
+    const foot = (S: ReturnType<typeof side>) => {
+      const t = limb(S.ankle.x, S.ankle.y, S.toe.x, S.toe.y, B.foot * 0.25, B.foot * 0.21);
+      return (
+        <g key={`vf${S.sd}`}>
+          <path d={t.d} transform={t.t} fill={c.skinShade} />
+          <path d={`M ${lerp(S.ankle.x, S.toe.x, 0.1)} ${lerp(S.ankle.y, S.toe.y, 0.1) + B.foot * 0.08} L ${lerp(S.ankle.x, S.toe.x, 0.9)} ${lerp(S.ankle.y, S.toe.y, 0.9) + B.foot * 0.08}`} stroke={soleCol} strokeWidth={B.foot * 0.2} strokeLinecap="round" />
+        </g>
+      );
+    };
+    // the far-side foot first; both soles show behind her, under the sari's back edge
+    const feetSorted = [S1, S2].sort((a, b) => a.toe.z - b.toe.z);
+    const pleatX = kneeMid.x;
+    return (
+      <g>
+        {feetSorted.map(foot)}
+        <defs>
+          <clipPath id={clipId}>
+            <path d={d} />
+          </clipPath>
+        </defs>
+        <path d={d} fill={lowg} />
+        <path d={d} fill={rimg} />
+        <g clipPath={`url(#${clipId})`}>
+          {/* the folded legs under the cloth: thigh tops catch the light, the knees are round, shade between them */}
+          {all.map((S) => (
+            <g key={`vk${S.sd}`}>
+              <path d={`M ${S.hip.x} ${S.hip.y - legW1 * 0.7} Q ${lerp(S.hip.x, S.knee.x, 0.5)} ${lerp(S.hip.y, S.knee.y, 0.5) - kneeR * 1.1} ${S.knee.x} ${S.knee.y - kneeR * 0.75}`} stroke={lerpColor(c.lowerColor, "#ffffff", 0.45)} strokeWidth={legW1 * 0.9} fill="none" strokeLinecap="round" opacity={0.45} />
+              <ellipse cx={S.knee.x} cy={S.knee.y} rx={kneeR * 0.98} ry={kneeR * 0.82} fill={lowg} />
+              <ellipse cx={S.knee.x} cy={S.knee.y - kneeR * 0.35} rx={kneeR * 0.55} ry={kneeR * 0.3} fill={lerpColor(c.lowerColor, "#ffffff", 0.5)} opacity={0.5} />
+              <path d={`M ${S.knee.x - kneeR * 0.85} ${S.knee.y + kneeR * 0.3} Q ${S.knee.x} ${S.knee.y + kneeR * 0.95} ${S.knee.x + kneeR * 0.85} ${S.knee.y + kneeR * 0.3}`} stroke={c.lowerShade} strokeWidth={1.5} fill="none" opacity={0.6} />
+              {/* the cloth's fold from the hip down over the heel */}
+              <path d={`M ${S.hip.x} ${S.hip.y} Q ${S.buttock.x} ${lerp(S.hip.y, floorLine, 0.6)} ${S.floorB.x} ${floorLine - legW2 * 0.4}`} stroke={c.lowerShade} strokeWidth={1.3} fill="none" opacity={0.45} />
+            </g>
+          ))}
+          <path d={`M ${(S1.hip.x + S2.hip.x) / 2} ${hipY + legW1 * 0.2} Q ${kneeMid.x} ${kneeMid.y - kneeR * 0.4} ${kneeMid.x} ${kneeMid.y + kneeR * 0.6}`} stroke={c.lowerShade} strokeWidth={2} fill="none" opacity={0.5} />
+          {/* front pleats, falling from the waist between the knees onto the floor */}
+          {[-3, -1, 1, 3].map((k) => (
+            <path key={k} d={`M ${frontX * 0.5 + k * 1.6} ${waistY + 6} Q ${lerp(frontX * 0.5, pleatX, 0.6) + k * 2.4} ${kneeMid.y - kneeR * 0.2} ${pleatX + k * 3.2} ${floorLine}`} stroke={c.lowerShade} strokeWidth={1.1} fill="none" opacity={0.45} />
+          ))}
+          {nearFloor.length >= 2 && (
+            <path d={smoothPath(nearFloor.map((q) => [q[0], q[1] - 3.2] as [number, number]), 1, false)} stroke={trim} strokeWidth={6} fill="none" strokeLinecap="round" />
+          )}
+        </g>
+      </g>
+    );
+  };
+
+  const lowerBody = () =>
+    crossOn ? (
+      crossLower()
+    ) : vajraOn ? (
+      vajraLower()
+    ) : (
     <g>
       {c.lower === "saree" ? (
         <>
@@ -1546,12 +2192,15 @@ export const Puppet: React.FC<PuppetProps> = ({
         </>
       )}
     </g>
-  );
+    );
 
   /* ---------------- torso ---------------- */
   const torso = () => {
-    const hemY =
-      seated || c.outfit === "frock"
+    const hemY = crossOn
+      ? c.outfit === "kurta"
+        ? hipY + legW1 * 0.9
+        : hipY - B.torsoLen * 0.1
+      : seated || c.outfit === "frock"
         ? hipY + 4
         : c.outfit === "kurta"
           ? hipY + B.thigh * (B.child ? 0.38 : 0.42)
@@ -1783,6 +2432,41 @@ export const Puppet: React.FC<PuppetProps> = ({
     );
   };
 
+  /* ---------------- the anchal over the back in the kneeling pranam (sitStyle "kneel") ---------------- */
+  // Bowed down, a Bengali woman's back is covered by her sari's end (the anchal, over her head as a ghomta): one smooth
+  // cloth from the raised hips over the rounded back to the veiled head, its border along the edge. Torso frame.
+  const pranamCloak = () => {
+    if (sitStyle !== "kneel" || c.lower !== "saree") return null;
+    const k = clamp((bowK - 0.12) / 0.4);
+    if (k <= 0) return null;
+    const fw: 1 | -1 = sphi >= 0 ? 1 : -1;
+    const nT = shY - B.neck + headBreathY;
+    const R = B.headR;
+    const col = c.scarf?.color ?? c.lowerColor;
+    const shade = c.scarf?.shade ?? c.lowerShade;
+    const trim = c.scarf?.trim ?? c.lowerTrim ?? c.topTrim ?? shade;
+    const bx = (v: number) => -fw * v; // toward the back
+    const d = `M ${bx(hwp * 1.3)} ${hipY + 8}
+      C ${bx(swp * 1.45)} ${hipY - B.torsoLen * 0.35} ${bx(swp * 1.35)} ${shY + B.torsoLen * 0.1} ${bx(swp * 1.05)} ${shY - 6}
+      C ${bx(swp * 0.8)} ${shY - B.neck - 4} ${bx(R * 0.95)} ${nT - R * 0.7} ${bx(R * 0.35)} ${nT - R * 1.25}
+      L ${fw * R * 0.45} ${nT - R * 0.4}
+      C ${fw * swp * 0.8} ${shY + 2} ${fw * swp * 1.05} ${shY + B.torsoLen * 0.45} ${fw * hwp * 1.2} ${hipY + 6}
+      Q 0 ${hipY + 14} ${bx(hwp * 1.3)} ${hipY + 8} Z`;
+    const edge = `M ${fw * R * 0.45} ${nT - R * 0.4} C ${fw * swp * 0.8} ${shY + 2} ${fw * swp * 1.05} ${shY + B.torsoLen * 0.45} ${fw * hwp * 1.2} ${hipY + 6}`;
+    return (
+      <g opacity={k}>
+        <path d={d} fill={col} />
+        <path d={d} fill={`url(#${uid}-rim)`} opacity={0.7} />
+        {/* soft folds running along the back, and the shade under the front edge */}
+        {[0.35, 0.6, 0.82].map((t) => (
+          <path key={t} d={`M ${bx(hwp * (1.25 - 0.5 * t))} ${hipY + 4} Q ${bx(swp * (1.3 - 0.45 * t))} ${lerp(hipY, shY, 0.5)} ${bx(swp * (1.0 - 0.4 * t))} ${shY - 2}`} stroke={shade} strokeWidth={1.4} fill="none" opacity={0.55} />
+        ))}
+        <path d={edge} stroke={shade} strokeWidth={5} fill="none" opacity={0.5} transform={`translate(${-fw * 3}, 0)`} />
+        <path d={edge} stroke={trim} strokeWidth={4.5} fill="none" strokeLinecap="round" />
+      </g>
+    );
+  };
+
   /* ---------------- shoulder bag (jhola, Episode 5 on) ---------------- */
   const bag = () => {
     const b = c.bag;
@@ -1809,7 +2493,11 @@ export const Puppet: React.FC<PuppetProps> = ({
   };
 
   /* ---------------- arms ---------------- */
+  // PuppetProps.reachExact: a per-arm stretch (1 = the rig's own lengths), set by the reach solve below
+  const armStretch: Record<number, number> = { 1: 1, [-1]: 1 };
   const arm = (side: 1 | -1, S: number, E: number, shape: HandShape, propId: string, back: boolean, extraFlex: number, wrist = 0, turn?: number, backK?: number) => {
+    const UA = B.ua * armStretch[side];
+    const FA = (B.fa - 2) * armStretch[side] + 2;
     const sx = side * B.sw * 0.86 * cphi;
     const rot1 = -side * S;
     const rot2 = -side * E;
@@ -1817,7 +2505,8 @@ export const Puppet: React.FC<PuppetProps> = ({
     const upperSleeve = sleeveCol && c.sleeve !== "none";
     const foreSleeve = sleeveCol && (c.sleeve === "full" || c.sleeve === "rolled");
     const foreSleeveLen = c.sleeve === "full" ? 0.84 : 0.42;
-    const upperLen = c.sleeve === "half" ? 0.78 : 1.05;
+    const soft = softSleeves && (c.outfit === "blouse" || c.outfit === "frock") && c.sleeve === "half";
+    const upperLen = c.sleeve === "half" ? (soft ? 0.6 : 0.78) : 1.05;
     const slim = (female ? 0.88 : 1) * (c.wiry ? 0.9 : 1);
     const fitted = c.outfit === "blouse" || c.outfit === "frock"; // blouse sleeves hug the arm
     const L = B.limbW * slim;
@@ -1840,21 +2529,29 @@ export const Puppet: React.FC<PuppetProps> = ({
     return (
       <g transform={`translate(${sx}, ${shY + B.limbW}) rotate(${rot1})`} style={backStyle}>
         {/* upper arm: deltoid → biceps → elbow */}
-        <path d={seg(B.ua, L * 1.25, L * 1.1, L * 0.86, 0.3)} fill={skin} />
-        {upperSleeve && sleeve(B.ua * upperLen, L * (fitted ? 1.38 : 1.75), c.sleeve === "half" ? L * (fitted ? 1.22 : 1.6) : L * 1.3)}
+        <path d={seg(UA, L * 1.25, L * 1.1, L * 0.86, 0.3)} fill={skin} />
+        {upperSleeve && sleeve(UA * upperLen, L * (fitted ? (soft ? 1.32 : 1.38) : 1.75), c.sleeve === "half" ? L * (fitted ? (soft ? 1.1 : 1.22) : 1.6) : L * 1.3)}
+        {upperSleeve && soft && (
+          <g>
+            {/* inner shade and a soft fold, so the sleeve reads round, not as a flat tube */}
+            <path d={`M ${-side * L * 0.95} ${UA * 0.08} Q ${-side * L * 1.15} ${UA * upperLen * 0.5} ${-side * L * 0.9} ${UA * upperLen * 0.95}`} stroke={c.topShade} strokeWidth={L * 0.55} fill="none" opacity={0.55} strokeLinecap="round" />
+            <path d={`M ${side * L * 0.4} ${UA * upperLen * 0.35} Q ${side * L * 0.05} ${UA * upperLen * 0.6} ${-side * L * 0.35} ${UA * upperLen * 0.72}`} stroke={c.topShade} strokeWidth={1.2} fill="none" opacity={0.6} />
+            <path d={`M ${side * L * 0.8} ${UA * 0.1} L ${side * L * 0.7} ${UA * upperLen * 0.8}`} stroke={c.topLight} strokeWidth={L * 0.35} fill="none" opacity={0.45} strokeLinecap="round" />
+          </g>
+        )}
         {/* shoulder cap merges the arm into the torso */}
         <circle cx={0} cy={0} r={L * (upperSleeve ? (fitted ? 1.38 : 1.7) : 1.3)} fill={upperSleeve ? sleeveFill : skin} />
-        <g transform={`translate(0, ${B.ua}) rotate(${rot2})`}>
+        <g transform={`translate(0, ${UA}) rotate(${rot2})`}>
           {/* forearm: swell below the elbow → narrow wrist */}
-          <path d={seg(B.fa, L * 0.9, L * 1.0, L * 0.6, 0.25)} fill={skin} />
-          <path d={seg(B.fa * 0.8, L * 0.35, L * 0.4, L * 0.22, 0.25)} fill={c.skinShade} opacity={0.22} transform={`translate(${side * L * 0.45}, 0)`} />
+          <path d={seg(FA, L * 0.9, L * 1.0, L * 0.6, 0.25)} fill={skin} />
+          <path d={seg(FA * 0.8, L * 0.35, L * 0.4, L * 0.22, 0.25)} fill={c.skinShade} opacity={0.22} transform={`translate(${side * L * 0.45}, 0)`} />
           {foreSleeve && (
             <g>
-              {sleeve(B.fa * foreSleeveLen, L * 1.45, c.sleeve === "full" ? L * 1.0 : L * 1.25)}
+              {sleeve(FA * foreSleeveLen, L * 1.45, c.sleeve === "full" ? L * 1.0 : L * 1.25)}
               {c.sleeve === "rolled" && (
                 <g>
-                  <rect x={-L * 1.4} y={B.fa * foreSleeveLen - L * 0.75} width={L * 2.8} height={L * 1.2} rx={L * 0.55} fill={c.topLight} />
-                  <path d={`M ${-L * 1.3} ${B.fa * foreSleeveLen - L * 0.15} L ${L * 1.3} ${B.fa * foreSleeveLen - L * 0.15}`} stroke={c.topShade} strokeWidth={1.1} opacity={0.6} />
+                  <rect x={-L * 1.4} y={FA * foreSleeveLen - L * 0.75} width={L * 2.8} height={L * 1.2} rx={L * 0.55} fill={c.topLight} />
+                  <path d={`M ${-L * 1.3} ${FA * foreSleeveLen - L * 0.15} L ${L * 1.3} ${FA * foreSleeveLen - L * 0.15}`} stroke={c.topShade} strokeWidth={1.1} opacity={0.6} />
                 </g>
               )}
             </g>
@@ -1872,7 +2569,7 @@ export const Puppet: React.FC<PuppetProps> = ({
                 opacity={0.6 * bend}
               />
             ))}
-          <g transform={`translate(0, ${B.fa - 2})${PropR ? "" : ` rotate(${-side * wrist})`}`}>
+          <g transform={`translate(0, ${FA - 2})${PropR ? "" : ` rotate(${-side * wrist})`}`}>
             <Hand shape={shape} L={B.hand} skin={skin} shade={c.skinShade} side={side} flex={noise1(life * 0.04, c.seed + side) * 0.5 + 0.5 + extraFlex} turn={turn} />
             {PropR && <g transform={`translate(0, ${B.hand * 0.62})`}>{PropR({ f, worldRot: rot1 + rot2 + p.lean, side, scale: B.hand / 30 })}</g>}
           </g>
@@ -1930,9 +2627,12 @@ export const Puppet: React.FC<PuppetProps> = ({
     const R = B.headR;
     const neckTop = shY - B.neck + headBreathY;
     const cy = neckTop - m.bottom * R * 0.92 + R * 0.06;
-    const yaw = clamp(phi + clamp(ph.headTurn + headTurnIdle, -1, 1) * 1.15, -1.45, 1.45);
+    const yaw = clamp(phi + clamp(ph.headTurn + headTurnIdle, -1, 1) * 1.15 + bowProfile, -1.45, 1.45);
+    const roll = headRoll(ph.headTilt + headTiltIdle + emphasis * 0.5) + bowNeck;
+    const cyN = cy + ph.headNod + Math.abs(emphasis) * 0.6;
+    const pivY = lerp(cyN, neckTop, neckPivotW(roll));
     return (
-      <g transform={`translate(${sphi * B.sw * 0.12}, ${cy + ph.headNod + Math.abs(emphasis) * 0.6}) rotate(${ph.headTilt + headTiltIdle + emphasis * 0.5})`}>
+      <g transform={`translate(${sphi * B.sw * 0.12}, ${pivY}) rotate(${roll}) translate(0, ${cyN - pivY})`}>
         <Head
           R={R}
           shape={shape}
@@ -1972,15 +2672,17 @@ export const Puppet: React.FC<PuppetProps> = ({
   // the kneeling bow (Pose.bow): the upper body folds forward from the hips, toward the side the figure faces
   const fwd: 1 | -1 = sphi >= 0 ? 1 : -1;
   const upperRot = p.lean + tiltIdle + antLean;
-  // group (torso) coordinates <-> figure coordinates for an upper-body rotation r (rad) about the hip
+  // the upper body turns about the hip; a cross-legged sit (sitStyle) bends at the waist over planted hips instead
+  const pivY = crossOn ? hipY - B.torsoLen * 0.24 : hipY;
+  // group (torso) coordinates <-> figure coordinates for an upper-body rotation r (rad) about the hip (pivY)
   const toFig = (lx: number, ly: number, r: number): [number, number] => [
-    upperX + lx * Math.cos(r) - (ly - hipY) * Math.sin(r),
-    antY + hipY + lx * Math.sin(r) + (ly - hipY) * Math.cos(r),
+    upperX + lx * Math.cos(r) - (ly - pivY) * Math.sin(r),
+    antY + pivY + lx * Math.sin(r) + (ly - pivY) * Math.cos(r),
   ];
   const toLocal = (X: number, Y: number, r: number): [number, number] => {
     const dx = X - upperX;
-    const dy = Y - antY - hipY;
-    return [dx * Math.cos(-r) - dy * Math.sin(-r), hipY + dx * Math.sin(-r) + dy * Math.cos(-r)];
+    const dy = Y - antY - pivY;
+    return [dx * Math.cos(-r) - dy * Math.sin(-r), pivY + dx * Math.sin(-r) + dy * Math.cos(-r)];
   };
   // the head centre in the torso frame (as head() places it, without the nod)
   const headLocal = (): [number, number] => {
@@ -2026,8 +2728,8 @@ export const Puppet: React.FC<PuppetProps> = ({
     const [lx, ly] = toLocal(tx, ty, R);
     const vx = lx - sx0;
     const vy = ly - sy0;
-    const ua = B.ua;
-    const fa = B.fa - 2;
+    const ua = B.ua * armStretch[side];
+    const fa = (B.fa - 2) * armStretch[side];
     const d = clamp(Math.hypot(vx, vy), Math.abs(ua - fa) + 1, ua + fa - 0.5);
     const alpha = Math.atan2(-vx, vy);
     const beta = Math.acos(clamp((ua * ua + d * d - fa * fa) / (2 * ua * d), -1, 1));
@@ -2116,12 +2818,15 @@ export const Puppet: React.FC<PuppetProps> = ({
   /** The rotation that turns +y toward (dx, dy) (SVG rotate, radians). */
   const angOf = (dx: number, dy: number) => Math.atan2(-dx, dy);
   // head points: an offset from the head centre in the head's own frame (its tilt), placed as head() places the head
-  const tilt5 = (pHead.headTilt + headTiltIdle + emphasis * 0.5) * deg;
-  const yaw5 = clamp(phi + clamp(pHead.headTurn + headTurnIdle, -1, 1) * 1.15, -1.45, 1.45);
+  const tilt5 = (headRoll(pHead.headTilt + headTiltIdle + emphasis * 0.5) + bowNeck) * deg;
+  const yaw5 = clamp(phi + clamp(pHead.headTurn + headTurnIdle, -1, 1) * 1.15 + bowProfile, -1.45, 1.45);
   const headPt = (ox: number, oy: number): [number, number] => {
     const [hx, hy] = headLocal();
     const cy0 = hy + pHead.headNod + Math.abs(emphasis) * 0.6;
-    return toFig(hx + ox * Math.cos(tilt5) - oy * Math.sin(tilt5), cy0 + ox * Math.sin(tilt5) + oy * Math.cos(tilt5), Rnear);
+    // the same pivot as head(): toward the neck top for a strong roll
+    const pv = lerp(cy0, shY - B.neck + headBreathY, neckPivotW(tilt5 / deg));
+    const oy2 = oy + cy0 - pv;
+    return toFig(hx + ox * Math.cos(tilt5) - oy2 * Math.sin(tilt5), pv + ox * Math.sin(tilt5) + oy2 * Math.cos(tilt5), Rnear);
   };
   const Rh = B.headR;
   const faceSide: 1 | -1 = yaw5 >= 0 ? 1 : -1;
@@ -2135,9 +2840,9 @@ export const Puppet: React.FC<PuppetProps> = ({
     const r2 = -side * E0 * deg;
     const sx0 = side * B.sw * 0.86 * cphi;
     const sy0 = shY + B.limbW;
-    const ex = sx0 - Math.sin(r1) * B.ua;
-    const ey = sy0 + Math.cos(r1) * B.ua;
-    const fa = B.fa - 2;
+    const ex = sx0 - Math.sin(r1) * B.ua * armStretch[side];
+    const ey = sy0 + Math.cos(r1) * B.ua * armStretch[side];
+    const fa = (B.fa - 2) * armStretch[side];
     return {
       sh: toFig(sx0, sy0, R),
       wr: toFig(ex - Math.sin(r1 + r2) * fa, ey + Math.cos(r1 + r2) * fa, R),
@@ -2238,7 +2943,8 @@ export const Puppet: React.FC<PuppetProps> = ({
     if (jb > 1e-4 && Math.sign(p.jab) === side) {
       const P = pointAt ? fromWorld(pointAt(f)) : ([shoulder[0] + fwd * 200, shoulder[1] - 30] as [number, number]);
       const [dx, dy] = norm2(P[0] - shoulder[0], P[1] - shoulder[1]);
-      go(jb, [shoulder[0] + dx * reachLen * 0.93, shoulder[1] + dy * reachLen * 0.93], elbowLow, angOf(dx, dy), "point");
+      const pr = clamp(pointReach, 0.55, 0.97);
+      go(jb, [shoulder[0] + dx * reachLen * pr, shoulder[1] + dy * reachLen * pr], elbowLow, angOf(dx, dy), "point");
     }
     // the hand flung up, palm open
     const tu = clamp(Math.abs(p.throwUp));
@@ -2295,7 +3001,12 @@ export const Puppet: React.FC<PuppetProps> = ({
         const up = clamp(p.reachUp);
         const [ax, ay] = norm2(T[0] - shoulder[0], T[1] - shoulder[1]);
         const [dx, dy] = norm2(lerp(ax, fwd, up), lerp(ay + 0.35, -0.08, up));
-        const off = B.hand * 0.45;
+        // reachExact: the curled fingers (not the palm centre) close on T, and the arm stretches (<= 15%) to meet it
+        const off = reachExact ? B.hand * 0.3 : B.hand * 0.45;
+        if (reachExact) {
+          const need = Math.hypot(T[0] - dx * off - shoulder[0], T[1] - dy * off - shoulder[1]);
+          armStretch[side] = lerp(1, clamp(need / (reachLen - 0.5), 1, 1.15), rc6);
+        }
         go(rc6, [T[0] - dx * off, T[1] - dy * off], elbowLow, angOf(dx, dy), hand0, up > 0.5 ? side * fwd * (Math.PI / 2 - 0.3) : undefined);
       }
       // both hands cupped together, palms up (the boys holding out their palms for a lozenge)
@@ -2453,16 +3164,35 @@ export const Puppet: React.FC<PuppetProps> = ({
           <stop offset="100%" stopColor="#0b0608" stopOpacity={0} />
         </radialGradient>
       </defs>
-      <ellipse cx={0} cy={2} rx={B.hw * (seated ? 3.4 : 2.4)} ry={B.hw * 0.42} fill={`url(#${uid}-ao)`} />
+      <ellipse
+        cx={0}
+        cy={2}
+        rx={B.hw * (crossOn ? 4.3 : seated ? (c.lower === "saree" ? 5.9 : 5.35) : kneelK > 0.35 ? 4.2 : 2.4)}
+        ry={B.hw * (crossOn ? 0.95 : seated ? (c.lower === "saree" ? 1.05 : 0.78) : kneelK > 0.35 ? 0.62 : 0.42)}
+        fill={`url(#${uid}-ao)`}
+      />
       {poleFar && poleDraw(false)}
       {lFar && <g transform={farT}>{lDraw}</g>}
       {rFar && <g transform={farT}>{rDraw}</g>}
       {lowerBody()}
-      <g transform={`translate(${upperX}, ${antY}) rotate(${bowDeg ? upperRot + bowDeg : upperRot}, 0, ${hipY})`}>
+      {crossOn && (
+        // the belly / waist between the planted hips and the bending torso (fills the gap as the upper body leans)
+        <g transform={`translate(${upperX}, ${antY})`}>
+          <path
+            d={`M ${-hwp * 1.02} ${pivY - 4} L ${hwp * 1.02} ${pivY - 4} Q ${hwp * 1.12} ${(pivY + hipY) / 2} ${hwp * 1.06} ${hipY - 4} Q 0 ${hipY + 2} ${-hwp * 1.06} ${hipY - 4} Q ${-hwp * 1.12} ${(pivY + hipY) / 2} ${-hwp * 1.02} ${pivY - 4} Z`}
+            fill={c.outfit === "bare" ? `url(#${uid}-skin-body)` : `url(#${uid}-topg)`}
+          />
+          {c.lower === "dhoti" && c.outfit !== "kurta" && (
+            <path d={`M ${-hwp * 1.1} ${hipY - 9} Q 0 ${hipY - 2} ${hwp * 1.1} ${hipY - 9} L ${hwp * 1.12} ${hipY - 3} Q 0 ${hipY + 4} ${-hwp * 1.12} ${hipY - 3} Z`} fill={`url(#${uid}-lowg)`} />
+          )}
+        </g>
+      )}
+      <g transform={`translate(${upperX}, ${antY}) rotate(${bowDeg ? upperRot + bowDeg : upperRot}, 0, ${pivY})`}>
         {c.outfit === "frock" && skirt("knee")}
         {torso()}
         {scarf()}
         {bag()}
+        {pranamCloak()}
         {head()}
         {pole && !poleFar && poleDraw(true)}
         {!lFar && lDraw}

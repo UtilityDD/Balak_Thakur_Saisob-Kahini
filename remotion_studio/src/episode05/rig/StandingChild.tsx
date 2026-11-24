@@ -21,10 +21,10 @@ import {
  *
  * LOOK: the one plate head (src/cinematic/rig/ThakurHeadPlate.tsx, shared with SeatedChild design="plate"), a slim
  * child body (head about 1/5.5 of the height), warm medium-brown skin (PLATE_COLORS), a plain white dhoti from the waist
- * to mid-calf with a front pleat fall, a white chadar wrapped across the chest (V at the neck) and over both shoulders,
- * draping over the upper arms, one end hanging in front; bare feet with separated toes. Borderless shapes with soft form
- * shading, light from the upper left. No jewellery, tilak, thread, bangles or anklets (BAL-01 to BAL-03). No glow: the
- * scene places BirulGlow (use the `head` point of standingChildJoints).
+ * to mid-calf with a front pleat fall; classic build keeps the white chadar across the chest; `build="healthy"` wears a
+ * Sundar-like white kurta (crew neck, elbow sleeves) so arm gestures stay clean; bare feet with separated toes.
+ * Borderless shapes with soft form shading, light from the upper left. No jewellery, tilak, thread, bangles or anklets
+ * (BAL-01 to BAL-03). No glow: the scene places BirulGlow (use the `head` point of standingChildJoints).
  *
  * COORDINATES: (x, y) is the point between the feet on the ground line. Figure units, y down, ground at y = 0, facing
  * +x (three-quarter view) unless `flip`. The figure is about STANDING_HEIGHT (485) units tall at s = 1, with the same
@@ -119,13 +119,13 @@ import {
  * (shoulders about 34% wider, torso 30% fuller with a rounder chest and slight belly, arms x1.5 and legs x1.3 thicker,
  * a thicker neck, legs about 10% shorter and the torso 11% longer, so the overall height is about 3% less), hands 15%
  * larger, smaller sturdy feet; upright open posture (head up, weight on one leg with an easy sway, arms clear of the body
- * with a soft elbow); the chadar across the chest and over the shoulders ending above the dhoti's rolled waist and tuck,
- * the drape over both shoulders and the whole upper arms to the elbow (BAL-26d, plate 01; forearms and hands free, a
- * slim drape hem where the forearm comes out), a fuller mid-calf dhoti with front pleats and a little rise between the legs;
- * PLATE_COLORS_HEALTHY (warm skin, warm cotton shading) and ThakurHeadPlate `vivid` (open bright eyes). Gestures: wrists
- * trail and settle; holdOut elbows at the sides with the forearms angled up and the note at the fingertips; giveOut
- * leans in and turns the palm up toward each boy; wipeEye with the back of the fingers; the hurt bend smaller (0.34)
- * with the back of the hand resting at the waist. Works with `look="painted"`.
+ * with a soft elbow); a Sundar-like white kurta (crew neck, short sleeves to the elbow; forearms free) tucked above the
+ * dhoti's rolled waist — replaces the hanging chadar so reach/hold gestures do not peel into odd panels; a fuller
+ * mid-calf dhoti with front pleats and a little rise between the legs; PLATE_COLORS_HEALTHY (warm skin, warm cotton
+ * shading) and ThakurHeadPlate `vivid` (open bright eyes). Gestures: wrists trail and settle; holdOut elbows at the
+ * sides with the forearms angled up and the note at the fingertips; giveOut leans in and turns the palm up toward each
+ * boy; wipeEye with the back of the fingers; the hurt bend smaller (0.34) with the back of the hand resting at the waist.
+ * Works with `look="painted"`.
  */
 
 /* ------------------------------------------------------------------ */
@@ -258,6 +258,42 @@ export interface StandingChildProps {
    * byte-identical.
    */
   build?: "classic" | "healthy";
+  /**
+   * Episode 4 (Ghibli) audit, opt-in with build "healthy": a sturdier healthy boy so standing Balak reads as the same
+   * child as the seated plate (BAL-26d): thicker legs and arms, a slightly fuller torso. Joints and every anchor stay
+   * where they are (only thickness factors change). Absent = the approved BAL-26c/d look, unchanged.
+   */
+  sturdy?: boolean;
+  /**
+   * Opt-in (Ghibli Episode 4, 2026-11-24): drive the legs and the pelvis directly, for a foot-locked walk or a rise from
+   * kneeling. Undefined (the default) = the rig exactly as before. Units are figure units at s = 1, body axes: x his
+   * left (+), y down (+), z his forward (+). With it set, handTargets (and the pose's hands) move with the shoulders.
+   */
+  legDrive?: StandingLegDrive;
+}
+
+/** One foot of StandingLegDrive: ankle offset from its standing place, lift (up +) and the foot's pitch. */
+export interface StandingFootDrive {
+  x?: number;
+  z?: number;
+  /** Ankle (and sole) raised off the floor, units. */
+  lift?: number;
+  /** Foot pitch, radians: + heel up (rolling over the ball, toe-off), - toes up (heel strike, pivot at the heel). */
+  pitch?: number;
+}
+
+export interface StandingLegDrive {
+  near?: StandingFootDrive;
+  far?: StandingFootDrive;
+  /** Pelvis lowered (units, + down): the walk's bob, or kneeling. */
+  pelvisDrop?: number;
+  /** Pelvis forward (units, + = his forward). */
+  pelvisZ?: number;
+  /** Added torso pitch (radians, + = forward lean). */
+  lean?: number;
+  /** Override the pose's sideways weight shift and hip tilt (units / degrees as the pose values). */
+  shiftX?: number;
+  hipTilt?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -312,10 +348,13 @@ export const HEALTHY_BUILD = {
   neckR: 1.45,
   torsoW: 1.3,
 };
+let STURDY = false;
 const applyBuild = (p: StandingChildProps): void => {
   const h = p.build === "healthy";
-  if (h === HB) return;
+  const st = h && !!p.sturdy;
+  if (h === HB && st === STURDY) return;
   HB = h;
+  STURDY = st;
   const B = HEALTHY_BUILD;
   C = h ? PLATE_COLORS_HEALTHY : PLATE_COLORS;
   THIGH = h ? B.thigh : 116;
@@ -332,11 +371,11 @@ const applyBuild = (p: StandingChildProps): void => {
   // healthy: the note is held lightly at the fingertips
   PINCH_OFF = (h ? 0.4 : 0.3) * HAND_L;
   FOOT_K = h ? B.foot : 1.55;
-  ARM_R = h ? B.armR : 1;
-  LEG_R = h ? B.legR : 1;
+  ARM_R = h ? B.armR * (st ? 1.12 : 1) : 1;
+  LEG_R = h ? B.legR * (st ? 1.2 : 1) : 1;
   NECK_L = h ? B.neckLen : 1;
-  NECK_R = h ? B.neckR : 1;
-  TORSO_W = h ? B.torsoW : 1;
+  NECK_R = h ? B.neckR * (st ? 1.06 : 1) : 1;
+  TORSO_W = h ? B.torsoW * (st ? 1.08 : 1) : 1;
 };
 const TILT = 0.1; // a camera a little above: far points sit a touch higher
 
@@ -1365,6 +1404,8 @@ interface Leg {
   ground: number; // sole y
   toeDir: number; // signed foreshortened toe direction
   depth: number;
+  /** legDrive only: foot pitch (radians, + heel up about the ball, - toes up about the heel). */
+  pitch?: number;
 }
 
 interface Arm {
@@ -1530,10 +1571,13 @@ const thetaFor = (v: PoseVals, yaw: number): number => {
 const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   const yaw = clamp(yawOf(props, sf), 0, 1);
   const v = valsAt(props, sf, L, yaw);
-  const theta = v.theta;
-  const drop = bendDrop(theta) + v.drop;
-  const back = bendBack(theta) + v.back;
-  const P3 = pelvis3(theta, drop, back, v.shiftX);
+  const ld = props.legDrive;
+  const theta = ld ? v.theta + (ld.lean ?? 0) : v.theta;
+  const drop = ld ? bendDrop(theta) + v.drop + (ld.pelvisDrop ?? 0) : bendDrop(theta) + v.drop;
+  const back = ld ? bendBack(theta) + v.back - (ld.pelvisZ ?? 0) : bendBack(theta) + v.back;
+  const shiftXv = ld?.shiftX ?? v.shiftX;
+  const hipTiltV = ld?.hipTilt ?? v.hipTilt;
+  const P3 = pelvis3(theta, drop, back, shiftXv);
   const ax3 = axis3(theta);
   const P = proj(P3, yaw);
   const ScRaw = proj({ x: P3.x, y: P3.y + ax3.y * TORSO, z: P3.z + ax3.z * TORSO }, yaw);
@@ -1563,8 +1607,11 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   const st = clamp(v.stance, 0, 1);
   const ax0 = 11 + 11 * st;
   const legFor = (sideX: number, nearLeg: boolean): Leg => {
-    const ank3: V3 = { x: sideX * ax0, y: -ANKLE_H, z: nearLeg ? 2 : -2 };
-    const hip3: V3 = { x: P3.x + sideX * HIP_HALF, y: P3.y + sideX * v.hipTilt * 0.5, z: P3.z };
+    const fd = ld ? (nearLeg ? ld.near : ld.far) : undefined;
+    const ank3: V3 = fd
+      ? { x: sideX * ax0 + (fd.x ?? 0), y: -ANKLE_H - (fd.lift ?? 0), z: (nearLeg ? 2 : -2) + (fd.z ?? 0) }
+      : { x: sideX * ax0, y: -ANKLE_H, z: nearLeg ? 2 : -2 };
+    const hip3: V3 = { x: P3.x + sideX * HIP_HALF, y: P3.y + sideX * hipTiltV * 0.5, z: P3.z };
     const knee3 = ik3(hip3, ank3, THIGH, SHIN, { x: sideX * 0.18, y: 0, z: 1 });
     const turnOut = sideX * 0.18;
     const toe = Math.sin(YAW_MAX * yaw + turnOut);
@@ -1573,7 +1620,8 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
       hip: proj(hip3, yaw),
       knee: proj(knee3, yaw),
       ankle: proj(ank3, yaw),
-      ground: proj({ ...ank3, y: 0 }, yaw).y,
+      ground: proj({ ...ank3, y: fd ? -(fd.lift ?? 0) : 0 }, yaw).y,
+      ...(fd && fd.pitch ? { pitch: fd.pitch } : {}),
       toeDir,
       depth: depthOf(ank3, yaw),
     };
@@ -1707,8 +1755,20 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
     }
     const W = wristOf(palm, dir);
     const WLag = lerpV(W, wristOf(palmLag, dirLag), lagW);
-    // Episode 6: the far hand to the face keeps the elbow on the bend's own side (continuous while the hand rises)
-    const ikArm = !near && vv.fIk > 0.5 ? ikSense : (S: V, T: V, a: number, b: number) => ik2(S, T, a, b, -1);
+    // Episode 6: the far hand to the face keeps the elbow on the bend's own side (continuous while the hand rises).
+    // Healthy far arm: pick the IK elbow that sits more outboard of the chest so the forearm emerges from the
+    // far side of the torso (not mid-chest) in side / ¾ view.
+    const ikArm = !near && vv.fIk > 0.5
+      ? ikSense
+      : !near && HB
+        ? (S: V, T: V, a: number, b: number) => {
+            const e0 = ik2(S, T, a, b, -1);
+            const e1 = ik2(S, T, a, b, 1);
+            const out = unit(sub(sh, Sc));
+            const score = (E: V) => (E.x - Sc.x) * out.x + (E.y - Sc.y) * out.y;
+            return score(e0.E) >= score(e1.E) ? e0 : e1;
+          }
+        : (S: V, T: V, a: number, b: number) => ik2(S, T, a, b, -1);
     let { E } = ikArm(sh, W, UPPER, FORE);
     // Episode 6 hurtBack: the hand at the small of the back. The upper arm hangs down and back (HURT_ELBOW_DEG from
     // vertical), the elbow bent behind the hip line; the forearm runs round the body to the back, so it is drawn
@@ -1765,8 +1825,17 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   };
   const v3 = valsAt(props, sf - 3, L - 3, yaw);
   const v6 = valsAt(props, sf - 6, L - 6, yaw);
-  const armN = solveArm("n", v, v3, v6);
-  const armF = solveArm("f", v, v3, v6);
+  // legDrive: the hands' targets ride with the shoulders (the pelvis bob, the kneel, the lean)
+  let vA = v;
+  if (ld) {
+    const P3b = pelvis3(v.theta, bendDrop(v.theta) + v.drop, bendBack(v.theta) + v.back, v.shiftX);
+    const ax3b = axis3(v.theta);
+    const ScB = proj({ x: P3b.x, y: P3b.y + ax3b.y * TORSO, z: P3b.z + ax3b.z * TORSO }, yaw);
+    const dS = sub(ScRaw, ScB);
+    vA = { ...v, nP: Number.isNaN(v.nP.x) ? v.nP : add(v.nP, dS), fP: Number.isNaN(v.fP.x) ? v.fP : add(v.fP, dS) };
+  }
+  const armN = solveArm("n", vA, v3, v6);
+  const armF = solveArm("f", vA, v3, v6);
 
   return {
     yaw,
@@ -2017,8 +2086,9 @@ const SHAPE_CURL: Record<HandShape, [number, number]> = {
 
 type StandingPal = Record<keyof typeof C, string>;
 
-/** The child's arm (shoulder to wrist) and the shared Hand (MOT-19), seamless at the wrist. */
-const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?: string; edgeK?: number; upFrom?: number; pal?: StandingPal; hl?: number; rk?: number }> = ({ a, id, lit, fore = false, cloth, edgeK, upFrom, pal = C, hl = 50, rk = 1 }) => {
+/** The child's arm (shoulder to wrist) and the shared Hand (MOT-19), seamless at the wrist.
+ *  `fore` = forearm+hand only (over cloth). `upperOnly` = shoulder→elbow, no hand (far upper behind the chest). */
+const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; upperOnly?: boolean; cloth?: string; edgeK?: number; upFrom?: number; pal?: StandingPal; hl?: number; rk?: number }> = ({ a, id, lit, fore = false, upperOnly = false, cloth, edgeK, upFrom, pal = C, hl = 50, rk = 1 }) => {
   const wristR = wristRadius(a.turn, hl);
   // Centre line: upper arm, a soft curve through the elbow, forearm
   const E1 = lerpV(a.sh, a.E, 0.8);
@@ -2032,14 +2102,24 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
   const F0 = lerpV(a.E, a.W, 0.1);
   // upFrom (Episode 6): the fore piece starts this far down the upper arm, so the elbow bend shows over the drape
   const U0 = upFrom !== undefined ? lerpV(a.sh, a.E, upFrom) : F0;
-  const pts = fore
-    ? upFrom !== undefined
-      ? [U0, lerpV(U0, a.E, 0.5), a.E, lerpV(a.E, a.W, 0.5), a.W]
-      : [F0, lerpV(F0, a.W, 0.5), a.W]
-    : [a.sh, lerpV(a.sh, E1, 0.5), E1, ...curve, E2, lerpV(E2, a.W, 0.55), a.W];
-  const R0 = fore ? (upFrom !== undefined ? [11.2, 10.6, 10, 9.6, wristR] : [9.8, 9.3, wristR]) : [12.8, 11.8, 10.6, 10.2, 10, 9.8, 9.6, 9.4, 9, wristR];
+  // upperOnly: stop just past the elbow so a behind-torso pass cannot paint sleeve/forearm across the chest
+  const U1 = lerpV(a.sh, a.E, 0.55);
+  const pts = upperOnly
+    ? [a.sh, lerpV(a.sh, E1, 0.5), E1, lerpV(E1, a.E, 0.55), a.E]
+    : fore
+      ? upFrom !== undefined
+        ? [U0, lerpV(U0, a.E, 0.5), a.E, lerpV(a.E, a.W, 0.5), a.W]
+        : [F0, lerpV(F0, a.W, 0.5), a.W]
+      : [a.sh, lerpV(a.sh, E1, 0.5), E1, ...curve, E2, lerpV(E2, a.W, 0.55), a.W];
+  const R0 = upperOnly
+    ? [12.8, 11.8, 10.8, 10.2, 9.8]
+    : fore
+      ? upFrom !== undefined
+        ? [11.2, 10.6, 10, 9.6, wristR]
+        : [9.8, 9.3, wristR]
+      : [12.8, 11.8, 10.6, 10.2, 10, 9.8, 9.6, 9.4, 9, wristR];
   // BAL-26c healthy: thicker arms (rk), tapering into the wrist so the wrist reads
-  const R = rk === 1 ? R0 : R0.map((r, i) => (i === R0.length - 1 ? r : r * rk * (fore ? 1 : 1 - 0.12 * (i / (R0.length - 1)))));
+  const R = rk === 1 ? R0 : R0.map((r, i) => (i === R0.length - 1 && !upperOnly ? r : r * rk * (fore || upperOnly ? 1 : 1 - 0.12 * (i / (R0.length - 1)))));
   const faAng = (Math.atan2(a.W.y - a.E.y, a.W.x - a.E.x) * 180) / Math.PI;
   const rot = (Math.atan2(-a.dir.x, a.dir.y) * 180) / Math.PI;
   const [c0, k] = SHAPE_CURL[a.shape];
@@ -2054,7 +2134,8 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
     <g>
       <path d={chainD(pts, R)} fill={skinEdge(pal.skin, shade)} />
       <path d={chainD(pts, R, { grow: -1.3, dx: -1, dy: -1.2 })} fill={pal.skin} />
-      {!fore && <path d={smoothOpen([lerpV(a.sh, E1, 0.35), E1, lerpV(a.E, E2, 0.5), lerpV(E2, a.W, 0.7)].map((p) => add(p, { x: -4.5, y: -3 })))} fill="none" stroke={pal.skinLit} strokeWidth={2.2} strokeLinecap="round" opacity={0.28 * lit} />}
+      {!fore && !upperOnly && <path d={smoothOpen([lerpV(a.sh, E1, 0.35), E1, lerpV(a.E, E2, 0.5), lerpV(E2, a.W, 0.7)].map((p) => add(p, { x: -4.5, y: -3 })))} fill="none" stroke={pal.skinLit} strokeWidth={2.2} strokeLinecap="round" opacity={0.28 * lit} />}
+      {upperOnly && <path d={smoothOpen([lerpV(a.sh, U1, 0.35), U1, lerpV(U1, a.E, 0.6)].map((p) => add(p, { x: -4.5, y: -3 })))} fill="none" stroke={pal.skinLit} strokeWidth={2.2} strokeLinecap="round" opacity={0.28 * lit} />}
       {fore && (edgeK === undefined || edgeK > 0.01) && (
         // the chadar's edge lying over the elbow: a soft tongue of cloth with a curved hem, the forearm comes out below it
         <g transform={`translate(${pt(F0)}) rotate(${faAng.toFixed(2)})${edgeK === undefined ? "" : ` scale(${edgeK.toFixed(3)})`}`}>
@@ -2062,31 +2143,35 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; cloth?:
           <path d="M-2 -12.2 C0.6 -10.6 0.4 -8 0.4 -8 C2.6 -5.6 0.2 -3.4 1.6 -1 C3.4 1.8 0.4 3.6 1.4 6.2 C2.2 8.8 -0.6 10.8 -3 12.4" fill="none" stroke={pal.clothShade} strokeWidth={1.1} strokeLinecap="round" />
         </g>
       )}
-      <g transform={`translate(${pt(a.W)}) rotate(${rot.toFixed(2)}) scale(${HAND_SX} ${HAND_SY})`}>
-        <defs>
-          <clipPath id={`${id}-hc`}>
-            <rect x={-60} y={0.3} width={120} height={120} />
-          </clipPath>
-        </defs>
-        <g clipPath={`url(#${id}-hc)`}>
-          <Hand shape={a.shape} L={hl} skin={pal.skin} shade={shade} side={a.side} flex={flex} turn={a.turn} />
-        </g>
-      </g>
-      <defs>
-        <linearGradient id={`${id}-wg`} gradientUnits="userSpaceOnUse" x1={A.x} y1={A.y} x2={B.x} y2={B.y}>
-          <stop offset={0} stopColor="#fff" stopOpacity={0} />
-          <stop offset={0.3} stopColor="#fff" stopOpacity={1} />
-          <stop offset={0.66} stopColor="#fff" stopOpacity={1} />
-          <stop offset={1} stopColor="#fff" stopOpacity={0} />
-        </linearGradient>
-        <mask id={`${id}-wm`} maskUnits="userSpaceOnUse" x={-1200} y={-1200} width={2400} height={2400}>
-          <rect x={-1200} y={-1200} width={2400} height={2400} fill={`url(#${id}-wg)`} />
-        </mask>
-      </defs>
-      <g mask={`url(#${id}-wm)`}>
-        <path d={chainD(stub, stubR, { sub: 2 })} fill={skinEdge(pal.skin, shade)} />
-        <path d={chainD(stub, stubR, { grow: -1.3, dx: -1, dy: -1.2, sub: 2 })} fill={pal.skin} />
-      </g>
+      {!upperOnly && (
+        <>
+          <g transform={`translate(${pt(a.W)}) rotate(${rot.toFixed(2)}) scale(${HAND_SX} ${HAND_SY})`}>
+            <defs>
+              <clipPath id={`${id}-hc`}>
+                <rect x={-60} y={0.3} width={120} height={120} />
+              </clipPath>
+            </defs>
+            <g clipPath={`url(#${id}-hc)`}>
+              <Hand shape={a.shape} L={hl} skin={pal.skin} shade={shade} side={a.side} flex={flex} turn={a.turn} />
+            </g>
+          </g>
+          <defs>
+            <linearGradient id={`${id}-wg`} gradientUnits="userSpaceOnUse" x1={A.x} y1={A.y} x2={B.x} y2={B.y}>
+              <stop offset={0} stopColor="#fff" stopOpacity={0} />
+              <stop offset={0.3} stopColor="#fff" stopOpacity={1} />
+              <stop offset={0.66} stopColor="#fff" stopOpacity={1} />
+              <stop offset={1} stopColor="#fff" stopOpacity={0} />
+            </linearGradient>
+            <mask id={`${id}-wm`} maskUnits="userSpaceOnUse" x={-1200} y={-1200} width={2400} height={2400}>
+              <rect x={-1200} y={-1200} width={2400} height={2400} fill={`url(#${id}-wg)`} />
+            </mask>
+          </defs>
+          <g mask={`url(#${id}-wm)`}>
+            <path d={chainD(stub, stubR, { sub: 2 })} fill={skinEdge(pal.skin, shade)} />
+            <path d={chainD(stub, stubR, { grow: -1.3, dx: -1, dy: -1.2, sub: 2 })} fill={pal.skin} />
+          </g>
+        </>
+      )}
     </g>
   );
 };
@@ -2096,7 +2181,17 @@ const FootEl: React.FC<{ l: Leg; far: boolean; pal?: StandingPal; fk?: number }>
   const k = fk;
   const td = l.toeDir;
   const a = l.ankle;
-  const P = (u: number, v: number): V => ({ x: a.x + u * td * k, y: l.ground + v * k });
+  const P0 = (u: number, v: number): V => ({ x: a.x + u * td * k, y: l.ground + v * k });
+  // legDrive pitch: the foot rolls about the ball (heel up) or the heel (toes up); undefined = flat as before
+  const pa = l.pitch ? l.pitch * Math.sign(td || 1) : 0;
+  const piv = l.pitch ? P0(l.pitch > 0 ? 18 : -7, 0) : null;
+  const P = (u: number, v: number): V => {
+    const q = P0(u, v);
+    if (!piv) return q;
+    const dx = q.x - piv.x;
+    const dy = q.y - piv.y;
+    return { x: piv.x + dx * Math.cos(pa) - dy * Math.sin(pa), y: piv.y + dx * Math.sin(pa) + dy * Math.cos(pa) };
+  };
   const col = far ? pal.skinFar : pal.skin;
   const shade = pal.skinShade;
   const sole = far ? pal.soleFar : pal.soleNear;
@@ -2316,17 +2411,26 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
       [114, 27 + bR],
       [TORSO - 2, 23.5],
     ] as Array<[number, number]>).map(([v, w]) => add(Tp(v), mul(pa, sgn * hwB(w))));
+  // healthy wrap: slightly fuller lateral widths so chest/shoulder skin windows do not open under arm IK
   const wrapSideH = (sgn: number) =>
     ([
-      [lerp(sgn > 0 ? 26 : 33, 30, gb), lerp(24.5, 20, gb) + (sgn > 0 ? 2.5 : 0)],
-      [44, lerp(25, 22.5, gb) + (sgn > 0 ? 3.2 : 0)],
-      [70, 26 + (sgn > 0 ? 2.6 : 0)],
-      [96, 27.5 + bR + (sgn > 0 ? 1.4 : 0)],
-      [116, 29.5 + bR],
-      [TORSO - 2, 27.5],
+      [lerp(sgn > 0 ? 26 : 33, 30, gb), lerp(26.5, 22, gb) + (sgn > 0 ? 2.8 : 0.4)],
+      [44, lerp(26.5, 24, gb) + (sgn > 0 ? 3.4 : 0.6)],
+      [70, 28 + (sgn > 0 ? 2.8 : 0.5)],
+      [96, 29 + bR + (sgn > 0 ? 1.6 : 0.4)],
+      [116, 31 + bR],
+      [TORSO - 2, 29.5],
     ] as Array<[number, number]>).map(([v, w]) => add(Tp(v), mul(pa, sgn * hwB(w))));
   const wrapPoly = HB
-    ? [...wrapSideH(1), Tp(TORSO + 6, 0, 0), ...wrapSideH(-1).reverse(), add(Tp(31), mul(pa, -hwOf(21))), add(Tp(25), mul(pa, hwOf(22)))]
+    ? [
+        ...wrapSideH(1),
+        Tp(TORSO + 6, 0, 0),
+        ...wrapSideH(-1).reverse(),
+        // seal the lower wrap over the waist so the white panel stays continuous
+        add(Tp(34), mul(pa, -hwOf(24))),
+        Tp(28, 0, 18),
+        add(Tp(26), mul(pa, hwOf(25))),
+      ]
     : [
         ...wrapSide(1),
         Tp(TORSO + 6, 0, 0),
@@ -2334,17 +2438,10 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
         add(Tp(11), mul(pa, -hwOf(17))),
         add(Tp(10), mul(pa, hwOf(17))),
       ];
-  // healthy: the dhoti's rolled waist (with the pleats tucked in at the front) shows below the chadar's hem
+  // healthy: the dhoti's rolled waist (with the pleats tucked in at the front) shows below the kurta hem
   const waistRoll = HB ? [add(Tp(24), mul(pa, -hwOf(24.5))), Tp(22.5, -2, 19), Tp(23, 6, 20), add(Tp(25), mul(pa, hwOf(24.5)))] : null;
-  const chadarHem = HB ? [add(Tp(33), mul(pa, -hwB(24))), Tp(29, 0, 21), add(Tp(26), mul(pa, hwB(27)))] : null;
-  // one drape per side: neck, close over the shoulder and the upper arm to the elbow, then hanging with gravity to
-  // about the hip (in the bend it falls from the shoulders and the chest toward the ground), the front edge up the chest
-  // tight (Episode 6, 0 = Episode 5 drape): over an arm turned back (hand at the back) or raised (hand at the face) the
-  // drape stays a short cap on the shoulder and its hem returns to the body's side, so no cloth wing or panel forms.
-  // BAL-26d healthy shawl: the arm part of each drape (where the forearm comes out from under the cloth) and the edge
-  // line for the contact shadow, filled in by capeFor
-  const shawlArm: Record<string, { sleeve: V[]; edge: V[]; fa: V } | undefined> = {};
-  const capeFor = (a: Arm, sgn: number, tight = 0, aPrev?: Arm, key?: string): V[] => {
+  // one drape per side (classic chadar only): neck, over the shoulder and upper arm, hanging with gravity
+  const capeFor = (a: Arm, sgn: number, tight = 0, _aPrev?: Arm, _key?: string): V[] => {
     const ua = unit(sub(a.E, a.sh));
     let n = perpL(ua);
     const outV = sub(a.sh, g.Sc);
@@ -2356,50 +2453,93 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
     const shO = add(sub(a.sh, mul(ua, 3)), mul(n, tight ? lerp(14.5, 10.5, tight) : 14.5));
     const midO = add(lerpV(a.sh, a.E, tight ? lerp(0.5, 0.36, tight) : 0.5), mul(n, tight ? lerp(12.8, 9.5, tight) : 12.8));
     // in the bend the drape covers the upper arm only to about 60 % and its hem is short
-    // BAL-26d: the healthy drape covers the shoulder and the whole upper arm to the elbow (plate 01); forearms free
-    const cov0 = HB ? lerp(1.02, 0.7, gb) : lerp(1, 0.6, gb);
+    const cov0 = lerp(1, 0.6, gb);
     const cov = tight ? lerp(cov0, 0.52, tight) : cov0;
     const elO = add(add(lerpV(a.sh, a.E, cov), mul(n, tight ? lerp(lerp(12, 13, gb), 9, tight) : lerp(12, 13, gb))), mul(ua, lerp(4, 0, gb)));
-    let hemO = add(add(elO, { x: 0, y: HB ? lerp(lerp(11, 9, gv), 8, gb) : lerp(lerp(50, 24, gv), 14, gb) }), add(mul(trailS, 0.6), { x: 1.2 * wind * sgn, y: 0 }));
+    let hemO = add(add(elO, { x: 0, y: lerp(lerp(50, 24, gv), 14, gb) }), add(mul(trailS, 0.6), { x: 1.2 * wind * sgn, y: 0 }));
     if (tight) hemO = lerpV(hemO, lerpV(add(elO, { x: 0, y: 8 }), Tp(84, sgn * 19, 2), 0.6), tight);
-    const frontBot = HB
-      ? hang(Tp(sgn > 0 ? 30 : 36, sgn * 18, 20), Tp(lerp(88, 42, gb), sgn * 14, lerp(19, 10, gb)), lerp(28, 16, gb), gv, add(trailS, { x: 1.4 * wind, y: 0 }))
-      : hang(Tp(12, sgn * 17, 20), Tp(lerp(84, 34, gb), sgn * 14, lerp(19, 10, gb)), lerp(40, 20, gb), gv, add(trailS, { x: 1.4 * wind, y: 0 }));
+    const frontBot = hang(Tp(12, sgn * 17, 20), Tp(lerp(84, 34, gb), sgn * 14, lerp(19, 10, gb)), lerp(40, 20, gb), gv, add(trailS, { x: 1.4 * wind, y: 0 }));
     const hemMid = add(lerpV(hemO, frontBot, 0.5), { x: 0, y: 6 + 4 * gv });
     const dzF = lerp(21, 12, gb);
-    if (HB) {
-      // BAL-26d: one soft shawl over the shoulder and the upper arm (plate 01). Its lower edge is a soft diagonal curve:
-      // a little below the elbow on the outside of the arm, higher on the inside, sagging a touch unevenly between,
-      // swinging after the elbow (follow-through); no hem band, the forearm comes out from under it.
-      const inner = mul(n, -1);
-      const fa = unit(sub(a.W, a.E));
-      const tE = aPrev ? (() => {
-        const d = sub(aPrev.E, a.E);
-        const l = len(d);
-        return l > 14 ? mul(d, 14 / l) : d;
-      })() : { x: 0, y: 0 };
-      const cv = tight ? lerp(1, 0.6, tight) : 1;
-      const rA = 10.2 * ARM_R;
-      const hO = add(add(add(lerpV(a.sh, a.E, lerp(1, 0.75, gb) * cv), mul(n, rA + 2.5)), { x: 0, y: 7 * cv }), mul(tE, 0.7));
-      const hIn = add(add(lerpV(a.sh, a.E, lerp(0.84, 0.62, gb) * cv), mul(inner, rA + 2)), mul(tE, 0.35));
-      const hW = add(add(lerpV(hO, hIn, 0.5), mul(ua, 3 + 1.1 * wind)), add(mul(perpL(ua), 1.2 * Math.sin(L * 0.05 + sgn)), mul(tE, 0.5)));
-      const sleeve = [shTop, shO, midO, elO, hO, hW, hIn, add(lerpV(a.sh, a.E, 0.45), mul(inner, rA + 4)), add(a.sh, mul(inner, 9))];
-      if (key) shawlArm[key] = { sleeve, edge: [hO, hW, hIn], fa };
-      return [neckF, neckT, shTop, shO, midO, elO, hO, hW, hIn, frontBot, Tp(48, sgn * 16.5, dzF), Tp(76, sgn * 15, dzF), Tp(104, sgn * 12.5, lerp(19, 11, gb))];
-    }
-    return [neckF, neckT, shTop, shO, midO, elO, hemO, hemMid, frontBot, Tp(HB ? 48 : 40, sgn * 16.5, dzF), Tp(76, sgn * 15, dzF), Tp(104, sgn * 12.5, lerp(19, 11, gb))];
+    return [neckF, neckT, shTop, shO, midO, elO, hemO, hemMid, frontBot, Tp(40, sgn * 16.5, dzF), Tp(76, sgn * 15, dzF), Tp(104, sgn * 12.5, lerp(19, 11, gb))];
   };
-  // healthy (BAL-26d): the drape stays on the upper arm even with the hand at the back or at the face (a lighter tight)
+  // healthy: Sundar-like white kurta (no hanging chadar). Classic keeps the BAL-26d cape drape.
   const capeN = HB
-    ? capeFor(g.armN, -1, 0.3 * g.vals.nBack, gPrev.armN, "n")
+    ? ([] as V[])
     : g.vals.nBack
       ? capeFor(g.armN, -1, 0.5 * g.vals.nBack)
       : capeFor(g.armN, -1);
   const capeF = HB
-    ? capeFor(g.armF, 1, clamp(g.vals.fFace, 0, 1), gPrev.armF, "f")
+    ? ([] as V[])
     : g.vals.fFace
       ? capeFor(g.armF, 1, clamp(g.vals.fFace * 1.6, 0, 1))
       : capeFor(g.armF, 1);
+  // Healthy kurta body: tubular torso (Sundar-like), round collar, hem into the dhoti waist.
+  const shirtBody: V[] | null = HB
+    ? [
+        add(Tp(lerp(14, 20, gb)), mul(pa, -hwOf(22))),
+        add(Tp(40), mul(pa, -hwOf(24))),
+        add(Tp(70), mul(pa, -hwOf(25.5))),
+        add(Tp(96), mul(pa, -(hwOf(26.5) + bR))),
+        add(Tp(118), mul(pa, -(hwOf(27) + bR))),
+        add(Tp(TORSO - 2), mul(pa, -hwOf(23))),
+        // round collar (left → center → right)
+        Tp(TORSO + 6, -11, 8),
+        Tp(TORSO + 2, 0, 11),
+        Tp(TORSO + 6, 11, 8),
+        add(Tp(TORSO - 2), mul(pa, hwOf(23))),
+        add(Tp(118), mul(pa, hwOf(27) + bR)),
+        add(Tp(96), mul(pa, hwOf(26.5) + bR)),
+        add(Tp(70), mul(pa, hwOf(25.5))),
+        add(Tp(40), mul(pa, hwOf(24))),
+        add(Tp(lerp(14, 20, gb)), mul(pa, hwOf(22))),
+        add(Tp(26), mul(pa, hwOf(23))),
+        Tp(24, 0, 17),
+        add(Tp(26), mul(pa, -hwOf(23))),
+      ]
+    : null;
+  /** Kurta sleeve. `len` 1 = to past the elbow; ~0.42 = shoulder cap (far arm when the hand is in front). */
+  const shirtSleeve = (a: Arm, lit: boolean, key: string, len = 1): React.ReactElement => {
+    const ua = unit(sub(a.E, a.sh));
+    let n = perpL(ua);
+    const outV = sub(a.sh, g.Sc);
+    if (n.x * outV.x + n.y * outV.y < 0) n = mul(n, -1);
+    const rSh = 13.8 * ARM_R;
+    const rEl = 11.6 * ARM_R * (0.75 + 0.25 * len);
+    const armLen = Math.hypot(a.E.x - a.sh.x, a.E.y - a.sh.y);
+    const cuff = add(a.sh, mul(ua, armLen * len + 5 * len));
+    const mid = lerpV(a.sh, cuff, 0.48);
+    const pts: V[] = [
+      add(a.sh, mul(ua, -10)),
+      add(a.sh, mul(n, rSh)),
+      add(mid, mul(n, rEl + 1.2)),
+      add(cuff, mul(n, rEl)),
+      add(cuff, mul(n, -rEl * 0.88)),
+      add(mid, mul(n, -(rEl + 0.6))),
+      add(a.sh, mul(n, -rSh * 0.92)),
+    ];
+    return (
+      <g key={key}>
+        {clothPaint((dx, dy) => smoothClosed(pts.map((q) => add(q, { x: dx, y: dy }))), lit ? PAL.cloth : PAL.clothMid, undefined, PAL)}
+        <path
+          d={smoothOpen([add(cuff, mul(n, rEl * 0.85)), add(cuff, mul(n, -rEl * 0.75))])}
+          fill="none"
+          stroke={PAL.clothShade}
+          strokeWidth={1.15}
+          strokeLinecap="round"
+          opacity={0.55}
+        />
+        <path
+          d={smoothOpen([add(a.sh, mul(n, rSh * 0.5)), add(mid, mul(n, rEl * 0.35))])}
+          fill="none"
+          stroke={PAL.clothLit}
+          strokeWidth={1.1}
+          strokeLinecap="round"
+          opacity={0.5}
+        />
+      </g>
+    );
+  };
   const capeEl = (pts: V[], lit: boolean, key: string): React.ReactElement => {
     const sh13 = pts.length === 13;
     const [neckF, neckT, , shO, midO, elO, hemO] = pts;
@@ -2411,28 +2551,36 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
     const p9 = sh13 ? pts[10] : pts[9];
     const foldB = [lerpV(neckF, neckT, 0.5), lerpV(midO, p10, 0.5), lerpV(hemO, hemMid, 0.7)];
     const foldC = [lerpV(p10, midO, 0.25), lerpV(p9, hemMid, 0.4), lerpV(frontBot, hemMid, 0.35)];
-    // healthy shawl: loose folds radiating from the shoulder down toward the soft edge
+    // healthy shawl: soft clothPaint mounds instead of hard ink ridges
     const radFolds = sh13
       ? [
           [lerpV(pts[2], shO, 0.4), lerpV(midO, elO, 0.45), lerpV(hemO, pts[7], 0.3)],
           [lerpV(neckT, shO, 0.35), lerpV(midO, pts[8], 0.4), lerpV(pts[7], pts[8], 0.55)],
         ]
       : [];
+    const soft = sh13;
     return (
       <g key={key}>
         <path d={smoothClosed(pts.map((q) => add(q, { x: 0.8, y: 1.8 })))} fill={PAL.skinDeep} opacity={0.07} />
         {clothPaint((dx, dy) => smoothClosed(pts.map((q) => add(q, { x: dx, y: dy }))), lit ? PAL.cloth : PAL.clothMid, undefined, PAL)}
-        <path d={smoothOpen(foldA)} fill="none" stroke={PAL.clothShade} strokeWidth={2} strokeLinecap="round" />
-        <path d={smoothOpen(foldA.map((q) => add(q, { x: -2, y: -0.7 })))} fill="none" stroke={PAL.clothLit} strokeWidth={1.4} strokeLinecap="round" />
-        <path d={smoothOpen(foldB)} fill="none" stroke={PAL.clothFold} strokeWidth={1.8} strokeLinecap="round" />
-        <path d={smoothOpen(foldC)} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} strokeLinecap="round" />
-        <path d={smoothOpen([neckT, shO, lerpV(shO, midO, 0.5)].map((q) => add(q, { x: 0, y: 2.4 })))} fill="none" stroke={PAL.clothLit} strokeWidth={2} strokeLinecap="round" />
+        {soft && (
+          <>
+            {/* soft volume mounds (clothPaint) in place of hard plate ridges */}
+            {clothPaint((dx, dy) => smoothClosed([lerpV(neckT, shO, 0.35), lerpV(midO, elO, 0.25), lerpV(elO, hemO, 0.4), lerpV(hemMid, midO, 0.35)].map((q) => add(q, { x: dx * 0.5, y: dy * 0.5 }))), lit ? PAL.clothLit : PAL.cloth, undefined, PAL)}
+            {clothPaint((dx, dy) => smoothClosed([lerpV(neckF, midO, 0.4), lerpV(p10, hemMid, 0.35), lerpV(frontBot, hemMid, 0.5)].map((q) => add(q, { x: dx * 0.4, y: dy * 0.4 }))), lit ? PAL.cloth : PAL.clothMid, undefined, PAL)}
+          </>
+        )}
+        <path d={smoothOpen(foldA)} fill="none" stroke={PAL.clothShade} strokeWidth={soft ? 1.05 : 2} strokeLinecap="round" opacity={soft ? 0.45 : 1} />
+        <path d={smoothOpen(foldA.map((q) => add(q, { x: -2, y: -0.7 })))} fill="none" stroke={PAL.clothLit} strokeWidth={soft ? 0.9 : 1.4} strokeLinecap="round" opacity={soft ? 0.55 : 1} />
+        <path d={smoothOpen(foldB)} fill="none" stroke={PAL.clothFold} strokeWidth={soft ? 0.95 : 1.8} strokeLinecap="round" opacity={soft ? 0.4 : 1} />
+        <path d={smoothOpen(foldC)} fill="none" stroke={PAL.clothFold} strokeWidth={soft ? 0.85 : 1.6} strokeLinecap="round" opacity={soft ? 0.35 : 1} />
+        <path d={smoothOpen([neckT, shO, lerpV(shO, midO, 0.5)].map((q) => add(q, { x: 0, y: 2.4 })))} fill="none" stroke={PAL.clothLit} strokeWidth={soft ? 1.2 : 2} strokeLinecap="round" opacity={soft ? 0.6 : 1} />
         {radFolds.map((fp, i) => (
-          <path key={i} d={smoothOpen(fp)} fill="none" stroke={PAL.clothFold} strokeWidth={1.5} strokeLinecap="round" opacity={0.75} />
+          <path key={i} d={smoothOpen(fp)} fill="none" stroke={PAL.clothFold} strokeWidth={soft ? 0.85 : 1.5} strokeLinecap="round" opacity={soft ? 0.32 : 0.75} />
         ))}
         {/* the rolled front edge */}
-        <path d={smoothOpen(front)} fill="none" stroke={PAL.clothLit} strokeWidth={2.6} strokeLinecap="round" />
-        <path d={smoothOpen(front.map((q) => add(q, { x: 2.8, y: 0 })))} fill="none" stroke={PAL.clothShade} strokeWidth={1.4} strokeLinecap="round" />
+        <path d={smoothOpen(front)} fill="none" stroke={PAL.clothLit} strokeWidth={soft ? 1.6 : 2.6} strokeLinecap="round" opacity={soft ? 0.7 : 1} />
+        <path d={smoothOpen(front.map((q) => add(q, { x: 2.8, y: 0 })))} fill="none" stroke={PAL.clothShade} strokeWidth={soft ? 0.85 : 1.4} strokeLinecap="round" opacity={soft ? 0.4 : 1} />
       </g>
     );
   };
@@ -2465,53 +2613,38 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   const bodyT = `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(s * fl).toFixed(4)} ${s.toFixed(4)})`;
   const layered = props.layerFar !== undefined || props.layerMid !== undefined;
   const faceHand = g.vals.fFace > 0.04;
-  // the chadar's edge over the elbow goes with the tight drape (Episode 6: hand at the back / at the face)
-  // healthy: a slim drape hem across the top of the forearm where it comes out from under the chadar
-  const shawlFore = (side: "n" | "f", el: React.ReactElement): React.ReactElement => {
-    const sa2 = shawlArm[side];
-    if (!sa2) return el;
-    const a = side === "n" ? g.armN : g.armF;
-    const mid = `${uid}-sm${side}`;
-    const cid = `${uid}-sc${side}`;
-    const sh = sa2.edge.map((q) => add(q, mul(sa2.fa, 3)));
-    return (
-      <g>
-        <defs>
-          <mask id={mid} maskUnits="userSpaceOnUse" x={-3000} y={-3000} width={6000} height={6000}>
-            <rect x={-3000} y={-3000} width={6000} height={6000} fill="#fff" />
-            <path d={smoothClosed(sa2.sleeve)} fill="#000" />
-          </mask>
-          <clipPath id={cid}>
-            <path d={chainD([a.E, lerpV(a.E, a.W, 0.5), a.W], [11 * ARM_R, 10 * ARM_R, 9 * ARM_R])} />
-          </clipPath>
-        </defs>
-        <g mask={`url(#${mid})`}>{el}</g>
-        <g clipPath={`url(#${cid})`}>
-          <path d={smoothOpen(sh.map((q) => add(q, mul(sa2.fa, 2))))} fill="none" stroke={PAL.skinDeep} strokeWidth={9} strokeLinecap="round" opacity={0.1} />
-          <path d={smoothOpen(sh)} fill="none" stroke={PAL.skinDeep} strokeWidth={4.5} strokeLinecap="round" opacity={0.24} />
-        </g>
-      </g>
-    );
-  };
   const edgeOf = (tight: number) => (tight ? (gb > 0 ? 1 - gb : 1) * clamp(1 - 1.4 * tight, 0, 1) : gb > 0 ? 1 - gb : undefined);
+  // Side / ¾ rule: far UPPER stays behind the chest; only the forearm + hand cross in front.
+  // When holding / bent forward, skip the far sleeve (it would peek past the kurta onto the chest) and draw
+  // upperOnly behind the shirt so the behind-pass cannot paint a full limb across the torso.
+  const farUpperLate = layered || farArmFront;
+  const farArmBehind = HB ? (
+    <>
+      <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} upperOnly={farUpperLate} pal={PAL} hl={HAND_L} rk={ARM_R} />
+      {shirtSleeve(g.armF, false, "slF", farUpperLate ? 0.42 : 1)}
+    </>
+  ) : (
+    <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} pal={PAL} hl={HAND_L} rk={ARM_R} />
+  );
   const farFore = HB ? (
-    shawlFore("f", <ArmEl a={g.armF} id={`${uid}-aff`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />)
+    <ArmEl a={g.armF} id={`${uid}-aff`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />
   ) : (
     <ArmEl a={g.armF} id={`${uid}-aff`} lit={0.6} fore cloth={PAL.clothMid} edgeK={edgeOf(g.vals.fFace)} pal={PAL} hl={HAND_L} rk={ARM_R} />
   );
-  const nearArm = (
+  const nearArm = HB ? (
+    <>
+      <ArmEl a={g.armN} id={`${uid}-an`} lit={1} pal={PAL} hl={HAND_L} rk={ARM_R} />
+      {shirtSleeve(g.armN, true, "slN")}
+    </>
+  ) : (
     <>
       {/* near arm, its drape, the near forearm coming out below it */}
       <ArmEl a={g.armN} id={`${uid}-an`} lit={1} pal={PAL} hl={HAND_L} rk={ARM_R} />
       {capeEl(capeN, true, "capeN")}
-      {g.vals.nBack > 0.02 && !HB ? (
+      {g.vals.nBack > 0.02 ? (
         <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={0} upFrom={0.62} pal={PAL} hl={HAND_L} rk={ARM_R} />
       ) : (
-        HB ? (
-          shawlFore("n", <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />)
-        ) : (
-          <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={edgeOf(g.vals.nBack)} pal={PAL} hl={HAND_L} rk={ARM_R} />
-        )
+        <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={edgeOf(g.vals.nBack)} pal={PAL} hl={HAND_L} rk={ARM_R} />
       )}
     </>
   );
@@ -2523,7 +2656,8 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
         {shinEl(g.legF, hF.hem, true, "shinF")}
         <FootEl l={g.legF} far pal={PAL} fk={FOOT_K} />
         {gb < 0.995 && clothTube(seat, seatR, PAL.cloth, "seat")}
-        {!farArmFront && <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} pal={PAL} hl={HAND_L} rk={ARM_R} />}
+        {/* Far upper behind the torso / kurta (always — layered props only promote the forearm). */}
+        {!farUpperLate && farArmBehind}
         {/* near leg */}
         {shinEl(g.legN, hN.hem, false, "shinN")}
         <FootEl l={g.legN} far={false} pal={PAL} fk={FOOT_K} />
@@ -2547,27 +2681,55 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
             <ellipse cx={Tp(23, 6, 21).x} cy={Tp(23, 6, 21).y} rx={4.6} ry={3.4} fill={PAL.clothMid} stroke={PAL.clothShade} strokeWidth={0.9} />
           </g>
         )}
-        {/* far arm in the bend: the arms hang forward of the knees (and the free hand rests on the far knee) */}
-        {farArmFront && <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} pal={PAL} hl={HAND_L} rk={ARM_R} />}
-        {/* torso skin (shows only at the V), the neck */}
-        <path d={chainD(torsoPts, torsoR)} fill={skinEdge(PAL.skin, PAL.skinShade)} />
+        {/* far upper in the bend / while holding: still behind the kurta, but in front of the dhoti */}
+        {farUpperLate && farArmBehind}
+        {/* torso skin (classic: shows at the V; healthy: covered by kurta), the neck */}
+        {!HB && <path d={chainD(torsoPts, torsoR)} fill={skinEdge(PAL.skin, PAL.skinShade)} />}
         <ThakurNeckPlate base={g.neckBase} top={g.neckTop} scale={HB ? HEAD_K * (props.headScale ?? 1) * NECK_R : HEAD_K * (props.headScale ?? 1)} colors={HB ? C : undefined} />
-        {/* the wrap across the chest, the V at the neck, the overlapping edge and soft diagonal folds */}
-        {clothPaint((dx, dy) => smoothClosed(wrapPoly.map((q) => add(q, { x: dx, y: dy }))), PAL.cloth, "wrap", PAL)}
-        {HB && chadarHem && (
-          <g>
-            <path d={smoothOpen(chadarHem.map((q) => add(q, { x: 0, y: 1.8 })))} fill="none" stroke={PAL.clothShade} strokeWidth={2.2} strokeLinecap="round" opacity={0.75} />
-            <path d={smoothOpen(chadarHem)} fill="none" stroke={PAL.clothLit} strokeWidth={1.8} strokeLinecap="round" />
-          </g>
+        {HB && shirtBody ? (
+          <>
+            {/* Sundar-like white kurta: round collar, tubular torso, hem into dhoti; sleeves on the arms */}
+            <path d={chainD([Tp(TORSO - 8), Tp(TORSO + 2)], [hwOf(10), hwOf(8.5)])} fill={skinEdge(PAL.skin, PAL.skinShade)} />
+            {clothPaint((dx, dy) => smoothClosed(shirtBody.map((q) => add(q, { x: dx, y: dy }))), PAL.cloth, "shirt", PAL)}
+            <path
+              d={smoothOpen([Tp(TORSO + 5, -10, 9), Tp(TORSO + 2, 0, 11), Tp(TORSO + 5, 10, 9)])}
+              fill="none"
+              stroke={PAL.clothShade}
+              strokeWidth={1.35}
+              strokeLinecap="round"
+              opacity={0.55}
+            />
+            <path
+              d={smoothOpen([Tp(TORSO - 8, -12, 14), Tp(90, -2, 18), Tp(55, 6, 19)])}
+              fill="none"
+              stroke={PAL.clothFold}
+              strokeWidth={1.0}
+              strokeLinecap="round"
+              opacity={0.35}
+            />
+            <path
+              d={smoothOpen([Tp(TORSO - 6, 10, 14), Tp(88, 6, 18), Tp(52, 12, 19)])}
+              fill="none"
+              stroke={PAL.clothLit}
+              strokeWidth={1.05}
+              strokeLinecap="round"
+              opacity={0.4}
+            />
+          </>
+        ) : (
+          <>
+            {/* the wrap across the chest, the V at the neck, the overlapping edge and soft diagonal folds */}
+            {clothPaint((dx, dy) => smoothClosed(wrapPoly.map((q) => add(q, { x: dx, y: dy }))), PAL.cloth, "wrap", PAL)}
+            <path d={`M${pt(vL)} L${pt(vApex)} L${pt(vR)} Q${pt(add(lerpV(vL, vR, 0.5), mul(g.ax, 6)))} ${pt(vL)} Z`} fill={PAL.skin} />
+            <path d={`M${pt(add(vL, { x: 0, y: 2 }))} Q${pt(lerpV(vL, vR, 0.5))} ${pt(add(vR, { x: 0, y: 2 }))}`} fill="none" stroke={PAL.skinShade} strokeWidth={2} opacity={0.22} />
+            <path d={smoothOpen([vL, add(vApex, mul(g.ax, -1))])} fill="none" stroke={PAL.clothLit} strokeWidth={2.4} strokeLinecap="round" opacity={0.95} />
+            <path d={smoothOpen([vR, add(vApex, mul(g.ax, -1))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} strokeLinecap="round" opacity={0.8} />
+            <path d={smoothOpen([vApex, Tp(76, 9, 21), Tp(48, 15, 21), Tp(22, 19, 20)])} fill="none" stroke={PAL.clothShade} strokeWidth={2} strokeLinecap="round" />
+            <path d={smoothOpen([Tp(TORSO - 6, -14, 13), Tp(96, -4, 20), Tp(70, 4, 21)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.8} strokeLinecap="round" />
+          </>
         )}
-        <path d={`M${pt(vL)} L${pt(vApex)} L${pt(vR)} Q${pt(add(lerpV(vL, vR, 0.5), mul(g.ax, 6)))} ${pt(vL)} Z`} fill={PAL.skin} />
-        <path d={`M${pt(add(vL, { x: 0, y: 2 }))} Q${pt(lerpV(vL, vR, 0.5))} ${pt(add(vR, { x: 0, y: 2 }))}`} fill="none" stroke={PAL.skinShade} strokeWidth={2} opacity={0.22} />
-        <path d={smoothOpen([vL, add(vApex, mul(g.ax, -1))])} fill="none" stroke={PAL.clothLit} strokeWidth={2.4} strokeLinecap="round" opacity={0.95} />
-        <path d={smoothOpen([vR, add(vApex, mul(g.ax, -1))])} fill="none" stroke={PAL.clothFold} strokeWidth={1.6} strokeLinecap="round" opacity={0.8} />
-        <path d={smoothOpen([vApex, Tp(76, 9, 21), Tp(48, 15, 21), Tp(HB ? 30 : 22, 19, 20)])} fill="none" stroke={PAL.clothShade} strokeWidth={2} strokeLinecap="round" />
-        <path d={smoothOpen([Tp(TORSO - 6, -14, 13), Tp(96, -4, 20), Tp(70, 4, 21)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.8} strokeLinecap="round" />
-        {/* far drape and the far forearm coming out below it */}
-        {capeEl(capeF, false, "capeF")}
+        {/* far chadar (classic), then far forearm over the cloth / kurta; near arm last */}
+        {!HB && capeEl(capeF, false, "capeF")}
         {!layered && farFore}
         {!layered && nearArm}
       </g>
@@ -2593,7 +2755,8 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
       </g>
       {faceHand && (
         <g transform={bodyT} opacity={smooth((g.vals.fFace - 0.04) / 0.3).toFixed(3)}>
-          {HB ? shawlFore("f", <ArmEl a={g.armF} id={`${uid}-afx`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />) : <ArmEl a={g.armF} id={`${uid}-afx`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />}
+          {/* wipeEye: only the far forearm + hand over the face (upper stays behind the kurta) */}
+          <ArmEl a={g.armF} id={`${uid}-afx`} lit={0.6} fore edgeK={0} pal={PAL} hl={HAND_L} rk={ARM_R} />
         </g>
       )}
     </g>

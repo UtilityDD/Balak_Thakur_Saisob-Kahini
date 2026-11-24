@@ -99,9 +99,9 @@ import { PLATE_COLORS, PLATE_COLORS_HEALTHY, PLATE_HAIR_TOP, ThakurHeadPlate, Th
  *   Balak from Episode 5 on, after the director's reference plate 01. The head and neck are the shared
  *   ThakurHeadPlate / ThakurNeckPlate (src/cinematic/rig/ThakurHeadPlate.tsx: one face for every Balak rig), fed with
  *   this rig's gaze, blinks, expressions and mouth; it sits PLATE_HEAD_UP higher on a slim visible neck. Skin and cloth
- *   come from PLATE_COLORS. Costume: an inner wrap across the chest with a V at the neck, and the chadar over BOTH
- *   shoulders as two capes that cover the upper arms and hang to the lap, front edges down the chest; the forearms,
- *   hands and held objects are drawn again over the capes where they come in front of the cloth.
+ *   come from PLATE_COLORS. Costume: a Sundar-like white kurta (crew neck, short sleeves to the elbow; forearms free)
+ *   over the cream dhoti — replaces the hanging chadar/capes so arm gestures stay clean; held objects draw over the
+ *   sleeves where needed.
  *
  * EPISODE 5 (added 2026-11-22, both designs)
  *   - playPebbles  self-timed (PEBBLES_T): the near hand picks a pebble from the pile (PEBBLE_PILE) and lays it in a
@@ -116,8 +116,9 @@ import { PLATE_COLORS, PLATE_COLORS_HEALTHY, PLATE_HAIR_TOP, ThakurHeadPlate, Th
  * EPISODE 6 (added 2026-11-22, opt-in; Episodes 3 to 5 render byte-identically). All self-timed from poseStart, starting
  * from the resting hands (from sitCross / idle the prevPose blend is only 6 frames). Props for the scene: seatedEp6Anchors()
  * (same props object) gives the palms, the pinch point, the ball, the note and the head top; draw the ball / note through
- * the `propInHands` slot (world coordinates, between the far and the near hand). Plate design: the far arm reaching in
- * front is drawn over the chest wrap (farArmFront) and over the near cape (farOverCape).
+ * the `propInHands` slot (world coordinates, between the far and the near hand). Plate design: far UPPER arm + kurta
+ * sleeve stay behind the chest; farArmFront promotes only the forearm + hand over the kurta; held props stay over the
+ * near sleeve (farOverCape slot kept for props).
  *   - takeBall     TAKE_BALL_T: both hands come up under the ball at `giveAt` (default TAKE_BALL_AT), the giver lets go at
  *                  `take`, he draws it to his lap and keeps it there; joyful. Ball radius BALL_R.
  *   - treasurer    TREASURER_T per step of `pickPlace` (default TREASURER_STEPS on TREASURY_CLOTH): the near hand picks the
@@ -806,8 +807,6 @@ const HEAD_CY = -142; // head centre relative to PIVOT (absolute y about -182), 
 /* BAL-26 "plate" design: the head (src/cinematic/rig/ThakurHeadPlate.tsx) sits PLATE_HEAD_UP higher on a slim
    visible neck, a little more with age. */
 const PLATE_HEAD_UP = 3;
-/** Plate design: the soft darker contour round the chadar's silhouette. */
-const CAPE_CONTOUR = "#a99f8f";
 const SH_FRONT: V = { x: 27, y: -97 }; // shoulder joints relative to PIVOT: narrow, soft child shoulders
 const SH_BACK: V = { x: -27, y: -97 };
 const DIR_DOWN = unit(0.35, 1);
@@ -2219,6 +2218,7 @@ function solveEp4(pose: SeatedPose, f: number, breath: number, poseStart: number
         eyeDown: 0.4 * watch,
         ...hs,
         joinW: 1,
+        farArmFront: 1,
         gazeAt: O,
         gazeW: 0.85 * watch,
         obj: heldBoth(hs, O, rot),
@@ -2239,6 +2239,7 @@ function solveEp4(pose: SeatedPose, f: number, breath: number, poseStart: number
         eyeDown: 0.5 * watch,
         ...hs,
         joinW: 1,
+        farArmFront: 1,
         gazeAt: O,
         gazeW: 0.6 * watch,
         obj: heldBoth(hs, O, rot),
@@ -2262,6 +2263,7 @@ function solveEp4(pose: SeatedPose, f: number, breath: number, poseStart: number
         eyeDown: 0.15,
         ...hs,
         joinW: 1,
+        farArmFront: 1,
         gazeAt: O,
         gazeW: 0.6,
         obj: heldBoth(hs, O, rot),
@@ -4218,7 +4220,18 @@ function seatedRig(props: SeatedChildProps) {
     if (dd.x === 0 && dd.y === 0) return now;
     return { E: now.E, H: { x: now.E.x + dd.x * FORE, y: now.E.y + dd.y * FORE } };
   };
-  const armB = overlapArm(shB, sol.back, before.back, -1);
+  // Far arm in front of the body (holding / joining): pick the more outboard elbow so the forearm
+  // emerges from the far side of the chest rather than mid-torso in side / ¾ view.
+  const farFront = plate && ((sol.farArmFront ?? 0) > 0.3 || (sol.joinW ?? 0) > 0.3 || !!sol.farOverCape);
+  const armB = farFront
+    ? (() => {
+        const a0 = overlapArm(shB, sol.back, before.back, -1);
+        const a1 = overlapArm(shB, sol.back, before.back, 1);
+        const chest = up({ x: 0, y: -70 });
+        const score = (E: V) => Math.hypot(E.x - chest.x, E.y - chest.y);
+        return score(a0.E) >= score(a1.E) ? a0 : a1;
+      })()
+    : overlapArm(shB, sol.back, before.back, -1);
   const armF = overlapArm(shF, sol.front, before.front, 1);
   const dirLag = (a: V, b: V) => unit(lerp(a.x, b.x, 0.55), lerp(a.y, b.y, 0.55));
   const frontDir = dirLag(sol.frontDir, fingerLag.frontDir);
@@ -4674,6 +4687,8 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   let plateCapeB: React.ReactElement | null = null;
   let plateCapeShadows: React.ReactElement | null = null;
   let plateCapeF: React.ReactElement | null = null;
+  /** The far kurta sleeve again, over the promoted far arm (farArmFront), so no bare upper arm shows at the shoulder. */
+  let plateFarSleeveOver: React.ReactElement | null = null;
   let plateArmOverB: React.ReactElement | null = null;
   let plateArmOverF: ((extra: React.ReactElement | null) => React.ReactElement) | null = null;
   if (plate) {
@@ -4713,238 +4728,101 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
     const ns = up({ x: 3, y: headCY + (chinY - 4) * HEAD_K });
     plateNeckShade = <ellipse cx={ns.x.toFixed(2)} cy={ns.y.toFixed(2)} rx={11} ry={4.6} fill={PAL.skinShade} opacity={0.5} />;
 
-    /* ---- Chadar (BAL-26, plate 01): an inner wrap across the chest with a V at the neck, and the shawl over
-       BOTH shoulders whose front edges fall down the chest; its sides cover the upper arms and hang to the lap. */
-    const wrapRel: V[] = [
-      { x: -32.5, y: -98 },
-      { x: -25, y: -106 },
-      { x: -12.5, y: -108.4 },
-      { x: -4.2, y: -99 },
-      { x: 0.8, y: -92.5 },
-      { x: 2.4, y: -90 },
-      { x: 4.2, y: -92.5 },
-      { x: 7.2, y: -99 },
-      { x: 12.5, y: -108.4 },
-      { x: 25, y: -106 },
-      { x: 32.5, y: -98 },
-      { x: 33, y: -87 },
-      { x: 29.5, y: -71 },
-      { x: 30.5, y: -52 },
-      { x: 32, y: -34 },
-      { x: 29, y: -17 },
-      { x: -29, y: -17 },
-      { x: -32, y: -34 },
-      { x: -30.5, y: -52 },
-      { x: -29.5, y: -71 },
-      { x: -33, y: -87 },
+    /* ---- White kurta (Sundar-like): round collar, tubular torso, short sleeves to the elbow; no hanging chadar. */
+    const shirtRel: V[] = [
+      { x: -28, y: -98 },
+      { x: -26, y: -106 },
+      { x: -14, y: -111 },
+      { x: -6, y: -109.5 },
+      { x: 0, y: -108 },
+      { x: 6, y: -109.5 },
+      { x: 14, y: -111 },
+      { x: 26, y: -106 },
+      { x: 28, y: -98 },
+      { x: 30, y: -84 },
+      { x: 29, y: -66 },
+      { x: 29.5, y: -46 },
+      { x: 28, y: -28 },
+      { x: 26, y: -15 },
+      { x: -26, y: -15 },
+      { x: -28, y: -28 },
+      { x: -29.5, y: -46 },
+      { x: -29, y: -66 },
+      { x: -30, y: -84 },
     ];
-    const wrapPts = wrapRel.map(up);
+    const shirtPts = shirtRel.map(up);
     plateWrapEl = (
       <g>
-        <path d={smoothClosed(wrapPts)} fill={PAL.clothShade} />
-        <path d={smoothClosed(wrapPts.map((q) => ({ x: q.x - 0.9, y: q.y - 1 })))} fill={`url(#${uid}-cloth)`} />
-        {/* The V edges: a thin shade of the cloth's thickness on the skin, and a lit turned edge */}
-        <path d={relUp([{ x: -12.5, y: -107.6 }, { x: -4.2, y: -98.6 }, { x: 2.4, y: -90.4 }])} fill="none" stroke={PAL.clothLit} strokeWidth={1.5} strokeLinecap="round" opacity={0.95} />
-        <path d={relUp([{ x: 12.5, y: -107.6 }, { x: 7.2, y: -98.8 }, { x: 2.4, y: -90.4 }])} fill="none" stroke={PAL.clothFold} strokeWidth={1.1} strokeLinecap="round" opacity={0.8} />
-        {/* The overlapping edge of the wrap from the V down to the near hip, with soft diagonal folds */}
-        <path d={relUp([{ x: 2.4, y: -90 }, { x: 9, y: -72 }, { x: 18, y: -52 }, { x: 25, y: -33 }])} fill="none" stroke={PAL.clothShade} strokeWidth={1.3} strokeLinecap="round" opacity={0.75} />
-        <path d={relUp([{ x: 3.6, y: -88 }, { x: 10.6, y: -70 }, { x: 19.4, y: -50 }])} fill="none" stroke={PAL.clothLit} strokeWidth={1.1} strokeLinecap="round" opacity={0.9} />
-        <path d={relUp([{ x: -20, y: -97 }, { x: -9, y: -78 }, { x: 0, y: -60 }])} fill="none" stroke={PAL.clothFold} strokeWidth={1.1} strokeLinecap="round" opacity={0.6} />
-        <path d={relUp([{ x: -24, y: -80 }, { x: -13, y: -62 }, { x: -6, y: -46 }])} fill="none" stroke={PAL.clothFold} strokeWidth={1} strokeLinecap="round" opacity={0.5} />
+        <path d={smoothClosed(shirtPts)} fill={PAL.clothShade} />
+        <path d={smoothClosed(shirtPts.map((q) => ({ x: q.x - 0.9, y: q.y - 1 })))} fill={`url(#${uid}-cloth)`} />
+        {/* Round collar band */}
+        <path d={relUp([{ x: -11, y: -110 }, { x: 0, y: -107 }, { x: 11, y: -110 }])} fill="none" stroke={PAL.clothShade} strokeWidth={1.45} strokeLinecap="round" opacity={0.6} />
+        <path d={relUp([{ x: -9, y: -108.5 }, { x: 0, y: -106 }, { x: 9, y: -108.5 }])} fill="none" stroke={PAL.clothLit} strokeWidth={1.1} strokeLinecap="round" opacity={0.7} />
+        <path d={relUp([{ x: -16, y: -94 }, { x: -4, y: -76 }, { x: 6, y: -56 }])} fill="none" stroke={PAL.clothFold} strokeWidth={1.05} strokeLinecap="round" opacity={0.4} />
+        <path d={relUp([{ x: 15, y: -92 }, { x: 6, y: -72 }, { x: -4, y: -52 }])} fill="none" stroke={PAL.clothLit} strokeWidth={1.05} strokeLinecap="round" opacity={0.45} />
+        <path d={relUp([{ x: -20, y: -38 }, { x: 0, y: -34 }, { x: 20, y: -38 }])} fill="none" stroke={PAL.clothShade} strokeWidth={1.15} strokeLinecap="round" opacity={0.4} />
       </g>
     );
 
-    /*
-     * The shawl over BOTH shoulders (plate 01), one cape per side: from the neck over the shoulder and the whole
-     * upper arm to the elbow, then hanging straight down (gravity, whatever the arm does) to a soft hem on the lap;
-     * its front edge falls down the chest with a rolled lit edge. The forearm comes out from under it: the rig draws
-     * the forearm and hand again over the cape, clipped to the cape and faded in just past the elbow (the cloth hides
-     * the elbow, the forearm emerges from its edge), and the held object again in front of the near cape.
-     */
-    const cape = (shP: V, E: V, side: number): V[] => {
+    /** Short kurta sleeve over the upper arm. `len` 1 = to just past the elbow; lower = shoulder cap only. */
+    const shirtSleeve = (shP: V, E: V, side: number, lit: boolean, len = 1): React.ReactElement => {
       const d0 = unit(E.x - shP.x, E.y - shP.y);
-      // The cloth lies close over the upper arm (it drapes OVER the arm, so its edge runs along the arm's outer and
-      // upper side, whatever the arm does).
       let nrm: V = { x: -d0.y, y: d0.x };
       if (side * nrm.x - nrm.y < 0) nrm = { x: -nrm.x, y: -nrm.y };
-      const off = lerp(10.5, 8.6, clamp(d0.y, 0, 1));
-      const lift = kneelLift(kneelNow);
-      // A soft bulge over the bent elbow.
-      const eO: V = { x: E.x + nrm.x * (off + 2.6) + d0.x * 1.5, y: E.y + nrm.y * (off + 2.6) + d0.y * 1.5 };
-      // How much the upper arm hangs down on its own side: 1 beside the body (the cloth falls around the knee to the
-      // mat, staying close to the body even in a forward lean), 0 raised or swung across the body (a soft drape hangs
-      // from the upper arm's underside, shorter the higher the arm, and returns to the body's side at the waist).
-      const across = side * (E.x - shP.x);
-      const hang = smooth((d0.y - 0.35) / 0.5) * smooth((across + 6) / 18) * (1 - smooth((across - 16) / 16));
-      const ground = -6 - lift;
-      const hemOh: V = { x: side * clamp(side * eO.x + 2, 62, 70) + 0.6 * flut(105 + side, 1.2), y: ground + flut(103 + side, 0.5) };
-      const eBh: V = { x: E.x + nrm.x * off * 0.45, y: E.y + nrm.y * off * 0.45 + 10 };
-      const fallh: V = { x: side * clamp(side * lerp(eO.x, hemOh.x, 0.5) + 2, 60, 70), y: Math.max(lerp(eO.y, hemOh.y, 0.55), -40 - lift) };
-      const hemMidh: V = { x: side * 47 + flut(107 + side, 0.8), y: -25 - lift + flut(95 + side, 0.6) };
-      const under: V = { x: -nrm.x, y: -nrm.y };
-      const dl = lerp(9, 20, clamp(d0.y + 0.3, 0, 1));
-      const eBr: V = { x: E.x + under.x * 3, y: E.y + under.y * 3 + 0.6 * dl };
-      const fallr: V = { x: lerp(shP.x, E.x, 0.65) + under.x * 5, y: lerp(shP.y, E.y, 0.65) + under.y * 5 + dl + flut(109 + side, 0.6) };
-      // ... then back along the arm's underside to the armpit and down the body's side (a sleeve with a soft lip, never
-      // a panel standing away from the arm).
-      const hemOr: V = { x: shP.x + under.x * 9 - side * 2, y: shP.y + under.y * 9 + 10 };
-      const hemMidr = up({ x: side * 29, y: -62 });
-      const eB = lerpV(eBr, eBh, hang);
-      const fall = lerpV(fallr, fallh, hang);
-      const hemO = lerpV(hemOr, hemOh, hang);
-      const hemMid = lerpV(hemMidr, hemMidh, hang);
-      const frontBot = drag({ x: side * 19.5, y: -12 + flut(93 + side, 0.5) }, 0.4);
-      return [
-        up({ x: side * 12.8, y: -108.8 }),
-        up({ x: side * 27, y: -107 }),
-        { x: shP.x + nrm.x * (off + 2.2) + side * 1.6, y: shP.y + nrm.y * (off + 2.2) - 1.2 },
-        { x: lerp(shP.x, E.x, 0.5) + nrm.x * (off + 1.2), y: lerp(shP.y, E.y, 0.5) + nrm.y * (off + 1.2) },
-        eO,
-        eB,
-        fall,
-        hemO,
-        hemMid,
-        frontBot,
-        drag({ x: side * 18.4, y: -34 + flut(91 + side, 0.5) }, 0.25),
-        up({ x: side * 16.6, y: -56 }),
-        up({ x: side * 14.6, y: -76 }),
-        up({ x: side * 12.6, y: -92 }),
-        up({ x: side * 11.3, y: -103 }),
+      const rSh = 11.5;
+      const rEl = 10.2 * (0.75 + 0.25 * len);
+      const end: V = { x: shP.x + d0.x * (Math.hypot(E.x - shP.x, E.y - shP.y) * len + 5 * len), y: shP.y + d0.y * (Math.hypot(E.x - shP.x, E.y - shP.y) * len + 5 * len) };
+      const mid: V = { x: lerp(shP.x, end.x, 0.5), y: lerp(shP.y, end.y, 0.5) };
+      const pts: V[] = [
+        { x: shP.x - d0.x * 8, y: shP.y - d0.y * 8 },
+        { x: shP.x + nrm.x * rSh, y: shP.y + nrm.y * rSh },
+        { x: mid.x + nrm.x * (rEl + 1), y: mid.y + nrm.y * (rEl + 1) },
+        { x: end.x + nrm.x * rEl, y: end.y + nrm.y * rEl },
+        { x: end.x - nrm.x * rEl * 0.88, y: end.y - nrm.y * rEl * 0.88 },
+        { x: mid.x - nrm.x * (rEl + 0.5), y: mid.y - nrm.y * (rEl + 0.5) },
+        { x: shP.x - nrm.x * rSh * 0.92, y: shP.y - nrm.y * rSh * 0.92 },
       ];
-    };
-    const capeB = cape(shB, armB.E, -1);
-    const capeF = cape(shF, armF.E, 1);
-    const capeEl = (pts: V[], side: number, lit: boolean): React.ReactElement => {
-      const sO = pts[2];
-      const eO = pts[4];
-      const hemO = pts[7];
-      const hemMid = pts[8];
-      const front = pts.slice(9, 15);
-      // Long soft folds that follow the body: over the shoulder and down the arm to the hem at the mat, from the neck
-      // down over the chest to the lap, and a turned fold where the fall meets the knee.
-      const foldA = [lerpV(pts[1], sO, 0.5), lerpV(sO, eO, 0.55), { x: lerp(eO.x, hemO.x, 0.4) - side * 2, y: lerp(eO.y, hemO.y, 0.55) }, { x: hemO.x - side * 7, y: hemO.y - 2 }];
-      const foldB = [lerpV(pts[0], pts[1], 0.55), { x: lerp(pts[1].x, eO.x, 0.35) - side * 4, y: lerp(pts[1].y, eO.y, 0.5) }, { x: lerp(eO.x, hemMid.x, 0.5) - side * 4, y: lerp(eO.y, hemMid.y, 0.6) }, { x: hemMid.x - side * 2, y: hemMid.y - 1.5 }];
-      // Opaque cotton: a soft darker contour all round, the fill inset inside it, shaded across the cape from the
-      // front edge (light) to the outer side (warm grey on the side away from the light).
-      const gid = `${uid}-cape${side > 0 ? "f" : "b"}`;
-      const x1 = front[2].x;
-      // Shade across to the cape's farthest point on its own side, so a raised sleeve is lit cloth, not a grey slab.
-      const x2 = pts.reduce((a, q) => (side * q.x > side * a ? q.x : a), hemO.x);
       return (
         <g>
-          <defs>
-            <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={x1.toFixed(2)} y1={0} x2={x2.toFixed(2)} y2={0}>
-              {lit ? (
-                <>
-                  <stop offset="0" stopColor={PAL.cloth} />
-                  <stop offset="0.4" stopColor={PAL.clothLit} />
-                  <stop offset="0.75" stopColor={PAL.cloth} />
-                  <stop offset="1" stopColor={PAL.clothFold} />
-                </>
-              ) : (
-                <>
-                  <stop offset="0" stopColor={PAL.cloth} />
-                  <stop offset="0.3" stopColor={PAL.cloth} />
-                  <stop offset="0.6" stopColor={PAL.clothMid} />
-                  <stop offset="0.85" stopColor={PAL.clothFold} />
-                  <stop offset="1" stopColor={PAL.clothShade} />
-                </>
-              )}
-            </linearGradient>
-          </defs>
-          <path d={smoothClosed(pts)} fill={`url(#${gid})`} />
-          {/* a soft darker contour along the outer silhouette (shoulder, arm, elbow, fall) */}
-          <path d={smoothOpen(pts.slice(1, 8))} fill="none" stroke={CAPE_CONTOUR} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-          {/* deep folds (warm grey) with a light ridge beside the main one */}
-          <path d={smoothOpen(foldA)} fill="none" stroke={PAL.clothFold} strokeWidth={3} strokeLinecap="round" />
-          <path d={smoothOpen(foldA.slice(0, 3).map((q) => ({ x: q.x - 2.6, y: q.y - 0.8 })))} fill="none" stroke={lit ? PAL.clothLit : PAL.cloth} strokeWidth={2} strokeLinecap="round" />
-          <path d={smoothOpen(foldB)} fill="none" stroke={PAL.clothMid} strokeWidth={2.8} strokeLinecap="round" />
-          {/* the shadow tucked under the elbow bulge */}
-          <path d={smoothOpen([eO, pts[5], pts[6]].map((q) => ({ x: q.x - side * 2.6, y: q.y })))} fill="none" stroke={PAL.clothFold} strokeWidth={3} strokeLinecap="round" />
-          {/* shoulder light along the top */}
-          <path d={smoothOpen([pts[0], pts[1], sO].map((q) => ({ x: q.x, y: q.y + 2 })))} fill="none" stroke={lit ? PAL.clothLit : PAL.cloth} strokeWidth={2} strokeLinecap="round" />
-          {/* the rolled front edge */}
-          <path d={smoothOpen(front.map((q) => ({ x: q.x + side * 1.6, y: q.y })))} fill="none" stroke={PAL.clothLit} strokeWidth={2.2} strokeLinecap="round" />
+          <path d={smoothClosed(pts)} fill={lit ? PAL.cloth : PAL.clothMid} />
+          <path d={smoothClosed(pts.map((q) => ({ x: q.x - 0.7, y: q.y - 0.8 })))} fill={`url(#${uid}-cloth)`} opacity={0.92} />
+          <path
+            d={smoothOpen([
+              { x: end.x + nrm.x * rEl * 0.8, y: end.y + nrm.y * rEl * 0.8 },
+              { x: end.x - nrm.x * rEl * 0.7, y: end.y - nrm.y * rEl * 0.7 },
+            ])}
+            fill="none"
+            stroke={PAL.clothShade}
+            strokeWidth={1.15}
+            strokeLinecap="round"
+            opacity={0.55}
+          />
+          <path
+            d={smoothOpen([
+              { x: shP.x + nrm.x * rSh * 0.4, y: shP.y + nrm.y * rSh * 0.4 },
+              { x: mid.x + nrm.x * rEl * 0.3, y: mid.y + nrm.y * rEl * 0.3 },
+            ])}
+            fill="none"
+            stroke={PAL.clothLit}
+            strokeWidth={1.05}
+            strokeLinecap="round"
+            opacity={0.45}
+          />
         </g>
       );
     };
-    plateCapeB = capeEl(capeB, -1, true);
-    plateCapeF = capeEl(capeF, 1, false);
-    // The chadar's cast shadows on the wrap, the lap and the mat (front edges, hems). Drawn under the arms and anything
-    // held, so a forearm, a doll or the clay in front of him is never crossed by a cloth stroke.
-    const capeShadow = (pts: V[], side: number) => (
-      <g key={side}>
-        <path d={smoothOpen(pts.slice(9, 15).map((q) => ({ x: q.x - side * 2.2, y: q.y + 0.8 })))} fill="none" stroke={PAL.clothShade} strokeWidth={2.6} strokeLinecap="round" />
-        <path d={smoothOpen([pts[7], pts[8], pts[9]].map((q) => ({ x: q.x, y: q.y + 2.2 })))} fill="none" stroke={PAL.clothShade} strokeWidth={4.4} strokeLinecap="round" />
-      </g>
-    );
-    plateCapeShadows = (
-      <g>
-        {capeShadow(capeB, -1)}
-        {capeShadow(capeF, 1)}
-      </g>
-    );
-    // The forearm and hand again over the cape (clipped to it) where the forearm comes forward out of the cloth: it
-    // starts just past the elbow, and a soft fold of the chadar lies over the elbow, so the arm comes out from under it.
-    const forearmOver = (key: string, pts: V[], sh2: V, A: { E: V; H: V }, scaleA: number, base: string, shade: string, lit: number, turn: number, hand: React.ReactElement, extra?: React.ReactElement | null, clip = true): React.ReactElement => {
-      const fd = unit(A.H.x - A.E.x, A.H.y - A.E.y);
-      const side = A === armF ? 1 : -1;
-      const over = 1; // the forearm always comes out in front of the cloth from the elbow down
-      if (over < 0.01 && !extra) return <g />;
-      const ang = (Math.atan2(fd.y, fd.x) * 180) / Math.PI;
-      const fc = { x: A.E.x + fd.x * 6, y: A.E.y + fd.y * 6 };
-      return (
-        <g>
-          <defs>
-            <clipPath id={`${uid}-${key}c`}>
-              <path d={smoothClosed(pts)} />
-            </clipPath>
-          </defs>
-          <g clipPath={clip ? `url(#${uid}-${key}c)` : undefined}>
-            {extra}
-            {over > 0.01 && (
-              <g opacity={over.toFixed(3)}>
-                {armPaint(sh2, A.E, A.H, scaleA, base, shade, lit, wristRadius(turn), 6, PAL.skinLit)}
-                {/* the chadar's edge lying over the elbow */}
-                <g transform={`translate(${fc.x.toFixed(2)} ${fc.y.toFixed(2)}) rotate(${ang.toFixed(2)})`}>
-                  <path d="M-9 -10.5 L1.4 -10.5 Q5.4 -3 2.6 0 Q5.4 3 1.4 10.5 L-9 10.5 Z" fill={side < 0 ? PAL.cloth : PAL.clothMid} />
-                  <path d="M1.4 -10.5 Q5.4 -3 2.6 0 Q5.4 3 1.4 10.5" fill="none" stroke={PAL.clothShade} strokeWidth={1.2} strokeLinecap="round" opacity={0.8} />
-                  <path d="M-3.6 -8 Q-1.6 0 -3.6 8" fill="none" stroke={PAL.clothFold} strokeWidth={1} strokeLinecap="round" opacity={0.55} />
-                </g>
-                {hand}
-              </g>
-            )}
-          </g>
-        </g>
-      );
-    };
-    plateArmOverB = forearmOver(
-      "fb",
-      capeB,
-      shB,
-      armB,
-      0.98,
-      PAL.skinFar,
-      PAL.skinDeep,
-      0.55,
-      turnB,
-      childHand(`${uid}-hcB3`, armB.H, backDir, shapeB, turnB, -1, PAL.skinFar, PAL.skinDeep, curlB, wristRadius(turnB), armB.E),
-    );
-    plateArmOverF = (extra: React.ReactElement | null) =>
-      forearmOver(
-        "ff",
-        capeF,
-        shF,
-        armF,
-        1.02,
-        PAL.skin,
-        PAL.skinShade,
-        1,
-        turnF,
-        childHand(`${uid}-hcF3`, armF.H, frontDir, shapeF, turnF, 1, PAL.skin, PAL.skinShade, curlF, wristRadius(turnF), armF.E),
-        extra,
-        false,
-      );
+    // Far sleeve: full length when the arm hangs; a short shoulder cap when the far hand works in front
+    // (full sleeve would peek past the kurta onto the chest in side / ¾ view).
+    const farSleeveLen = (sol.farArmFront ?? 0) > 0.3 || (sol.joinW ?? 0) > 0.3 || sol.farOverCape ? 0.42 : 1;
+    plateCapeB = shirtSleeve(shB, armB.E, -1, true, farSleeveLen);
+    plateCapeF = shirtSleeve(shF, armF.E, 1, false);
+    // Episode 4 audit: the promoted far arm is painted from the shoulder, so its bare upper arm read as a tan slit
+    // between the kurta and the short far cap; cover it with the sleeve (white on white over the chest reads as cloth).
+    plateFarSleeveOver = shirtSleeve(shB, armB.E, -1, true, 0.92);
+    plateCapeShadows = null;
+    plateArmOverB = null;
+    // Held props / far-over redraw in front of the near sleeve (no cape clip / elbow tongue).
+    plateArmOverF = (extra: React.ReactElement | null) => (extra ? <g>{extra}</g> : <g />);
   }
 
   // Episode 4: the held object, placed from the drawn (lagged) wrists so it stays in the hands (MOT-07); an object
@@ -5171,9 +5049,11 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
         </g>
       )}
 
-      {/* Far arm and hand, behind the torso: soft and rounded, no hard joints */}
+      {/* Far arm and hand, behind the torso: soft and rounded, no hard joints.
+          Plate: far kurta sleeve behind the chest (short cap when the far hand works in front). */}
       {armPaint(shB, armB.E, armB.H, 0.98, PAL.skinFar, PAL.skinDeep, 0.55, wristRadius(turnB), 0, PAL.skinLit)}
       {childHand(`${uid}-hcB`, armB.H, backDir, shapeB, turnB, -1, PAL.skinFar, PAL.skinDeep, curlB, wristRadius(turnB), armB.E)}
+      {plateCapeB}
 
       {/* Neck: short and soft, behind the torso so only its top shows */}
       {plate ? (
@@ -5222,7 +5102,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       {/* Head's soft shadow at the base of the neck */}
       {plate ? plateNeckShade : <ellipse cx={chinShade.x.toFixed(2)} cy={chinShade.y.toFixed(2)} rx={8.5} ry={3.2} fill={PAL.skinShade} opacity={0.4} />}
 
-      {/* Uttariya across the chest and over the far shoulder */}
+      {/* Plate: white kurta body. Classic: uttariya across the chest. */}
       {plate && plateWrapEl}
       {!plate && (
         <>
@@ -5362,15 +5242,14 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
           <ellipse cx={(knot.x - 0.8).toFixed(2)} cy={(knot.y - 0.8).toFixed(2)} rx={2.4} ry={1.4} fill={PAL.clothLit} opacity={0.9} />
         </>
       )}
-      {/* Episode 6 (plate): the far arm over the chest wrap, under the far cape, while it reaches in front of him */}
+      {/* Plate: far forearm + hand only over the kurta (upper arm + sleeve stay behind the chest). */}
       {plate && (sol.farArmFront ?? 0) > 0.3 && (
         <g opacity={smooth(((sol.farArmFront ?? 0) - 0.3) / 0.4).toFixed(3)}>
-          {armPaint(shB, armB.E, armB.H, 0.98, PAL.skinFar, PAL.skinDeep, 0.55, wristRadius(turnB), 0, PAL.skinLit)}
+          {armPaint(shB, armB.E, armB.H, 0.98, PAL.skinFar, PAL.skinDeep, 0.55, wristRadius(turnB), 6, PAL.skinLit)}
+          {plateFarSleeveOver}
           {childHand(`${uid}-hcB5`, armB.H, backDir, shapeB, turnB, -1, PAL.skinFar, PAL.skinDeep, curlB, wristRadius(turnB), armB.E)}
         </g>
       )}
-      {plateCapeShadows}
-      {plateCapeB}
       {plateArmOverB}
 
       {/* Pot and water stream (pour) */}
@@ -5547,8 +5426,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       {/* Near arm and hand, in front of the head so the thinking hand reads at the chin */}
       {armPaint(shF, armF.E, armF.H, 1.02, PAL.skin, PAL.skinShade, 1, wristRadius(turnF), 0, PAL.skinLit)}
       {childHand(`${uid}-hcF`, armF.H, frontDir, shapeF, turnF, 1, PAL.skin, PAL.skinShade, curlF, wristRadius(turnF), armF.E)}
-      {/* Plate design: the near side of the shawl over the near upper arm, then the forearm, hand and held object again
-          in front of it where it would hide them */}
+      {/* Plate: near kurta sleeve, then held props / far-over redraw in front */}
       {plateCapeF}
       {plateArmOverF && plateArmOverF(farOverEl ? <>{farOverEl}{heldAll}</> : heldAll)}
 
