@@ -3,7 +3,6 @@ import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
 import { clamp, EASE } from "../../../cinematic/core/anim";
 import { BN_FONT, ensureBanglaFont } from "../../../cinematic/fonts";
 import { CARD_PALETTE } from "../../../episode/SeriesCards";
-import { BirulGlow } from "../../../episode03/rig/BirulGlow";
 import { StandingChild, standingChildJoints, type StandingChildProps } from "../../../episode05/rig/StandingChild";
 import { EP05_CUES } from "../../../episode05/subtitles";
 import { EP05_SCENES } from "../../../episode05/timing";
@@ -98,6 +97,18 @@ const PETALS = Array.from({ length: 14 }, (_, i) => ({
 }));
 
 const PETAL_TINTS = ["#FFD9A0", "#F3A6A0"];
+
+const RIVER_RIPPLES = [
+  { x: 420, y: 720, w: 160, phase: 0.2, speed: 0.035 },
+  { x: 1260, y: 742, w: 190, phase: 1.4, speed: 0.04 },
+  { x: 680, y: 770, w: 220, phase: 2.8, speed: 0.032 },
+  { x: 1040, y: 795, w: 180, phase: 4.1, speed: 0.038 },
+  { x: 340, y: 830, w: 210, phase: 0.9, speed: 0.042 },
+  { x: 1380, y: 855, w: 170, phase: 3.3, speed: 0.036 },
+  { x: 820, y: 885, w: 240, phase: 5.2, speed: 0.03 },
+  { x: 560, y: 920, w: 200, phase: 2.1, speed: 0.034 },
+  { x: 1180, y: 945, w: 230, phase: 4.6, speed: 0.041 },
+];
 
 const outroTitleStyle: React.CSSProperties = {
   fontFamily: BN_FONT,
@@ -265,7 +276,7 @@ const GhibliEp6GlimpseOverlay: React.FC = () => {
           position: "absolute",
           left: 0,
           right: 0,
-          top: LABEL_TOP,
+          top: LABEL_TOP - 12,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -275,8 +286,32 @@ const GhibliEp6GlimpseOverlay: React.FC = () => {
           pointerEvents: "none",
         }}
       >
-        <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: 2, color: "#FFDB8E", textShadow: labelShadow }}>{EP6_LABEL}</div>
-        <div style={{ marginTop: 2, fontSize: 32, fontWeight: 600, letterSpacing: 0.5, color: "#FFF3DC", textShadow: labelShadow, whiteSpace: "nowrap" }}>
+        <div
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: 2.5,
+            color: "#FFD98E",
+            textShadow: labelShadow,
+            marginBottom: 4,
+          }}
+        >
+          — আসছে পরের পর্ব —
+        </div>
+        <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: 2, color: "#FFE8B0", textShadow: labelShadow }}>
+          {EP6_LABEL}
+        </div>
+        <div
+          style={{
+            marginTop: 2,
+            fontSize: 30,
+            fontWeight: 600,
+            letterSpacing: 0.5,
+            color: "#FFF3DC",
+            textShadow: labelShadow,
+            whiteSpace: "nowrap",
+          }}
+        >
           {EP6_NAME}
         </div>
       </div>
@@ -337,6 +372,23 @@ export const GhibliScene99OutroEp05: React.FC = () => {
               opacity={0.34 + Math.sin(f * 0.05 + i) * 0.16}
             />
           ))}
+          {/* Peaceful wind flutter across river waves */}
+          {RIVER_RIPPLES.map((rip, i) => {
+            const drift = Math.sin(f * rip.speed + rip.phase) * 14;
+            const op = 0.22 + 0.12 * Math.sin(f * (rip.speed * 1.5) + rip.phase);
+            const waveY = rip.y + Math.sin(f * 0.03 + i) * 1.5;
+            return (
+              <path
+                key={`rip-${i}`}
+                d={`M ${rip.x - rip.w / 2 + drift} ${waveY} Q ${rip.x + drift} ${waveY - 3} ${rip.x + rip.w / 2 + drift} ${waveY}`}
+                fill="none"
+                stroke="#FFE0A0"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                opacity={op}
+              />
+            );
+          })}
         </g>
         <g>
           {PETALS.map((pt, i) => {

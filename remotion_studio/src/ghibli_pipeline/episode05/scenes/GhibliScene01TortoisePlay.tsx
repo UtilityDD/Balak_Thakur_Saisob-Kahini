@@ -737,18 +737,21 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
 
   const surendra =
     view === "corner" && su.visible ? (
-      <Puppet
-        cast={CAST.surendra}
-        f={cf}
-        lifeF={cf}
-        x={su.x}
-        y={su.y}
-        scale={su.sc}
-        flip
-        acting={surenActing}
-        light={SUN}
-        breathRate={lf > SUREN_RUN.start && lf < SUREN_RUN.start + SUREN_RUN.dur + 60 ? 1.6 : 1}
-      />
+      <g>
+        <ContactShadow x={su.x} y={su.y} rx={34 * su.sc} ry={9 * su.sc} opacity={0.32} castStretch={1.15} />
+        <Puppet
+          cast={CAST.surendra}
+          f={cf}
+          lifeF={cf}
+          x={su.x}
+          y={su.y}
+          scale={su.sc}
+          flip
+          acting={surenActing}
+          light={SUN}
+          breathRate={lf > SUREN_RUN.start && lf < SUREN_RUN.start + SUREN_RUN.dur + 60 ? 1.6 : 1}
+        />
+      </g>
     ) : null;
 
   const charuVisual = charuVisible ? (
@@ -796,11 +799,25 @@ export const GhibliScene01TortoisePlay: React.FC = () => {
   ) : null;
 
   const lights: SceneLight[] = [{ x: -400, y: -300, color: "#ffe6b0", intensity: 0.35, radius: 1800 }];
-  const T = (i: number) => (
-    <g key={`t${i}`} filter="url(#ghibli-prop-watercolor)">
-      <Tortoise {...tProps[i]} />
-    </g>
-  );
+  const T = (i: number) => {
+    const tp = tProps[i];
+    const ts = tp.s ?? 1;
+    return (
+      <g key={`t${i}`}>
+        <ContactShadow
+          x={tp.x}
+          y={tp.y + 1}
+          rx={28 * ts}
+          ry={9 * ts}
+          opacity={0.28}
+          castStretch={1.15}
+        />
+        <g filter="url(#ghibli-prop-watercolor)">
+          <Tortoise {...tp} />
+        </g>
+      </g>
+    );
+  };
 
   if (view === "compound") {
     const yard = (

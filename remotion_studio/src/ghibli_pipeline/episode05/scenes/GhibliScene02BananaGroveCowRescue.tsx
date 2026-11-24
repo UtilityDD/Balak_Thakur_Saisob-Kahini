@@ -629,7 +629,16 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
     })()
     : { f: bf, ...balakPose(bf), face: { ...(balakPose(bf).face ?? {}), ...balakFace(bf, p2t) } };
   const beat = pc !== null ? glowBeat(pc) : 0;
-  const glow = GLOW_BASE + (1 - GLOW_BASE) * beat;
+  // Radiant GhibliBalakAura flaring gently during "বলে দিলে তুমি ওকে মারবে... ওর খিদে পেয়েছিল"
+  const speechAuraFlare = track(f, [
+    [K.bole - 4, 0],
+    [K.bole + 16, 0.42, io],
+    [K.khide + 30, 0.48],
+    [K.balakEnd - 10, 0.42, io],
+    [K.balakEnd + 14, 0, io],
+  ]);
+  const auraFlare = Math.max(beat, speechAuraFlare);
+  const glow = GLOW_BASE + (1 - GLOW_BASE) * auraFlare;
   const balakBodyXform = balakLivingBodyTransform({
     x: BAL.x,
     y: BAL.y,
@@ -696,7 +705,10 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
                 x={hp.x}
                 y={hp.y}
                 activity={
-                  (cf >= HC_OUT && cf <= HC_STOP1 + 6) || (cf >= HC_RUN2 && cf <= HC_ARRIVE + 4) || (cf >= STOMP && cf <= HC_IN_AGAIN)
+                  (cf >= HC_OUT && cf <= HC_STOP1 + 6) ||
+                  (cf >= HC_RUN2 && cf <= HC_ARRIVE + 4) ||
+                  (cf >= THUMP + 11 && cf <= THUMP + 20) ||
+                  (cf >= STOMP && cf <= HC_IN_AGAIN)
                     ? 0.9
                     : 0
                 }
@@ -712,8 +724,8 @@ export const GhibliScene02BananaGroveCowRescue: React.FC = () => {
             <PebblesArt x={BAL.x} y={BAL.y} s={BAL.s} flip t={pebblesT(inP3 ? 9999 : bf)} />
           </g>
           <ContactShadow x={BAL.x} y={BAL.y + 2} rx={62 * BAL.s} ry={13 * BAL.s} opacity={0.32} castStretch={1.1} />
-          <GhibliBalakGroundGlow x={BAL.x} y={BAL.y + 4} rx={150 * BAL.s} ry={26 * BAL.s} level={0.5 + 0.5 * beat} />
-          <GhibliBalakAura cx={HALO.x} cy={HALO.y} r={HALO.r * (1 + 0.15 * beat)} glow={glow} f={lifeF} />
+          <GhibliBalakGroundGlow x={BAL.x} y={BAL.y + 4} rx={150 * BAL.s} ry={26 * BAL.s} level={0.5 + 0.5 * auraFlare} />
+          <GhibliBalakAura cx={HALO.x} cy={HALO.y} r={HALO.r * (1 + 0.15 * auraFlare)} glow={glow} f={lifeF} />
           {/* Child Thakur rendered with dedicated luminous `#ghibli-balak-ink`, smooth 24 fps gestures, living breath/speech spine, painted face detail, and warm/cool cotton lap folds */}
           <g filter="url(#ghibli-balak-ink)" transform={balakBodyXform}>
             <SeatedChild
