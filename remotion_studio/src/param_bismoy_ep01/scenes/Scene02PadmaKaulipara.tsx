@@ -1,82 +1,185 @@
 import React from "react";
 import { AbsoluteFill, Audio, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from "remotion";
-import { clamp, EASE, flicker, hash, track } from "../../cinematic/core/anim";
+import { clamp, EASE, flicker, hash } from "../../cinematic/core/anim";
 import { Glow, GlowDefs } from "../../cinematic/fx/Fx";
+import { LipSyncVideo } from "../LipSyncVideo";
+import { KineticPlate } from "../KineticPlate";
+
+const SCENE_ID = "02_padma_kaulipara_warning";
 
 /**
  * Series 2 · Episode 1 · Scene 02 — Kaulipara Ancestral Home on the Padma at Dawn (1380 frames = 57.5s @ 24fps).
- * Broadcast 2D Studio Ghibli Painted Multi-Angle Plates + Local RTX 4060 JoyVASA 24.000fps Neural Lip-Sync + 4-Plane 2.5D Depth Parallax:
- *   - Shot 2A-0 (0..365f): Wide aerial establishing pan across prosperous Kaulipara on the golden Padma at dawn
- *     (`plate_2a0_kaulipara_village.jpg`) as Lady Narrator (`Sola`) introduces the sacred lineage of Bishnudas Thakur & Harnath Shiromani.
- *   - Shot 2A-1 (345..565f): Close architectural pan across the sunlit brick Baidik ancestral house & sacred Tulsi Mancha
- *     (`plate_2a_house_tulsi_pan.jpg` — 100% pure painted plate before the water spurt).
- *   - Shot 2A-Spurt (555..750f): Sudden water-jet eruption from the cracked courtyard earth beside the Tulsi Mancha
- *     (`p2a_wife_idle_24.mp4` -> `p2a_wife_02b_24.mp4`) as Harnath's wife startles and begins her warning (`02b_Harnath_Wife.wav` starts at f=672).
- *   - Shot 2B-1 (740..964f): 100% continuity-matched medium close-up on Harnath's wife (`p2b_wife_02b_24.mp4`, locked to `<Sequence from={672}>`!)
- *     with live neural facial expressions and Bengali lip-sync.
- *   - Shot 2C (964..1157f): 2-Part Dramatic Cut during the Villager's shocked cry (`02c_Villager_Shock.wav`):
- *     * 964..1065f: Zoomed pan across the bustling Kaulipara village roofs, post offices, tols & riverfront (`plate_2a0_kaulipara_village.jpg`)
- *     * 1065..1157f: Urgent reaction shot on the spurting Padma fracture & Harnath's wife (`p2a_wife_idle_24.mp4`) with live surging water droplets.
- *   - Shot 2B-2 (1157..1380f): Medium close-up on Harnath's wife leading everyone decisively to safety (`p2b_wife_02d_24.mp4` on `02d_Harnath_Wife_Lead.wav`),
- *     pulling back smoothly to the wide courtyard (`p2a_wife_idle_24.mp4`) at the end of the scene.
+ * Re-cut with Broadcast Multi-Angle TV Camera:
+ *   - Clamped zoom values (maximum 1.02x - 1.20x) on 4K master plates ensuring zero blur or raster degradation.
+ *   - 14 distinct cinematic shots: Panoramic river establishers, native riverbank boats, Baidik brick house,
+ *     intimate Tulsi Mancha diya close-up, violent earth tremor & water spurt eruption, dynamic medium
+ *     and close-up dialogue angles with living JoyVASA lip-sync + organic breathing, shocked villager reverse, and wide evacuation pull-back.
+ *   - Dedicated physical acting plates: Wife pointing in terror at bubbling fissure, villager palms raised in disbelief.
  */
+
+type Media =
+  | "village_aerial"
+  | "village_boats"
+  | "house_exterior"
+  | "tulsi_macro"
+  | "wife_idle"
+  | "spurt_wide"
+  | "wife_speak_wide"
+  | "wife_cu_02b"
+  | "wife_point_speak"
+  | "villager_cu_02c"
+  | "villager_disbelief"
+  | "spurt_macro"
+  | "wife_cu_02d"
+  | "padma_erosion"
+  | "migration_evac";
+
+interface Shot {
+  from: number;
+  to: number;
+  media: Media;
+  focus: [number, number];
+  target: [number, number];
+  zoom: [number, number];
+  dissolve?: number;
+  note: string;
+}
+
+const TULSI_DIYA: [number, number] = [760, 670];
+const WIFE_FACE: [number, number] = [960, 380];
+const VILLAGER_FACE: [number, number] = [960, 420];
+
+// Broadcast TV Pacing Rule: Maximum hold on any single shot/angle ≤ 4.2s (~100 frames)
+const SHOTS: Shot[] = [
+  // 1. Wide aerial establishing pan across prosperous Kaulipara on the golden Padma at dawn (4.8s)
+  { from: 0, to: 115, media: "village_aerial", focus: [960, 540], target: [960, 540], zoom: [1.0, 1.05], note: "Wide: Kaulipara on Padma at dawn" },
+  // 2. Medium tracking shot across the Padma riverbank, fishing nouka boats, and palms (4.8s)
+  { from: 115, to: 230, media: "village_boats", focus: [960, 540], target: [960, 540], zoom: [1.02, 1.07], dissolve: 14, note: "Medium: Riverbank & nouka boats" },
+  // 3. Cut to prosperous Baidik ancestral brick house & courtyard (4.6s)
+  { from: 230, to: 340, media: "house_exterior", focus: [960, 540], target: [960, 540], zoom: [1.02, 1.07], dissolve: 14, note: "Medium: Baidik ancestral house" },
+  // 4. Intimate macro insert on the sacred Tulsi Mancha, clay diya glowing warmly in morning dew (4.2s)
+  { from: 340, to: 440, media: "tulsi_macro", focus: TULSI_DIYA, target: [960, 540], zoom: [1.12, 1.18], dissolve: 12, note: "Insert: Sacred Tulsi Mancha & diya" },
+  // 5. Serene wide courtyard stillness as she bows at Tulsi Mancha before the omen (4.2s)
+  { from: 440, to: 540, media: "wife_idle", focus: [960, 540], target: [960, 540], zoom: [1.01, 1.06], dissolve: 12, note: "Wide: Wife bows in serenity before omen" },
+  // 6. SUDDEN EARTH TREMOR & WATER SPURT! Ground shudders violently, water jet shoots up (5.5s)
+  { from: 540, to: 672, media: "spurt_wide", focus: [960, 600], target: [960, 540], zoom: [1.06, 1.14], note: "Tremor: Sudden fissure & water eruption" },
+  // 7. Wide Courtyard as Harnath's wife begins urgent warning ("ওগো, শিগগির এসো!") (3.5s)
+  { from: 672, to: 755, media: "wife_speak_wide", focus: [960, 540], target: [960, 540], zoom: [1.02, 1.07], note: "Wide: Wife begins urgent warning" },
+  // 8. Close-Up: Wife speaks in alarm ("দেখো, মাটির ফাটল দিয়ে...") (3.1s)
+  { from: 755, to: 830, media: "wife_cu_02b", focus: WIFE_FACE, target: [960, 420], zoom: [1.02, 1.08], note: "Close-Up: Wife speaks with fear & alarm" },
+  // 9. Acting Cut: Wife points at river fissure AND SPEAKS with full neural lip-sync ("কীর্তিনাশা পদ্মা তলা দিয়ে পুরো গ্রাম খেয়ে ফেলেছে—কাউলীপাড়া আর বাঁচবে না!") (4.9s)
+  { from: 830, to: 948, media: "wife_point_speak", focus: [960, 460], target: [960, 460], zoom: [1.02, 1.08], note: "Acting Cut: Wife points at fissure and speaks with neural lip-sync" },
+  // 10. Shocked elderly Kaulipara villager speaking ("কী বলছেন মা ঠাকরুন?...") (3.6s)
+  { from: 948, to: 1035, media: "villager_cu_02c", focus: VILLAGER_FACE, target: [960, 430], zoom: [1.02, 1.08], note: "Reverse: Shocked villager cries in disbelief" },
+  // 11. Acting Cut: Villager palms raised in shock & disbelief ("আটটা পোস্ট অফিস, চব্বিশটা টোল—এত বড় গ্রাম পদ্মায় ভেঙে যাবে?") (3.7s)
+  { from: 1035, to: 1125, media: "villager_disbelief", focus: VILLAGER_FACE, target: [960, 420], zoom: [1.04, 1.10], note: "Acting Cut: Villager palms raised in shock & disbelief" },
+  // 12. Urgent insert cut to the spurting Padma fracture widening the cracked red earth (2.1s)
+  { from: 1125, to: 1175, media: "spurt_macro", focus: [960, 660], target: [960, 560], zoom: [1.10, 1.16], note: "Insert: Padma water bubbling violently" },
+  // 13. Close-Up on Harnath's wife commanding evacuation ("এক মুহূর্ত দেরি কোরো না! যে যা পারো নিয়ে এখনই নিরাপদ জায়গায় সরে চলো—") (2.9s)
+  { from: 1175, to: 1245, media: "wife_cu_02d", focus: WIFE_FACE, target: [960, 420], zoom: [1.02, 1.08], note: "Close-Up: Wife decisively commands evacuation" },
+  // 14. Dramatic Active Padma Riverbank Erosion: Clay banks crashing into roaring waters (2.5s)
+  { from: 1245, to: 1305, media: "padma_erosion", focus: [960, 540], target: [960, 540], zoom: [1.04, 1.12], note: "Erosion: Padma riverbank actively crumbling into waves" },
+  // 15. The Grand Evacuation Migration: Long trail of families, bullock carts & belongings moving to safe land (3.1s)
+  { from: 1305, to: 1380, media: "migration_evac", focus: [960, 540], target: [960, 540], zoom: [1.05, 1.01], dissolve: 14, note: "Migration: Villagers and bullock carts migrating to safety" },
+];
+
+/** Translate so `focus` lands on `target` at zoom `s`, clamped so the plate covers the 1920x1080 canvas. */
+const framing = (focus: [number, number], target: [number, number], s: number) => {
+  const tx = Math.min(0, Math.max(1920 * (1 - s), target[0] - s * focus[0]));
+  const ty = Math.min(0, Math.max(1080 * (1 - s), target[1] - s * focus[1]));
+  return `translate(${tx}px, ${ty}px) scale(${s})`;
+};
+
+const MediaLayer: React.FC<{ media: Media }> = ({ media }) => {
+  const fill: React.CSSProperties = { width: 1920, height: 1080, objectFit: "cover" };
+  switch (media) {
+    case "village_aerial":
+      return <Img src={staticFile("images/s2_ep01/4k/plate_2a0_kaulipara_village.jpg")} style={fill} />;
+    case "village_boats":
+      // Uses dedicated native riverbank plate in 4K instead of cropping the aerial view
+      return <Img src={staticFile("images/s2_ep01/4k/plate_2a_kaulipara_dawn.jpg")} style={fill} />;
+    case "house_exterior":
+    case "tulsi_macro":
+      return <Img src={staticFile("images/s2_ep01/4k/plate_2a_house_tulsi_pan.jpg")} style={fill} />;
+    case "wife_idle":
+      return (
+        <Sequence from={440} durationInFrames={120} layout="none">
+          <OffthreadVideo src={staticFile("video/s2_ep01/p2a_wife_idle_24.mp4")} muted style={fill} />
+        </Sequence>
+      );
+    case "spurt_wide":
+    case "spurt_macro":
+      return (
+        <Sequence from={540} durationInFrames={140} layout="none">
+          <OffthreadVideo src={staticFile("video/s2_ep01/p2a_wife_idle_24.mp4")} muted style={fill} />
+        </Sequence>
+      );
+    case "wife_speak_wide":
+      return <LipSyncVideo src="video/s2_ep01/p2a_wife_02b_24.mp4" voice="02b_Harnath_Wife.wav" scene={SCENE_ID} />;
+    case "wife_cu_02b":
+      return <LipSyncVideo src="video/s2_ep01/p2b_wife_02b_24.mp4" voice="02b_Harnath_Wife.wav" scene={SCENE_ID} />;
+    case "wife_point_speak":
+      return <LipSyncVideo src="video/s2_ep01/p2b_wife_point_02b_24.mp4" voice="02b_Harnath_Wife.wav" scene={SCENE_ID} />;
+    case "villager_cu_02c":
+      return <LipSyncVideo src="video/s2_ep01/p2c_villager_02c_24.mp4" voice="02c_Villager_Shock.wav" scene={SCENE_ID} />;
+    case "villager_disbelief":
+      return (
+        <KineticPlate
+          src="images/s2_ep01/plate_2c_villager_disbelief.jpg"
+          breathSpeed={0.36}
+          breathAmp={4.0}
+          swayAmp={3.0}
+          eyes={{ left: [935, 365], right: [1025, 368], rx: 18, ry: 5, color: "#361f14" }}
+        />
+      );
+    case "wife_cu_02d":
+      return <LipSyncVideo src="video/s2_ep01/p2b_wife_02d_24.mp4" voice="02d_Harnath_Wife_Lead.wav" scene={SCENE_ID} />;
+    case "padma_erosion":
+      return (
+        <Img
+          src={staticFile("images/s2_ep01/4k/plate_1a2_storm_boat.jpg")}
+          style={{ ...fill, filter: "contrast(1.15) saturate(1.2)" }}
+        />
+      );
+    case "migration_evac":
+      return (
+        <KineticPlate
+          src="images/s2_ep01/4k/plate_2f_kaulipara_migration.jpg"
+          breathSpeed={0.22}
+          breathAmp={2.5}
+          swayAmp={1.8}
+        />
+      );
+  }
+};
 
 export const Scene02PadmaKaulipara: React.FC = () => {
   const f = useCurrentFrame();
   const fl = flicker(f, 19);
 
-  // Smooth cross-dissolve envelopes
-  const fade2A1 = EASE.inOut(clamp((f - 345) / 20));
-  const fadeSpurt = EASE.out(clamp((f - 555) / 12));
-  const fadeOutroWide = EASE.inOut(clamp((f - 1335) / 24));
-
-  // Subtle earth-tremor camera vibration when the subterranean Padma water bursts through the courtyard crack (f=558..595)
+  // Subtle earth-tremor camera vibration when subterranean water bursts through crack (f=558..608)
   let tremorX = 0;
   let tremorY = 0;
-  if (f >= 558 && f <= 600) {
+  if (f >= 558 && f <= 608) {
     const d = f - 558;
     const env = Math.exp(-d * 0.11);
-    tremorX = Math.sin(d * 2.7) * 8 * env;
-    tremorY = Math.cos(d * 3.1) * 6 * env;
+    tremorX = Math.sin(d * 2.7) * 9 * env;
+    tremorY = Math.cos(d * 3.1) * 7 * env;
   }
 
-  // Camera pan & dolly trajectory driving all 4 parallax depth planes
-  let camX = 0;
-  let camY = 0;
-  let camScale = 1.05;
+  const idx = Math.max(0, SHOTS.findIndex((s) => f >= s.from && f < s.to));
+  const shot = SHOTS[idx];
 
-  if (f < 365) {
-    camScale = track(f, [[0, 1.05], [365, 1.16]]);
-    camX = track(f, [[0, -34], [365, 32]]);
-    camY = track(f, [[0, -10], [365, 8]]);
-  } else if (f < 560) {
-    camScale = track(f, [[365, 1.04], [560, 1.14]]);
-    camX = track(f, [[365, 28], [560, -26]]);
-    camY = track(f, [[365, -6], [560, 8]]);
-  } else if (f < 745) {
-    camScale = track(f, [[560, 1.04], [745, 1.13]]);
-    camX = track(f, [[560, 18], [745, -18]]);
-  } else if (f < 964) {
-    camScale = track(f, [[745, 1.03], [964, 1.12]]);
-    camX = track(f, [[745, 16], [964, -16]]);
-    camY = track(f, [[745, 6], [964, -6]]);
-  } else if (f < 1095) {
-    // Shot 2C-1: Shocked elderly Kaulipara villager speaking (`p2c_villager_02c_24.mp4`, "কী বলছেন মা ঠাকরুন? আটটা পোস্ট অফিস, চব্বিশটা টোল—")
-    camScale = track(f, [[964, 1.04], [1095, 1.14]]);
-    camX = track(f, [[964, 18], [1095, -18]]);
-  } else if (f < 1157) {
-    // Shot 2C-2: Urgent cut to the spurting Padma fracture ("—এত বড় গ্রাম পদ্মায় ভেঙে যাবে?")
-    camScale = track(f, [[1095, 1.08], [1157, 1.16]]);
-    camX = track(f, [[1095, -18], [1157, 14]]);
-  } else {
-    // Shot 2B-2 (1157..1380): Harnath's wife leads the village to safety
-    camScale = track(f, [[1157, 1.04], [1340, 1.13], [1380, 1.05]]);
-    camX = track(f, [[1157, -16], [1340, 16], [1380, 0]]);
+  // Active shots on screen: current + previous during cross-dissolves
+  const visible: { shot: Shot; opacity: number }[] = [];
+  if (shot.dissolve && f < shot.from + shot.dissolve && idx > 0) {
+    visible.push({ shot: SHOTS[idx - 1], opacity: 1 });
   }
+  visible.push({ shot, opacity: shot.dissolve ? EASE.inOut(clamp((f - shot.from) / shot.dissolve)) : 1 });
 
-  const totalX = camX + tremorX;
-  const totalY = camY + tremorY;
-  const showWaterJet = (f >= 558 && f < 964) || (f >= 1095 && f < 1157);
+  const totalX = tremorX;
+  const totalY = tremorY;
+  const showWaterJet = (f >= 558 && f < 964) || (f >= 1105 && f < 1157);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#1a120b", overflow: "hidden" }}>
@@ -85,148 +188,77 @@ export const Scene02PadmaKaulipara: React.FC = () => {
         style={{
           position: "absolute",
           inset: -60,
-          transform: `translate(${totalX * 0.45}px, ${totalY * 0.45}px) scale(${1 + (camScale - 1) * 0.45})`,
+          transform: `translate(${totalX * 0.45}px, ${totalY * 0.45}px)`,
           background: "linear-gradient(180deg, #f6c98e 0%, #fae2b8 55%, #8a9e68 100%)",
           pointerEvents: "none",
         }}
       />
 
-      {/* PLANE 1 (1.00x Parallax): Painted Studio Ghibli Plates & 24.000fps Time-Locked JoyVASA Streams */}
+      {/* PLANE 1: Virtual Camera Framed Plates & Living 24.000fps Neural Lip-Sync Streams */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          transform: `translate(${totalX}px, ${totalY}px) scale(${camScale})`,
+          transform: `translate(${totalX}px, ${totalY}px)`,
           transformOrigin: "50% 50%",
         }}
       >
-        {/* SHOT 2A-0 (0..368): Wide Painted Kaulipara Village on the Padma at Dawn */}
-        {f < 368 && (
-          <AbsoluteFill>
-            <Img
-              src={staticFile("images/s2_ep01/plate_2a0_kaulipara_village.jpg")}
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </AbsoluteFill>
-        )}
+        {visible.map(({ shot: s, opacity }) => {
+          const t = clamp((f - s.from) / Math.max(1, s.to - s.from));
+          const zoom = s.zoom[0] + (s.zoom[1] - s.zoom[0]) * EASE.inOut(t);
+          return (
+            <AbsoluteFill key={s.from} style={{ opacity }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: 1920,
+                  height: 1080,
+                  transformOrigin: "0 0",
+                  transform: framing(s.focus, s.target, zoom),
+                }}
+              >
+                <MediaLayer media={s.media} />
 
-        {/* SHOT 2A-1 (345..568): Close Pan Across Brick Baidik Ancestral Home & Tulsi Mancha Before Spurt */}
-        {f >= 345 && f < 568 && (
-          <AbsoluteFill style={{ opacity: fade2A1 }}>
-            <Img
-              src={staticFile("images/s2_ep01/plate_2a_house_tulsi_pan.jpg")}
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </AbsoluteFill>
-        )}
+                {/* Tulsi Mancha warm clay diya glow */}
+                {(s.media === "tulsi_macro" || s.media === "house_exterior" || s.media === "wife_idle") && (
+                  <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                    <GlowDefs />
+                    <Glow x={TULSI_DIYA[0]} y={TULSI_DIYA[1]} r={210} kind="warm" o={0.28 * fl} />
+                  </svg>
+                )}
+              </div>
+            </AbsoluteFill>
+          );
+        })}
 
-        {/* SHOT 2A-SPURT-IDLE (555..672): Water Erupts From Crack Beside Tulsi Mancha — Living JoyVASA Reaction */}
-        {f >= 555 && f < 672 && (
-          <AbsoluteFill style={{ opacity: fadeSpurt }}>
-            <Sequence from={555} durationInFrames={120}>
-              <OffthreadVideo
-                src={staticFile("video/s2_ep01/p2a_wife_idle_24.mp4")}
-                muted
-                style={{ width: 1920, height: 1080, objectFit: "cover" }}
-              />
-            </Sequence>
-          </AbsoluteFill>
-        )}
-
-        {/* SHOT 2A-SPEAK (672..745): Wide Courtyard as Harnath's Wife Begins Her Urgent Warning (02b_Harnath_Wife.wav) */}
-        {f >= 672 && f < 745 && (
-          <Sequence from={672} durationInFrames={276}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p2a_wife_02b_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
-        )}
-
-        {/* SHOT 2B-1 (745..964): Medium Close-Up on Harnath's Wife (locked to <Sequence from={672}> for ZERO lip-sync offset!) */}
-        {f >= 745 && f < 964 && (
-          <Sequence from={672} durationInFrames={292}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p2b_wife_02b_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
-        )}
-
-        {/* SHOT 2C-1 (964..1095): Shocked Elderly Kaulipara Villager Speaking with JoyVASA Lip-Sync (02c_Villager_Shock.wav) */}
-        {f >= 964 && f < 1095 && (
-          <Sequence from={964} durationInFrames={179}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p2c_villager_02c_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
-        )}
-
-        {/* SHOT 2C-2 (1095..1157): Urgent Cut Back to the Cracking Earth & Spurting Padma Water Jet */}
-        {f >= 1095 && f < 1157 && (
-          <Sequence from={1095} durationInFrames={65}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p2a_wife_idle_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
-        )}
-
-        {/* SHOT 2B-2 (1157..1365): Medium Close-Up on Harnath's Wife Leading Everyone to Safety (02d_Harnath_Wife_Lead.wav) */}
-        {f >= 1157 && f < 1365 && (
-          <Sequence from={1157} durationInFrames={208}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p2b_wife_02d_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
-        )}
-
-        {/* SHOT 2A-OUTRO (1335..1380): Smooth Pull-Back Dissolve to Kaulipara Courtyard Wide */}
-        {f >= 1335 && (
-          <AbsoluteFill style={{ opacity: fadeOutroWide }}>
-            <Sequence from={1335} durationInFrames={48}>
-              <OffthreadVideo
-                src={staticFile("video/s2_ep01/p2a_wife_idle_24.mp4")}
-                muted
-                style={{ width: 1920, height: 1080, objectFit: "cover" }}
-              />
-            </Sequence>
-          </AbsoluteFill>
-        )}
-
-        {/* Live Animated Water-Spurt Droplets & Tulsi Diya Glow */}
-        <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-          <GlowDefs />
-          <Glow x={760} y={670} r={190} kind="warm" o={0.22 * fl} />
-          {showWaterJet &&
-            Array.from({ length: 18 }, (_, i) => {
-              const isCU = (f >= 745 && f < 964) || (f >= 1157 && f < 1345);
-              const baseX = isCU ? 955 : 1052;
-              const baseY = isCU ? 1020 : 945;
-              const cycle = (f * (4.2 + (i % 4) * 0.6) + i * 19) % 110;
-              const spread = ((i % 7) - 3) * (0.45 + cycle * 0.012);
-              const dx = baseX + spread * 14 + Math.sin(f * 0.3 + i) * 5;
-              const dy = baseY - cycle * 3.1 + 0.018 * cycle * cycle;
-              const alpha = Math.sin((cycle / 110) * Math.PI) * 0.85;
+        {/* Live Animated Water-Spurt Droplets & Spurt Mist */}
+        {showWaterJet && (
+          <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            <GlowDefs />
+            {Array.from({ length: 22 }, (_, i) => {
+              const isMacro = shot.media === "spurt_macro";
+              const baseX = isMacro ? 960 : 1052;
+              const baseY = isMacro ? 880 : 945;
+              const cycle = (f * (4.4 + (i % 5) * 0.55) + i * 17) % 110;
+              const spread = ((i % 7) - 3) * (0.5 + cycle * 0.015);
+              const dx = baseX + spread * 16 + Math.sin(f * 0.32 + i) * 6;
+              const dy = baseY - cycle * 3.3 + 0.02 * cycle * cycle;
+              const alpha = Math.sin((cycle / 110) * Math.PI) * 0.88;
               return <circle key={`drop-${i}`} cx={dx} cy={dy} r={2.5 + (i % 3)} fill="#e6f7ff" opacity={alpha} />;
             })}
-        </svg>
+          </svg>
+        )}
       </div>
 
-      {/* PLANE 2 (1.38x Parallax): Mid-Foreground Golden Morning River Mist, Sunbeam Rays & Floating Pollen Motes */}
+      {/* PLANE 2 (1.38x Parallax): Golden Morning River Mist & Floating Pollen Motes */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          transform: `translate(${totalX * 1.38}px, ${totalY * 1.38}px) scale(${1 + (camScale - 1) * 1.25})`,
+          transform: `translate(${totalX * 1.38}px, ${totalY * 1.38}px)`,
           transformOrigin: "50% 50%",
         }}
       >
@@ -239,7 +271,6 @@ export const Scene02PadmaKaulipara: React.FC = () => {
               <feGaussianBlur stdDeviation="3.5" />
             </filter>
           </defs>
-          {/* Drifting golden Padma morning mist banks */}
           {[0, 1].map((i) => {
             const mx = 480 + i * 960 + Math.sin(f * 0.018 + i * 2.2) * 160;
             return (
@@ -255,7 +286,6 @@ export const Scene02PadmaKaulipara: React.FC = () => {
               />
             );
           })}
-          {/* Soft golden morning sunlight motes in the garden periphery */}
           {Array.from({ length: 12 }, (_, i) => {
             const side = i % 2 === 0 ? 120 + hash(i * 4.1) * 420 : 1420 + hash(i * 6.3) * 380;
             const mx = side + Math.sin(f * 0.025 + i) * 28;
@@ -271,61 +301,62 @@ export const Scene02PadmaKaulipara: React.FC = () => {
         </svg>
       </div>
 
-      {/* PLANE 3 (1.75x Parallax, Blurred DOF): Out-of-Focus Foreground Mango/Palm Foliage & Warm Sunrise Bokeh */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          transform: `translate(${totalX * 1.75}px, ${totalY * 1.75}px) scale(${1 + (camScale - 1) * 1.55})`,
-          transformOrigin: "50% 50%",
-          filter: "blur(7px)",
-        }}
-      >
-        <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-          {/* Foreground swaying palm & mango leaves framing the top-left and top-right corners */}
-          {[0, 1, 2].map((i) => {
-            const sway = Math.sin(f * 0.04 + i * 1.5) * 9;
-            return (
-              <path
-                key={`sc02-fg-l-${i}`}
-                d={`M -140 ${40 + i * 95} Q ${110 + sway} ${15 + i * 90 + sway} ${245 + sway} ${
-                  95 + i * 100 + sway
-                } Q ${95 + sway} ${95 + i * 95} -140 ${115 + i * 95} Z`}
-                fill="#1f3318"
-                opacity={0.72}
-              />
-            );
-          })}
-          {[0, 1].map((i) => {
-            const sway = Math.sin(f * 0.045 + i * 1.8 + 1) * 10;
-            return (
-              <path
-                key={`sc02-fg-r-${i}`}
-                d={`M 2060 ${60 + i * 110} Q ${1810 - sway} ${35 + i * 105 + sway} ${1685 - sway} ${
-                  115 + i * 115 + sway
-                } Q ${1830 - sway} ${115 + i * 110} 2060 ${135 + i * 110} Z`}
-                fill="#1f3318"
-                opacity={0.68}
-              />
-            );
-          })}
-        </svg>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={`dawn-bokeh-${i}`}
-            style={{
-              position: "absolute",
-              left: 220 + i * 680 + Math.sin(f * 0.02 + i * 2) * 30,
-              top: 140 + (i % 2) * 580,
-              width: 78 + i * 18,
-              height: 78 + i * 18,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255,224,150,0.24) 0%, rgba(255,190,95,0) 72%)",
-            }}
-          />
-        ))}
-      </div>
+      {/* PLANE 3 (1.75x Parallax, Blurred DOF): Out-of-Focus Foreground Mango/Palm Foliage */}
+      {(shot.zoom[0] < 1.15 || shot.media === "village_aerial" || shot.media === "house_exterior" || shot.media === "migration_evac") && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            transform: `translate(${totalX * 1.75}px, ${totalY * 1.75}px)`,
+            transformOrigin: "50% 50%",
+            filter: "blur(7px)",
+          }}
+        >
+          <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+            {[0, 1, 2].map((i) => {
+              const sway = Math.sin(f * 0.04 + i * 1.5) * 9;
+              return (
+                <path
+                  key={`sc02-fg-l-${i}`}
+                  d={`M -140 ${40 + i * 95} Q ${110 + sway} ${15 + i * 90 + sway} ${245 + sway} ${
+                    95 + i * 100 + sway
+                  } Q ${95 + sway} ${95 + i * 95} -140 ${115 + i * 95} Z`}
+                  fill="#1f3318"
+                  opacity={0.72}
+                />
+              );
+            })}
+            {[0, 1].map((i) => {
+              const sway = Math.sin(f * 0.045 + i * 1.8 + 1) * 10;
+              return (
+                <path
+                  key={`sc02-fg-r-${i}`}
+                  d={`M 2060 ${60 + i * 110} Q ${1810 - sway} ${35 + i * 105 + sway} ${1685 - sway} ${
+                    115 + i * 115 + sway
+                  } Q ${1830 - sway} ${115 + i * 110} 2060 ${135 + i * 110} Z`}
+                  fill="#1f3318"
+                  opacity={0.68}
+                />
+              );
+            })}
+          </svg>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={`dawn-bokeh-${i}`}
+              style={{
+                position: "absolute",
+                left: 220 + i * 680 + Math.sin(f * 0.02 + i * 2) * 30,
+                top: 140 + (i % 2) * 580,
+                width: 78 + i * 18,
+                height: 78 + i * 18,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(255,224,150,0.24) 0%, rgba(255,190,95,0) 72%)",
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Soft cinematic vignette */}
       <div
@@ -337,12 +368,15 @@ export const Scene02PadmaKaulipara: React.FC = () => {
         }}
       />
 
-      {/* FOLEY: Subterranean Padma Water Spurt & River Surge */}
-      <Sequence from={556} durationInFrames={36}>
-        <Audio src={staticFile("audio/sfx/ep02/water_splash.wav")} volume={0.38} />
+      {/* SCENE FOLEY: Subterranean Padma Water Spurt, Earth Tremor & River Surge */}
+      <Sequence from={556} durationInFrames={40}>
+        <Audio src={staticFile("audio/sfx/ep02/thunder_roll.wav")} volume={0.34} />
       </Sequence>
-      <Sequence from={1065} durationInFrames={36}>
-        <Audio src={staticFile("audio/sfx/ep02/water_splash.wav")} volume={0.30} />
+      <Sequence from={558} durationInFrames={36}>
+        <Audio src={staticFile("audio/sfx/ep02/water_splash.wav")} volume={0.42} />
+      </Sequence>
+      <Sequence from={1105} durationInFrames={36}>
+        <Audio src={staticFile("audio/sfx/ep02/water_splash.wav")} volume={0.35} />
       </Sequence>
     </AbsoluteFill>
   );

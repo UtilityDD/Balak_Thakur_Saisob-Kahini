@@ -4,6 +4,8 @@ import { clamp, EASE, flicker, hash, track } from "../../cinematic/core/anim";
 import { Motes } from "../../cinematic/divine/Divine";
 import { Glow, GlowDefs } from "../../cinematic/fx/Fx";
 import { Rain } from "../../cinematic/sets/S05_Sets";
+import { LipSyncVideo } from "../LipSyncVideo";
+import { KineticPlate } from "../KineticPlate";
 
 /**
  * Series 2 · Episode 1 · Scene 01 (1776 frames = 74.0s @ 24fps)
@@ -424,12 +426,12 @@ export const Scene01LokenathProphecy: React.FC = () => {
         {f < 176 && (
           <AbsoluteFill>
             <Img
-              src={staticFile("images/s2_ep01/plate_1a_storm_clean.jpg")}
+              src={staticFile("images/s2_ep01/4k/plate_1a_storm_clean.jpg")}
               style={{ width: 1920, height: 1080, objectFit: "cover" }}
             />
             {stormFlash > 0.01 && (
               <Img
-                src={staticFile("images/s2_ep01/plate_1a_storm_bengal.jpg")}
+                src={staticFile("images/s2_ep01/4k/plate_1a_storm_bengal.jpg")}
                 style={{ width: 1920, height: 1080, objectFit: "cover", opacity: stormFlash }}
               />
             )}
@@ -440,7 +442,7 @@ export const Scene01LokenathProphecy: React.FC = () => {
         {f >= 160 && f < 332 && (
           <AbsoluteFill style={{ opacity: shot1A2Fade }}>
             <Img
-              src={staticFile("images/s2_ep01/plate_1a2_storm_boat.jpg")}
+              src={staticFile("images/s2_ep01/4k/plate_1a2_storm_boat.jpg")}
               style={{
                 width: 1920,
                 height: 1080,
@@ -465,7 +467,7 @@ export const Scene01LokenathProphecy: React.FC = () => {
         {f >= 312 && f < 456 && (
           <AbsoluteFill style={{ opacity: shot1B0Fade }}>
             <Img
-              src={staticFile("images/s2_ep01/plate_1b0_ashram_banyan.jpg")}
+              src={staticFile("images/s2_ep01/4k/plate_1b0_ashram_banyan.jpg")}
               style={{ width: 1920, height: 1080, objectFit: "cover" }}
             />
           </AbsoluteFill>
@@ -475,7 +477,7 @@ export const Scene01LokenathProphecy: React.FC = () => {
         {f >= 436 && f < 570 && (
           <AbsoluteFill style={{ opacity: shot1B1Fade }}>
             <Img
-              src={staticFile("images/s2_ep01/plate_1b1_ashram_dhuni.jpg")}
+              src={staticFile("images/s2_ep01/4k/plate_1b1_ashram_dhuni.jpg")}
               style={{ width: 1920, height: 1080, objectFit: "cover" }}
             />
           </AbsoluteFill>
@@ -496,82 +498,113 @@ export const Scene01LokenathProphecy: React.FC = () => {
 
         {/* SHOT 1B-SPEAK (651..725): Barodi Ashram Wide as Baba Lokenath Begins Speaking */}
         {f >= 651 && f < 725 && (
-          <Sequence from={651} durationInFrames={573}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p1b_01b_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
+          <LipSyncVideo src="video/s2_ep01/p1b_01b_24.mp4" voice="01b_Lokenath_Prophecy.wav" scene="01_lokenath_prophecy" />
         )}
 
-        {/* SHOT 1C-1 (725..779): Continuity-Matched Close-Up on Baba Lokenath (locked to <Sequence from={651}>!) */}
+        {/* SHOT 1C-1 (725..779): Continuity-Matched Close-Up on Baba Lokenath ("আজ আমি তোকে মন্ত্রদীক্ষা দেব না...") */}
         {f >= 725 && f < 779 && (
-          <Sequence from={651} durationInFrames={573}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p1c_01b_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
+          <LipSyncVideo src="video/s2_ep01/p1c_01b_24.mp4" voice="01b_Lokenath_Prophecy.wav" scene="01_lokenath_prophecy" />
         )}
 
         {/* SHOT 1D (779..845): Extreme Tactile Insert — Slender Hand Lifting Glowing Ochre Cloth */}
         {f >= 779 && f < 845 && (
           <AbsoluteFill>
             <Img
-              src={staticFile("images/s2_ep01/plate_1d_ochre_insert.jpg")}
+              src={staticFile("images/s2_ep01/4k/plate_1d_ochre_insert.jpg")}
               style={{ width: 1920, height: 1080, objectFit: "cover" }}
             />
           </AbsoluteFill>
         )}
 
-        {/* SHOT 1E (845..1015): Pixel-Exact Dual-Character Handover Two-Shot (locked to <Sequence from={651}>!) */}
-        {f >= 845 && f < 1015 && (
-          <Sequence from={651} durationInFrames={573}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p1e_dual_01b_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
+        {/* SHOT 1E (845..930): Dual-Character Handover Two-Shot ("এই গেরুয়া কাপড়খানি সযত্নে রেখে দে...") */}
+        {f >= 845 && f < 930 && (
+          <LipSyncVideo src="video/s2_ep01/p1e_dual_01b_24.mp4" voice="01b_Lokenath_Prophecy.wav" scene="01_lokenath_prophecy" />
         )}
 
-        {/* SHOT 1C-2 (1015..1235): Continuity-Matched Close-Up on Baba Lokenath ("পূর্ণব্রহ্ম অবতার!") */}
-        {f >= 1015 && f < 1235 && (
-          <Sequence from={651} durationInFrames={584}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p1c_01b_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
+        {/* SHOT 1G-1 (930..1015): Disciple Jogesh Chowdhury Devotional Listening with Real Eye Blinks & Natural Kinematics */}
+        {f >= 930 && f < 1015 && (
+          <AbsoluteFill>
+            <Sequence from={930} durationInFrames={85}>
+              <OffthreadVideo
+                src={staticFile("video/s2_ep01/plate_b_jogesh_half_jogesh_listen.mp4")}
+                muted
+                style={{ width: 1920, height: 1080, objectFit: "cover" }}
+              />
+            </Sequence>
+          </AbsoluteFill>
         )}
 
-        {/* SHOT 1F (1235..1525): Clean-Shaven Jogesh Chowdhury Reverse OTS Close-Up (01c_Jogesh_Awe.wav) */}
-        {f >= 1235 && f < 1525 && (
-          <Sequence from={1235} durationInFrames={290}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p1f_01c_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
-            />
-          </Sequence>
+        {/* SHOT 1C-2 (1015..1105): Close-Up on Baba Lokenath Delivering the Grand Prophecy ("প্রায় অর্ধশত বছর পরে আসছেন এক পূর্ণব্রহ্ম অবতার!") */}
+        {f >= 1015 && f < 1105 && (
+          <LipSyncVideo src="video/s2_ep01/p1c_01b_24.mp4" voice="01b_Lokenath_Prophecy.wav" scene="01_lokenath_prophecy" />
         )}
 
-        {/* SHOT 1C-3 (1525..1744): Continuity-Matched Close-Up on Baba Lokenath's Warm Smile (01d_Lokenath_Smile.wav) */}
-        {f >= 1525 && f < 1744 && (
-          <Sequence from={1525} durationInFrames={228}>
-            <OffthreadVideo
-              src={staticFile("video/s2_ep01/p1c_01d_24.mp4")}
-              muted
-              style={{ width: 1920, height: 1080, objectFit: "cover" }}
+        {/* SHOT 1H (1105..1170): Dramatic Over-The-Shoulder past Jogesh to Baba Lokenath */}
+        {f >= 1105 && f < 1170 && (
+          <AbsoluteFill>
+            <KineticPlate
+              src="images/s2_ep01/plate_1c_lokenath_ots.jpg"
+              breathSpeed={0.24}
+              breathAmp={2.8}
+              swayAmp={1.8}
             />
-          </Sequence>
+          </AbsoluteFill>
         )}
 
-        {/* SHOT 1B-OUTRO (1720..1776): Serene Pull-Back Dissolve to Living Barodi Ashram Wide */}
-        {f >= 1720 && (
+        {/* SHOT 1C-2B (1170..1235): Intimate Close-Up on Baba Lokenath ("তাঁর কাছেই তোর মুক্তি!") */}
+        {f >= 1170 && f < 1235 && (
+          <LipSyncVideo src="video/s2_ep01/p1c_01b_24.mp4" voice="01b_Lokenath_Prophecy.wav" scene="01_lokenath_prophecy" />
+        )}
+
+        {/* SHOT 1F-1 (1235..1325): Clean-Shaven Jogesh Chowdhury Reverse OTS Close-Up Speaking ("অর্ধশত বছর পরে… স্বয়ং পূর্ণব্রহ্ম?") */}
+        {f >= 1235 && f < 1325 && (
+          <LipSyncVideo src="video/s2_ep01/p1f_01c_24.mp4" voice="01c_Jogesh_Awe.wav" scene="01_lokenath_prophecy" />
+        )}
+
+        {/* SHOT 1C-LISTEN (1325..1415): Cut to Baba Lokenath Listening in Profound Stillness & Compassion */}
+        {f >= 1325 && f < 1415 && (
+          <AbsoluteFill>
+            <KineticPlate
+              src="images/s2_ep01/plate_1c_lokenath_matched.jpg"
+              breathSpeed={0.22}
+              breathAmp={2.6}
+              swayAmp={1.6}
+              eyes={{ left: [1036, 337], right: [1142, 345], rx: 20, ry: 5, color: "#3a2214" }}
+            />
+          </AbsoluteFill>
+        )}
+
+        {/* SHOT 1F-2 (1415..1525): Jogesh Speaking with Devotional Longing ("বাবা, আমি কি ততদিন বেঁচে থাকব তাঁর দেখা পাওয়ার জন্য?") */}
+        {f >= 1415 && f < 1525 && (
+          <LipSyncVideo src="video/s2_ep01/p1f_01c_24.mp4" voice="01c_Jogesh_Awe.wav" scene="01_lokenath_prophecy" />
+        )}
+
+        {/* SHOT 1C-3 (1525..1615): Baba Lokenath's Warm Loving Smile Speaking ("নিশ্চয়ই থাকবি!") */}
+        {f >= 1525 && f < 1615 && (
+          <LipSyncVideo src="video/s2_ep01/p1c_01d_24.mp4" voice="01d_Lokenath_Smile.wav" scene="01_lokenath_prophecy" />
+        )}
+
+        {/* SHOT 1G-2 (1615..1675): Cut to Jogesh Listening with Devotional Gratitude & Awe with Real Eye Blinks */}
+        {f >= 1615 && f < 1675 && (
+          <AbsoluteFill>
+            <Sequence from={1615} durationInFrames={60}>
+              <OffthreadVideo
+                src={staticFile("video/s2_ep01/plate_b_jogesh_half_jogesh_listen.mp4")}
+                startFrom={120}
+                muted
+                style={{ width: 1920, height: 1080, objectFit: "cover" }}
+              />
+            </Sequence>
+          </AbsoluteFill>
+        )}
+
+        {/* SHOT 1C-3B (1675..1725): Final Serene Divine Smile ("তাঁর ডাক এলে কালের সাধ্য নেই তোকে আটকে রাখে!") */}
+        {f >= 1675 && f < 1725 && (
+          <LipSyncVideo src="video/s2_ep01/p1c_01d_24.mp4" voice="01d_Lokenath_Smile.wav" scene="01_lokenath_prophecy" />
+        )}
+
+        {/* SHOT 1B-OUTRO (1725..1776): Serene Pull-Back Dissolve to Living Barodi Ashram Wide */}
+        {f >= 1725 && (
           <AbsoluteFill style={{ opacity: outroAshramFade }}>
             <Sequence from={1720} durationInFrames={60}>
               <OffthreadVideo

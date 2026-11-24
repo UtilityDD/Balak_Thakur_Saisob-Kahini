@@ -37,7 +37,7 @@ export const Scene99Outro: React.FC = () => {
         }}
       >
         <Img
-          src={staticFile("images/s2_ep01/plate_99_sunrise_lotus.jpg")}
+          src={staticFile("images/s2_ep01/4k/plate_99_sunrise_lotus.jpg")}
           style={{ width: 1920, height: 1080, objectFit: "cover" }}
         />
       </div>

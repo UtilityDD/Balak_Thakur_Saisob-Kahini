@@ -84,6 +84,9 @@ export const ParamBismoyPaintedDemo: React.FC = () => {
         <Sequence from={SHOT_B_START} durationInFrames={PAINTED_DEMO_FRAMES - SHOT_B_START}>
           <OffthreadVideo
             src={staticFile("video/s2_ep01/plate_b_lokenath_handover_lokenath_partB.mp4")}
+            // Clip is generated from the full 01b WAV (frame 0 = start of the line), which plays from demo frame 0,
+            // so part B must start SHOT_B_START frames into the clip to stay on the words.
+            trimBefore={SHOT_B_START}
             muted
             style={{ width: 1920, height: 1080, objectFit: "cover" }}
           />

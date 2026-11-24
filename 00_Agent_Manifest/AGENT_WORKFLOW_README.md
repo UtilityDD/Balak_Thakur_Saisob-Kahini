@@ -1,5 +1,8 @@
 # How an AI Agent & Production Pipeline Uses This Workspace
 
+> **Resuming work? Read `PENDING_WORK.md` (repo root) first** — the live list of what is in progress, blocked, and next, with resume commands. Keep it updated.
+
+
 ## 1. Series Rules & Bibles
 1. Read `00_Agent_Manifest/series_config.json` for 2.5D multi-plane specs, 24fps cinematic rules, and 4-bus audio levels.
 2. Read `01_Series_Bible/visual_style_guide.md` for borderless RGBA rules, Bengali weather/nature presets, camera easing, and lip-sync/gesture guidelines.

@@ -51,10 +51,12 @@ import { ParamBismoyEp01 } from "./param_bismoy_ep01/ParamBismoyEp01";
 import { S2_EP01_TOTAL_FRAMES } from "./param_bismoy_ep01/timing";
 import { ParamBismoyPaintedDemo, PAINTED_DEMO_FRAMES } from "./param_bismoy_ep01/ParamBismoyPaintedDemo";
 import { RefTracedQA } from "./cinematic/thakur/qa/RefTracedQA";
+import { GhibliAnimeTest } from "./ghibli_demo/GhibliAnimeTest";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition id="GhibliAnimeTest" component={GhibliAnimeTest} durationInFrames={96} fps={24} width={1920} height={1080} />
       <Composition id="ThakurRefTracedQA" component={RefTracedQA} durationInFrames={96} fps={24} width={1920} height={1080} />
       <Composition id="ThakurGestureSheet" component={ThakurGestureSheet} durationInFrames={144} fps={24} width={1920} height={1080} />
       <Composition id="ThakurGestureReel" component={ThakurGestureReel} durationInFrames={GESTURE_REEL_FRAMES} fps={24} width={1920} height={1080} />
@@ -73,6 +75,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="Episode04GhibliFull" component={Episode04Ghibli} durationInFrames={EP04G_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="GhibliLifeKitQA" component={GhibliLifeKitQA} durationInFrames={360} fps={24} width={1920} height={1080} />
       <Composition id="Episode05" component={Episode05} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode05GhibliFull" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode05Ghibli" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode05GhibliTest" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode06" component={Episode06} durationInFrames={EP06_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode06GhibliTest" component={Episode06Ghibli} durationInFrames={EP06_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
