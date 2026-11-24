@@ -84,7 +84,7 @@ Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 
 Other standing rules, in brief (details in the decision files): faithful story, cinematic telling (STO-22: every narrated
 event shown, plus marked wordless moments around it; no new lines, no changed facts); reuse
-established sets (below); font Baloo Da 2 (`BN_FONT`, `src/cinematic/fonts.ts`) everywhere; Episode 1 intro, subtitle
+established sets (below); captions always one line, split at natural breaks (TTL-14); font Baloo Da 2 (`BN_FONT`, `src/cinematic/fonts.ts`) everywhere; Episode 1 intro, subtitle
 and outro styles are the template, the title page shows no captions, the outro shows the next episode as a soft
 boxless glimpse (TTL-10a); eased pose changes, overlapping action, no frozen pose over about 20 frames outside a
 pause; voices at -16 LUFS / -1.5 dBTP, SFX 0.15 to 0.45, loops 0.25 or below; prefer real CC-licensed recordings

@@ -80,3 +80,10 @@ Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as
 - 2026-11-23: STO-22a Episode 6 immersive re-cut plan approved; build round 1 started.
 - 2026-11-23: BAL-26c standing Balak healthy and lively (proportions, posture, costume, face, hands), opt-in for the Episode 6 re-cut on.
 - 2026-11-23: BAL-26d (healthy look approved: chadar over the upper arms, head 1.45, seated palette matched, +3% standing scale); PROC-OWN-01 (painted-look work paused while this session owns the Balak rig files).
+- 2026-11-23: Episode 6 re-cut sound pass done; K1 sounds thinned, l1_steps re-keyed after P2, AUD-08a (outro sparkle 0.12, to confirm).
+- 2026-11-24: GHB-PLATE-01 (Ghibli plates as layered painted rasters plus SVG overlays); new Vedic courtyard wall and floor plates for Ghibli Episode 4 from the director's images.
+- 2026-11-24: TTL-14 one-line captions only; Ghibli Episode 4 captions split (90 to 113 cues, max 44 characters).
+- 2026-11-24: CHR-09 children from earlier episodes grow with the timeline (Rama in Ghibli Episode 4 enlarged to about 10-11).
+- 2026-11-24: STO-22b immersive world-and-light layer for the Ghibli episodes (life kit, sunrise opening, ground cover, depth); kit and sounds started.
+- 2026-11-24: STO-22c Ghibli Episode 4 television picture pass approved after the 3-second courtyard proof (`Ep04_Feel_3s.mp4`). Characters unchanged. Closer shots, light, ground, depth, hero objects, seen entrances, courtyard title, soft outro. New images and props allowed. No full render until stills are seen.
+- 2026-11-24: MOT-21. Pointing shows the index finger only; conversation palms stay together and turned; the dhoti hangs and stirs slowly, with a softer ink line on white cloth. From the director's gesture notes on the Episode 4 Ghibli pictures.

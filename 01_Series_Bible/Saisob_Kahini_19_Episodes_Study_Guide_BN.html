@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>শৈশব কাহিনী — ১৯টি পর্বের পূর্ণাঙ্গ গল্প-পরিকল্পনা (Study Guide)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6ef;
+    --surface: #ffffff;
+    --surface-2: #f4ece0;
+    --border: #e5d8c5;
+    --text: #2a2118;
+    --muted: #6c5c4b;
+    --accent: #b85d19;
+    --accent-soft: #fdf1e4;
+    --visual-bg: #eef6f0;
+    --visual-border: #2f7d4c;
+    --dialogue-bg: #fff8eb;
+    --dialogue-border: #c97a16;
+    --ending-bg: #f3effa;
+    --ending-border: #6d4bb8;
+    --shadow: 0 4px 18px rgba(42, 33, 24, 0.06);
+    --font-scale: 1;
+  }
+  [data-theme="dark"] {
+    --bg: #171411;
+    --surface: #221d18;
+    --surface-2: #2b241d;
+    --border: #3d3329;
+    --text: #f1e8dc;
+    --muted: #b09f8d;
+    --accent: #eb9346;
+    --accent-soft: #362719;
+    --visual-bg: #1a2820;
+    --visual-border: #4ea86e;
+    --dialogue-bg: #2e2416;
+    --dialogue-border: #e39b3b;
+    --ending-bg: #241e30;
+    --ending-border: #9a7ce0;
+    --shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Serif Bengali", "Baloo Da 2", Georgia, serif;
+    font-size: calc(16px * var(--font-scale));
+    line-height: 1.75;
+  }
+  h1, h2, h3, .nav-item, .filter-btn, .ctrl-btn, .scene-badge, .era-tag {
+    font-family: "Baloo Da 2", "Noto Serif Bengali", sans-serif;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    min-height: 100vh;
+  }
+  /* Sidebar */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 18px 14px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .brand {
+    padding: 8px 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--accent);
+    line-height: 1.3;
+  }
+  .brand p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .progress-wrap {
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .progress-bar {
+    height: 7px;
+    background: var(--surface-2);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width 0.25s ease;
+  }
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.92rem;
+    transition: background 0.15s;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .nav-num {
+    min-width: 26px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--surface-2);
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+  .nav-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nav-check {
+    opacity: 0;
+    color: #2f7d4c;
+    font-weight: 700;
+  }
+  .nav-check.is-done { opacity: 1; }
+
+  /* Main */
+  .main {
+    padding: 24px 36px 80px;
+    max-width: 1060px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    padding: 12px 0 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .topbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 240px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+  .controls {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.88rem;
+  }
+  .ctrl-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .filter-btn {
+    padding: 5px 13px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Intro Banner */
+  .hero {
+    background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 26px;
+    margin-bottom: 26px;
+    box-shadow: var(--shadow);
+  }
+  .hero h2 {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 1.45rem;
+  }
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .principle-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.88rem;
+  }
+  .principle-pill strong {
+    display: block;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+
+  /* Episode Card */
+  .ep-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    scroll-margin-top: 120px;
+  }
+  .ep-header {
+    padding: 18px 24px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .ep-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .era-tag {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 99px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .study-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "Baloo Da 2", sans-serif;
+    font-size: 0.88rem;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .study-toggle input { accent-color: #2f7d4c; width: 16px; height: 16px; }
+  .ep-header h2 {
+    margin: 4px 0 10px;
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .meta-pill {
+    font-size: 0.84rem;
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .ep-content {
+    padding: 20px 24px 24px;
+  }
+  .ep-section {
+    margin-bottom: 18px;
+  }
+  .ep-section h3 {
+    margin: 0 0 10px;
+    font-size: 1.08rem;
+    color: var(--accent);
+  }
+  .ep-overview {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 12px 16px;
+    border-radius: 0 10px 10px 0;
+  }
+  .ep-overview p { margin: 0; }
+
+  /* Scene Cards */
+  .scene-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .scene-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .scene-badge {
+    font-size: 0.78rem;
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .scene-body {
+    padding: 10px 16px 12px;
+  }
+  .beat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .beat-list > li {
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--surface);
+    border-left: 3px solid var(--border);
+  }
+  .beat-list > li.beat-visual {
+    background: var(--visual-bg);
+    border-left-color: var(--visual-border);
+  }
+  .beat-list > li.beat-dialogue {
+    background: var(--dialogue-bg);
+    border-left-color: var(--dialogue-border);
+  }
+  .beat-list > li.beat-ending {
+    background: var(--ending-bg);
+    border-left-color: var(--ending-border);
+  }
+  .dialogue-list {
+    margin: 6px 0 2px;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .dialogue-list li {
+    background: var(--dialogue-bg);
+    padding: 6px 10px;
+    border-radius: 7px;
+    border-left: 3px solid var(--dialogue-border);
+    list-style: none;
+  }
+
+  /* Director Note */
+  .director-note-box {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--border);
+  }
+  .director-note-box label {
+    display: block;
+    font-family: "Baloo Da 2", sans-serif;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .director-note {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.92rem;
+    resize: vertical;
+  }
+  .hidden { display: none !important; }
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    display: none;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { padding: 16px 16px 60px; }
+  }
+  @media print {
+    .sidebar, .topbar, .study-toggle, .director-note-box { display: none !important; }
+    .layout { display: block; }
+    .ep-card { break-inside: avoid; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>শৈশব কাহিনী — ১৯ পর্ব</h1>
+      <p>বালক ঠাকুরের গল্প-পরিকল্পনা (Study Guide)</p>
+      <div class="progress-wrap">
+        <span id="progressText">পড়া হয়েছে: ০ / ১৯ টি পর্ব</span>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+    <nav class="nav-list" id="navList">
+      <a class="nav-item" href="#ep-01" data-ep="1" data-era="baidik"><span class="nav-num">01</span><span class="nav-text">কালীপূজার রাত ও বালক ঠাকুরের জন্ম</span><span class="nav-check" id="nav-chk-1" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-02" data-ep="2" data-era="baidik"><span class="nav-num">02</span><span class="nav-text">রহস্যময় শৈশব, ষষ্ঠীপূজা ও গো-সাপ</span><span class="nav-check" id="nav-chk-2" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-03" data-ep="3" data-era="baidik"><span class="nav-num">03</span><span class="nav-text">পাঁচ বছরের মুখে অমূল্য তত্ত্ব</span><span class="nav-check" id="nav-chk-3" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-04" data-ep="4" data-era="baidik"><span class="nav-num">04</span><span class="nav-text">শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক</span><span class="nav-check" id="nav-chk-4" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-05" data-ep="5" data-era="ujanchar"><span class="nav-num">05</span><span class="nav-text">কচ্ছপ খেলা ও গাভী রক্ষা</span><span class="nav-check" id="nav-chk-5" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-06" data-ep="6" data-era="ujanchar"><span class="nav-num">06</span><span class="nav-text">জ্যেষ্ঠ ভ্রাতা ও খেলার সাথী রক্ষা</span><span class="nav-check" id="nav-chk-6" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-07" data-ep="7" data-era="ujanchar"><span class="nav-num">07</span><span class="nav-text">লববাবুর পাঠশালা ও স্বচ্ছ ভাষণ</span><span class="nav-check" id="nav-chk-7" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-08" data-ep="8" data-era="ujanchar"><span class="nav-num">08</span><span class="nav-text">আনন্দ মাস্টার ও অন্তর্যামী মাতৃপ্রীতি</span><span class="nav-check" id="nav-chk-8" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-09" data-ep="9" data-era="ujanchar"><span class="nav-num">09</span><span class="nav-text">গয়ালী মান্দ্রার হাটে অলৌকিক ঘটনা</span><span class="nav-check" id="nav-chk-9" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-10" data-ep="10" data-era="diksha"><span class="nav-num">10</span><span class="nav-text">আট বছর বয়সে ময়নামতীর ফকিরকে দীক্ষা</span><span class="nav-check" id="nav-chk-10" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-11" data-ep="11" data-era="diksha"><span class="nav-num">11</span><span class="nav-text">ময়ূরপঙ্খী নৌকার স্বপ্ন ও গৃহস্থ বধূ</span><span class="nav-check" id="nav-chk-11" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-12" data-ep="12" data-era="diksha"><span class="nav-num">12</span><span class="nav-text">সারা ভারত খোঁজা সাধক ও মাতঙ্গিনীর একই মন্ত্র</span><span class="nav-check" id="nav-chk-12" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-13" data-ep="13" data-era="diksha"><span class="nav-num">13</span><span class="nav-text">ষোড়শীর স্বপ্নদর্শন ও আরোগ্যলাভ</span><span class="nav-check" id="nav-chk-13" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-14" data-ep="14" data-era="diksha"><span class="nav-num">14</span><span class="nav-text">বরদা চক্রবর্তীর জলের ওপর হাঁটার দর্শন</span><span class="nav-check" id="nav-chk-14" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-15" data-ep="15" data-era="diksha"><span class="nav-num">15</span><span class="nav-text">নাসিরুদ্দিন হাজীর অগ্নিগোলক ও পশুপাখির কান্না</span><span class="nav-check" id="nav-chk-15" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-16" data-ep="16" data-era="finale"><span class="nav-num">16</span><span class="nav-text">মাতুলালয়ে শারদীয়া দুর্গাপূজা ও গোমূত্র সংগ্রহ</span><span class="nav-check" id="nav-chk-16" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-17" data-ep="17" data-era="finale"><span class="nav-num">17</span><span class="nav-text">বিজয়াদশমীতে নিমজ্জমান নৌকা থেকে উদ্ধার</span><span class="nav-check" id="nav-chk-17" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-18" data-ep="18" data-era="finale"><span class="nav-num">18</span><span class="nav-text">খেলার ছলে বিভূতি ও &#x27;হঠাৎ&#x27;-এর ভবিষ্যদ্বাণী</span><span class="nav-check" id="nav-chk-18" title="পড়া হয়েছে">✓</span></a><a class="nav-item" href="#ep-19" data-ep="19" data-era="finale"><span class="nav-num">19</span><span class="nav-text">সত্যের জয় ও ষড়যন্ত্রকারীদের ক্ষমা (সিজন ফিনালে)</span><span class="nav-check" id="nav-chk-19" title="পড়া হয়েছে">✓</span></a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-row">
+        <input type="search" id="searchInput" class="search-box" placeholder="পর্ব, চরিত্র বা ঘটনা খুঁজুন (যেমন: শিলনোড়া, লববাবু, হাজী, নৌকা, সাপ)...">
+        <div class="controls">
+          <button class="ctrl-btn" id="fontDown" title="অক্ষর ছোট">A−</button>
+          <button class="ctrl-btn" id="fontReset" title="স্বাভাবিক অক্ষর">A</button>
+          <button class="ctrl-btn" id="fontUp" title="অক্ষর বড়">A+</button>
+          <button class="ctrl-btn" id="themeToggle">🌙 ডার্ক মোড</button>
+          <button class="ctrl-btn" id="exportNotes">💾 নোট ডাউনলোড</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-era="all">সব পর্ব (১৯)</button>
+        <button class="filter-btn" data-era="baidik">বৈদিক বাড়ি ও শৈশব (১–৪)</button>
+        <button class="filter-btn" data-era="ujanchar">উজানচর ও পাঠশালা (৫–৯)</button>
+        <button class="filter-btn" data-era="diksha">দিব্য প্রকাশ ও দীক্ষা (১০–১৫)</button>
+        <button class="filter-btn" data-era="finale">উৎসব, বিভূতি ও সমাপ্তি (১৬–১৯)</button>
+      </div>
+    </div>
+
+    <section class="hero">
+      <h2>কীভাবে প্রতিটি পর্ব "বইয়ের বর্ণনা" থেকে "আসল অ্যানিমেটেড গল্প" হবে?</h2>
+      <p style="margin:0;color:var(--muted);">সূত্র: <strong>শ্রীশ্রীবালক ব্রহ্মচারীর শৈশব কাহিনী</strong> (অধ্যায় ১–২৮)। সবুজ বক্স = ভিজ্যুয়াল, সোনালি বক্স = সংলাপ, বেগুনি বক্স = আবেগঘন সমাপ্তি।</p>
+      <div class="principles">
+        <div class="principle-pill"><strong>১. কথক কমবে ৬০–৭০%</strong>কথক শুধু আবহ তৈরি করবেন; ঘটনা দর্শক নিজে দেখবে।</div>
+        <div class="principle-pill"><strong>২. প্রতি পর্বে ৪–৫ দৃশ্য</strong>ভূমিকা → দ্বন্দ্ব/মজা → ক্লাইম্যাক্স → শান্ত আফটারগ্লো।</div>
+        <div class="principle-pill"><strong>৩. জীবন্ত পার্শ্বচরিত্র</strong>গ্রামের মেয়ে, মংলা, লববাবু, হেম কবিরাজ, হাজী—সবার নিজস্ব কণ্ঠ।</div>
+        <div class="principle-pill"><strong>৪. ভিজ্যুয়াল ও সাউন্ড</strong>শব্দের আগে ছবি, সংলাপের আগে প্রতিক্রিয়া ও সিগনেচার শট।</div>
+      </div>
+    </section>
+
+    <div id="episodesContainer">
+      
+    <article class="ep-card" id="ep-01" data-ep="1" data-era="baidik">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-baidik">বৈদিক বাড়ি ও শৈশব</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="1">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১: কালীপূজার রাত ও বালক ঠাকুরের জন্ম</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১ ও ২</span><span class="meta-pill"><strong>স্থান:</strong> মেদিনীমণ্ডল বৈদিক বাড়ি</span><span class="meta-pill"><strong>বয়স:</strong> নবজাতক</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 নাটকীয় ভাবনা</h3><p>উৎসবের জমজমাট কোলাহল, হঠাৎ স্তব্ধতা, সংস্কারের ভয় বনাম মায়ের ভালোবাসা—সবশেষে একটি নিরীহ ছাগশিশুর মুক্তি। (পর্ব ১ ইতোমধ্যেই সবচেয়ে সমৃদ্ধ; তবে কথকের বর্ণনা আরও কমিয়ে বইয়ের জীবন্ত চরিত্রগুলোকে আরও সতেজ রাখা যায়।)</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — দীপান্বিতার জমজমাট বৈদিক বাড়ি:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> প্রদীপের আলো, মণ্ডপে প্রতিমা, হাড়িকাঠ নেড়েচেড়ে দেখছে জয়চন্দ্র, উঠোনে বাবুকাকা (সুরেন্দ্র) ঘিরে বাচ্চাদের বাজি পোড়ানো, রান্নাঘরে গোবিন্দ মালী ও দক্ষি ঝি-এর মজার ঝগড়া।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> গোপাল-রমার বাজি নিয়ে ঝগড়া, বাবুকাকার মিটিয়ে দেওয়া, আর বারবাড়ি থেকে ডাক—<em>&quot;চিনি কোথায়? পূজোর সময় বয়ে যাচ্ছে!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — অন্দরবাড়ির সাত ঝাঁক উলুধ্বনি ও স্তব্ধতা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ভগবতী ঠাকুর ঘণ্টা তুলেছেন, মনমোহন ঢাকে কাঠি তুলতে যাচ্ছেন—ঠিক তখনই অন্দরবাড়ি থেকে উলুধ্বনি! এক মুহূর্তে ঢাকীর কাঠি থেমে যায়, ভগবতী ঠাকুরের হাত থেকে আতপ চাল ও ঘণ্টা পড়ে যায়।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> আঁতুড়ঘরে মনোরমা জেঠির বিড়বিড়—<em>&quot;শুভ কাজে যত বাধা!&quot;</em>—আর সঙ্কুচিত চারুশীলার মৃদু প্রশ্ন: <em>&quot;দিদি, পূজো কি আরম্ভ হয়েছে?&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — মনসাপূজার পাগলের ফ্ল্যাশব্যাক ও প্রত্যাবর্তন:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> চারুশীলার চোখে জল। কথার ভেতর দিয়ে বৃষ্টির রাতের ফ্ল্যাশব্যাক—উঠোনে জলকাদায় দাঁড়িয়ে পাগলের সাষ্টাঙ্গে প্রণাম। বর্তমান দৃশ্যে সুন্দর ঠাকুরের খড়ি-পুঁথি নিয়ে কোষ্ঠী গণনা।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> সুন্দর ঠাকুর: <em>&quot;একি! এ যে জন্মসন্ন্যাসী!&quot;</em>—ঠিক পেছন থেকে পাগলের কণ্ঠ: <em>&quot;হ্যাঁ হ্যাঁ, এসেছে রে, এসেছে! পরে বুঝবে!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — নিন্দুক বনাম ঠাকুরমার দৃঢ়তা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> নবজাতক একফোঁটাও কাঁদেনি, শান্ত চোখে এদিক-ওদিক তাকাচ্ছে। নিন্দুক আত্মীয়ের কটূক্তি শুনে ঠাকুরমা এগিয়ে এসে নাতির পাশে দাঁড়ান।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> নিন্দুক: <em>&quot;পুরুষানুক্রমিক পূজো বন্ধ করে এল এই কালাপাহাড়!&quot;</em> | ঠাকুরমা (দৃপ্ত ও স্নেহময়): <em>&quot;আমার নাতি হয়েছে, পূজোর চেয়ে আনন্দ বেশি! দেখ তো, জন্মের পর একটুও কান্না নেই—এমন শিশু কোনোদিন দেখেছিস?&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 5</span><span class="scene-title">দৃশ্য ৫ — অশৌচের অঞ্জলি ও ছাগশিশুর মুক্তি (সমাপ্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বলির হাড়িকাঠ খালি। ভাইয়েরা ফুল ছিটিয়ে মা কালীকে অঞ্জলি দিচ্ছেন। ক্যামেরা ধীরে সরে যায় বাঁধনমুক্ত ছোট্ট ছাগশিশুটির দিকে—সে লাফিয়ে চাঁদের আলোয় চলে যাচ্ছে।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-1">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-1" class="director-note" data-ep="1" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-02" data-ep="2" data-era="baidik">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-baidik">বৈদিক বাড়ি ও শৈশব</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="2">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ২: রহস্যময় শৈশব, ষষ্ঠীপূজা ও গো-সাপ</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ৩ ও ৪</span><span class="meta-pill"><strong>স্থান:</strong> মেদিনীমণ্ডল বৈদিক বাড়ি → উজানচর কৃষ্ণনগর</span><span class="meta-pill"><strong>বয়স:</strong> নবজাতক থেকে হামাগুড়ি (৮–১০ মাস)</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>বর্তমান পর্বে চারটি ঘটনা পরপর কথকের বর্ণনায় বলা হয়েছে। এগুলোকে <strong>চারটি ছোট্ট গল্পের মালা</strong> হিসেবে সাজাতে হবে—যেখানে মায়ের ভয়, বাড়ির মেয়েদের কৌতূহল আর শিশুর নির্ভীক হাসি সংলাপ ও প্রতিক্রিয়ায় ফুটে উঠবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — লম্বা ঘরের অদ্ভুত খোকা (মজার সূচনা):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> সারি সারি বিছানায় বাচ্চারা কাঁদছে, কেবল এক শিশু শান্ত হয়ে তাকিয়ে। জ্যাঠাইমা-কাকীমারা আদর করে দুধ খাওয়াতে গিয়ে অবাক—শিশু মুখ সরিয়ে নেয়!</li>
+<li class="beat-dialogue"><strong>সংলাপ (বাড়ির মেয়েরা):</strong> <em>&quot;ওমা দেখ দিকি! সব বাচ্চা কাঁদলে ও চুপ, আর সবাই চুপ হলে ও কাঁদে! আর মা ছাড়া কারও কোলে দুধ মুখেই নেয় না—এতটুকু বাচ্চা বোঝে কী করে!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — ষষ্ঠীপূজার বৃষ্টি ও উজানচরে যাত্রা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ষষ্ঠীর ভোগ সাজানো, বাইরে মুষলধারে বৃষ্টি। ভেতরে ঠাকুরমা ও সুরেন্দ্রর বিস্ময়—শিশুর হাত নড়লেই বৃষ্টি বাড়ে! তারপর বর্ষার দুপুরে ডাক-পিয়নের হাতে চাকরির চিঠি, আর নৌকা/গরুর গাড়িতে জঙ্গলঘেরা উজানচরে যাত্রা।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> ঠাকুরমা: <em>&quot;ওরে তোরা দ্যাখ! খোকার হাতের ইশারায় বৃষ্টি বাড়ছে-কমছে!&quot;</em> | সুরেন্দ্র: <em>&quot;বড় আশ্চর্য মা, কারও পদধূলি যেন ও নিতে চাইল না!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — শেয়াল, বাঘা কুকুর ও পাগলা কুকুর (উত্তেজনা ও স্বস্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মা রান্নাঘরে। বেড়ার নিচে গর্ত খুঁড়ে শেয়াল ঢুকে বিছানা টানছে—বাইরে থেকে বাঘা কুকুরের ঝাঁপ! শৃগালের খ্যাঁকখ্যাঁক শব্দে মা ছুটে এসে দেখেন গর্তের মুখে খোকা মিষ্টি হাসছে। <em>(বইয়ের পাগলা কুকুরের দৃশ্যটিও ছোট্ট কমিক-থ্রিলার হিসেবে যোগ করা যায়: বাবার বন্ধুর &#x27;কুত্তা কুত্তা&#x27; চিৎকার আর খোকার কান্নায় পাগলা কুকুরের চুপচাপ জঙ্গলে চলে যাওয়া!)</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — লেবুতলায় গো-সাপের সঙ্গে খেলা (নির্বাক সিনেমাটিক দৃশ্য):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> রোদ ঝলমলে উঠোনের কোণে বড় গো-সাপ জিভ লকলক করছে। হামাগুড়ি দিয়ে খোকা এগিয়ে গিয়ে গায়ে হাত বুলোচ্ছে—গো-সাপ চুপচাপ শুয়ে আদর খাচ্ছে! দূর থেকে দরজার আড়ালে চারুশীলার মুখ চাপা দিয়ে ভয়ে-বিস্ময়ে তাকিয়ে থাকা।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 5</span><span class="scene-title">দৃশ্য ৫ — চালের মটকি ও মায়ের মনের প্রশ্ন:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ঘরের থামে বাঁধা বিশাল চালের মটকির দড়ি ছিঁড়ে ধপ করে শিশুর ওপর পড়ে! বাবা-মায়ের আর্তনাদ, বাবার বন্ধুর ছুটে এসে মটকি তোলা—ভেতর থেকে হাসিমুখে খোকার উঁকি!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> সুরেন্দ্র: <em>&quot;ঠাকুর লক্ষ্মীনারায়ণের কৃপায় খোকা বাঁচল!&quot;</em> | চারুশীলার নিচু স্বগত চিন্তা: <em>&quot;লক্ষ্মীনারায়ণ… না… কী ইচ্ছে তোমার, কে জানে!&quot;</em></li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-2">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-2" class="director-note" data-ep="2" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-03" data-ep="3" data-era="baidik">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-baidik">বৈদিক বাড়ি ও শৈশব</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="3">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৩: পাঁচ বছরের মুখে অমূল্য তত্ত্ব</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ৫</span><span class="meta-pill"><strong>স্থান:</strong> মেদিনীমণ্ডল বৈদিক বাড়ি</span><span class="meta-pill"><strong>বয়স:</strong> ৫ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>বর্তমানে মাত্র ২টি দৃশ্য ও ২টি সংলাপ—ফলে পুরো পর্ব বইয়ের অনুচ্ছেদ পাঠের মতো লাগে। মূল অধ্যায় ৫-এ <strong>দুই দিনের নাটকীয় গল্প, ৩ জন আলাদা স্বভাবের মেয়ে, মায়েদের বকুনির কারণ এবং ৪ দফার দারুণ বুদ্ধিদীপ্ত তর্ক</strong> আছে। সেগুলো ফিরিয়ে আনলেই এটি অন্যতম সেরা পর্ব হবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — শরতের ভোরে ফুল তোলার আসর:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ভোরের কুয়াশা, শিউলি ঝরছে। স্নানসিক্ত খোলা চুল থেকে জল ঝরছে। দুজন মেয়ে মিলে উঁচু জবাগাছের ডাল টেনে নামাচ্ছে, দুজন ফুল তুলে সাজি ভরছে। তুলসীতলায় সাজানো ৪–৫টি ভরা সাজি।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> মেয়ে ১ (বড়দিদি-সুলভ): <em>&quot;হাত চালা তাড়াতাড়ি! আট-দশ সাজি না ভরলে ঠাকুরঘরে বকুনি খেতে হবে!&quot;</em> | মেয়ে ২ (রসিক): <em>&quot;হয়ে যাবে দিদি, আজ শরতের বাতাসটা কী মিষ্টি!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — প্রথম দিন: চুপিচুপি দেখা ও খিলখিল হাসি (কথকবিহীন হাস্যরস):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মেয়ে ২ সাজি রাখতে ঘুরে হঠাৎ থমকে দাঁড়ায়! ক্যামেরার দৃষ্টিতে—ছোট্ট বীরু ভরা ডালা থেকে মুঠো মুঠো জবা আর তুলসীপাতা নিজের পায়ে সাজিয়ে নিচ্ছে।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> মেয়ে ২ (ফিসফিস করে): <em>&quot;এই, ঐ দ্যাখ!&quot;</em> | মেয়ে ১: <em>&quot;ওমা একি কাণ্ড! সব ফুল যে নষ্ট করে দিল! দাঁড়া ধরছি—&quot;</em> | মেয়ে ২ (হাত টেনে ধরে): <em>&quot;আরে চুপ কর! বৈদিক বাড়িতে ফুলের অভাব হয়নি, চুপ করে দ্যাখ ও কী করে!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বীরু পরম আনন্দে নিজের পায়ে নিজেই প্রণাম করে। মেয়েরা মুখ চেপে খিলখিল করে হেসে চুপিচুপি চলে যায়।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — কয়েকদিন পর: ঘেরাও ও প্রথম দফা তর্ক:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বীরু এক ঘটি জল এনে তুলসীগাছের গোড়ায় ঢেলে প্রণাম করে, আবার মেয়েদের ডালা থেকে ফুল নিজের পায়ে দিতেই চারদিক থেকে ছায়া পড়ে—মেয়েরা তাকে ঘিরে ধরেছে!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>মেয়ে ১: <em>&quot;ধরা পড়েছিস! তুই ঠাকুরের পূজার ফুল পায়ে দিচ্ছিস কেন রে? তোর পাপ হবে, ভগবান শাপ দেবেন!&quot;</em></li>
+<li>বীরু (শান্ত হাসি): <em>&quot;তোদের ভগবান তোদের শাপ দেবে! আমার ভগবান নেই—ও আমায় শাপও দেবে না!&quot;</em></li>
+<li>মেয়ে ৩ (হেসে): <em>&quot;দেখেছিস, কেমন বোকা! ভগবান কি সবার আলাদা থাকে নাকি? দাঁড়া, এক্ষুনি তোর মাকে বলে দেব!&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — ক্ষুদে দার্শনিক: মাটির মূর্তি, রাগী ভগবান ও শিলনোড়া (ক্লাইম্যাক্স):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ (দ্রুত পাল্টাপাল্টি, সাথে ভিজ্যুয়াল কাটওয়ে):</strong></li>
+<ul class="dialogue-list">
+<li>বীরু: <em>&quot;যাও না বলগে! মা-ও তো রোজ মাটির মূর্তি গড়ে পায়ে ফুল দেন! ঐ মূর্তি তো নড়েও না, কিছু বোঝেও না—আমার পায়ে ফুল দিলে তো আমি বেশ টের পাই!&quot;</em> <em>(ক্লোজ-আপ: বাতাসে পায়ের জবা ফুল নড়ছে, বীরুর শান্ত চোখ)</em></li>
+<li>মেয়ে ৩: <em>&quot;তোর জন্য সেদিন আমাদেরও মা খুব বকেছেন! তোকে আর ফুল দেব না!&quot;</em></li>
+<li>বীরু: <em>&quot;না দিলে! ফুলগুলো তো মাটির মূর্তিকে দিয়েই ফেলে দেবে!&quot;</em></li>
+<li>মেয়ে ১: <em>&quot;অমন বলিস না, ভগবান রাগ করে রোগ দেবেন!&quot;</em></li>
+<li>বীরু (দৃপ্ত, জ্যোতির্ময় শান্তি, হালকা দিব্য আভা): <em>&quot;ওঃ, তোমাদের ভগবান বুঝি খুব রাগী? আমি ভগবান হলে কিন্তু একটুও রাগ করতাম না—ফুল তো ফুল, গাছ কেটে নিলেও কাউকে কিছু বলতাম না!&quot;</em></li>
+<li><em>(মজার সংযোজন — মূল বই থেকে):</em> <em>&quot;আর ঐ পাথরটার তো হাত-পা চোখ-মুখ কিছুই নেই! ওটা ভগবান হলে মা যেটাতে বাটনা বাটেন, সেই শিলনোড়াটাও তো ভগবান!&quot;</em> <em>(কিউট ভাবনা-বুদবুদ ভিজ্যুয়াল: শিলনোড়ার ওপর একটা জবা ফুল!)</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 5</span><span class="scene-title">দৃশ্য ৫ — স্তম্ভিত মুগ্ধতা ও মিটমাট:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ:</strong> মেয়ে ২ (অবাক হয়ে): <em>&quot;দেখেছিস… এতটুকুন ছেলে, তার কত বড় কথা! একটু ভয় পর্যন্ত নেই—আশ্চর্য!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মেয়ে ২ নরম হেসে নিজের সাজি থেকে একটি টাটকা লাল জবা তুলে নিজেই বীরুর পায়ের কাছে রেখে দেয়। বীরু মিষ্টি হাসে।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-3">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-3" class="director-note" data-ep="3" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-04" data-ep="4" data-era="baidik">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-baidik">বৈদিক বাড়ি ও শৈশব</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="4">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৪: শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ৬ ও ৭</span><span class="meta-pill"><strong>স্থান:</strong> মেদিনীমণ্ডল বৈদিক বাড়ি</span><span class="meta-pill"><strong>বয়স:</strong> ৫ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>তিনটি দুর্দান্ত হাস্যকর ও তত্ত্বপূর্ণ ঘটনাকে বর্তমানে খুব দ্রুত সারাংশ করা হয়েছে। মূল বইয়ে <strong>মংলা ভৃত্যের ভোঁ-দৌড়, পুকুরপাড়ে বীরুর &#x27;জিম্মি-নাটক&#x27; (পুতুল বদলাবদলি), এবং কাঠের পুতুলের মুখে পেরেক দিয়ে ফুটো করার কথা</strong>—এগুলো শিশু ও বড় সবার হাসির খোরাক ও চিন্তার খোরাক জোগাবে!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — মাটির শিবলিঙ্গ বনাম গলৈয়ার কাঠের পুতুল:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মা চারুশীলা চোখ বুজে সাষ্টাঙ্গে প্রণাম করছেন। পেছন থেকে নিঃশব্দে বীরু পুজোর থালা থেকে মাটির শিবলিঙ্গ তুলে নিয়ে নিজের রঙচঙে কাঠের &#x27;আহ্লাদী&#x27; পুতুল বসিয়ে দেয়, আর শিবলিঙ্গটাকে হাতে পাকিয়ে গোল মাটির বল বানাতে থাকে!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> মায়ের চিৎকার, বড় ভাইয়ের ধরে আনা। বীরুর সরল যুক্তি: <em>&quot;মা, রোজ ক্ষেতের মাটি এনে পুজো করে পেছনে ফেলে দাও—তখন তো চটো না? আমি আমার পুতুলটা দিয়ে গেলাম, ওটা আর ফেলতে হবে না!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — পুকুরপাড়ে মংলা ও পিতলের গোবিন্দ (দারুণ কমেডি দৃশ্য):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> সুন্দর জ্যেঠা পূজোয় বসে দেখেন ঠাকুরের খাটে গোবিন্দের বদলে কাঠের পুতুল! পুকুরপাড়ে মান্দার গাছের নিচে বীরু ভৃত্য মংলাকে পিতলের গোবিন্দ দেখাচ্ছে।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বীরু: <em>&quot;জানিস মংলা, বড় হয়েছি তো—এবার পিতলের পুতুল নিয়ে খেলব! এক কাজ কর, তুই এটা সুন্দর জ্যেঠাকে দিয়ে আমার কাঠের পুতুলটা নিয়ে আয়!&quot;</em></li>
+<li>মংলা (ভয়ে কাঁপতে কাঁপতে): <em>&quot;ওরে বাবা! হাত খসে পড়বে যে!&quot;</em> —বলেই ভোঁ-দৌড়!</li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — পুকুরপাড়ে দরকষাকষি ও ঠাকুরমার ভবিষ্যদ্বাণী:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বাড়ির লোকজন তেড়ে আসছে। বীরু পুকুরের ধারে দাঁড়িয়ে মূর্তি উঁচিয়ে ধরে!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বাড়ির লোক: <em>&quot;এই হতচ্ছাড়া, গোবিন্দ দিয়ে যা!&quot;</em></li>
+<li>বীরু: <em>&quot;এস না বলছি! আর এক পা এলেই পুকুরে ছুঁড়ে ফেলে দেব!&quot;</em> <em>(সবাই থমকে দাঁড়ায়!)</em></li>
+<li>সুন্দর জ্যেঠা (মিষ্টি সুরে): <em>&quot;লক্ষ্মী ছেলে, দিয়ে দে—আরেকটা নতুন পুতুল কিনে দেব!&quot;</em></li>
+<li>বীরু: <em>&quot;আগে আমার পুতুলটা আনো—আর তোমাকে ছাড়া কাউকে দেব না!&quot;</em></li>
+</ul>
+<li class="beat-dialogue"><strong>সংলাপ (বাড়িতে ফিরে):</strong> হরেন্দ্র ঠাকুর: <em>&quot;কী কালাপাহাড় এল ঘরে!&quot;</em> | ঠাকুরমা (দৃঢ় স্নেহে): <em>&quot;তোরা যতই কালাপাহাড় বলিস, দেখিস—এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!&quot;</em> <em>(ঘোষণা: বীরুর ঠাকুরঘরে ঢোকা বারণ!)</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — &#x27;ধূপ কই?&#x27; ও নারিকেলোদক কাণ্ড:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ঠাকুরঘরের বাইরে বারান্দায় বসে বীরু উঁকি দিচ্ছে। ভেতরে ভগবতী ঠাকুর ব্যস্ত।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>ভগবতী ঠাকুর: <em>&quot;ধূপ! ধূপ কই?&quot;</em></li>
+<li>বীরু (মিষ্টি গলায়): <em>&quot;ঠাকুরমশায়, আমি ধূপ দেব?&quot;</em> → <em>&quot;হুঁ হুঁ।&quot;</em> → <em>&quot;আমি ঘরে বসব?&quot;</em> → <em>&quot;হুঁ হুঁ।&quot;</em></li>
+</ul>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মন্ত্রপাঠের ফাঁকে বীরু বড় পাথরের বাটি তুলে এক চুমুকে সব নারকেলের জল খেয়ে ফোপড়াটা বাটিতে সাজিয়ে রাখে!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বীরু: <em>&quot;ঠাকুরমশায়, আপনার ঠাকুর তো মুখ দিয়ে খায় না—আমি জলটা খেয়ে ফোপড়াটা ওর জন্য রেখেছি! আরে, আমার পুতুলকে খাওয়াতে মুখে পেরেক দিয়ে ফুটো করেছিলাম, তবুও খেল না—খায় তো পিঁপড়েরা! আচ্ছা ফোপড়াটা না হয় আপনিই খান, কাউকে বলব না!&quot;</em></li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-4">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-4" class="director-note" data-ep="4" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-05" data-ep="5" data-era="ujanchar">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-ujanchar">উজানচর ও পাঠশালা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="5">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৫: কচ্ছপ খেলা ও গাভী রক্ষা</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ৮ ও ৯</span><span class="meta-pill"><strong>স্থান:</strong> উজানচর কৃষ্ণনগর কাছারি</span><span class="meta-pill"><strong>বয়স:</strong> ৬ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>প্রথম অংশে বিনয়ের কৌতূহল ও বীরুর মজার সংলাপ (<em>&quot;ছাড়লি না—দাঁড়া দেখাচ্ছি মজা!&quot;</em>) এবং দ্বিতীয় অংশে কাছারির সেরেস্তায় বড়দের মজার ফিসফাস বাদ পড়েছে। এগুলো যোগ করলে দুই গল্পই প্রাণবন্ত হবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — কাছারির কোণের ঘরে কচ্ছপের খেলা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বড়রা বারান্দায় গল্পে মগ্ন। চুপিচুপি বীরু পাশের বাড়ির কোণের ঘরে ঢুকে চারটি উল্টানো কচ্ছপ দেখে। বিনয় বাইরে থেকে ফিরে দরজার আড়াল থেকে কৌতূহলী হয়ে দেখতে থাকে। বীরু মজা করে কচ্ছপগুলোকে সোজা করে দিচ্ছে।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — শুঁড় ধরে উল্টানো ও অলৌকিক রক্ষা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> লেজ ভেবে কচ্ছপের মাথা ধরে ফেলতেই—কামড়!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বীরু (মোটেও ভয় না পেয়ে, কচ্ছপের দিকে তাকিয়ে): <em>&quot;ছাড়লি না? ছাড়লি না—দাঁড়া দেখাচ্ছি মজা!&quot;</em> | বিনয়ের আর্তনাদ: <em>&quot;হায় হায়, গেল গেল, হাতটা গেল!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মা-বাবা ছুটে আসেন। কচ্ছপ নিজেই ছেড়ে দেয়। মা হাত উল্টেপাল্টে দেখেন—একটি ক্ষত বা দাগও নেই! বীরু শান্ত হাসছে।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — কলাবাগিচায় নিঃসঙ্গ বালক ও শশাগাছের কাণ্ড:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> গ্রীষ্মের দুপুর, কাছারির পেছনের কলাবাগিচায় শান্ত হয়ে বসে খেলছে বীরু। পাশের ঝোপে একটি সাদা গাভী লুকিয়ে আছে, মুখে শশালতা! হঠাৎ বাঁশ হাতে ক্ষিপ্ত হরিচরণের প্রবেশ।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>হরিচরণ: <em>&quot;এই বীরু, গরুটা কোন দিকে গেছে দেখেছিস?&quot;</em></li>
+<li>বীরু: <em>&quot;হরিচরণদা, কী হয়েছে?&quot;</em></li>
+<li>হরিচরণ (হাঁপাতে হাঁপাতে): <em>&quot;আমার পুরো শশাগাছটা মূলসুদ্ধ খেয়ে সাবাড় করেছে! তাড়াতাড়ি বল কোন দিকে গেছে!&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — সত্য বনাম করুণা (নীরব দ্বন্দ্ব ও অসাধারণ উত্তর):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল (বীরুর ভাবনা):</strong> একবার ঝোপের আড়ালে ভীত গাভীর চোখ, একবার হরিচরণের বাঁশ। মিথ্যে বললে সত্য নষ্ট, সত্য বললে গাভীর মার!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বীরু (স্থির চোখে): <em>&quot;দেখলেও বলব না! বললেই তো আপনি ওকে বাঁশ দিয়ে মারবেন। আপনার গাছ কি আমার গাছ—ও কি বুঝে খেয়েছে? খিদে পেয়েছে তাই খেয়েছে! আমি ওর খবর বলব না।&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 5</span><span class="scene-title">দৃশ্য ৫ — কাছারির সেরেস্তায় গুঞ্জন ও গাভীর কৃতজ্ঞতা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> রাগে গজগজ করতে করতে হরিচরণ চলে যায়। কাছারির সেরেস্তায় দুজন কর্মচারীর ফিসফাস—<em>&quot;মনে হয় ও খেতেও দেখেছে!&quot;</em> / <em>&quot;ও নিজে ধরে নিয়ে খাইয়েও আসতে পারে!&quot;</em></li>
+<li class="beat-ending"><strong>সমাপ্তি (আফটারগ্লো):</strong> কলাবাগিচায় ঝোপ থেকে বেরিয়ে গাভীটি ধীরে বীরুর কাছে এসে মাথা নুইয়ে দেয়; বীরু তার গায়ে হাত বুলিয়ে দেয়।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-5">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-5" class="director-note" data-ep="5" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-06" data-ep="6" data-era="ujanchar">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-ujanchar">উজানচর ও পাঠশালা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="6">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৬: জ্যেষ্ঠ ভ্রাতা ও খেলার সাথী রক্ষা</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১০, ১১ ও ১২</span><span class="meta-pill"><strong>স্থান:</strong> উজানচর বাড়ি ও খেলার মাঠ</span><span class="meta-pill"><strong>বয়স:</strong> ৬–৭ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>পর্ব ৬-এ <code>STO-22</code> ভিজ্যুয়াল রিকাট দারুণ হয়েছে, কিন্তু অধ্যায় ১০ ও ১২-এর আসল সংলাপ (বড় ভাইয়ের ইশারা, বীরুর <em>&quot;গেল তো…&quot;</em>, বন্ধুর <em>&quot;দে তাড়াতাড়ি, ইয়ারকি করার সময় নেই&quot;</em>, দাদার ধমক <em>&quot;হ্যাঁ নিয়েছি! বানর কোথাকার!&quot;</em> এবং বৌদির প্রবেশে চমক)—এগুলো সংলাপে আনলে এটি একটি <strong>অসাধারণ নাটকীয় ও হাস্যরসাত্মক পর্ব</strong> হয়!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — পাঠশালা থেকে ফেরা ও বড় ভাইয়ের রাগ:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> খালি কাঁসার থালা বাজিয়ে আদুরে বড় ভাইয়ের মেজাজ গরম। ছোট ভাই বীরুকে চড় মেরে কাঁদানো। হঠাৎ বাইরে বাবার কাঠের খড়মের <em>খট-খট</em> শব্দ! বড় ভাই তীরবেগে ঘরের কোণে লুকিয়ে পড়ে।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — ব্যথা ভুলে ক্ষমা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বাবা (রেগে): <em>&quot;বল, বড়টা কোথায় গেছে?&quot;</em> <em>(আড়াল থেকে বড় ভাইয়ের হাতজোড় ইশারা)</em></li>
+<li>বীরু (পিঠের ব্যথায় কুঁজো হয়ে, থেমে থেমে): <em>&quot;গেল তো… যাও, আমি বলব না! বললে তো তুমি দাদাকে মারবে!&quot;</em></li>
+<li>বাবা (বিরক্ত হয়ে): <em>&quot;বোকাটা বলবেও না, আবার মারও খাবে!&quot;</em> —বাবা কাছারিতে চলে যান।</li>
+</ul>
+<li class="beat-visual"><strong>ভিজ্যুয়াল ও সংলাপ:</strong> বড় ভাই বেরিয়ে আসে, একটু নরম হয়। বীরু চোখ মুছে বলে: <em>&quot;দেখলে, বাবা মারবে বলে বলিনি—উঃ, এখনও পিঠ ব্যথা করছে!&quot;</em> বড় ভাই এক মুহূর্ত থেমে আবার হেসে ছুটে পালায়।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — খেলার মাঠের &#x27;ভাণ্ডারী&#x27; ও চুরির দশ টাকা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ফাটা বল সেলাই করে বা ভাঙা মার্বেল আঠা দিয়ে জোড়া লাগিয়ে বন্ধুরা বীরুকে ঠকায়—একদিন বীরু শান্তভাবে বলে: <em>&quot;নতুন নিতেই হলে শয়তানি না করে বলে নিলেই তো ভালো হয়!&quot;</em> তবু সবাই টাকা-পয়সা বীরুর কাছেই জমা রাখে।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> এক বন্ধু গোপনে দশ টাকার নোট দিয়ে বলে: <em>&quot;কাউকে বলিস না—দাদার পকেট থেকে এনেছি!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — বৌদির কাছে গোপন জিম্মা ও মাঠের নাটক:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> চুপিচুপি বন্ধুর বাড়িতে গিয়ে বৌদির শপথ নেওয়া—<em>&quot;সব শুনে আমাদের কিছু বলবে না তো?&quot;</em>—এবং টাকা ফেরত দেওয়া।</li>
+<li class="beat-dialogue"><strong>সংলাপ (মাঠে ফিরে):</strong> বন্ধু সদলবলে এসে খাওয়ানোর বাহাদুরি দেখাচ্ছে—<em>&quot;এই, দে তো টাকাটা!&quot;</em> | বীরু মাথায় হাত দিয়ে বসে: <em>&quot;কী বলছিস, ওটা কি এখনও আছে নাকি?&quot;</em> | বন্ধু রেগে গিয়ে দাদার কাছে নালিশ করে: <em>&quot;দাদা, বীরু তোমার পকেট থেকে দশ টাকা চুরি করেছে!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 5</span><span class="scene-title">দৃশ্য ৫ — দাদার বিচার, রহস্য ফাঁস ও মিষ্টি লজেন্স:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ:</strong> দাদা: <em>&quot;তুই আমার টাকা নিয়েছিস?&quot;</em> | বীরু (সরল সত্য): <em>&quot;হ্যাঁ, নিয়েছি!&quot;</em> | দাদা (রেগে): <em>&quot;বানর কোথাকার! কোথায় রেখেছিস বল!&quot;</em> <em>(বন্ধুরা মুখ টিপে হাসছে)</em> | বীরু (শান্ত): <em>&quot;আমি রাখব কেন? ওটা তো বৌদিকে দিয়ে দিয়েছি!&quot;</em></li>
+<li class="beat-ending"><strong>সমাপ্তি:</strong> বৌদি এসে সত্যিটা বলতেই বন্ধুরা &#x27;থ&#x27;! পুরস্কারের দু&#x27;আনা দিয়ে বীরু অপরাধী বন্ধুসহ সবাইকে মার্বেল-লজেন্স কিনে খাওয়ায়।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-6">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-6" class="director-note" data-ep="6" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-07" data-ep="7" data-era="ujanchar">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-ujanchar">উজানচর ও পাঠশালা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="7">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৭: লববাবুর পাঠশালা ও স্বচ্ছ ভাষণ</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১৩</span><span class="meta-pill"><strong>স্থান:</strong> উজানচর লববাবুর পাঠশালা</span><span class="meta-pill"><strong>বয়স:</strong> ৭ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>অধ্যায় ১৩ হলো বইয়ের সবচেয়ে <strong>মজাদার ও স্কুল-জীবনের জীবন্ত অধ্যায়</strong>! বর্তমানে মাত্র ৫টি ব্লক। মূল বইয়ের <em>&quot;এক কড়া পোয়া গণ্ডা&quot;</em> সুর, কয়েদ-পাহারার রসিকতা, <em>&quot;ঠাকুমা ছুঁতে পারেন না!&quot;</em> কমেডি, এবং ইন্সপেক্টরের সামনে বীরুর চমকপ্রদ উত্তর—সব মিলিয়ে এটি একটি ফাটাফাটি পর্ব!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — দোর্দণ্ডপ্রতাপ লববাবুর পাঠশালা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> নতুন রঙিন টিনের চৌচালা ঘর। ভেতরে চাটাই, গাছা ও মাচায় পিঠোপিঠি বসা তিন শ্রেণির ছাত্র। সমস্বরে চিৎকার—<em>&quot;এক কড়া পোয়া গণ্ডা, দুই কড়া আধা গণ্ডা…&quot;</em>! বাইরে গাছতলায় কপালে চাড়া দিয়ে দাঁড়িয়ে শাস্তি পাওয়া ছাত্র।</li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল ও আবেগ:</strong> প্রথম দিনেই একটি ছাত্রের পিঠে কঞ্চি ভাঙার দৃশ্য দেখে ছোট্ট বীরুর চোখ বেয়ে টসটস করে জল গড়িয়ে পড়ে।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — পাঠশালায় অনুপস্থিতি ও &#x27;মা ছুঁতে পারেন না&#x27;:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ:</strong> লববাবু: <em>&quot;আমার পাঠশালায় অশৌচ না হলে ছুটি নেই! যা, ধরে নিয়ে আয় বীরুকে!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> তিন-চারজন ছাত্র গিয়ে দেখে বীরু রান্নাঘরে হাতা-খুন্তি নিয়ে ব্যস্ত!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বীরু: <em>&quot;ভাই ভীষণ ব্যাপার—মা ছুঁতে পারেন না, তাই আমাকেই রান্না করতে হচ্ছে!&quot;</em> তিন দিন পর লববাবু শুনে আর কিছু বলেন না।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — &#x27;ঠাকুমা ছুঁতে পারেন না!&#x27; (হাসির ক্লাইম্যাক্স):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> সব ছাত্র নতুন ফন্দি শিখে নেয়! একদিন মাতৃহীন এক ছেলে এসে কাঁপতে কাঁপতে বলে—</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>ছাত্র: <em>&quot;পোন মশায়, ঠাকুমা ছুঁতে পারেন না!&quot;</em></li>
+<li>লববাবু (চোখ কপালে): <em>&quot;অ্যাঁ! তোর খুনখুনে বুড়ি ঠাকুমা ছুঁতে পারেন না?! হারামজাদারা, আমার সাথে চালাকি!&quot;</em> <em>(একে একে ডাকছেন)</em></li>
+<li>লববাবু (বীরুকে): <em>&quot;কীরে, তোর মা-ও এরকম ছুঁতে পারতেন না নাকি?&quot;</em></li>
+<li>বীরু (সম্পূর্ণ নিরীহ): <em>&quot;পোন মশায়, ছুঁতে পারার আবার এরকম-ওরকম আছে নাকি?&quot;</em> <em>(লববাবু হেসে-বিস্ময়ে ওকে ছেড়ে দেন!)</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — ইন্সপেক্টর সাহেবের আগমন ও জন্মতারিখ:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> দেবদারু পাতায় সাজানো পাঠশালা। কয়েকদিন ধরে লববাবু মারধর ভুলে যত্ন করে বুদ্ধদেবের গল্প পড়াচ্ছেন—ছাত্ররা ফিসফিস করছে, <em>&quot;ইন্সপেক্টর সাহেব রোজ এলেই তো হাড়টা জুড়াত!&quot;</em></li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> ইন্সপেক্টর: <em>&quot;বুদ্ধদেব তো অনেক আগে জন্মেছেন—খোকা, তোমার জন্ম কবে বলতে পারো?&quot;</em> | বীরু (স্পষ্ট, নির্ভীক): <em>&quot;হ্যাঁ স্যার! বাংলা ১৩২৭ সালের ২৩শে কার্তিক মঙ্গলবার, কালীপূজোর দিন আমার জন্ম!&quot;</em></li>
+<li class="beat-ending"><strong>সমাপ্তি:</strong> অন্য ছাত্ররা &#x27;পিতামহ&#x27; শুনে থতমত খায়; যাওয়ার সময় ইন্সপেক্টর লববাবুকে বলেন—<em>&quot;এই বীরেন ছেলেটির ভেতর অসাধারণ প্রতিভা আছে, একদিন দেশে নাম রাখবে!&quot;</em> লববাবু গর্বে বীরুর মাথায় হাত বুলিয়ে দেন।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-7">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-7" class="director-note" data-ep="7" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-08" data-ep="8" data-era="ujanchar">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-ujanchar">উজানচর ও পাঠশালা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="8">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৮: আনন্দ মাস্টার ও অন্তর্যামী মাতৃপ্রীতি</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১৪ ও ১৫</span><span class="meta-pill"><strong>স্থান:</strong> উজানচর বাড়ি</span><span class="meta-pill"><strong>বয়স:</strong> ৭ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>এটি একটি গভীর <strong>আবেগ ও মমতার পর্ব</strong>—বাইরে থেকে সবাই ওকে &#x27;জড়বুদ্ধি&#x27; ভাবছে, অথচ ভেতরে সে কত গভীর ও অন্তর্যামী! কথকের বর্ণনা কমিয়ে আনন্দ মাস্টারের বিব্রত মুখ, মায়ের দীর্ঘ অপেক্ষা, সপেটা ও ধুতুরা ফুলের দুটি মনছোঁয়া ঘটনা দেখাতে হবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — আনন্দ মাস্টারের নাজেহাল দশা (মৃদু হাস্যরস ও রহস্য):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বারান্দায় স্লেট-খড়ি নিয়ে আনন্দ মাস্টার পড়াচ্ছেন। হঠাৎ খেয়াল করেন বীরু আকাশের দিকে তাকিয়ে স্থির—একবার, দুবার, দশবার ডাকেন, কোনো সাড়া নেই! আরেকদিন লিখতে লিখতে চোখ বুজে বসে আছে, কপালে বিন্দু বিন্দু ঘাম।</li>
+<li class="beat-dialogue"><strong>সংলাপ (স্বগত/ভয়):</strong> আনন্দ মাস্টার ধাক্কা দিতে গিয়েও হাত থামিয়ে নেন—<em>&quot;এ ছেলে কী ভাবছে কে জানে! কর্তাদের বললে যদি টিউশনিটাই চলে যায়!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — দুপুরের অসহায় অপেক্ষা ও &#x27;সপেটা&#x27;:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> দুপুর গড়িয়ে বিকেল হচ্ছে। ভাত বেড়ে বসে আছেন মা চারুশীলা। বাবা খেয়ে ঘুমিয়ে পড়েছেন। মায়ের চোখে জল—স্বামীকে ডাকতে যাবেন, ঠিক তখনই ধুলোমাখা পায়ে হাঁপাতে হাঁপাতে বীরুর প্রবেশ!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বীরু (হাত বাড়িয়ে): <em>&quot;মা, তোমার জন্য সপেটা এনেছি—এই নাও!&quot;</em> | মা (বুকে জড়িয়ে কেঁদে): <em>&quot;কোথায় ছিলি তুই এতক্ষণ? না খেয়ে থাকলি কেন রে?&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বীরু কোনো উত্তর না দিয়ে মায়ের বুকে মুখ গুঁজে চুপ করে থাকে। (অদ্ভুত নিঃশব্দ ভালোবাসা।)</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — মায়ের মনের গোপন দুঃখ:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ঠাকুরঘরে নিত্য শিবপূজায় বসেছেন চারুশীলা। থালায় জবা-বেলপাতা আছে, ধুতুরা ফুল নেই।</li>
+<li class="beat-dialogue"><strong>সংলাপ (মায়ের মনে মনে):</strong> <em>&quot;আহা, মহাদেব ধুতুরা ফুল কত ভালোবাসেন—একদিনও ওঁকে প্রিয় ফুলটা দিতে পারলাম না!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — &#x27;বাবার তামাকের কল্কে!&#x27; (আবেগঘন সমাপ্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> হঠাৎ দরজায় হাসিমুখে বীরু—হাতে একগুচ্ছ টাটকা সাদা ধুতুরা ফুল!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বীরু: <em>&quot;মাগো, দেখেছ কেমন কল্কে এনেছি! বাবার তো রোজ তামাকের কল্কে ভেঙে যায়—আজ থেকে আর পয়সা দিয়ে কিনতে হবে না, আমি রোজ এনে দেব!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> আশেপাশের লোকেরা হেসে ওঠে। মা ছেলের &#x27;বোকামিতে&#x27; একটু ব্যথিত হন, আবার শিবঠাকুর ধুতুরা পাঠিয়েছেন ভেবে কৃতজ্ঞতায় চোখের জল ফেলেন—আর অন্তর্যামী বালক মৃদু হেসে সরে যায়।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-8">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-8" class="director-note" data-ep="8" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-09" data-ep="9" data-era="ujanchar">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-ujanchar">উজানচর ও পাঠশালা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="9">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ৯: গয়ালী মান্দ্রার হাটে অলৌকিক ঘটনা</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১৬</span><span class="meta-pill"><strong>স্থান:</strong> গয়ালী মান্দ্রার হাট (বিক্রমপুর)</span><span class="meta-pill"><strong>বয়স:</strong> ৬–৭ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>বর্তমান স্ক্রিপ্টে পুরো পর্বটাই <strong>মাত্র ১টি কথকের ব্লক</strong>! কোনো সংলাপ নেই! অথচ মূল অধ্যায়ে রয়েছে <strong>কমলা মাসির সংলাপ, রোদে বসে থাকা বীরু ও অজিতের খুনসুটি, নৌকা ভেসে যাওয়ার উত্তেজনা, উল্টো বাতাসের অলৌকিক দৃশ্য, আর পরদিন &#x27;নৌকায় জিন আছে&#x27; বলে মজার গুজব!</strong></p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — রঙিন মান্দ্রার হাট ও যাত্রার প্রস্তুতি:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মঙ্গলবারের বিশাল হাট—লাল-নীল-হলুদ সুতো, মাটির কলসী, হাজার হাজার নারকেল-কুমড়ো, খাল জুড়ে সারি সারি নৌকা!</li>
+<li class="beat-dialogue"><strong>সংলাপ (বাড়িতে):</strong> মাতামহ অম্বিকানাথ: <em>&quot;নৌকা পাহারা দেবে কে?&quot;</em> | কমলা মাসি: <em>&quot;কেন, বীরু আর অজিত বসে থাকবে!&quot;</em> | অম্বিকানাথ: <em>&quot;ওরা সাঁতার জানে তো?&quot;</em> | কমলা: <em>&quot;ছয় বছর বয়স হয়েছে, সাঁতার জানবে না—আপনি বলেন কী বাবা!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — রোদের মধ্যে নৌকায় অপেক্ষা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> খালের উত্তর-পশ্চিম কোণে বাঁধা নৌকা। ভৃত্য আদিত্য একটু পরপর সওদা রেখে যাচ্ছে। রোদে লাল হয়ে অজিত ছটফট করছে, আর বীরু শান্ত হয়ে জলের দিকে তাকিয়ে। হঠাৎ জলের ঢেউয়ে বা কারও অসাবধানতায় নৌকার দড়ি খুলে যায়!</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — &#x27;ভেসে গেল, ভেসে গেল!&#x27; (উত্তেজনা ও অলৌকিক মোড়):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>অজিত (আতঙ্কে চিৎকার, চোখ ছলছল): <em>&quot;ভেসে গেল, ভেসে গেল! বীরুভাই, তুই দেখছিস না? নৌকা তো হলদের দিকে চলে যাচ্ছে—তুই-আমি তো বৈঠাও নাড়তে পারব না!&quot;</em></li>
+<li>বীরু (চমকে তাকিয়ে, তারপর সম্পূর্ণ শান্ত হাসি): <em>&quot;আরে এত ভয় পাচ্ছিস কেন? দেখ না—এক্ষুনি উল্টো দিকে এমন বাতাস ছাড়বে যে নৌকা একটানে ঘাটে নিয়ে যাবে!&quot;</em></li>
+</ul>
+<li class="beat-visual"><strong>ভিজ্যুয়াল (সিগনেচার মোমেন্ট):</strong> বীরুর কথা শেষ হতেই পালের কাপড় ও জলের ঢেউ উল্টো দিকে ঘুরে যায়! সোঁ-সোঁ শব্দে হাওয়া বয়ে নৌকাকে ঠিক আগের ঘাটে ফিরিয়ে আনে। অজিত তাড়াতাড়ি শক্ত করে দড়ি বেঁধে ফেলে।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — পরদিনের মজার গুজব (হাসির সমাপ্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পরদিন ঘাটে ঠাকুরবাড়ির নৌকা একা ভাসছে—আশেপাশের সব নৌকা ভয়ে দূরে সরে গেছে!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> ভৃত্য আদিত্য হাঁপাতে হাঁপাতে খবর আনে: <em>&quot;কর্তা, বাজারে রটে গেছে—ঠাকুরবাড়ির নৌকায় নাকি জিন আছে! কাল হাটে কে কী দেখেছে, তাই কেউ পাশে নৌকা বাঁধছে না!&quot;</em> <em>(দূরে বসে বীরুর নিরীহ মিষ্টি হাসি।)</em></li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-9">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-9" class="director-note" data-ep="9" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-10" data-ep="10" data-era="diksha">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-diksha">দিব্য প্রকাশ ও দীক্ষা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="10">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১০: আট বছর বয়সে ময়নামতীর ফকিরকে দীক্ষা</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১৭</span><span class="meta-pill"><strong>স্থান:</strong> ময়নামতী পাহাড় → তিতাস তীরে উজানচর</span><span class="meta-pill"><strong>বয়স:</strong> ৮ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>এটিই সেই সন্ধিক্ষণ যেখানে বালক ঠাকুরের <strong>আসল রূপের পর্দা প্রথম সরে যায়</strong>! বর্তমান স্ক্রিপ্টে ফকিরের কোনো সংলাপই নেই। ফকিরের দীর্ঘ জীবনের হতাশা, সন্ধ্যার অশ্রু, স্বপ্নের দৈববাণী এবং দীর্ঘ পথ পেরিয়ে ৮ বছরের বালকের সামনে এসে ভেঙে পড়া—সবটা সিনেমাটিক ভিজ্যুয়াল ও হৃদয়ছোঁয়া সংলাপে সাজাতে হবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — ময়নামতী পাহাড়ের সন্ধ্যা (ফকিরের হতাশা):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ত্রিপুরার সবুজ ময়নামতী পাহাড়ের পাদদেশে সূর্যাস্ত। বৃদ্ধ, সৌম্য ফকির—হিন্দু-মুসলমান সবাই যাঁকে শ্রদ্ধা করে—একা বসে। চোখে অজস্র জল।</li>
+<li class="beat-dialogue"><strong>সংলাপ (ফকিরের স্বগত প্রার্থনা):</strong> <em>&quot;জীবনসন্ধ্যা ঘনিয়ে এল মালিক… যৌবনে সব ছেড়ে তোমার খোঁজে বেরোলাম, তবু কেন তোমায় ধরতে পারছি না?&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — তন্দ্রায় দৈববাণী:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কাঁদতে কাঁদতে ফকিরের চোখ বুজে আসে। অন্ধকার কেটে এক স্নিগ্ধ আলোর আভা ও গম্ভীর মধুময় কণ্ঠ।</li>
+<li class="beat-dialogue"><strong>দৈববাণী:</strong> <em>&quot;কেন তুই কাঁদছিস? তিতাস নদীর তীরে উজানচর কৃষ্ণনগরে চলে যা—রূপবাবুর কাছারিতে সুরেন্দ্রচন্দ্র চক্রবর্তীর আট বছরের ছেলে তোর প্রার্থনা পূর্ণ করবে!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> চমকে জেগে ওঠা ফকির—মনে হচ্ছে যেন জেগেই শুনেছেন! লাঠি হাতে সেই রাতেই/ভোরেই পথচলা শুরু।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — পথচলা ও প্রথম দেখা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল (ছোট্ট যাত্রা মন্টাজ):</strong> পাহাড় থেকে নদী পার, তিতাসের তীর ধরে কৃষ্ণনগর কাছারি খোঁজা। একজন গ্রামবাসীকে জিজ্ঞেস করা। অবশেষে গাছতলায় শান্ত বসে থাকা ৮ বছরের বালকের সামনে এসে থমকে দাঁড়ানো।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বালক ঠাকুর (চোখ তুলে সহজ হাসি): <em>&quot;তুমি এসেছ? যাও, স্নান করে এসো। তোমার জন্যই তো বসে আছি—তুমি না এলে তো আমি আরম্ভ করতে পারছি না!&quot;</em></li>
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ফকির বিস্ময়ে হতবাক—যন্ত্রচালিতের মতো স্নান করতে চলে যান।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — দীক্ষা ও আনন্দাশ্রু (আবেগঘন সমাপ্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> নিভৃত কুটিরের সামনে দীক্ষা। ৮ বছরের বালকের ছোট্ট হাত বৃদ্ধ ফকিরের মাথায়। নরম সোনালি আভা ও বাঁশির সুর।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বালক ঠাকুর: <em>&quot;তোমার কান্না তোমার ঠাকুর শুনতে পেয়েছিলেন—তাই স্বপ্নের ভেতর দিয়ে ডেকে এনে তোমার বহু জন্মের সাধনার ধন দিয়ে দিলেন।&quot;</em></li>
+<li class="beat-ending"><strong>সমাপ্তি:</strong> ফকির শিশুর মতো বালকের পা ধরে আনন্দে কাঁদছেন। শেষ শটে—দিনের বেলা বনের ধারে ফকিরের ধ্যান, আর গভীর রাতে বালকের কুঁড়েঘরের পাশে তাঁর নীরব উপস্থিতি।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-10">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-10" class="director-note" data-ep="10" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-11" data-ep="11" data-era="diksha">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-diksha">দিব্য প্রকাশ ও দীক্ষা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="11">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১১: ময়ূরপঙ্খী নৌকার স্বপ্ন ও গৃহস্থ বধূ</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১৮</span><span class="meta-pill"><strong>স্থান:</strong> কুমিল্লার একটি গ্রাম → আত্মীয়ের গ্রাম</span><span class="meta-pill"><strong>বয়স:</strong> ৮–৯ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>বর্তমানে মাত্র ৪টি ব্লক—কোনো কথোপকথন নেই। এটি একটি <strong>স্বপ্নময়, কাব্যিক ও মৃদু হাস্যরসাত্মক</strong> পর্ব—বধূর মনের দ্বিধা (<em>&quot;ছেলেটা তো আমার ছেলের চেয়েও ছোট!&quot;</em>) এবং বালকের মুখের সেই এক লাইনেই পুরো রহস্য ভেদ হওয়ার চমককে ঘিরে গল্পটি সাজাতে হবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — জ্যোৎস্নারাতে ময়ূরপঙ্খী নৌকার স্বপ্ন (সিগনেচার ভিজ্যুয়াল):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কুমিল্লার শান্ত গ্রামে ঘুমন্ত গৃহবধূ। স্বপ্নের জগত—চাঁদের আলোয় চিকচিক করা মাঝারি নদী, ধীরে ভেসে আসছে এক অপূর্ব ময়ূরপঙ্খী নৌকা। নৌকার ছাদে দাঁড়িয়ে জ্যোতির্ময় বালক, তাঁর মাথার ওপর আকাশে আলোর অক্ষরে ভেসে ওঠে: <em>&quot;তোর ঠাকুর, তোর গুরুদেব, তোর ভগবান!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — ভোরের খটকা ও দ্বিধা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ভোরবেলা ঘুম ভেঙে বধূ উঠোনে কাজ করছেন, কিন্তু চোখ-মুখে অদ্ভুত ভাবনা। নিজের ছোট ছেলেকে দেখে হঠাৎ থমকে দাঁড়ান।</li>
+<li class="beat-dialogue"><strong>সংলাপ (স্বগত চিন্তা):</strong> <em>&quot;স্বপ্নটা এখনও চোখের সামনে ভাসছে… কিন্তু এতটুকু ছেলে—আমার ছেলের চেয়েও ছোট! ও কী করে গুরুদেব হবে? এ নিশ্চয়ই মনের ভুল!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — আত্মীয়বাড়িতে অদ্ভুত খবর:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কিছুদিন পর আত্মীয়ের বাড়িতে বেড়াতে এসেছেন। গ্রামের মেয়েরা কুয়োতলায় বা বারান্দায় গল্প করছে।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> গ্রাম্য বধূ: <em>&quot;শোনোনি? আমাদের গাঁয়ে নাকি এক বালক-ঠাকুর এসেছেন—দেখলে চোখ ফেরানো যায় না!&quot;</em> | বধূ (চমকে, মাকে হাত ধরে): <em>&quot;মা, চলো তো—আজই একবার দেখে আসি!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — মনের কথা পড়ে ফেলা ও দীক্ষা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মায়ের সাথে গিয়ে বধূ প্রণাম করে মুখ তোলেন—চমকে ওঠেন! সেই স্বপ্নের ময়ূরপঙ্খী নৌকার বালকই সামনে বসে মুচকি হাসছেন!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বালক ঠাকুর (রসিক ও স্নিগ্ধ হাসি): <em>&quot;সন্দেহ—অবিশ্বাস—এত অল্প বয়স—মহামুশকিল! কিন্তু স্বয়ং কর্তাই তোমার মুশকিল আসান করে দেবেন—কাল সকালে স্নান করে ফুল নিয়ে এসো!&quot;</em></li>
+<li class="beat-ending"><strong>সমাপ্তি:</strong> বধূর চোখ জলে ভরে ওঠে, সন্দেহের মেঘ কেটে যায়; পরদিন ভোরের আলোয় শান্ত দীক্ষার দৃশ্য।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-11">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-11" class="director-note" data-ep="11" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-12" data-ep="12" data-era="diksha">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-diksha">দিব্য প্রকাশ ও দীক্ষা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="12">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১২: সারা ভারত খোঁজা সাধক ও মাতঙ্গিনীর একই মন্ত্র</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ১৯ ও ২০</span><span class="meta-pill"><strong>স্থান:</strong> হিমালয়-ভারতভ্রমণ → উজানচর বাগান; বিক্রমপুর পালপাড়া</span><span class="meta-pill"><strong>বয়স:</strong> প্রায় ৯ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>অধ্যায় ১৯-এ <strong>চিনিভাইয়ের বন্ধুত্বপূর্ণ তর্ক</strong> আর বাগানের ছোট্ট ঘরে <strong>&#x27;ফুল দেওয়া → কান ধরে টান দেওয়া → কানে মূলমন্ত্র দেওয়া&#x27;</strong>—এই তিনটি ধাপ অসাধারণ নাটকীয়! আর অধ্যায় ২০-এ <strong>মাতঙ্গিনীর বৃন্দাবন রাধামাধবের আরতি-স্বপ্ন</strong>। দুটো গল্পকে পাশাপাশি সাজালে এটি এক অপূর্ব আধ্যাত্মিক রোমাঞ্চকর পর্ব হবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — হিমালয়ের ঝর্ণা, শিবের মন্ত্র ও ভারতভ্রমণ (ভিজ্যুয়াল মন্টাজ):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পাহাড়ি ঝর্ণার পাশে ধ্যানমগ্ন সাধক। স্বপ্নে দেবাদিদেব মহাদেব মন্ত্র দিয়ে বললেন: <em>&quot;নবরূপে আবার এই দীক্ষাই দেব—আসমুদ্র হিমাচল ভারত খুঁজে বের করবি!&quot;</em> দ্রুত মন্টাজে মানস সরোবর, সোমনাথ, কামরূপ, কন্যাকুমারী ঘুরে ক্লান্ত-হতাশ সাধকের ঘরে ফেরা।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — সন্ধ্যাবেলা চিনিভাইয়ের সাথে আলাপ:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>হতাশ ভদ্রলোক: <em>&quot;সারা ভারত পাতিপাতি করে খুঁজেও পেলাম না চিনিভাই! পেয়েও হারালাম!&quot;</em></li>
+<li>চিনিভাই (আন্তরিক অনুরোধ): <em>&quot;ভাই, তুমি আমার চেয়ে অনেক জ্ঞানী—তবু একবার আমার কথা রাখো। বয়স ন&#x27;বছরও হয়নি, কিন্তু ওঁর কাছে একবার চলো!&quot;</em></li>
+<li>ভদ্রলোক (মৃদু হাসি ও অবিশ্বাস): <em>&quot;সারা ভারত ঘুরে শেষে ঘরের পাশে? বেশ, তোমার অনুরোধ রাখলাম—চলো!&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — ভোরের বাগান ও &#x27;কান ধরা&#x27;র অদ্ভুত খেলা (মূল ক্লাইম্যাক্স):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ভোরের আলোয় বাগানে ফুলগাছে জল দিচ্ছেন বালক ঠাকুর। ভিড়ের মাঝেও ভদ্রলোককে দেখে ডাকেন—<em>&quot;আসতে ইচ্ছে হয়েছে? যাও, ওই ছোট্ট ঘরে বসো।&quot;</em></li>
+<li class="beat-dialogue"><strong>সংলাপ ও অভিনয় (তিনটি মজার ও গভীর ধাপ):</strong></li>
+<ul class="dialogue-list">
+<li>ধাপ ১: ঠাকুর এক মুঠো ফুল হাতে দিয়ে বললেন: <em>&quot;তোমাকে যখন ডেকে এনেছি, খালি হাতে ফেরাব না—এবার এসো!&quot;</em> (ভদ্রলোক চুপচাপ বসে রইলেন।)</li>
+<li>ধাপ ২: ঠাকুর হেসে এগিয়ে এসে তাঁর <strong>কান ধরে আলতো টান দিলেন</strong>: <em>&quot;ওঃ, এতে খুশি নও—কর্ণ ধারণ করলে খুশি হবে? এবার যাও!&quot;</em> (ভদ্রলোক স্তব্ধ, পাথরের মতো তাকিয়ে।)</li>
+<li>ধাপ ৩: ঠাকুর মৃদু হেসে তাঁর কানে ফিসফিস করে সেই <strong>স্বপ্নে পাওয়া মূলমন্ত্র</strong> বলে দিলেন—<em>&quot;তবে কর্ণের আধার চাও? এই নাও!&quot;</em> মুহূর্তে ভদ্রলোকের চোখমুখ উজ্জ্বল হয়ে ওঠে, আনন্দে অশ্রু ঝরে পড়ে! <em>(মূল বইয়ের দীর্ঘ তত্ত্বকথা ছোটদের উপযোগী করে ২–৩টি সহজ গভীর লাইনে রাখা হবে।)</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — পালপাড়ার মাতঙ্গিনীর বৃন্দাবন-স্বপ্ন ও একই মন্ত্র:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কৃষ্ণপক্ষের অন্ধকার রাত, শেয়াল-কুকুরের ডাক। হঠাৎ চমকে জেগে বসেন প্রৌঢ়া মাতঙ্গিনী—চোখে ভাসে বৃন্দাবনের রাধামাধব মন্দিরের সন্ধ্যা-আরতি আর হাসিমুখ ঠাকুরের বাণী: <em>&quot;নবরূপে এসেছি বাংলায়!&quot;</em></li>
+<li class="beat-dialogue"><strong>সংলাপ (আত্মীয়ের গ্রামে দেখা):</strong> প্রণাম করে উঠতেই বালক ঠাকুরের হাসিমুখ অনুযোগ: <em>&quot;এত দেরি করলে কেন? একবার খোঁজও তো করোনি—শেষ পর্যন্ত আমাকেই টেনে আনতে হলো! যাও, স্নান করে ফুল নিয়ে এসো—সেই বৃন্দাবন মন্দিরের মন্ত্রই তোমায় দেব!&quot;</em></li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-12">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-12" class="director-note" data-ep="12" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-13" data-ep="13" data-era="diksha">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-diksha">দিব্য প্রকাশ ও দীক্ষা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="13">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৩: ষোড়শীর স্বপ্নদর্শন ও আরোগ্যলাভ</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২১</span><span class="meta-pill"><strong>স্থান:</strong> মুন্সীগঞ্জ গৃহস্থবাড়ি ও দিব্য পুষ্পকানন</span><span class="meta-pill"><strong>বয়স:</strong> বালক ঠাকুর (স্বপ্নরূপে)</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>এই পর্বে <strong>সবচেয়ে সুন্দর ভিজ্যুয়াল কল্পনা</strong> (স্বপ্নপুরী, শূন্যে ভাসমান পুষ্পাসন, সহস্র সূর্যের আলো থেকে স্নিগ্ধ চাঁদের আলোয় রূপান্তর) এবং শেষে <strong>হেম কবিরাজের অসাধারণ কমিক রিলিফ</strong> আছে—যা বর্তমান স্ক্রিপ্টে বাদ পড়েছে!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — মৃত্যুশয্যায় সাধিকা ষোড়শী:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> মুন্সীগঞ্জের শান্ত ঘরের তক্তপোষে অচেতন, ক্ষীণকায়া সাধিকা ষোড়শী। চারপাশে আত্মীয়দের কান্না ও নিস্তব্ধ উৎকণ্ঠা। ঘরের বাইরে হেম কবিরাজ উদ্বিগ্ন মুখে ওষুধ গোছাচ্ছেন।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — স্বপ্নের পথে ও অপূর্ব পুষ্পকানন (সিনেমাটিক ফ্যান্টাসি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> অচেতন ষোড়শীর দৃষ্টি থেকে দৃশ্য বদলে যায়—এক জ্যোতির্ময় পুরুষ তাঁর হাত ধরে নিয়ে যাচ্ছেন কোমল ফুলের পথে। অপূর্ব নদী, পাহাড়, রঙিন পুষ্পকানন—মনে হচ্ছে শরীর পালকের মতো হালকা!</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — শূন্যে ভাসমান পুষ্পাসন ও দিব্য বাণী (আবেগের চূড়া):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বিশাল আলোকিত হলঘরের মাঝখানে শূন্যে কোনো অবলম্বন ছাড়াই ভাসছে এক পুষ্পাসন! প্রখর জ্যোতিতে ষোড়শী চোখ বুজে ফেলেন।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>গম্ভীর মধুময় কণ্ঠ: <em>&quot;এদিকে তাকাও।&quot;</em></li>
+<li>ষোড়শী (চোখ মেলে, তীব্র আলো বদলে যায় স্নিগ্ধ চাঁদের আলোয়): <em>&quot;আঃ—কী সুন্দর!&quot;</em></li>
+<li>দিব্য কণ্ঠ: <em>&quot;না, তুমি ফিরে যাও—সেখানে গিয়ে অপেক্ষা করো। আমি শীঘ্রই আসছি। তোমাকে দিয়ে সেখানে আমার কাজ আছে। আমিই তোমায় ডেকে নেব—নিশ্চিন্ত থেকো।&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — &#x27;জ্ঞান ফিরেছে!&#x27; ও হেম কবিরাজের বাহাদুরি (হৃদয়ছোঁয়া + হাস্যরস):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বাস্তব ঘরে ষোড়শী ঠোঁটে <em>&quot;আহা, কী সুন্দর! আহা, কী সুন্দর!&quot;</em> বলতে বলতে চোখ মেলেন! ঘরে আনন্দের হুল্লোড়—<em>&quot;জ্ঞান ফিরেছে, জ্ঞান ফিরেছে!&quot;</em></li>
+<li class="beat-dialogue"><strong>সংলাপ (মজার সমাপ্তি):</strong> হেম কবিরাজ ছুটে এসে এক ফোঁটা সিদ্ধ মকরধ্বজ খাইয়ে গোঁফে তা দিয়ে হেসে ওঠেন: <em>&quot;হেঁ হেঁ হেঁ—হবে না কেন! এ কি চাট্টিখানি কথা—হেম কবিরাজের সিদ্ধ মকরধ্বজ! খেলে মরা মানুষও বেঁচে ওঠে!&quot;</em> <em>(ষোড়শী কেবল শান্ত, রহস্যময় হাসি হাসেন।)</em></li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-13">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-13" class="director-note" data-ep="13" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-14" data-ep="14" data-era="diksha">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-diksha">দিব্য প্রকাশ ও দীক্ষা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="14">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৪: বরদা চক্রবর্তীর জলের ওপর হাঁটার দর্শন</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২২</span><span class="meta-pill"><strong>স্থান:</strong> রূপবাবুর কাছারি বনাম মাধবীলতা-ঘেরা চৌচালা ঘর ও তিতাস নদী</span><span class="meta-pill"><strong>বয়স:</strong> ১০ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>অধ্যায় ২২-এ দুর্দান্ত <strong>ভিজ্যুয়াল কনট্রাস্ট</strong> (একদিকে দাম্ভিক জমিদারের কাছারি ও প্রজাদের কান্না, রাস্তার ওপারে দরিদ্র ভক্তদের হাতে গড়া মাধবীলতা-ঘেরা শান্ত চৌচালা ঘর) এবং বরদা চক্রবর্তীর <strong>ভৌতিক-কমিক-আধ্যাত্মিক অভিজ্ঞতা</strong> (ভূত ভেবে &#x27;রাম রাম&#x27; থেকে ব্রহ্মদৈত্য ভেবে &#x27;রামনারায়ণ&#x27; চিৎকার!)—যা দর্শকদের দারুণভাবে টানবে।</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — রাস্তার দুই পার: কাছারি বনাম মাধবীলতার কুটির:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> প্যান শট—বামদিকে রূপবাবুর বিশাল কাছারি, নায়েবের চিৎকার, টাকা গোনার শব্দ, দরিদ্র প্রজার কান্না। রাস্তা পেরিয়ে ডানদিকে বাঁশের খুঁটি আর মাধবীলতায় ছাওয়া ছোট্ট পরিষ্কার টিনের চৌচালা; ধূপের গন্ধে ১০ বছরের বালক শান্ত কণ্ঠে মানুষকে শেখাচ্ছেন—<em>&quot;তুমি তোমাকেই জানো… বালুকণাতেও যা আছে, সূর্যেও তা আছে!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — কাছারির বাবুদের কৌতূহল ও অহংকার:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কাছারির বারান্দায় নায়েব ও কর্মচারীদের জটলা।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> নায়েব: <em>&quot;কী আশ্চর্য! দেড় বছর ধরে সাধু-ফকির সব লাইন দিচ্ছে সুরেনবাবুর দশ বছরের ছেলের ঘরে! চলো তো, একদিন দেখে আসি বীরু কী বলে!&quot;</em> | বরদা চক্রবর্তী (একটু থেমে): <em>&quot;নায়েব মশায়, যাওয়ার আগে আমার একটা কথা শুনুন—আমি গোপনে প্রায় এক বছর ধরে ওর কাছে যাই!&quot;</em> <em>(সবাই চমকে তাকায়!)</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — ভোরের নদীতে ভূতের ভয় (বরদার ফ্ল্যাশব্যাক — হাস্যরস ও রোমাঞ্চ):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কুয়াশাচ্ছন্ন ভোরের নদী। বরদা ঘাটে দাঁড়িয়ে হঠাৎ দেখেন জলের ওপর দিয়ে <em>ছপ-ছপ</em> শব্দ করে কেউ হেঁটে আসছে! দাঁতকপাটি লাগার জোগাড়!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বরদা (কাঁপতে কাঁপতে চিৎকার): <em>&quot;রাম! রাম! রাম!&quot;</em></li>
+<li>বীরু (জলের ওপর দাঁড়িয়ে শান্ত হাসি): <em>&quot;কী হয়েছে চক্রবর্তী মশায়, সকালবেলা রাম-রাম বলে চেঁচাচ্ছেন কেন?&quot;</em></li>
+<li>বরদা (মনে মনে আরও ভয়ে): <em>&quot;ওরে বাবা! বীরুর তো অপঘাত মৃত্যু হয়েছে—ওর প্রেতাত্মা জলে হাঁটছে!&quot;</em> → আবার চিৎকার: <em>&quot;রাম! রাম!&quot;</em></li>
+<li>বীরু: <em>&quot;আপনি ভুল ভাবছেন মশায়, আমার অপঘাত মৃত্যু হয়নি, আমি ভূতও হইনি—আমি সেই বীরুই আছি!&quot;</em></li>
+<li>বরদা (ভয়ে কাঁপতে কাঁপতে): <em>&quot;মনের কথা জেনে ফেলেছে—নিশ্চয়ই ব্রহ্মদৈত্য! রামনারায়ণ! রামনারায়ণ!&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — হাতের স্পর্শে বিশ্বদর্শন (অলৌকিক সমাপ্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> বীরু এগিয়ে এসে ঝপ করে বরদার হাত ধরেন। মুহূর্তে ভয় উধাও—ক্যামেরা বরদার চোখে দেখে আকাশ, নদী, বাতাস, বালুকণা সব যেন এক আলোর তরঙ্গে মিলে গেছে!</li>
+<li class="beat-dialogue"><strong>সংলাপ (বর্তমানে ফিরে):</strong> বরদা (অশ্রুসজল চোখে): <em>&quot;সেই স্পর্শে মনে হলো—আকাশে আমি, জলে আমি, বালুকণাতে আমি! তারপর থেকেই আমি ওর পদতলে নিজেকে সঁপে দিয়েছি। এবার আপনারা বিজ্ঞ লোক, গিয়ে দেখুন!&quot;</em> <em>(নায়েব ও বাবুরা স্তব্ধ!)</em></li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-14">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-14" class="director-note" data-ep="14" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-15" data-ep="15" data-era="diksha">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-diksha">দিব্য প্রকাশ ও দীক্ষা</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="15">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৫: নাসিরুদ্দিন হাজীর অগ্নিগোলক ও পশুপাখির কান্না</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২৩</span><span class="meta-pill"><strong>স্থান:</strong> তিতাস নদী ও বালক ঠাকুরের চৌচালা ঘর</span><span class="meta-pill"><strong>বয়স:</strong> ১০–১১ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>বর্তমান স্ক্রিপ্টে মাত্র ৪টি ব্লক—অথচ অধ্যায় ২৩ হলো পুরো বইয়ের <strong>সবচেয়ে সিনেমাটিক, রোমাঞ্চকর ও অসাম্প্রদায়িক গল্প</strong>! হাজীর দু&#x27;টাকা হারানোর রাত, ভোররাতে আগুনের বল, জেলে হাইরার নৌকা থেকে জীবন্ত মাছ ছাড়া, আর গভীর রাতে ভেজানো দরজার ফাঁকে শেয়াল ও ফণা-তোলা কেউটে সাপের চোখে জল—একেকটা দৃশ্য যেন বিশ্বমানের অ্যানিমেশন!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — ধার্মিক কিন্তু হিসাবি নাসিরুদ্দিন হাজী:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> তসবিহ হাতে <em>&quot;খোদার ইচ্ছা&quot;</em> বলা হাজী সাহেব। সন্ধ্যায় নৌকা থেকে নামতে গিয়ে কোমরের টেঁক থেকে দুটো টাকা ঝুপ করে নদীতে পড়ে যায়! সেই চিন্তায় সারারাত ঘুম নেই—ঘড়ির আন্দাজ ভুলে ভোর হওয়ার আগেই নদীর ধারে চলে আসেন।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — আকাশের আগুনের বল ও জলের ওপর বীরু (থ্রিল ও বিস্ময়):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> অন্ধকার ভোর। কাছারির দিক থেকে এক বিরাট জ্বলন্ত আগুনের বল ভেসে আসছে নদীর দিকে! হাজী <em>&quot;আ-ল্-লা!&quot;</em> বলে মাটিতে পড়ে যান। আগুনের বল আকাশে উঠে অদৃশ্য হয়। একটু পর হাজী স্নানে নামতেই সেই অগ্নিগোলক নেমে এসে রূপ নেয় <strong>নদীর জলের ওপর দাঁড়ানো বালক বীরুতে</strong>!</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — জেলে হাইরার নৌকা ও জীবন্ত মাছের মুক্তি:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> হাজী গলাজলে ডুব দিয়ে লুকিয়ে দেখছেন। বীরু জলের ওপর দিয়ে হাঁটতে হাঁটতে জেলে নৌকার কাছে যান।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বীরু: <em>&quot;এই হাইরা, কী ধরেছিস দেখি? জ্যান্ত কিছু আছে নাকি?&quot;</em></li>
+<li>জেলে হাইরা (মাথা চুলকে): <em>&quot;না গোঁসাই, একটাও ওঠেনি… আচ্ছা এই নিন!&quot;</em> —নৌকার জ্যান্ত মাছগুলো নদীতে ছেড়ে দেয়।</li>
+<li>হাজী (পাশের জেলে কালাচাঁদকে ডেকে): <em>&quot;ও কালাচাঁদ, এ কী ব্যাপার?&quot;</em> | কালাচাঁদ: <em>&quot;গোঁসাই রোজ শেষরাতে জ্যান্ত মাছ ছেড়ে দেন হাজী সাহেব, পরে দাম মিটিয়ে দেন!&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — রাত আড়াইটে: ভেজানো দরজার ফাঁকে অবিশ্বাস্য দৃশ্য (শ্রেষ্ঠ ভিজ্যুয়াল ক্লাইম্যাক্স):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পরদিন রাত আড়াইটে। হাজীর ঘুম নেই—মাথা ঠান্ডা করতে বাইরে বেরিয়ে দেখেন চৌচালা ঘরে আলো জ্বলছে! ধূপ-গুগ্গুলের গন্ধে টেনে নিয়ে যায় তাঁকে। ভেজানো দরজার ফাঁক দিয়ে উঁকি দিয়েই হাজী পাথর হয়ে যান—</li>
+<li><strong>দৃশ্য:</strong> হরিণের ছালের ওপর পেছন ফিরে বসে গোঁসাই, সামনে তিনটি ধুনুচি জ্বলছে। আর তাঁর সামনে স্থির হয়ে বসে আছে <strong>দু-তিনটি শেয়াল</strong> ও ফণা বিস্তার করে <strong>একটি বিশাল কালো কেউটে সাপ</strong>! গোঁসাই মৃদু স্বরে ওদের কিছু বলছেন—আর ক্লোজ-আপে দেখা যায় <strong>শেয়াল ও সাপের চোখ বেয়ে টপটপ করে জল গড়িয়ে পড়ছে!</strong></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 5</span><span class="scene-title">দৃশ্য ৫ — হাজীর আত্মসমর্পণ:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> হাজীর চোখ দিয়েও জল ঝরছে। হঠাৎ ঘরের ভেতর থেকে শান্ত কণ্ঠ—</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বালক ঠাকুর: <em>&quot;একি হাজী সাহেব, এত ভোরে আমার দরজায় দাঁড়িয়ে চোখের জল ফেলছেন কেন—কী হয়েছে আপনার?&quot;</em></li>
+<li class="beat-ending"><strong>সমাপ্তি:</strong> সমস্ত দ্বন্দ্ব ভেঙে হাজী বালকের পায়ে লুটিয়ে পড়েন।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-15">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-15" class="director-note" data-ep="15" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-16" data-ep="16" data-era="finale">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-finale">উৎসব, বিভূতি ও সমাপ্তি</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="16">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৬: মাতুলালয়ে শারদীয়া দুর্গাপূজা ও গোমূত্র সংগ্রহ</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২৪</span><span class="meta-pill"><strong>স্থান:</strong> বিক্রমপুরের মামাবাড়ি</span><span class="meta-pill"><strong>বয়স:</strong> ৮–৯ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>বর্তমানে মাত্র ৩টি ব্লক (একটাই কথকের অনুচ্ছেদ)! অথচ মূল অধ্যায় ২৪-এ <strong>বিক্রমপুরের শারদীয়া দুর্গাপূজার প্রাণবন্ত পারিবারিক উৎসব, রঙিন মামা-মামাতো ভাইদের চরিত্র (সুধাংশু, হেরম্বনাথ, শশীভূষণ), গোয়ালঘরে মশার কামড়ের হাস্যকর যন্ত্রণা, আর বিজয়ার রাতে রাঙ্গাদাদার সঙ্গে অসাধারণ স্নেহময় সংলাপ</strong> রয়েছে!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — জলে-ডোবা শরতের বিক্রমপুর ও মামাবাড়ির উৎসব:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> চারদিকে বর্ষার জল, নৌকা ভাসছে, শিউলি-স্থলপদ্ম আর ঢাকের বাদ্যি! ঢাকা, কলকাতা, কুমিল্লা, চট্টগ্রাম, কৃষ্ণনগর থেকে সব আত্মীয় এসে বৈঠকখানায় ঢালা বিছানায় হাসি-ঠাট্টা করছে।</li>
+<li class="beat-dialogue"><strong>সংলাপ (প্রাণবন্ত পরিবার):</strong> ভোরবেলা শশীভূষণ মামা বাচ্চাদের ডেকে কাঁচাহলুদ-মাঠা খাওয়াচ্ছেন; ওদিকে বেলা আটটায় ঘুম থেকে উঠে ব্রাশ হাতে সুধাংশুর বাবুয়ানা; হেরম্বনাথ মামা সবাইকে নতুন কাপড় দিচ্ছেন—কিন্তু নিরীহ উদাসীন বীরুর দিকে কারও তেমন খেয়াল নেই।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — সপ্তমীর ভোরে গোয়ালঘরের শাস্তি (কমেডি ভিজ্যুয়াল):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পূজোর সবচেয়ে কষ্টকর কাজ—গোমূত্র সংগ্রহ—পড়েছে &#x27;বেচারা&#x27; বীরুর ঘাড়ে! ভোর ৫টায় তামার ঘটি হাতে গোয়ালঘরে গরুর পেছনে দাঁড়িয়ে বীরু। চারপাশে ভনভন করে মশা কামড়াচ্ছে, গোবরের গন্ধ, গরুটা স্থির হয়ে দাঁড়িয়ে আছে—এক ঘণ্টা পার! বীরুর বিরক্ত, ঘুমচোখ মুখ।</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — অষ্টমী ও নবমীর &#x27;বুদ্ধি&#x27; (শালীন ও ইঙ্গিতপূর্ণ ভিজ্যুয়াল):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> অষ্টমীর ভোরে আবার মশার আক্রমণ! বীরু একবার গরুর দিকে, একবার মশার দিকে, একবার ঘটির দিকে তাকায়—তারপর দুষ্টু-নিরীহ বুদ্ধি খেলে যায়। <em>(দৃশ্যটি শিশুদের উপযোগী শালীন ইঙ্গিতে দেখানো হবে—গোয়ালঘরের দরজা আড়াল হয়ে তামার ঘটি পূর্ণ করে মণ্ডপে রেখে দেওয়া, আর নিষ্ঠাবান পণ্ডিতদের পরম ভক্তিতে সেই জল দিয়ে দর্পণ-স্নান সম্পন্ন করা!)</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — বিজয়ার রাত ও রাঙ্গাদাদার সাথে গোপন স্বীকারোক্তি (হৃদয়ছোঁয়া সমাপ্তি):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> প্রতিমা বিসর্জনের পর রাত। বিজয়ার সরবতের আমেজে রাঙ্গাদাদা ঢুলুঢুলু চোখে হাসিমুখে বসে আছেন। বীরু চুপিচুপি পাশে এসে বসে।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বীরু (সম্পূর্ণ সরল): <em>&quot;জানো রাঙ্গাদা, কী হয়েছিল? আমাকে তো রোজ ভোরে গোয়ালঘরে চনা রাখার ভার দিয়েছিল… অত মশার কামড়ে আর পারলাম না, তাই অষ্টমী-নবমীতে আমি নিজেই ঘটিটা ভরে রেখে দিয়েছিলাম!&quot;</em></li>
+<li><em>(রাঙ্গাদাদার নেশার ঘোর এক সেকেন্ডে উড়ে যায়! চোখ বড়, মুখ লাল—বিজয়ার রাতে বকাও বারণ!)</em></li>
+<li><strong>ভিজ্যুয়াল:</strong> রাঙ্গাদা একবার বীরুর নিষ্পাপ, নিষ্কলঙ্ক মুখের দিকে তাকান—রাগ গলে গিয়ে গভীর স্নেহ আসে।</li>
+<li>রাঙ্গাদা (ফিসফিস করে কাঁধে হাত রেখে): <em>&quot;শোন ভাই, যা হওয়ার হয়ে গেছে—এ কথা আর ঘুণাক্ষরেও কাউকে বলিস না, বুঝলি?&quot;</em> <em>(শেষে কথকের মৃদু কণ্ঠে সেই অমৃত-সম্ভাবনার ইঙ্গিত।)</em></li>
+</ul>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-16">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-16" class="director-note" data-ep="16" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-17" data-ep="17" data-era="finale">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-finale">উৎসব, বিভূতি ও সমাপ্তি</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="17">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৭: বিজয়াদশমীতে নিমজ্জমান নৌকা থেকে উদ্ধার</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২৫</span><span class="meta-pill"><strong>স্থান:</strong> বিক্রমপুরের খাল ও মান্দ্রার হাটখোলা</span><span class="meta-pill"><strong>বয়স:</strong> ৮–৯ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>এটি একটি <strong>অসাধারণ অ্যাডভেঞ্চার-থ্রিলার-মিরাকল পর্ব</strong>! জ্যোৎস্নারাতের মিষ্টি গান ও কবিতা থেকে হঠাৎ <em>কর্-কর্-করাৎ</em> শব্দে নৌকা ডুবে যাওয়া, মৃত্যুর মুখোমুখি হাহাকার, আর বীরুর শান্ত আঙুলের ইশারায় কুয়াশা ভেদ করে অদৃশ্য পশ্চিমী নৌকার আবির্ভাব—এ যেন সত্যিকারের সিনেমার দৃশ্য!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — দশমীর জ্যোৎস্নায় হলদে যাত্রা:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> প্রতিমা বিসর্জনের পর সুরেন্দ্রর নতুন তিন-মাল্লাই নৌকা। প্রধান মাঝি কুঞ্জ। নববিবাহিত সুধাংশু নতুন বৌকে নিয়ে দশহরা দেখতে চায়।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> অম্বিকানাথ: <em>&quot;কৃষ্ণপ্রসন্ন, সুধাংশুর শখ হয়েছে নাতবৌকে নিয়ে দশহরা দেখবে—ব্যবস্থা করো!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — চাঁদের আলোয় ভাটিয়ালি ও কাব্যালোচনা (শান্ত সৌন্দর্য):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পাকা ধানের ক্ষেতের মাঝ দিয়ে ভরা খালে ছলছল শব্দে নৌকা চলছে। সামনে গলুইয়ে সুধাংশু নতুন বৌকে মৃদু গান শোনাচ্ছে, পেছনে কর্তারা কালিদাসের কাব্য আলোচনা করছেন।</li>
+<li class="beat-dialogue"><strong>গান (কুঞ্জমাঝির ভাটিয়ালি):</strong> <em>&quot;ঘাটে ডিঙা লাগাইয়া বন্ধু পান খাইয়া যাও… দ্যাশের কথা শ্যাষে অইব, পান খাইয়া যাও!&quot;</em></li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> মাসিমা নতুন বৌকে দেখিয়ে: <em>&quot;ও সুধাংশুর বৌ, বাইরে এসে দ্যাখ—এইটাই বিখ্যাত গয়ালী মান্দ্রার হাটখোলা!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — &#x27;কর্-কর্-করাৎ!&#x27; — হঠাৎ বিপর্যয় (তীব্র উত্তেজনা):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> আচমকা বিকট শব্দ—<em>কর্-কর্-করাৎ!</em> নৌকা কাত হয়ে জল ঢুকতে শুরু করে! চারদিকে জনমানবহীন ধানের ক্ষেত, অন্ধকার জল।</li>
+<li class="beat-dialogue"><strong>সংলাপ (চারদিক থেকে কোলাহল):</strong> <em>&quot;কী হলো? কী হলো?&quot;</em> → <em>&quot;হায় হায় রে, নৌকা ডুবে যাচ্ছে!&quot;</em> শিশু-নারী-বৃদ্ধদের হাহাকার, কান্না!</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — &#x27;ঐ তো নৌকা!&#x27; (অলৌকিক আবির্ভাব ও উদ্ধার):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> এত চিৎকারের মাঝেও বীরু সম্পূর্ণ শান্ত। অজিতের হাত ধরে টেনে ছইয়ের বাইরে নিয়ে আসে, অন্ধকার জলের দিকে আঙুল দেখায়।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>বীরু: <em>&quot;ঐ তো নৌকা!&quot;</em></li>
+<li>অজিত (কাঁদতে কাঁদতে): <em>&quot;কই, কোথায়? কিচ্ছু তো নেই!&quot;</em></li>
+<li>বীরু (স্থির চোখে): <em>&quot;ঐ যে, দেখতে পাচ্ছিস না?&quot;</em></li>
+</ul>
+<li class="beat-visual"><strong>ভিজ্যুয়াল (সিগনেচার মোমেন্ট):</strong> বলতে বলতেই জ্যোৎস্নার কুয়াশা চিরে ডুবন্ত নৌকার একদম পাশে স্পষ্ট হয়ে ভেসে ওঠে এক <strong>বিরাট খালি পশ্চিমী নৌকা!</strong> মুহূর্তে সবাই উঠে পড়ে নিরাপদে প্রাণে বাঁচে। পরদিন বাড়িতে সত্যনারায়ণ পূজোর আনন্দের আবহে পর্ব শেষ।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-17">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-17" class="director-note" data-ep="17" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-18" data-ep="18" data-era="finale">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-finale">উৎসব, বিভূতি ও সমাপ্তি</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="18">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৮: খেলার ছলে বিভূতি ও &#x27;হঠাৎ&#x27;-এর ভবিষ্যদ্বাণী</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২৬ ও ২৭</span><span class="meta-pill"><strong>স্থান:</strong> গ্রামের ছাড়া বাড়ি, পুকুরপাড়, স্টিমার ঘাট ও আমবাগান</span><span class="meta-pill"><strong>বয়স:</strong> ৮–৯ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>অধ্যায় ২৬ ও ২৭ হলো <strong>সবচেয়ে মজার &#x27;শিশুসুলভ অলৌকিকতা&#x27;র পর্ব</strong>! বন্ধুরা কীভাবে সব অলৌকিক কাণ্ডকে <em>&quot;হঠাৎ হয়ে গেছে!&quot;</em> বলে উড়িয়ে দেয়, আর এক বন্ধু কীভাবে তাদের খোঁচা দেয়—এই <em>&quot;হঠাৎ!&quot;</em> কথাটাকে পুরো পর্বের <strong>কমিক রানিং গ্যাগ (Running Gag)</strong> বানালে পর্বটা দারুণ জমে যাবে!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — &#x27;গাউছা মাউছা&#x27; খেলা ও কাঁটাবন পেরোনো:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> লক্ষ্মীপূজার আগের দিন, ছাড়া বাড়িতে তুতো ভাইদের &#x27;গাউছা মাউছা&#x27; খেলা। অনিলদা কুমির হয়েছে। সবাই লাফাচ্ছে—বীরু লাফ দিতেই নিচে কাঁটাবন!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> সবাই: <em>&quot;গেল গেল!&quot;</em> —অথচ বীরু শূন্যে দোল খেয়ে কাঁটাবন পেরিয়ে দিব্যি ওপারে পড়ে! বাকিরা <em>&quot;আমরাও করব!&quot;</em> বলে লাফ দিতেই কাঁটা ফুটে আয়োডিন-তুলো আর বড়দের বকুনি!</li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — &#x27;বীরু ঠাকুর উইড়া গেল!&#x27; (হাইলাইট দৃশ্য):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> আরেকদিন খেলার মাঝেই এক ক্ষেপা ষাঁড় শিং উঁচিয়ে তেড়ে আসে! সবাই গাছে চড়ে বসে—নিচে আটকে পড়ে বীরু! সবার চোখ চড়কগাছ: বীরু মাটি ছেড়ে ধীরে ওপরের দিকে ভাসতে থাকে! ষাঁড় অন্যদিকে চলে যায়।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> ছোট ভুঁইয়া লাফ দিয়ে বীরুর পা ধরে নিচে টানতে টানতে চিৎকার করে: <em>&quot;বীরু ঠাকুর উইড়া গেল, উইড়া গেল!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — ছিপে মাছ ধরা ও স্টিমার ফেল (&#x27;হঠাৎ!&#x27; রানিং গ্যাগ):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পুকুরপাড়ে ভাইয়েরা ছিপ ফেলে বসেছে। বীরু পাশ দিয়ে যেতে যেতে খেয়ালে বলে—<em>&quot;তোমার বড়শিতে কই উঠবে, তোমার পুঁটি, তোমার ট্যাংরা!&quot;</em> —হুবহু তাই ওঠে!</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong> বন্ধুরা (হেসে): <em>&quot;ঝড়ে বক মরে, ফকিরের কেরামতি বাড়ে—হঠাৎ হয়ে গেছে!&quot;</em> | এক বন্ধু (চিন্তিত): <em>&quot;সবই কি হঠাৎ হয় রে?&quot;</em></li>
+<li><strong>পরের শট (ঢাকা যাত্রা):</strong> বন্ধুরা পরীক্ষা করতে জিজ্ঞেস করে: <em>&quot;বল তো, স্টিমার পাব?&quot;</em> | বীরু: <em>&quot;মনে হয় পাবে না।&quot;</em> —হেসে উড়িয়ে ঘাটে গিয়ে দেখে স্টিমার ছেড়ে চলে গেছে! সেই বন্ধু খোঁচা মারে: <em>&quot;কী রে, এবারও &#x27;হঠাৎ&#x27; নাকি?&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — এক ঢিলে আম পাড়া ও &#x27;হঠাৎ&#x27;-এর অবসান:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> আমগাছে পাকা আম লক্ষ্য করে সবাই ঢিল ছুড়ছে—কারও লাগছে না। বীরু শান্তভাবে বলে: <em>&quot;তোমরা পারবে না—দ্যাখো, আমি একবারেই লাগিয়ে দিচ্ছি!&quot;</em> এক ঢিলেই আম ধপ করে মাটিতে!</li>
+<li class="beat-ending"><strong>সমাপ্তি:</strong> দ্রুত মন্টাজে চিঠি আসা, মানি অর্ডার, চাকরি, রোগ-শোকের ভবিষ্যদ্বাণী সত্যি হতে থাকে—আর বন্ধুদের <em>&quot;হঠাৎ হঠাৎ&quot;</em> বলা চিরতরে বন্ধ হয়ে যায়!</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-18">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-18" class="director-note" data-ep="18" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    <article class="ep-card" id="ep-19" data-ep="19" data-era="finale">
+      <header class="ep-header">
+        <div class="ep-header-top">
+          <span class="era-tag era-finale">উৎসব, বিভূতি ও সমাপ্তি</span>
+          <label class="study-toggle">
+            <input type="checkbox" class="done-checkbox" data-ep="19">
+            <span>পড়া সম্পূর্ণ</span>
+          </label>
+        </div>
+        <h2>পর্ব ১৯: সত্যের জয় ও ষড়যন্ত্রকারীদের ক্ষমা (সিজন ফিনালে)</h2>
+        <div class="meta-row"><span class="meta-pill">অধ্যায় ২৮</span><span class="meta-pill"><strong>স্থান:</strong> ধলেশ্বরী তীরের গ্রাম</span><span class="meta-pill"><strong>বয়স:</strong> ১১–১২ বছর</span></div>
+      </header>
+      <div class="ep-content">
+        <div class="ep-section ep-overview"><h3>💡 বর্তমান সমস্যা ও নতুন ভাবনা</h3><p>সিজন ফিনালে হওয়ার মতো <strong>পূর্ণাঙ্গ সিনেমার প্লট</strong> রয়েছে অধ্যায় ২৮-এ! গ্রামের দুই মজার ক্লাব (<strong>আদর্শবাদী যুবক-সঙ্ঘ</strong> বনাম কলকাতা-ফেরত ফ্যাশনদুরস্ত <strong>ইয়ুথ টু-মরো সোসাইটি</strong>), ভোরবেলা শত্রুদের আগমন, ধোঁয়াভরা ঘরে কালো সাপ ও ঠাকুরের করুণা, এবং পরদিন ভোরবেলা প্রাণনাশের ষড়যন্ত্রকারীদের ক্ষমা করে নৌকায় তুলে দেওয়া—এটি একটি <strong>মহাকাব্যিক ও হৃদয়ছোঁয়া সমাপ্তি</strong> হবে!</p></div><div class="ep-section"><h3>🎬 দৃশ্য-পরিকল্পনা</h3><div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 1</span><span class="scene-title">দৃশ্য ১ — ধলেশ্বরী তীরের গ্রাম ও দুই ক্লাবের মজার বৈঠক:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> কল্লোলিনী ধলেশ্বরী, কাশবন। গ্রামে খবর রটেছে—বালক ব্রহ্মচারী এসেছেন, সন্ধ্যায় ক্লাস করেন।</li>
+<li class="beat-dialogue"><strong>সংলাপ (দুই ক্লাবের তুলনা — দারুণ হাস্যরস):</strong></li>
+<ul class="dialogue-list">
+<li><strong>যুবক-সঙ্ঘ:</strong> <em>&quot;চলো সন্ধ্যাবেলার ক্লাসে যাই—সত্যিকারের মহৎ আদর্শ হলে প্রাণ দিয়ে সাহায্য করব, আর বুজরুকি দেখলে ধলেশ্বরীতে ফেলে দেব!&quot;</em></li>
+<li><strong>ইয়ুথ টু-মরো সোসাইটি</strong> (সিল্কের পাঞ্জাবি, ব্যাকব্রাশ চুল ও কবিতা-আওড়ানো প্রেসিডেন্ট): <em>&quot;ওহে, শুনলাম সাধুজী নাকি খুব সুন্দর দেখতে—বয়সটা কত?&quot;</em> | সদস্যরা: <em>&quot;নামই বালক ব্রহ্মচারী, নিশ্চয়ই যুবক!&quot;</em></li>
+</ul>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 2</span><span class="scene-title">দৃশ্য ২ — সান্ধ্য ক্লাস ও দুই দলের বিপরীত প্রতিক্রিয়া:</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> সন্ধ্যায় ১১–১২ বছরের তেজোদীপ্ত বালক ব্রহ্মচারী অন্ধ সংস্কার ছেড়ে সত্য, জ্ঞান ও কর্মের কথা বলছেন। যুবক-সঙ্ঘ মুগ্ধ হয়ে তাঁর পাশে দাঁড়ানোর শপথ নেয়। আর &#x27;ইয়ুথ টু-মরো&#x27;র প্রেসিডেন্ট বিরক্ত হয়ে বলে—<em>&quot;ছিঃ ছিঃ, এ তো এগারো-বারো বছরের ছেলে! ওর কাছে ঘেঁষলে আমাদের ক্লাব-প্রেম সব উবে যাবে—প্রস্তাব পাস, কেউ যাবে না!&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 3</span><span class="scene-title">দৃশ্য ৩ — ভোরের গয়না নৌকা ও ধোঁয়াভরা ঘরে কালো সাপ (সাসপেন্স ও করুণা):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> ভোরবেলা ব্যায়াম সেরে নদীর ধারে বালক ঠাকুর। গয়না নৌকা থেকে হনহন করে নামল এক <strong>গেরুয়াধারী বাবাজী</strong> ও এক <strong>শিখাধ্বজ পণ্ডিত</strong>। ঠাকুর মৃদু হাসলেন। ভক্ত জিজ্ঞেস করল: <em>&quot;ঠাকুর, হাসলে কেন?&quot;</em> → <em>&quot;পরে বুঝবি।&quot;</em></li>
+<li><strong>রাতের দৃশ্য:</strong> ক্লাস শেষে ঘরে একা ঠাকুর। জোর বাতাসে ধূপের ধোঁয়ায় ঘর ভরে গেছে। হঠাৎ জানালা দিয়ে <em>ধপাস!</em> —একটি মাটির হাঁড়ি থেকে ঘরের ভেতর ছিটকে পড়ল এক বিশাল কালো সাপ!</li>
+<li class="beat-dialogue"><strong>সংলাপ (অবিস্মরণীয় মুহূর্ত):</strong> ধোঁয়ার ভেতর ফণা-তোলা সাপের দিকে তাকিয়ে ঠাকুর মুগ্ধ: <em>&quot;অ্যাঁ, সাপ! কী কালো—আঃ, কী সুন্দর!&quot;</em> দুজনেই স্থির! হঠাৎ বাইরে থেকে এক লোক লাঠি নিয়ে ঢুকে সাপটাকে পিটিয়ে মেরে ফেলে। ঠাকুর ব্যথিত কণ্ঠে বলে ওঠেন: <em>&quot;কেন ওকে মারলে? কী দোষ ও করেছিল—কাজটা তোমার কি ঠিক হলো?&quot;</em></li>
+</ul>
+</div></div>
+<div class="scene-card"><div class="scene-head"><span class="scene-badge">দৃশ্য 4</span><span class="scene-title">দৃশ্য ৪ — পরদিন ভোর: তাড়া খাওয়া শত্রু ও ক্ষমার মহিমা (গ্র্যান্ড ফিনালে):</span></div><div class="scene-body">
+<ul class="beat-list">
+<li class="beat-visual"><strong>ভিজ্যুয়াল:</strong> পরদিন ভোরবেলা নদীর ধারে ঠাকুর। হঠাৎ চিৎকার-কোলাহল—প্রাণপণে ছুটে আসছে সেই গেরুয়াধারী ও শিখাধ্বজ, পেছনে লাঠি হাতে উত্তেজিত যুবক-সঙ্ঘ! ঠাকুরের সামনে এসে পড়তেই ভয়ে <em>&quot;ওরে বাবা!&quot;</em> বলে দুজনে অজ্ঞান হয়ে পড়ে।</li>
+<li class="beat-dialogue"><strong>সংলাপ:</strong></li>
+<ul class="dialogue-list">
+<li>ঠাকুর (ভক্তকে): <em>&quot;এই, নদী থেকে জল নিয়ে আয়!&quot;</em> —নিজে হাতে শত্রুদের চোখে-মুখে জল ছিটিয়ে জ্ঞান ফেরান।</li>
+<li>যুবকেরা এসে ষড়যন্ত্রের কথা বলে: <em>&quot;ঠাকুর, এরাই কাল আপনার প্রাণ নিতে এসেছিল! আজ এদের শাস্তি দেব!&quot;</em></li>
+<li>ঠাকুর (দৃঢ়, শান্ত ও করুণাময়): <em>&quot;তোমরা ফিরে যাও। নিজেরা যা দেখোনি, সন্দেহের বশে কোনো কাজ করা উচিত নয়।&quot;</em></li>
+</ul>
+<li class="beat-ending"><strong>সমাপ্তি (সিজন ক্লোজার):</strong> ঠাকুর নিজে সেই দুজন ষড়যন্ত্রকারীকে নিরাপদে একখানা নৌকায় তুলে বিদায় দেন। ধলেশ্বরীর বুকে সূর্য উঠছে—তীরে দাঁড়িয়ে শান্ত, নির্ভীক, করুণাময় বালক ব্রহ্মচারী।</li>
+</ul>
+</div></div></div>
+        <div class="director-note-box">
+          <label for="note-19">📝 পরিচালকের নিজস্ব নোট (অটো-সেভ হবে):</label>
+          <textarea id="note-19" class="director-note" data-ep="19" rows="2" placeholder="এই পর্ব নিয়ে আপনার মতামত, পরিবর্তন বা সংলাপের আইডিয়া লিখুন..."></textarea>
+        </div>
+      </div>
+    </article>
+    
+    </div>
+    <div id="emptyState" class="empty-state">কোনো পর্ব খুঁজে পাওয়া যায়নি। অন্য শব্দ দিয়ে চেষ্টা করুন।</div>
+  </main>
+</div>
+
+<script>
+  const cards = [...document.querySelectorAll('.ep-card')];
+  const navItems = [...document.querySelectorAll('.nav-item')];
+  const searchInput = document.getElementById('searchInput');
+  const filterBtns = [...document.querySelectorAll('.filter-btn')];
+  const emptyState = document.getElementById('emptyState');
+  let activeEra = 'all';
+
+  function applyFilters() {
+    const q = searchInput.value.trim().toLowerCase();
+    let visibleCount = 0;
+    cards.forEach((card, idx) => {
+      const eraMatch = activeEra === 'all' || card.dataset.era === activeEra;
+      const textMatch = !q || card.innerText.toLowerCase().includes(q);
+      const show = eraMatch && textMatch;
+      card.classList.toggle('hidden', !show);
+      navItems[idx].classList.toggle('hidden', !show);
+      if (show) visibleCount++;
+    });
+    emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+  }
+
+  searchInput.addEventListener('input', applyFilters);
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeEra = btn.dataset.era;
+      applyFilters();
+    });
+  });
+
+  // Font size controls
+  let fontScale = parseFloat(localStorage.getItem('sk_font_scale') || '1');
+  function setFontScale(val) {
+    fontScale = Math.min(1.4, Math.max(0.85, val));
+    document.documentElement.style.setProperty('--font-scale', fontScale);
+    localStorage.setItem('sk_font_scale', fontScale);
+  }
+  setFontScale(fontScale);
+  document.getElementById('fontUp').onclick = () => setFontScale(fontScale + 0.08);
+  document.getElementById('fontDown').onclick = () => setFontScale(fontScale - 0.08);
+  document.getElementById('fontReset').onclick = () => setFontScale(1);
+
+  // Dark mode
+  const themeBtn = document.getElementById('themeToggle');
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    themeBtn.textContent = t === 'dark' ? '☀️ লাইট মোড' : '🌙 ডার্ক মোড';
+    localStorage.setItem('sk_theme', t);
+  }
+  applyTheme(localStorage.getItem('sk_theme') || 'light');
+  themeBtn.onclick = () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+
+  // Study progress & Director notes (localStorage)
+  const doneBoxes = [...document.querySelectorAll('.done-checkbox')];
+  const noteAreas = [...document.querySelectorAll('.director-note')];
+
+  function toBnNum(n) {
+    return String(n).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+  }
+
+  function updateProgress() {
+    const doneCount = doneBoxes.filter(c => c.checked).length;
+    document.getElementById('progressText').textContent = `পড়া হয়েছে: ${toBnNum(doneCount)} / ১৯ টি পর্ব`;
+    document.getElementById('progressFill').style.width = `${(doneCount / 19) * 100}%`;
+  }
+
+  doneBoxes.forEach(cb => {
+    const key = 'sk_done_' + cb.dataset.ep;
+    cb.checked = localStorage.getItem(key) === '1';
+    document.getElementById('nav-chk-' + cb.dataset.ep).classList.toggle('is-done', cb.checked);
+    cb.addEventListener('change', () => {
+      localStorage.setItem(key, cb.checked ? '1' : '0');
+      document.getElementById('nav-chk-' + cb.dataset.ep).classList.toggle('is-done', cb.checked);
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  noteAreas.forEach(ta => {
+    const key = 'sk_note_' + ta.dataset.ep;
+    ta.value = localStorage.getItem(key) || '';
+    ta.addEventListener('input', () => localStorage.setItem(key, ta.value));
+  });
+
+  // Export notes
+  document.getElementById('exportNotes').onclick = () => {
+    let out = '# শৈশব কাহিনী — পরিচালকের স্টাডি নোট\n\n';
+    let hasAny = false;
+    cards.forEach(card => {
+      const ep = card.dataset.ep;
+      const title = card.querySelector('h2').textContent;
+      const done = localStorage.getItem('sk_done_' + ep) === '1' ? '[পড়া হয়েছে]' : '[বাকি]';
+      const note = (localStorage.getItem('sk_note_' + ep) || '').trim();
+      if (note || done === '[পড়া হয়েছে]') {
+        hasAny = true;
+        out += `## ${title} ${done}\n${note ? note : '(কোনো নোট নেই)'}\n\n`;
+      }
+    });
+    if (!hasAny) {
+      alert('এখনও কোনো নোট বা চেকমার্ক সেভ করা হয়নি।');
+      return;
+    }
+    const blob = new Blob([out], { type: 'text/markdown;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Saisob_Kahini_Director_Notes.md';
+    a.click();
+  };
+
+  // Highlight active sidebar item on scroll
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navItems.forEach(n => n.classList.toggle('active', n.getAttribute('href') === '#' + e.target.id));
+      }
+    });
+  }, { rootMargin: '-20% 0px -65% 0px' });
+  cards.forEach(c => obs.observe(c));
+</script>
+</body>
+</html>
