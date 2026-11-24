@@ -1,0 +1,987 @@
+import type { HeadLook } from "./Head";
+import type { CastMember } from "./Puppet";
+
+/**
+ * Cast sheet for Episode 01 / Scene 02 — derived from 01_Series_Bible/characters.json
+ * and the 02_diwali_celebration reference painting.
+ */
+
+const skinWarm = { skin: "#d9a07a", skinLight: "#f0c4a0", skinShade: "#b47853", lips: "#b0605a" };
+const skinDeep = { skin: "#b97a52", skinLight: "#d89a70", skinShade: "#8d5536", lips: "#94493f" };
+const skinFair = { skin: "#e4b18c", skinLight: "#f6d2b2", skinShade: "#c48d68", lips: "#bb6a63" };
+
+/**
+ * Face tuning per character (fed to Head as HeadLook overrides). Keyed by cast id, so cast members
+ * defined inside scenes (Thakurma, the father "surendra") pick up the same look by id.
+ * A numeric `mustache` is its weight and overrides an older colour-string mustache on the cast sheet.
+ */
+export type FaceLook = Pick<HeadLook, "lashes" | "kajal" | "browWeight" | "lipTint" | "mustache" | "ageLines" | "hairGrey">;
+
+/** The father, Surendrachandra ("Babukaka"): warm, handsome, dignified; thin neat mustache, side-parted black hair. */
+const FATHER_LOOK: FaceLook = { lashes: 0.25, kajal: 0, browWeight: 1.25, lipTint: "#a65e52", mustache: 0.6, ageLines: 0, hairGrey: 0 };
+
+export const FACE_LOOKS: Record<string, FaceLook> = {
+  // the family
+  /** Charu, the mother (mid-20s, married): full lashes, soft kajal, soft arched brows, rose-red lips. */
+  charu: { lashes: 1, kajal: 0.7, browWeight: 0.9, lipTint: "#c8475a", ageLines: 0, hairGrey: 0 },
+  babukaka: FATHER_LOOK,
+  surendra: FATHER_LOOK,
+  /** Thakurma, the widowed grandmother in white: kind lines, white hair, no kajal, muted lips. */
+  thakurma: { lashes: 0.4, kajal: 0, browWeight: 0.8, lipTint: "#9c5e57", ageLines: 0.8, hairGrey: 0.9 },
+  // household and village women (married: sindoor + bindi on the sheet, gentle kajal)
+  /** Manorama Devi, late 30s, steady and motherly. */
+  manorama: { lashes: 0.8, kajal: 0.45, browWeight: 1.0, lipTint: "#a8434c", ageLines: 0.15, hairGrey: 0 },
+  womanA: { lashes: 0.85, kajal: 0.5, browWeight: 0.95, lipTint: "#b2404d", ageLines: 0, hairGrey: 0 },
+  womanB: { lashes: 0.9, kajal: 0.55, browWeight: 0.9, lipTint: "#bf4f5b", ageLines: 0, hairGrey: 0 },
+  // village men
+  listenerA: { lashes: 0.25, kajal: 0, browWeight: 1.2, lipTint: "#8e4a40", ageLines: 0.1, hairGrey: 0 },
+  dhaki: { lashes: 0.2, kajal: 0, browWeight: 1.35, lipTint: "#8a463c", mustache: 0.85, ageLines: 0.2, hairGrey: 0 },
+  // elders
+  /** Bhagabati Thakur, the elder priest (late 50s): silver-streaked hair, white mustache. */
+  bhagabati: { lashes: 0.25, kajal: 0, browWeight: 1.2, lipTint: "#a05a50", mustache: 0.75, ageLines: 0.7, hairGrey: 0.8 },
+  /** Harendra Thakur, an elder of the Vedic house (Ep 4): heavy brows, thick salt-and-pepper mustache. New id: no older scene uses it. */
+  harendra: { lashes: 0.2, kajal: 0, browWeight: 1.45, lipTint: "#8e4d42", mustache: 0.95, ageLines: 0.6, hairGrey: 0.55 },
+  /** The jyethi, Bhagabati Thakur's wife (Ep 4), early 60s and married: light kajal, grey-streaked hair, kind lines. New id. */
+  jyethi: { lashes: 0.55, kajal: 0.2, browWeight: 0.85, lipTint: "#94524a", ageLines: 0.5, hairGrey: 0.5 },
+  // Sundar Thakur has NO entry here on purpose: Episode 1 draws its own SUNDAR with id "sundar", and an entry keyed
+  // "sundar" would change Episode 1's faces. CAST.sundar below keeps Episode 1's look exactly (Head defaults).
+  kedarkaka: { lashes: 0.25, kajal: 0, browWeight: 1.1, lipTint: "#a8625a", mustache: 0.8, ageLines: 0.7, hairGrey: 0.9 },
+  listenerB: { lashes: 0.2, kajal: 0, browWeight: 1.0, lipTint: "#a0584e", mustache: 0.6, ageLines: 0.85, hairGrey: 0.9 },
+  // children: soft lashes, no kajal, no lines
+  gopal: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+  rama: { lashes: 0.5, kajal: 0, browWeight: 0.9, ageLines: 0, hairGrey: 0 },
+  madhu: { lashes: 0.55, kajal: 0, browWeight: 0.75, lipTint: "#c25e63", ageLines: 0, hairGrey: 0 },
+  listenerKid: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+  duikha: { lashes: 0.5, kajal: 0, browWeight: 0.85, ageLines: 0, hairGrey: 0 },
+  // Episode 5 (Krishnanagar kachari). New ids: no older scene uses them.
+  /** Binoy, the neighbour's son (14 or 15): a boy's soft face, no mustache, clear brows. */
+  binoy: { lashes: 0.4, kajal: 0, browWeight: 1.0, lipTint: "#9a544a", mustache: 0, ageLines: 0, hairGrey: 0 },
+  /** Haricharan, the kachari hand (about 30): heavy dark brows, a thin mustache, a few sun lines. */
+  haricharan: { lashes: 0.2, kajal: 0, browWeight: 1.45, lipTint: "#7c4036", mustache: 0.5, ageLines: 0.15, hairGrey: 0 },
+  // Episode 6 (Ujanchar: the elder brother, the village boys, the culprit friend, his dada and boudi, the sweet-seller).
+  // New ids: no older scene uses them.
+  /** The elder brother (দাদা, about nine): a pampered boy's soft face, clear brows, pink lips. */
+  elderBrother: { lashes: 0.45, kajal: 0, browWeight: 0.95, lipTint: "#b25a55", mustache: 0, ageLines: 0, hairGrey: 0 },
+  villageBoyA: { lashes: 0.45, kajal: 0, browWeight: 0.9, lipTint: "#8e4a40", ageLines: 0, hairGrey: 0 },
+  villageBoyB: { lashes: 0.5, kajal: 0, browWeight: 0.85, lipTint: "#a8564e", ageLines: 0, hairGrey: 0 },
+  villageBoyC: { lashes: 0.5, kajal: 0, browWeight: 0.8, lipTint: "#7e4038", ageLines: 0, hairGrey: 0 },
+  villageBoyD: { lashes: 0.4, kajal: 0, browWeight: 1.0, lipTint: "#94493f", ageLines: 0, hairGrey: 0 },
+  villageBoyE: { lashes: 0.5, kajal: 0, browWeight: 0.85, lipTint: "#b0605a", ageLines: 0, hairGrey: 0 },
+  /** The culprit friend (about eight): lively, slightly heavier brows for the sly look. */
+  culpritFriend: { lashes: 0.4, kajal: 0, browWeight: 1.05, lipTint: "#9a4e44", ageLines: 0, hairGrey: 0 },
+  /** The friend's dada (about 22): a young man's face, a faint thin mustache. */
+  friendDada: { lashes: 0.25, kajal: 0, browWeight: 1.15, lipTint: "#94503f", mustache: 0.35, ageLines: 0, hairGrey: 0 },
+  /** The friend's boudi (a young married woman): soft kajal, warm rose lips. */
+  boudi: { lashes: 0.95, kajal: 0.55, browWeight: 0.9, lipTint: "#c24b57", ageLines: 0, hairGrey: 0 },
+  /** The sweet-seller (late 50s): grey hair, a grey mustache, sun lines. */
+  sweetSeller: { lashes: 0.2, kajal: 0, browWeight: 1.1, lipTint: "#9a564a", mustache: 0.75, ageLines: 0.7, hairGrey: 0.75 },
+};
+
+/** Episode 6 (CHR-08): head scale of the Puppet village children, so Balak's plate head sits near theirs. */
+export const EP06_CHILD_HEAD = 0.8;
+
+/**
+ * Episode 6 child scales (CHR-08, "meet halfway"), one source for every scene. K is the adult Puppet scale at that
+ * depth (Surendra, the boudi ...): multiply the `s` values by K.
+ *  - standingBalak: StandingChild `s = 0.51 * K`, `headScale = 1.45` (Episode 5 next to adults: 0.56 K / 1.35). He then
+ *    stands as tall as a six-year-old village boy (CAST.villageBoyC, h 1.15: both about 264 to the top of the hair at
+ *    K = 1, 0.71 of Surendra). His head, crown to chin as drawn, is about 93% of the boy's; the plate face is narrower
+ *    than the Puppet children's round faces by design (about 68% across), so by area it reads about 80%.
+ *  - seatedBalak: SeatedChild design "plate", age 6, `s = 0.74 * K`: the same head size as standing Balak, and a sitting
+ *    height (crown to ground, about 175 at K = 1) about 96% of a cross-legged six-year-old village boy (Puppet `seated`).
+ *  - The elder brother (h 1.42) stands about 320 at K = 1, about 0.85 of Balak's head taller than him.
+ * Measured on Cast06QA (pixel heights at K = 0.98, divided by K) and from the rigs' own solves (standingChildJoints,
+ * seatedEp6Anchors). The lineup's dashed lines are Balak's crown and the joints' chin point (a little below the drawn chin).
+ */
+export const EP06_CHILD_SCALE = {
+  // BAL-26d (2026-11-23): +3% for the healthy build (`build="healthy"`), which stands about 3% shorter at the same s.
+  standingBalak: { s: 0.525, headScale: 1.45 },
+  seatedBalak: { s: 0.74 },
+  childHead: EP06_CHILD_HEAD,
+  heightsAtK1: { balakStanding: 265, villageBoyC: 263, villageBoyE: 274, villageBoyA: 277, culpritFriend: 287, elderBrother: 320, surendra: 375, balakSeated: 175 },
+  notes: "Multiply s by the adult Puppet scale K at that depth. Village children: CastMember.headScale = 0.8 (cast.ts). Heights are to the top of the hair.",
+} as const;
+
+/** A cast sheet entry plus its face tuning. */
+export type CastEntry = CastMember & { look?: FaceLook };
+
+export const CAST: Record<string, CastEntry> = {
+  babukaka: {
+    id: "babukaka",
+    age: "adult",
+    height: 1.04,
+    girth: 1.0,
+    ...skinWarm,
+    hair: "#1d1513",
+    hairLight: "#5a4438",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#f4ecdc",
+    topLight: "#fffaf0",
+    topShade: "#cdbfa6",
+    topTrim: "#c9a24a",
+    sleeve: "rolled",
+    lower: "dhoti",
+    lowerColor: "#fbf7ee",
+    lowerShade: "#d8cdb9",
+    lowerTrim: "#c79b3e",
+    dhotiLength: "calf",
+    mustache: "#1d1513",
+    look: FACE_LOOKS.babukaka,
+    seed: 3,
+  },
+  gopal: {
+    id: "gopal",
+    age: "child",
+    height: 0.98,
+    girth: 1.0,
+    ...skinWarm,
+    hair: "#1a1211",
+    hairLight: "#4a3830",
+    hairStyle: "tousled",
+    outfit: "kurta",
+    top: "#f2b52c",
+    topLight: "#ffd968",
+    topShade: "#c47f12",
+    topTrim: "#8c4a10",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#fbf6ea",
+    lowerShade: "#d6cab4",
+    lowerTrim: "#d9902e",
+    dhotiLength: "knee",
+    scarf: { color: "#e2562b", shade: "#b23d1c", trim: "#f6c34a", style: "neck" },
+    look: FACE_LOOKS.gopal,
+    seed: 11,
+  },
+  rama: {
+    id: "rama",
+    age: "child",
+    height: 1.05,
+    girth: 1.0,
+    ...skinDeep,
+    hair: "#191110",
+    hairLight: "#45342c",
+    hairStyle: "parted",
+    outfit: "vest",
+    top: "#b8325f",
+    topLight: "#d9557f",
+    topShade: "#7e1e40",
+    topTrim: "#f3d27a",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#f8f3e6",
+    lowerShade: "#d3c7b0",
+    lowerTrim: "#2f8f86",
+    dhotiLength: "knee",
+    scarf: { color: "#2f9a8c", shade: "#1f6d63", trim: "#bfe7d9", style: "drape" },
+    look: FACE_LOOKS.rama,
+    seed: 17,
+  },
+  madhu: {
+    id: "madhu",
+    age: "child",
+    height: 0.8,
+    girth: 1.05,
+    ...skinFair,
+    hair: "#1c1312",
+    hairLight: "#4d3a31",
+    hairStyle: "pigtails",
+    outfit: "frock",
+    top: "#d94a6a",
+    topLight: "#f07a92",
+    topShade: "#a32c4a",
+    topTrim: "#fff2d6",
+    sleeve: "half",
+    lower: "none",
+    lowerColor: "#d94a6a",
+    lowerShade: "#a32c4a",
+    ribbon: "#ffd23f",
+    bindi: true,
+    look: FACE_LOOKS.madhu,
+    seed: 23,
+  },
+  kedarkaka: {
+    id: "kedarkaka",
+    age: "elder",
+    height: 0.98,
+    girth: 1.32,
+    ...skinFair,
+    hair: "#e9e5de",
+    hairLight: "#ffffff",
+    hairStyle: "balding",
+    outfit: "kurta",
+    top: "#fbf6ea",
+    topLight: "#ffffff",
+    topShade: "#d6cbb5",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#fbf6ea",
+    lowerShade: "#d6cbb5",
+    lowerTrim: "#9a7a3a",
+    dhotiLength: "calf",
+    scarf: { color: "#8a5a34", shade: "#6b4224", trim: "#d8b06a", style: "shawl" },
+    mustache: "#d9d4cc",
+    glasses: true,
+    look: FACE_LOOKS.kedarkaka,
+    seed: 31,
+  },
+  listenerA: {
+    id: "listenerA",
+    age: "adult",
+    height: 1.0,
+    girth: 1.0,
+    ...skinDeep,
+    hair: "#18100e",
+    hairLight: "#3d2c24",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#9fb3c2",
+    topLight: "#c4d4de",
+    topShade: "#6d8395",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#f3eee2",
+    lowerShade: "#cfc4ae",
+    look: FACE_LOOKS.listenerA,
+    seed: 41,
+  },
+  listenerB: {
+    id: "listenerB",
+    age: "elder",
+    height: 0.96,
+    girth: 0.92,
+    ...skinWarm,
+    hair: "#eeeae4",
+    hairLight: "#ffffff",
+    hairStyle: "parted",
+    outfit: "bare",
+    top: "#d9a07a",
+    topLight: "#f0c4a0",
+    topShade: "#b47853",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#f6f1e5",
+    lowerShade: "#cfc6b2",
+    scarf: { color: "#efe6d2", shade: "#cbbd9f", trim: "#b48a3c", style: "drape" },
+    paita: true,
+    tilak: true,
+    wiry: true,
+    mustache: "#d9d4cc",
+    look: FACE_LOOKS.listenerB,
+    seed: 47,
+  },
+  listenerKid: {
+    id: "listenerKid",
+    age: "child",
+    height: 0.9,
+    girth: 1.0,
+    ...skinFair,
+    hair: "#1c1312",
+    hairLight: "#4a3830",
+    hairStyle: "tousled",
+    outfit: "kurta",
+    top: "#5b8f4e",
+    topLight: "#7fb26f",
+    topShade: "#3c6634",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#fbf6ea",
+    lowerShade: "#d6cab4",
+    dhotiLength: "knee",
+    look: FACE_LOOKS.listenerKid,
+    seed: 53,
+  },
+  dhaki: {
+    id: "dhaki",
+    age: "adult",
+    height: 0.98,
+    girth: 0.9,
+    ...skinDeep,
+    hair: "#140c0a",
+    hairLight: "#3a2a22",
+    hairStyle: "wrap",
+    outfit: "bare",
+    top: "#b97a52",
+    topLight: "#d89a70",
+    topShade: "#8d5536",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#efe6cf",
+    lowerShade: "#c6b89a",
+    lowerTrim: "#b8322b",
+    dhotiLength: "knee",
+    scarf: { color: "#c0392b", shade: "#8f241e", trim: "#f2e4c8", style: "check" },
+    mustache: "#140c0a",
+    wiry: true,
+    look: FACE_LOOKS.dhaki,
+    seed: 61,
+  },
+  duikha: {
+    id: "duikha",
+    age: "child",
+    height: 0.78,
+    girth: 1.08,
+    ...skinDeep,
+    hair: "#140c0a",
+    hairLight: "#3a2a22",
+    hairStyle: "cropped",
+    outfit: "bare",
+    top: "#b97a52",
+    topLight: "#d89a70",
+    topShade: "#8d5536",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#e9dcc0",
+    lowerShade: "#bfae8c",
+    dhotiLength: "knee",
+    look: FACE_LOOKS.duikha,
+    seed: 67,
+  },
+  charu: {
+    id: "charu",
+    age: "adult",
+    height: 0.95,
+    girth: 1.0,
+    ...skinFair,
+    hair: "#1b1211",
+    hairLight: "#45342c",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#a8202c",
+    topLight: "#c83a46",
+    topShade: "#76141e",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#fcf8f2",
+    lowerShade: "#e0d6c6",
+    lowerTrim: "#b8292f",
+    scarf: { color: "#fcf8f2", shade: "#e3d9ca", trim: "#b8292f", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.charu,
+    seed: 83,
+  },
+  manorama: {
+    id: "manorama",
+    age: "adult",
+    height: 0.98,
+    girth: 1.08,
+    ...skinWarm,
+    hair: "#1d1413",
+    hairLight: "#45342c",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#7c1d26",
+    topLight: "#9a2f39",
+    topShade: "#561219",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#f5efe6",
+    lowerShade: "#d9cfc0",
+    lowerTrim: "#7c1d26",
+    scarf: { color: "#f5efe6", shade: "#d9cfc0", trim: "#7c1d26", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.manorama,
+    seed: 89,
+  },
+  /**
+   * Bhagabati Thakur (house priest / Thakurmoshai): white kurta like Sundar jyetha so arm/torso
+   * gestures read cleanly (bare chest + upper dhoti fold looked odd in every sit/reach beat).
+   * Keeps the red-bordered dhoti, uttariya drape, tilak; paita is under the kurta and unused.
+   */
+  bhagabati: {
+    id: "bhagabati",
+    age: "elder",
+    height: 1.03,
+    girth: 1.05,
+    ...skinWarm,
+    hair: "#d9d4cc",
+    hairLight: "#ffffff",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#f2ead8",
+    topLight: "#fffaf0",
+    topShade: "#cbbda2",
+    topTrim: "#b08a3a",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#faf5eb",
+    lowerShade: "#d8cdb9",
+    lowerTrim: "#a82424",
+    dhotiLength: "calf",
+    scarf: { color: "#a82424", shade: "#7a1818", trim: "#e8b84a", style: "drape" },
+    mustache: "#d9d4cc",
+    tilak: true,
+    look: FACE_LOOKS.bhagabati,
+    seed: 97,
+  },
+  womanA: {
+    id: "womanA",
+    age: "adult",
+    height: 0.94,
+    girth: 1.0,
+    ...skinWarm,
+    hair: "#1b1211",
+    hairLight: "#45342c",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#7a2230",
+    topLight: "#9c3443",
+    topShade: "#561520",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#fbf5ea",
+    lowerShade: "#d9cdb6",
+    lowerTrim: "#b8202c",
+    scarf: { color: "#fbf5ea", shade: "#ddd1ba", trim: "#b8202c", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.womanA,
+    seed: 71,
+  },
+  womanB: {
+    id: "womanB",
+    age: "adult",
+    height: 0.92,
+    girth: 1.05,
+    ...skinFair,
+    hair: "#1b1211",
+    hairLight: "#45342c",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#2f6b3f",
+    topLight: "#4a8a59",
+    topShade: "#1f4a2b",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#3f8a52",
+    lowerShade: "#2a6339",
+    lowerTrim: "#e2b13c",
+    scarf: { color: "#3f8a52", shade: "#2a6339", trim: "#e2b13c", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.womanB,
+    seed: 79,
+  },
+
+  /* ---- shared Vedic house cast (Episode 4 on). Appended last: CastLineup shows only the first 12 entries. ---- */
+
+  /**
+   * Sundar Thakur (Sundar jyetha), family elder who does the Gobinda puja: spectacles, white kurta, brown shawl.
+   * Copied unchanged from Episode 1's `SUNDAR` (cinematic/scenes/Scene05Rain.tsx), which still draws its own copy.
+   */
+  sundar: {
+    id: "sundar",
+    age: "elder",
+    height: 1.0,
+    girth: 1.0,
+    ...skinWarm,
+    hair: "#d6cfc4",
+    hairLight: "#ffffff",
+    hairStyle: "balding",
+    outfit: "kurta",
+    top: "#f2ead8",
+    topLight: "#fffaf0",
+    topShade: "#cbbda2",
+    topTrim: "#b08a3a",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#faf5eb",
+    lowerShade: "#d8cdb9",
+    lowerTrim: "#8a2a1a",
+    dhotiLength: "calf",
+    scarf: { color: "#7a5236", shade: "#5a3a24", trim: "#c9a04a", style: "shawl" },
+    mustache: "#d6cfc4",
+    glasses: true,
+    tilak: true,
+    seed: 151,
+  },
+  /**
+   * Thakurma, the widowed grandmother: white saree and blouse, light shawl, white hair (CHR-04). Copied unchanged
+   * from Episode 2's `THAKURMA` (episode02/scenes/Scene01eFather.tsx); her face look is FACE_LOOKS.thakurma by id.
+   */
+  thakurma: {
+    id: "thakurma",
+    age: "elder",
+    sex: "f",
+    height: 0.95,
+    girth: 1.05,
+    skin: "#b07a52",
+    skinLight: "#cc9468",
+    skinShade: "#84573a",
+    lips: "#8a4f43",
+    hair: "#e4e0d8",
+    hairLight: "#f6f3ec",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#f3efe6",
+    topLight: "#ffffff",
+    topShade: "#cfc6b2",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#fbf8f1",
+    lowerShade: "#d9d0bc",
+    scarf: { color: "#ece6d8", shade: "#bfb59f", trim: "#d8cdb4", style: "shawl" },
+    look: FACE_LOOKS.thakurma,
+    seed: 131,
+  },
+  /**
+   * Harendra Thakur, an elder of the house (Ep 4, silent: a head shake and open palms). Distinct from Bhagabati
+   * (white kurta, white hair, red uttariya), Sundar (balding, spectacles, white kurta, brown shawl) and Kedarkaka: tall, darker,
+   * salt-and-pepper parted hair, thick grey-black mustache, beige khadi fatua with an olive uttariya, no spectacles.
+   */
+  harendra: {
+    id: "harendra",
+    age: "elder",
+    height: 1.06,
+    girth: 0.98,
+    ...skinDeep,
+    hair: "#857d74",
+    hairLight: "#bdb5aa",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#e3d4b2",
+    topLight: "#f4ead2",
+    topShade: "#b9a77f",
+    topTrim: "#7a5a2a",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#f7f1e3",
+    lowerShade: "#d3c7ae",
+    lowerTrim: "#4a5a3a",
+    dhotiLength: "calf",
+    scarf: { color: "#5f6b48", shade: "#434d31", trim: "#d6c27e", style: "drape" },
+    mustache: "#6f675f",
+    face: { faceLen: 1.1 },
+    look: FACE_LOOKS.harendra,
+    seed: 173,
+  },
+  /**
+   * The jyethi, Bhagabati Thakur's wife (Ep 4): an elderly MARRIED woman, so sindoor and bindi and a bordered sari
+   * (Thakurma is a widow in plain white). Fuller figure, grey-streaked hair, cream sari with a deep maroon border,
+   * ochre-brown blouse.
+   */
+  jyethi: {
+    id: "jyethi",
+    age: "elder",
+    sex: "f",
+    height: 0.93,
+    girth: 1.15,
+    ...skinWarm,
+    hair: "#6b625a",
+    hairLight: "#a8a098",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#9a6a3a",
+    topLight: "#b88452",
+    topShade: "#6e4824",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#f1e6cc",
+    lowerShade: "#d2c3a2",
+    lowerTrim: "#6e1f1f",
+    scarf: { color: "#f1e6cc", shade: "#d2c3a2", trim: "#6e1f1f", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.jyethi,
+    seed: 181,
+  },
+
+  /* ---- Episode 5 (the Krishnanagar kachari, STO-20). Appended last. ---- */
+
+  /**
+   * Surendra, Balak's father: the shared copy of Episode 2's `SURENDRA` (episode02/scenes/Scene01eFather.tsx, which
+   * still draws its own copy): white kurta, calf-length dhoti, brown shawl, parted black hair, FATHER_LOOK face.
+   */
+  surendra: {
+    id: "surendra",
+    age: "adult",
+    sex: "m",
+    height: 1.0,
+    girth: 0.95,
+    skin: "#c98f63",
+    skinLight: "#e8b48a",
+    skinShade: "#a86d46",
+    lips: "#9c5a4e",
+    hair: "#1a1210",
+    hairLight: "#4e3a2e",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#fbf8f0",
+    topLight: "#ffffff",
+    topShade: "#d4cab6",
+    sleeve: "full",
+    lower: "dhoti",
+    lowerColor: "#f7f3e8",
+    lowerShade: "#d2c7b0",
+    dhotiLength: "calf",
+    scarf: { color: "#7a5230", shade: "#5a3a20", trim: "#c99a5a", style: "shawl" },
+    look: FACE_LOOKS.surendra,
+    seed: 47,
+  },
+  /**
+   * Binoy, the neighbour's son (about 14 or 15, he calls Surendra "Suren kaka"), coming home from outside: short dark
+   * hair, a plain unbleached cotton fatua (short half-sleeved kurta), a knee-length dhoti, a jute cloth bag over his
+   * shoulder. Youth-sized: shorter and slimmer than the men, a softer jaw and rounder eyes than an adult's.
+   */
+  binoy: {
+    id: "binoy",
+    age: "adult",
+    sex: "m",
+    height: 0.86,
+    girth: 0.84,
+    ...skinWarm,
+    hair: "#17100e",
+    hairLight: "#4a3830",
+    hairStyle: "cropped",
+    outfit: "kurta",
+    top: "#e9dfc6",
+    topLight: "#f7f0de",
+    topShade: "#c4b694",
+    topTrim: "#9a8a68",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#faf6ec",
+    lowerShade: "#d5cab3",
+    dhotiLength: "knee",
+    bag: { color: "#b08a58", shade: "#86663c", strap: "#8e6d42", side: -1 },
+    face: { faceLen: 1.0, jaw: 0.7, chin: 0.36, chinRound: 0.45, eyeSize: 0.19, eyeRound: 0.42, nose: 0.82, cheekPuff: 0.03 },
+    look: FACE_LOOKS.binoy,
+    seed: 191,
+  },
+  /**
+   * Haricharan, a kachari hand who grows the vegetables (about 30; not a relative, Balak calls him "Haricharan-da"):
+   * lean and wiry, dark-skinned, short black hair, a thin mustache, bare-chested, a coarse dhoti hitched up for work
+   * (malkochha), a red-and-white checked gamchha over his left shoulder. His bamboo is the Puppet's built-in
+   * rProp "bamboo" (see GESTURES5.bambooUpright / bambooCarried in Puppet.tsx).
+   */
+  haricharan: {
+    id: "haricharan",
+    age: "adult",
+    sex: "m",
+    height: 1.0,
+    girth: 0.86,
+    skin: "#9a5f3c",
+    skinLight: "#b9794f",
+    skinShade: "#74432a",
+    lips: "#7c4036",
+    hair: "#110a08",
+    hairLight: "#3a2a22",
+    hairStyle: "cropped",
+    outfit: "bare",
+    top: "#9a5f3c",
+    topLight: "#b9794f",
+    topShade: "#74432a",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#ebe1c9",
+    lowerShade: "#c2b392",
+    lowerTrim: "#6e5a3a",
+    dhotiLength: "hitched",
+    scarf: { color: "#c3442f", shade: "#8e2c1d", trim: "#f2e3c6", style: "gamchha" },
+    mustache: "#110a08",
+    wiry: true,
+    look: FACE_LOOKS.haricharan,
+    seed: 197,
+  },
+
+  /* ---- Episode 6 (Ujanchar: the elder brother and the playmates, STO-21). Appended last. ---- */
+
+  /**
+   * The elder brother (দাদা, unnamed, about nine): the pampered son, a little taller and plumper than six-year-old
+   * Balak; neat oiled black hair with a side parting (a cool sheen), a soft sky-blue cotton shirt with a small
+   * block-printed buti (CastMember.print) over a knee-length white dhoti; barefoot; a well-fed round face. No jewellery.
+   */
+  elderBrother: {
+    id: "elderBrother",
+    age: "child",
+    sex: "m",
+    height: 1.42,
+    headScale: EP06_CHILD_HEAD,
+    girth: 1.16,
+    ...skinFair,
+    hair: "#0f0a0a",
+    hairLight: "#55525e",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#bcd3e2",
+    topLight: "#dceaf2",
+    topShade: "#8aa7bb",
+    topTrim: "#f4efe2",
+    sleeve: "half",
+    print: { color: "#3f6c96", color2: "#c8574a", motif: "buti" },
+    lower: "dhoti",
+    lowerColor: "#fbf8f0",
+    lowerShade: "#d8cfbc",
+    dhotiLength: "knee",
+    face: { cheekPuff: 0.13, cheek: 0.92, jaw: 0.78, chin: 0.5, faceLen: 0.9, eyeSize: 0.215 },
+    look: FACE_LOOKS.elderBrother,
+    seed: 211,
+  },
+
+  /*
+   * The Ujanchar village boys (6 to 9), one family of designs: barefoot, short dhotis (knee or hitched up like
+   * half-pants), mostly bare-chested, one in a vest; hair and skin tones vary within the series palette. A and B
+   * double as scene 01's classmates at the fence.
+   * HEIGHTS AND HEADS (CHR-08, "meet halfway"): every Episode 6 child has headScale EP06_CHILD_HEAD (0.8) and a height
+   * by age: 6 h 1.15 (Balak's height), 7 about 1.2, 8 about 1.27, 9 about 1.4 (the elder brother, about a head taller
+   * than Balak). Balak's own scale beside them is EP06_CHILD_SCALE below.
+   */
+  /** Boy A (about 7): deep skin, cropped hair, bare-chested, an off-white knee dhoti. */
+  villageBoyA: {
+    id: "villageBoyA",
+    age: "child",
+    sex: "m",
+    height: 1.22,
+    headScale: EP06_CHILD_HEAD,
+    girth: 0.98,
+    ...skinDeep,
+    hair: "#130c0a",
+    hairLight: "#3d2c24",
+    hairStyle: "cropped",
+    outfit: "bare",
+    top: skinDeep.skin,
+    topLight: skinDeep.skinLight,
+    topShade: skinDeep.skinShade,
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#eee5d0",
+    lowerShade: "#c9bc9f",
+    dhotiLength: "knee",
+    look: FACE_LOOKS.villageBoyA,
+    seed: 223,
+  },
+  /** Boy B (about 8): warm skin, tousled hair, a faded indigo vest over a knee dhoti. */
+  villageBoyB: {
+    id: "villageBoyB",
+    age: "child",
+    sex: "m",
+    height: 1.26,
+    headScale: EP06_CHILD_HEAD,
+    girth: 1.0,
+    ...skinWarm,
+    hair: "#1a1211",
+    hairLight: "#4a3830",
+    hairStyle: "tousled",
+    outfit: "vest",
+    top: "#5f7f9e",
+    topLight: "#83a0bb",
+    topShade: "#435d77",
+    topTrim: "#e9dfc6",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#f4eddc",
+    lowerShade: "#d0c3a6",
+    dhotiLength: "knee",
+    look: FACE_LOOKS.villageBoyB,
+    seed: 227,
+  },
+  /** Boy C (about 6, the smallest): dark skin, cropped hair, bare-chested, a khaki dhoti hitched up like half-pants. */
+  villageBoyC: {
+    id: "villageBoyC",
+    age: "child",
+    sex: "m",
+    height: 1.15,
+    headScale: EP06_CHILD_HEAD,
+    girth: 1.04,
+    skin: "#9a5f3c",
+    skinLight: "#b9794f",
+    skinShade: "#74432a",
+    lips: "#7c4036",
+    hair: "#110a08",
+    hairLight: "#3a2a22",
+    hairStyle: "cropped",
+    outfit: "bare",
+    top: "#9a5f3c",
+    topLight: "#b9794f",
+    topShade: "#74432a",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#b9a57c",
+    lowerShade: "#8f7d58",
+    dhotiLength: "hitched",
+    look: FACE_LOOKS.villageBoyC,
+    seed: 229,
+  },
+  /** Boy D (about 9, the tallest): lean, warm-deep skin, parted hair, bare-chested, a plain knee dhoti. */
+  villageBoyD: {
+    id: "villageBoyD",
+    age: "child",
+    sex: "m",
+    height: 1.38,
+    headScale: EP06_CHILD_HEAD,
+    girth: 0.92,
+    skin: "#ad7048",
+    skinLight: "#cc8c62",
+    skinShade: "#83502f",
+    lips: "#8a463c",
+    hair: "#150e0c",
+    hairLight: "#43322a",
+    hairStyle: "parted",
+    outfit: "bare",
+    top: "#ad7048",
+    topLight: "#cc8c62",
+    topShade: "#83502f",
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#f1e9d6",
+    lowerShade: "#cdbf9f",
+    dhotiLength: "knee",
+    wiry: true,
+    look: FACE_LOOKS.villageBoyD,
+    seed: 233,
+  },
+  /** Boy E (about 7): fair-warm skin, tousled dark-brown hair, bare-chested, a faded brown dhoti hitched up. */
+  villageBoyE: {
+    id: "villageBoyE",
+    age: "child",
+    sex: "m",
+    height: 1.2,
+    headScale: EP06_CHILD_HEAD,
+    girth: 1.02,
+    ...skinFair,
+    hair: "#2a1a14",
+    hairLight: "#5e4334",
+    hairStyle: "tousled",
+    outfit: "bare",
+    top: skinFair.skin,
+    topLight: skinFair.skinLight,
+    topShade: skinFair.skinShade,
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#a98a66",
+    lowerShade: "#7f6646",
+    dhotiLength: "hitched",
+    look: FACE_LOOKS.villageBoyE,
+    seed: 239,
+  },
+  /**
+   * The culprit friend (about eight, a little older than Balak): bare-chested, a knee dhoti with a red-and-white
+   * checked gamchha tied round the waist (scarf style "waist"), tousled hair; a sly, lively face (use GESTURES6.sly).
+   */
+  culpritFriend: {
+    id: "culpritFriend",
+    age: "child",
+    sex: "m",
+    height: 1.27,
+    headScale: EP06_CHILD_HEAD,
+    girth: 0.96,
+    ...skinWarm,
+    hair: "#140d0b",
+    hairLight: "#45342c",
+    hairStyle: "tousled",
+    outfit: "bare",
+    top: skinWarm.skin,
+    topLight: skinWarm.skinLight,
+    topShade: skinWarm.skinShade,
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#f2ead8",
+    lowerShade: "#cec1a4",
+    dhotiLength: "knee",
+    scarf: { color: "#c3302a", shade: "#8e1f1a", trim: "#f3e6cf", style: "waist" },
+    face: { eyeRound: 0.62, eyeSize: 0.22, cheekPuff: 0.07, chin: 0.42 },
+    look: FACE_LOOKS.culpritFriend,
+    seed: 241,
+  },
+  /**
+   * The friend's dada (about 22): built like CAST.listenerA, younger and leaner; a pale cream half-sleeved shirt over a
+   * calf-length dhoti, parted hair, a faint mustache. His white shirt on the peg (scene 02 shot 3) is a scene prop.
+   */
+  friendDada: {
+    id: "friendDada",
+    age: "adult",
+    sex: "m",
+    height: 0.98,
+    girth: 0.9,
+    ...skinDeep,
+    hair: "#140d0b",
+    hairLight: "#3d2c24",
+    hairStyle: "parted",
+    outfit: "kurta",
+    top: "#f1ead6",
+    topLight: "#fdf9ee",
+    topShade: "#cbbf9f",
+    topTrim: "#d8c9a0",
+    sleeve: "half",
+    lower: "dhoti",
+    lowerColor: "#f7f2e6",
+    lowerShade: "#d0c5ae",
+    dhotiLength: "calf",
+    mustache: "#140d0b",
+    face: { faceLen: 1.08, jaw: 0.72, eyeSize: 0.18 },
+    look: FACE_LOOKS.friendDada,
+    seed: 251,
+  },
+  /**
+   * The friend's boudi (his elder brother's young wife): sindoor and bindi, a turmeric-yellow sari with a red border
+   * drawn over the head (ghomta, hairStyle "veil" as CAST.womanB), a red blouse; a warm face.
+   */
+  boudi: {
+    id: "boudi",
+    age: "adult",
+    sex: "f",
+    height: 0.92,
+    girth: 1.0,
+    ...skinFair,
+    hair: "#1b1211",
+    hairLight: "#45342c",
+    hairStyle: "veil",
+    outfit: "blouse",
+    top: "#b3262f",
+    topLight: "#cf414a",
+    topShade: "#7d1820",
+    sleeve: "half",
+    lower: "saree",
+    lowerColor: "#e8b53e",
+    lowerShade: "#c08f22",
+    lowerTrim: "#b3262f",
+    scarf: { color: "#e8b53e", shade: "#c08f22", trim: "#b3262f", style: "drape" },
+    sindoor: true,
+    bindi: true,
+    look: FACE_LOOKS.boudi,
+    seed: 257,
+  },
+  /**
+   * The sweet-seller (an older village man, late 50s, built like CAST.listenerB): bare-chested, a little round in the
+   * belly, grey hair, a grey mustache, a red-checked gamchha over the left shoulder, a knee dhoti. No sacred thread or
+   * tilak (he is not a priest).
+   */
+  sweetSeller: {
+    id: "sweetSeller",
+    age: "elder",
+    sex: "m",
+    height: 0.95,
+    girth: 1.18,
+    ...skinWarm,
+    hair: "#9a948c",
+    hairLight: "#d8d3cc",
+    hairStyle: "balding",
+    outfit: "bare",
+    top: skinWarm.skin,
+    topLight: skinWarm.skinLight,
+    topShade: skinWarm.skinShade,
+    sleeve: "none",
+    lower: "dhoti",
+    lowerColor: "#efe6d0",
+    lowerShade: "#c8bb9c",
+    dhotiLength: "knee",
+    scarf: { color: "#c3442f", shade: "#8e2c1d", trim: "#f2e3c6", style: "gamchha" },
+    mustache: "#8f8880",
+    look: FACE_LOOKS.sweetSeller,
+    seed: 263,
+  },
+};
+
+/*
+ * Binoy's mother (Episode 5) is CAST.womanA as it stands (married: sindoor, maroon blouse, red-bordered sari), with
+ * GESTURES5.handAtMouth from Puppet.tsx.
+ *
+ * The house priest in Episode 4 (STO-19) is CAST.bhagabati: white kurta (Sundar-like) over a red-bordered dhoti
+ * with an uttariya over the shoulder (Balak never wears a paita, BAL-03).
+ *
+ * Episode 6: Surendra (the father) wears the wooden khadam through the Puppet prop footwear="khadam" (CAST.surendra is
+ * unchanged); his clack frames come from walkPlantFrames / footPlants in Puppet.tsx.
+ */

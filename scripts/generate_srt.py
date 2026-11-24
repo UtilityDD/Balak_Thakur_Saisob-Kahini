@@ -21,7 +21,7 @@ def fmt_srt_time(seconds: float) -> str:
 def parse_voice_script(md_path: Path) -> dict[str, str]:
     """Map .wav filename -> clean Bengali dialogue text."""
     text = md_path.read_text(encoding="utf-8")
-    blocks = re.split(r"^##\s+", text, flags=re.MULTILINE)
+    blocks = re.split(r"^#{2,4}\s+", text, flags=re.MULTILINE)
     mapping: dict[str, str] = {}
     for blk in blocks:
         m_wav = re.search(r"\*\*Save As:\*\*\s*`([^`]+)`", blk)

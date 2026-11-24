@@ -5,16 +5,20 @@
   "next_episode_title_bn": "জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী",
   "target_resolution": "1920x1080",
   "fps": 24,
+  "total_frames": 8240,
   "scenes": [
     {
       "scene_id": "00_intro",
+      "title": "Title Card & Saffron Wash",
+      "frame_start": 0,
+      "frame_end": 218,
       "lighting": "bright_orange_flat",
       "camera_motion": "bounce_title_pop",
       "camera_easing": "cubic_in_out",
       "characters": [
         "narrator"
       ],
-      "visual_prompt": "2.5D cinematic kids cartoon title card on warm saffron orange sky gradient, bold Bengali title 'কচ্ছপ খেলা ও গাভী রক্ষা', golden sparkles",
+      "visual_prompt": "Studio Ghibli style anime background, 1920s Bengal sunrise, warm saffron orange watercolor wash, traditional terracotta border, bold Bengali calligraphy 'কচ্ছপ খেলা ও গাভী রক্ষা', golden motes floating",
       "weather_vfx": "golden_sparkles",
       "depth_layers": {
         "L1_sky": "title_saffron_gradient_L1.png",
@@ -31,73 +35,192 @@
       ]
     },
     {
-      "scene_id": "01_tortoise_play",
-      "lighting": "golden_daytime",
+      "scene_id": "00b_source",
+      "title": "Parchment Scriptural Attribution",
+      "frame_start": 218,
+      "frame_end": 697,
+      "lighting": "warm_candlelight_ambient",
+      "camera_motion": "slow_dolly_push_in",
+      "camera_easing": "sine_in_out",
+      "characters": [],
+      "visual_prompt": "Aged Bengali parchment scroll unrolling on polished mahogany table, ink quill, golden Sanskrit-Bengali sloka from Sri Sri Balak Thakur Balyo O Kaisore Leela",
+      "weather_vfx": "soft_dust_motes",
+      "depth_layers": {
+        "L1_sky": "parchment_scroll_bg_L1.png",
+        "L4_stage": "parchment_text_ep05_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [],
+      "ambient_bed": "tanpura_meditation.wav",
+      "music_cue": "Harmonium_Drone_Gentle.wav",
+      "sfx": [
+        "parchment_rustle.wav"
+      ]
+    },
+    {
+      "scene_id": "01_kachari_tortoise_play",
+      "title": "Act 1: Kachari Veranda & River Tortoises",
+      "frame_start": 697,
+      "frame_end": 2880,
+      "lighting": "golden_morning_sunlight",
       "camera_motion": "slow_horizontal_pan_left_to_right",
       "camera_easing": "sine_in_out",
       "characters": [
         "narrator",
-        "toddler_thakur"
+        "muhuri",
+        "harendra",
+        "balak_thakur",
+        "binoy",
+        "surendra"
       ],
-      "visual_prompt": "2.5D Krishnanagar courtyard corner, curious 5-year-old toddler_thakur flipping tortoises gently; one tortoise playfully pinches his finger without leaving a single mark",
+      "visual_prompt": "Studio Ghibli style Krishnanagar colonial Kachari veranda with brick arches, red terracotta tiles, wicker baskets with river turtles, lush green banyan trees in courtyard, 6-year-old child Thakur playing barefoot",
       "weather_vfx": "bengal_atmospheric_particles",
       "depth_layers": {
         "L1_sky": "sky_golden_daytime_L1.png",
-        "L3_midground": "arch_ep05_01_tortoise_play_L3.png",
-        "L4_stage": "stage_ep05_01_tortoise_play_L4.png",
+        "L2_river": "bg_kachari_courtyard_trees_L2.png",
+        "L3_midground": "arch_ep05_01_kachari_veranda_L3.png",
+        "L4_stage": "stage_ep05_01_tortoise_baskets_L4.png",
         "L5_vfx": "vfx_atmospheric_motes_L5.png"
       },
       "audio_files": [
-        "01a_Narrator_Tortoise.wav"
+        "01a_Narrator_Kachari.wav",
+        "01b_Muhuri_Turtles.wav",
+        "01c_Harendra_Reply.wav",
+        "01d_Thakur_Whisper.wav",
+        "01e_Binoy_Watch.wav",
+        "01f_Thakur_Laugh.wav",
+        "01g_Binoy_Panic.wav",
+        "01h_Surendra_Panic.wav",
+        "01i_Muhuri_Advice.wav",
+        "01j_Binoy_Wonder.wav",
+        "01k_Surendra_Wonder.wav",
+        "01l_Thakur_Explain.wav"
       ],
       "ambient_bed": "padma_river_day.wav",
       "music_cue": "Village_Peace_Loop.wav",
       "sfx": [
-        "chime_pop.wav"
+        "chime_pop.wav",
+        "water_splash_light.wav"
       ]
     },
     {
-      "scene_id": "02_banana_grove_cow_rescue",
-      "lighting": "golden_daytime",
+      "scene_id": "02_banana_grove_cow",
+      "title": "Act 2: The Secluded Banana Grove & Gentle Cow",
+      "frame_start": 2880,
+      "frame_end": 3818,
+      "lighting": "dappled_canopy_sunbeams",
       "camera_motion": "slow_dolly_push_in",
       "camera_easing": "sine_in_out",
       "characters": [
-        "narrator",
-        "grumpy_relative",
-        "toddler_thakur"
+        "balak_thakur",
+        "cow"
       ],
-      "visual_prompt": "2.5D lush green banana grove behind courtyard, angry villager Haricharan holding bamboo stick looking for cow, calm 6-year-old toddler_thakur standing firm to protect both truth and the cow",
-      "weather_vfx": "bengal_atmospheric_particles",
+      "visual_prompt": "Studio Ghibli lush rural Bengal banana grove, broad translucent emerald leaves backlit by golden sun, wooden cucumber trellis loaded with tendrils, serene white humped cow grazing happily, smiling 6-year-old boy stroking its dewlap",
+      "weather_vfx": "sunbeam_dust_motes",
       "depth_layers": {
-        "L1_sky": "sky_golden_daytime_L1.png",
-        "L3_midground": "arch_ep05_02_banana_grove_cow_rescue_L3.png",
-        "L4_stage": "stage_ep05_02_banana_grove_cow_rescue_L4.png",
-        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+        "L1_sky": "sky_dappled_green_canopy_L1.png",
+        "L3_midground": "arch_ep05_02_banana_fronds_L3.png",
+        "L4_stage": "stage_ep05_02_cucumber_trellis_cow_L4.png",
+        "L5_vfx": "vfx_sunbeams_motes_L5.png"
       },
       "audio_files": [
-        "02a_Narrator_Cow.wav",
-        "02b_Haricharan.wav",
-        "02c_Thakur_Truth.wav"
+        "02a_Thakur_Cow.wav"
       ],
-      "ambient_bed": "padma_river_day.wav",
+      "ambient_bed": "banana_grove_breeze.wav",
       "music_cue": "Warm_Family_Flute.wav",
       "sfx": [
-        "soft_magical_shimmer.wav"
+        "cow_munching_leaves.wav",
+        "gentle_breeze_leaves.wav"
       ]
     },
     {
-      "scene_id": "99_closing_sequential_outro",
-      "lighting": "soft_golden_dawn",
+      "scene_id": "03_haricharan_standoff",
+      "title": "Act 3: Haricharan's Fury & The Moral Standoff",
+      "frame_start": 3818,
+      "frame_end": 5669,
+      "lighting": "high_contrast_amber_tension",
+      "camera_motion": "dramatic_shot_reverse_shot",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "haricharan",
+        "balak_thakur",
+        "cow"
+      ],
+      "visual_prompt": "Studio Ghibli dramatic standoff in rural banana grove, angry villager in dhoti wielding long bamboo stick, fearless 6-year-old child standing tall with steady gaze and gentle divine aura, gentle white cow sheltering behind child",
+      "weather_vfx": "bengal_atmospheric_particles",
+      "depth_layers": {
+        "L1_sky": "sky_amber_tension_L1.png",
+        "L3_midground": "arch_ep05_03_shattered_trellis_L3.png",
+        "L4_stage": "stage_ep05_03_standoff_actors_L4.png",
+        "L5_vfx": "vfx_biru_divine_glow_L5.png"
+      },
+      "audio_files": [
+        "02b_01_Hari_Rage.wav",
+        "02c_01_Thakur_Refusal.wav",
+        "02b_02_Hari_Reaction1.wav",
+        "02c_02_Thakur_Hunger.wav",
+        "02b_03_Hari_Reaction2.wav",
+        "02c_03_Thakur_FinalStand.wav",
+        "02b_04_Hari_Defeated.wav"
+      ],
+      "ambient_bed": "banana_grove_breeze.wav",
+      "music_cue": "Dramatic_Moral_Crescendo.wav",
+      "sfx": [
+        "bamboo_stick_thud_soil.wav",
+        "cow_gentle_moo.wav"
+      ]
+    },
+    {
+      "scene_id": "04_kachari_gossip",
+      "title": "Act 4: Seresta Aftermath & Village Gossip",
+      "frame_start": 5669,
+      "frame_end": 6980,
+      "lighting": "warm_afternoon_veranda_amber",
+      "camera_motion": "pan_across_courtyard_vignettes",
+      "camera_easing": "sine_in_out",
+      "characters": [
+        "muhuri",
+        "haricharan",
+        "gomasta",
+        "villager_sundar"
+      ],
+      "visual_prompt": "Studio Ghibli style Kachari seresta veranda in afternoon light, wooden ledgers, brass inkpots, Haricharan wiping sweat sitting on bench with Muhuri and Gomasta laughing warmly at child's astonishing moral wisdom",
+      "weather_vfx": "warm_afternoon_haze",
+      "depth_layers": {
+        "L1_sky": "sky_afternoon_warm_L1.png",
+        "L3_midground": "arch_ep05_04_seresta_veranda_L3.png",
+        "L4_stage": "stage_ep05_04_clerks_desk_L4.png",
+        "L5_vfx": "vfx_atmospheric_motes_L5.png"
+      },
+      "audio_files": [
+        "04a_Muhuri_Return.wav",
+        "04b_Hari_Gossip.wav",
+        "04c_Muhuri_Philosophy.wav",
+        "04d_Villager_Wink.wav"
+      ],
+      "ambient_bed": "courtyard_afternoon_birds.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": [
+        "tea_cup_clink.wav",
+        "laughter_chuckle.wav"
+      ]
+    },
+    {
+      "scene_id": "99_outro",
+      "title": "Act 5: Padma River Twilight & Outro",
+      "frame_start": 6980,
+      "frame_end": 8240,
+      "lighting": "soft_golden_twilight_dawn",
       "camera_motion": "slow_dolly_pull_out_padma_sunrise",
       "camera_easing": "cubic_in_out",
       "characters": [
         "narrator"
       ],
-      "visual_prompt": "2.5D serene sunrise over calm Padma river, gentle white-gold glow fading into warm morning sky, next-episode preview card",
+      "visual_prompt": "Studio Ghibli style serene twilight sunset over flowing Padma river, gentle pink-golden ripples, silhouetted boat gliding in distance, teaser card for Episode 6 'জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী'",
       "weather_vfx": "gentle_river_shimmer_breeze",
       "depth_layers": {
         "L1_sky": "sky_dawn_coral_saffron_L1.png",
-        "L2_river": "river_padma_sunrise_L2.png",
+        "L2_river": "river_padma_sunset_L2.png",
         "L3_midground": "arch_medinimondal_silhouette_L3.png",
         "L5_vfx": "vfx_golden_sparkles_L5.png"
       },
