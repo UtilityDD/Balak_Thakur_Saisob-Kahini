@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Freeze, Sequence, staticFile, useCurrentFrame } from "remotion";
 import { SeriesSubtitles } from "../../episode/SeriesSubtitles";
 import { GhibliWashTransition } from "../core/GhibliWashTransition";
 import { GhibliScene00bSource } from "../episode03/scenes/GhibliScene00bSource";
@@ -59,8 +59,16 @@ const SCENE_FADE: Record<string, { in?: number; out?: number; color?: string }> 
   [S01]: { in: 14, color: "#1c120a" },
   [S04]: { out: 18, color: "#120d08" },
   [S05]: { in: 24, color: "#120d08" },
-  [S06]: { out: 18, color: "#1e1610" },
-  [OUTRO]: { in: 18, out: 24, color: "#120d08" },
+  // Scene 06 -> outro is a true cross-dissolve (CAM-09, OUTRO_DISSOLVE below), never a dip to black; the episode ends
+  // on a slow gentle fade
+  [OUTRO]: { out: 40, color: "#120d08" },
+};
+
+/** CAM-09: the outro's first frame dissolves in over the last frames of Scene 06 (image to image). */
+const OUTRO_DISSOLVE = 40;
+const DissolveIn: React.FC<{ frames: number; children: React.ReactNode }> = ({ frames, children }) => {
+  const f = useCurrentFrame();
+  return <AbsoluteFill style={{ opacity: ease((f + 1) / frames) }}>{children}</AbsoluteFill>;
 };
 
 const EdgeFade: React.FC<{
@@ -653,10 +661,13 @@ const PLACED_SFX: readonly PlacedSfx[] = [
   /* Scene 01: morning puja bell, pranam rustle, wooden doll swap plate clink, clay rolling, elder brother steps */
   { file: "sfx/temple_bell_drop.wav", from: sceneStart(S01) + 22, volume: 0.18 },
   { file: "sfx/ep02/cloth_rustle.wav", from: sceneStart(S01) + 230, volume: 0.14 },
-  { file: "sfx/ep06/plate_clink.wav", from: s01Ag2.from + 44, volume: 0.28 },
+  // the doll touches the brass at scene + 324 (Scene01: CLINK = RISE + 32, moved earlier for Biru's walk-off)
+  { file: "sfx/ep06/plate_clink.wav", from: sceneStart(S01) + 324, volume: 0.28 },
   { file: "sfx/ep02/sand_pat.wav", from: s01Ag2.from + 52, volume: 0.16, frames: 42, fadeIn: 6, fadeOut: 12 },
   { file: "sfx/ep02/cloth_rustle.wav", from: s01Shock.from - 4, volume: 0.16 },
-  { file: "sfx/ep02/footsteps_floor.wav", from: s01Elder.from - 34, volume: 0.15, frames: 48, fadeIn: 6, fadeOut: 12 },
+  // the brother walks Biru in (Scene01 BRO_WALK: 54 to 6 frames before his line), then leaves after his report
+  { file: "sfx/ep02/footsteps_floor.wav", from: s01Elder.from - 52, volume: 0.15, frames: 48, fadeIn: 6, fadeOut: 10 },
+  { file: "sfx/ep02/footsteps_floor.wav", from: s01Elder.to - 10, volume: 0.1, frames: 40, fadeIn: 4, fadeOut: 14 },
 
   /* Scene 02: pond petal plop & Mangla panic sprint footsteps */
   { file: "sfx/ep02/water_splash.wav", from: sceneStart(S02) + 26, volume: 0.12, rate: 1.5 },
@@ -766,6 +777,15 @@ export const Episode04Ghibli: React.FC = () => (
         </Sequence>
       );
     })}
+
+    {/* Scene 06 -> outro: the outro's opening frame dissolves in over Scene 06's last frames (CAM-09) */}
+    <Sequence from={sceneStart(OUTRO) - OUTRO_DISSOLVE} durationInFrames={OUTRO_DISSOLVE}>
+      <DissolveIn frames={OUTRO_DISSOLVE}>
+        <Freeze frame={0}>
+          <GhibliScene99OutroEp04 />
+        </Freeze>
+      </DissolveIn>
+    </Sequence>
 
     {/* Hand-painted watercolor wash transitions at Scene 01->02 and Scene 03->04 */}
     <Sequence from={sceneStart(S02) - 13} durationInFrames={26}>

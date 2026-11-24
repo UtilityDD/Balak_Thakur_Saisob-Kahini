@@ -7,13 +7,19 @@ import { MOUTH_REST, type MouthState } from "../../cinematic/rig/lipsync";
 import { type CastMember, type Lighting, type Pose, BASE_POSE } from "../../cinematic/rig/Puppet";
 import {
   GhibliAtmosphericHaze,
+  GhibliCharFilterDefs,
   GhibliCutout,
   GhibliForegroundBokeh,
   GhibliGrade,
   GhibliLayer,
   GhibliPreload,
+  GhibliStage,
 } from "../GhibliStage";
 import { GHIBLI_ANCHORS } from "./plateAnchors";
+import { GentleCow, solveGentleCow, type GentleCowProps } from "../../cinematic/animals/GentleCow";
+import { SeatedChild, seatedChildHands, type SeatedChildProps } from "../../episode03/rig/SeatedChild";
+import { GhibliBirdFlock } from "../core/GhibliLifeKit";
+import { GhibliBalakAura } from "../core/GhibliBalakAura";
 
 /** Episode 4 Ghibli cast (reusing shared CAST + servant Mangla variant). */
 export const EP04G_CAST: Record<string, CastMember> = {
@@ -1134,7 +1140,9 @@ const GhibliPondBaseTufts: React.FC = () => (
 export const GhibliPondBackdrop: React.FC<{
   f: number;
   upstageBehindTree?: React.ReactNode;
-}> = ({ f, upstageBehindTree }) => {
+  /** The skimming dragonfly (default on). At medium zooms it reads as a stray teal dash; Scenes 02/03 turn it off. */
+  dragonfly?: boolean;
+}> = ({ f, upstageBehindTree, dragonfly = true }) => {
   return (
     <>
       <GhibliLayer depth={0.08} parallaxDrift={0.004}>
@@ -1175,7 +1183,7 @@ export const GhibliPondBackdrop: React.FC<{
           targetHeight={760}
         />
         <GhibliPondBaseTufts />
-        <GhibliDragonfly f={f} />
+        {dragonfly && <GhibliDragonfly f={f} />}
       </GhibliLayer>
     </>
   );
@@ -1200,7 +1208,7 @@ export const GhibliShrineBackdrop: React.FC<{ f: number }> = ({ f }) => {
           file="images/ghibli_ep04/deity_khat_shrine_sketch.png"
           anchor={GHIBLI_ANCHORS.deity_khat_shrine_sketch}
           x={1080}
-          y={885}
+          y={940}
           targetHeight={450}
         />
       </GhibliLayer>
@@ -1227,7 +1235,9 @@ export const GhibliEp04ForegroundFinish: React.FC<{
   shrineArch?: boolean;
   petals?: boolean;
   warmth?: number;
-}> = ({ f, zoom, shrineArch = false, petals = false, warmth = 0.24 }) => (
+  /** The foreground branch bokeh (default true); a scene may drop it in close shots. */
+  bokeh?: boolean;
+}> = ({ f, zoom, shrineArch = false, petals = false, warmth = 0.24, bokeh = true }) => (
   <>
     {shrineArch && (
       <GhibliLayer depth={1.14} extraBlur={1.1} opacity={clamp(1.25 - (zoom - 1) * 0.55, 0.15, 0.92)}>
@@ -1256,7 +1266,7 @@ export const GhibliEp04ForegroundFinish: React.FC<{
       </GhibliLayer>
     )}
     <GhibliLayer depth={1.3} extraBlur={3.6} parallaxDrift={0.045}>
-      <GhibliForegroundBokeh f={f} zoom={zoom} />
+      {bokeh && <GhibliForegroundBokeh f={f} zoom={zoom} />}
       {petals && <GhibliMandarPetals f={f} count={6} seed={99} />}
     </GhibliLayer>
     <GhibliGrade paperOpacity={0.16} vignette={0.26} warmth={warmth} />
@@ -1273,26 +1283,36 @@ export const GhibliScene00IntroEp04: React.FC = () => {
   ensureBanglaFont();
   const f = useCurrentFrame();
   const fade = Math.min(clamp(f / 16), clamp((200 - f) / 18));
+  // The same multiplane courtyard the episode opens in (STO-22c), so the floor plate covers the back plate's base
+  // (no stretched edge pixels anywhere): a slow push in over the title.
   const z = 1.04 + clamp(f / 190) * 0.08;
+  const cam = { x: 0, y: 734 - 540 - (712 - 540) / z, zoom: z, focus: 1 };
   return (
     <AbsoluteFill style={{ background: "#1c120c", opacity: fade, overflow: "hidden" }}>
-      <GhibliPreload files={["images/ghibli_ep04/sky_ep04_morning_courtyard.png", "images/ghibli_ep04/courtyard_back_ep04_morning.png"]} />
-      <img
-        src={staticFile("images/ghibli_ep04/sky_ep04_morning_courtyard.png")}
-        alt=""
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+      <GhibliPreload
+        files={[
+          "images/ghibli_ep04/sky_ep04_morning_courtyard.png",
+          "images/ghibli_ep04/far_trees_ep04_sketch.png",
+          "images/ghibli_ep04/courtyard_back_ep04_morning.png",
+          "images/ghibli_ep04/courtyard_floor_ep04_sketch.png",
+          "images/ghibli_ep04/tulsi_mancha_ep04_sketch.png",
+        ]}
       />
-      <img
-        src={staticFile("images/ghibli_ep04/courtyard_back_ep04_morning.png")}
-        alt=""
+      <GhibliStage cam={cam}>
+        <GhibliCourtyardBackdrop f={f} mode="morning" sparrowFlyAt={150} />
+      </GhibliStage>
+      {/* a soft umber-saffron wash behind the title so it reads on the pale plaster */}
+      <div
         style={{
           position: "absolute",
           left: "50%",
-          top: "46%",
-          width: "118%",
-          height: "118%",
-          objectFit: "cover",
-          transform: `translate(-50%, -50%) scale(${z.toFixed(3)})`,
+          top: 70,
+          width: 1500,
+          height: 470,
+          transform: "translateX(-50%)",
+          background:
+            "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(46,22,8,0.62) 0%, rgba(70,34,10,0.42) 48%, rgba(120,62,16,0.12) 78%, rgba(120,62,16,0) 100%)",
+          opacity: clamp((f - 4) / 18),
         }}
       />
       <div
@@ -1300,16 +1320,16 @@ export const GhibliScene00IntroEp04: React.FC = () => {
           position: "absolute",
           left: 0,
           right: 0,
-          top: 150,
+          top: 128,
           textAlign: "center",
           fontFamily: BN_FONT,
           color: "#fff6e4",
-          textShadow: "0 3px 16px rgba(40,18,8,0.65)",
+          textShadow: "0 2px 4px rgba(30,12,4,0.85), 0 4px 22px rgba(30,12,4,0.75)",
         }}
       >
-        <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: 1, opacity: clamp((f - 8) / 16) }}>ছোটদের বালক ঠাকুরের গল্প</div>
-        <div style={{ fontSize: 28, marginTop: 18, color: "#ffe0a4", opacity: clamp((f - 28) / 16) }}>পর্ব চার</div>
-        <div style={{ fontSize: 64, fontWeight: 700, marginTop: 22, lineHeight: 1.25, opacity: clamp((f - 46) / 18) }}>
+        <div style={{ fontSize: 50, fontWeight: 600, letterSpacing: 1, opacity: clamp((f - 8) / 16) }}>ছোটদের বালক ঠাকুরের গল্প</div>
+        <div style={{ fontSize: 40, fontWeight: 600, marginTop: 14, color: "#ffd27a", opacity: clamp((f - 28) / 16) }}>পর্ব চার</div>
+        <div style={{ fontSize: 88, fontWeight: 700, marginTop: 18, lineHeight: 1.25, opacity: clamp((f - 46) / 18) }}>
           শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক
         </div>
       </div>
@@ -1318,44 +1338,191 @@ export const GhibliScene00IntroEp04: React.FC = () => {
   );
 };
 
+/* ------------------------------------------------------------------ */
+/* Outro (Block 99): the Padma at sunset, a slow drift, birds, the boat  */
+/* rocking, and the soft boxless Episode 5 glimpse                      */
+/* ------------------------------------------------------------------ */
+
+const OUTRO_FRAMES = 638;
+/** The glimpse comes in with the narration's "আসছে পরের পর্ব…" (its caption starts at outro-local 430). */
+const GLIMPSE_AT = 412;
+const GLIMPSE_IN = 30;
+const GLIMPSE_END = 618;
+const GLIMPSE_OUT = 30;
+
+/* The vignette: centred under the series title, feathered to nothing (no frame, border or box). */
+const VIG_W = 1270;
+const VIG_H = 660;
+const VIG_LEFT = (1920 - VIG_W) / 2;
+const VIG_TOP = 270;
+const VIG_SCALE = Math.max(VIG_W / 1920, VIG_H / 1080);
+const VIG_DX = (VIG_W - 1920 * VIG_SCALE) / 2;
+const VIG_DY = (VIG_H - 1080 * VIG_SCALE) / 2;
+const VIG_MASK =
+  "radial-gradient(ellipse closest-side at 50% 50%, #000 0%, #000 40%, rgba(0,0,0,0.8) 56%, rgba(0,0,0,0.42) 72%, rgba(0,0,0,0.12) 86%, rgba(0,0,0,0) 100%)";
+
+/*
+ * The glimpse moment (1920 x 1080 units, shown scaled inside the vignette): the painted Episode 5 banana grove with
+ * six-year-old Balak (plate design, BAL-26b) seated, his palm raised to the calm white cow who lowers her muzzle to it,
+ * then his slow strokes (the last cow moment of Episode 5 in miniature; the geometry of the Episode 4 outro glimpse).
+ * The rig cow stands over the painted one, so only one cow is ever seen.
+ */
+const GL_GROUND = 830;
+const GL_BALAK = { x: 690, y: GL_GROUND, s: 1.2 };
+const GL_COW_S = GL_BALAK.s * (1.05 / 0.95);
+const GL_STROKE_PALM = { x: 112, y: -120 };
+const GL_PALM_W = { x: GL_BALAK.x + GL_STROKE_PALM.x * GL_BALAK.s, y: GL_BALAK.y + GL_STROKE_PALM.y * GL_BALAK.s };
+const GL_COW = { x: GL_PALM_W.x + 245 * (GL_COW_S / 1.05), y: GL_GROUND - 24 * (GL_BALAK.s / 0.95), s: GL_COW_S };
+/** The painted grove placed so its cow (hooves at image 1700, 1225) stands under the rig cow. */
+const GL_IMG_K = 0.74;
+const GL_IMG = { x: GL_COW.x + 10 - 1700 * GL_IMG_K, y: GL_COW.y + 4 - 1225 * GL_IMG_K, w: 2560 * GL_IMG_K, h: 1440 * GL_IMG_K };
+
+const GL_TOUCH = 66;
+const GL_NUZZLE_AT = GL_TOUCH - 24;
+const GL_R0 = 400;
+const glStrokeT = (lf: number): number => {
+  if (lf <= 0) return 8;
+  if (lf < 30) return 8 + (12 * lf) / 30;
+  if (lf < GL_TOUCH) return 20 + (12 * (lf - 30)) / (GL_TOUCH - 30);
+  return 32 + 0.5 * (lf - GL_TOUCH);
+};
+const glCowProps = (lf: number): GentleCowProps => ({
+  x: GL_COW.x,
+  y: GL_COW.y,
+  s: GL_COW.s,
+  flip: true,
+  f: lf,
+  lifeF: lf + 60,
+  action: "nuzzle",
+  actionStart: GL_NUZZLE_AT,
+  prevAction: "idle",
+  prevActionStart: GL_NUZZLE_AT - 60,
+  turn: -0.06,
+  target: GL_PALM_W,
+  seed: 7,
+});
+const glBalakProps = (lf: number): SeatedChildProps => {
+  const cow = solveGentleCow(glCowProps(lf));
+  const fig = (p: { x: number; y: number }) => ({ x: (p.x - GL_BALAK.x) / GL_BALAK.s, y: (p.y - GL_BALAK.y) / GL_BALAK.s });
+  const muzzle = fig(cow.muzzle);
+  const fore = fig(cow.forehead);
+  const k = clamp((lf - (GL_TOUCH - 18)) / 14);
+  const kk = k * k * (3 - 2 * k);
+  return {
+    x: GL_BALAK.x,
+    y: GL_BALAK.y,
+    s: GL_BALAK.s,
+    f: GL_R0 + glStrokeT(lf),
+    lifeF: GL_R0 + lf,
+    design: "plate",
+    age: 6,
+    pose: "strokeCow",
+    prevPose: "sitCross",
+    poseStart: GL_R0,
+    strokeAt: { x: GL_STROKE_PALM.x + (muzzle.x - GL_STROKE_PALM.x) * kk, y: GL_STROKE_PALM.y + (muzzle.y - GL_STROKE_PALM.y) * kk },
+    strokeDir: { x: fore.x - muzzle.x, y: fore.y - muzzle.y },
+    face: { smile: 0.62 },
+  };
+};
+
+const Ep05GroveGlimpse: React.FC<{ lf: number }> = ({ lf }) => {
+  const bp = glBalakProps(lf);
+  const g = seatedChildHands(bp).glowAnchor;
+  return (
+    <svg viewBox="0 0 1920 1080" width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
+      <image href={staticFile("images/ghibli_ep04/glimpse_ep05_cow_grove_sketch.png")} x={GL_IMG.x} y={GL_IMG.y} width={GL_IMG.w} height={GL_IMG.h} />
+      {/* warm late light over the grove, so the figures sit in the painting */}
+      <rect x={0} y={0} width={1920} height={1080} fill="#ffd9a0" opacity={0.12} />
+      <GhibliCharFilterDefs f={lf} dapple shadeFactor={0.12} bounceColor="#7c9c78" sunColor="#ffe7aa" />
+      <ellipse cx={GL_COW.x} cy={GL_COW.y + 6} rx={250} ry={26} fill="#5a4426" opacity={0.28} />
+      <g filter="url(#ghibli-char-ink)">
+        <GentleCow {...glCowProps(lf)} />
+      </g>
+      <ellipse cx={GL_BALAK.x} cy={GL_BALAK.y + 4} rx={150} ry={26} fill="#fff0c8" opacity={0.22} />
+      <GhibliBalakAura cx={g.cx} cy={g.cy} r={g.r} glow={0.6} f={lf} />
+      <g filter="url(#ghibli-balak-ink)">
+        <SeatedChild {...bp} />
+      </g>
+    </svg>
+  );
+};
+
+/** The boat in the plate (fractions of the drawn plate before its drift), rocked gently on the water. */
+const BOAT_MASK = "radial-gradient(ellipse 13% 8% at 71% 88%, #000 55%, transparent 100%)";
+
 /** Episode 4 Ghibli Outro with soft feathered Episode 5 cow-grove glimpse (`TTL-10a`). */
 export const GhibliScene99OutroEp04: React.FC = () => {
   ensureBanglaFont();
   const f = useCurrentFrame();
-  const glimpseOp = clamp((f - 290) / 36, 0, 1) * clamp((610 - f) / 30, 0, 1);
+  const glimpseOp = Math.min(clamp((f - GLIMPSE_AT) / GLIMPSE_IN), clamp((GLIMPSE_END - f) / GLIMPSE_OUT));
+  const gOp = glimpseOp * glimpseOp * (3 - 2 * glimpseOp);
   const titleOp = clamp(f / 26, 0, 1);
+  // a slow drift across the river (one gentle move for the whole outro, CAM-01)
+  const u = clamp(f / OUTRO_FRAMES);
+  const d = u * u * (3 - 2 * u);
+  const plateXf = `translate(${(178 - 26 * d).toFixed(2)}px, ${(-70 - 10 * d).toFixed(2)}px) scale(${(1.195 + 0.04 * d).toFixed(4)})`;
+  const bob = 1.6 * Math.sin(f * 0.085) + 0.6 * Math.sin(f * 0.21 + 1.3);
+  const rock = 0.35 * Math.sin(f * 0.07 + 0.6);
+  const lf = f - GLIMPSE_AT;
+  const gDrift = clamp((f - GLIMPSE_AT) / (GLIMPSE_END - GLIMPSE_AT));
   return (
     <AbsoluteFill style={{ background: "#1e1610", overflow: "hidden" }}>
       <GhibliPreload files={["images/ghibli_ep04/card_outro_padma_sketch.png", "images/ghibli_ep04/glimpse_ep05_cow_grove_sketch.png"]} />
-      <img
-        src={staticFile("images/ghibli_ep04/card_outro_padma_sketch.png")}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transform: `scale(${(1.06 - clamp(f / 640, 0, 1) * 0.06).toFixed(4)})`,
-        }}
-      />
-      {glimpseOp > 0.01 && (
+      <div style={{ position: "absolute", inset: 0, transform: plateXf }}>
+        <img
+          src={staticFile("images/ghibli_ep04/card_outro_padma_sketch.png")}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+        {/* the boat rides the swell: a feathered copy of its patch of the plate, bobbing a pixel or two */}
+        <img
+          src={staticFile("images/ghibli_ep04/card_outro_padma_sketch.png")}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transformOrigin: "71% 88%",
+            transform: `translateY(${bob.toFixed(2)}px) rotate(${rock.toFixed(3)}deg)`,
+            WebkitMaskImage: BOAT_MASK,
+            maskImage: BOAT_MASK,
+          }}
+        />
+      </div>
+      {/* a few birds crossing the evening sky (STO-22b) */}
+      <svg viewBox="0 0 1920 1080" width={1920} height={1080} style={{ position: "absolute", inset: 0 }}>
+        <GhibliBirdFlock f={f} start={30} dur={330} from={{ x: 1990, y: 250 }} to={{ x: -90, y: 175 }} count={6} formation="v" s={1.05} />
+        <GhibliBirdFlock f={f} start={190} dur={230} from={{ x: -70, y: 215 }} to={{ x: 1250, y: 120 }} count={3} formation="loose" s={0.8} />
+      </svg>
+      {gOp > 0.005 && (
         <div
           style={{
             position: "absolute",
-            left: "50%",
-            top: "43%",
-            transform: "translate(-50%, -50%)",
-            width: 780,
-            height: 440,
-            opacity: glimpseOp,
-            WebkitMaskImage: "radial-gradient(ellipse 68% 64% at 50% 50%, #000 54%, transparent 98%)",
-            maskImage: "radial-gradient(ellipse 68% 64% at 50% 50%, #000 54%, transparent 98%)",
+            left: VIG_LEFT,
+            top: VIG_TOP,
+            width: VIG_W,
+            height: VIG_H,
+            overflow: "hidden",
+            opacity: gOp,
+            WebkitMaskImage: VIG_MASK,
+            maskImage: VIG_MASK,
+            transform: `translate(${(6 - 12 * gDrift).toFixed(2)}px, ${(3 - 6 * gDrift).toFixed(2)}px)`,
+            filter: `blur(${(4 * (1 - gOp)).toFixed(2)}px)`,
           }}
         >
-          <img
-            src={staticFile("images/ghibli_ep04/glimpse_ep05_cow_grove_sketch.png")}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          <div
+            style={{
+              position: "absolute",
+              left: VIG_DX,
+              top: VIG_DY,
+              width: 1920,
+              height: 1080,
+              transformOrigin: "0 0",
+              transform: `scale(${(VIG_SCALE * (1 + 0.03 * gDrift)).toFixed(5)})`,
+            }}
+          >
+            <Ep05GroveGlimpse lf={lf} />
+          </div>
         </div>
       )}
       <div
@@ -1368,27 +1535,11 @@ export const GhibliScene99OutroEp04: React.FC = () => {
           fontFamily: BN_FONT,
           opacity: titleOp,
           color: "#fff4dc",
-          textShadow: "0 4px 20px rgba(32,16,6,0.7)",
+          textShadow: "0 2px 4px rgba(32,16,6,0.8), 0 4px 20px rgba(32,16,6,0.75)",
         }}
       >
-        <div style={{ fontSize: 34, fontWeight: 600, color: "#ffd98c" }}>ছোটদের বালক ঠাকুরের গল্প</div>
-        {glimpseOp > 0.05 && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 860,
-              fontSize: 36,
-              fontWeight: 600,
-              opacity: glimpseOp,
-              color: "#fff7e4",
-              textShadow: "0 2px 12px rgba(20,10,4,0.55)",
-            }}
-          >
-            আসছে পরের পর্ব: কচ্ছপ খেলা ও গাভী রক্ষা
-          </div>
-        )}
+        <div style={{ fontSize: 46, fontWeight: 600, color: "#ffd98c" }}>ছোটদের বালক ঠাকুরের গল্প</div>
+        {/* the teaser line is the caption itself (one line on screen at a time, TTL-14): no second in-picture line */}
       </div>
       <GhibliGrade paperOpacity={0.14} vignette={0.28} />
     </AbsoluteFill>

@@ -274,6 +274,81 @@ const skyAt = (p: number) =>
  * Lifting, thinning mist banks (soft cream ellipses) along a ground line. `lift` 0..1: 0 = low, dense morning mist;
  * 1 = lifted ~60 px and nearly gone. Place it in the layer of the ground it lies on (in front of the far set).
  */
+/**
+ * Small birds crossing the sky (stage px): ink "m" silhouettes that flap out of phase, glide in pulses, and drift
+ * a little inside the flock. `formation` "v" keeps a loose V; "loose" scatters them. They travel `from` -> `to`
+ * over `dur` frames starting at `start` (eased in/out, a slight arc), fading at both ends; `loop` repeats the pass.
+ */
+export const GhibliBirdFlock: React.FC<{
+  f: number;
+  start: number;
+  dur: number;
+  from: GPt;
+  to: GPt;
+  count?: number;
+  formation?: "v" | "loose";
+  s?: number;
+  loop?: boolean;
+  lifeF?: number;
+}> = ({ f, start, dur, from, to, count = 9, formation = "loose", s = 1, loop = false, lifeF }) => {
+  const lf = lifeF ?? f;
+  let t = (f - start) / Math.max(1, dur);
+  if (loop) t = ((t % 1) + 1) % 1;
+  if (t < 0 || t > 1) return null;
+  const p = EASE.inOut(t);
+  const fade = sstep(0, 0.12, t) * (1 - sstep(0.88, 1, t));
+  const dx = to.x - from.x;
+  const dirX = dx >= 0 ? 1 : -1;
+  const cx = lerp(from.x, to.x, p);
+  const cy = lerp(from.y, to.y, p) - Math.sin(Math.PI * p) * 40 * s; // gentle arc
+  return (
+    <g opacity={n2(0.85 * fade)}>
+      {Array.from({ length: count }, (_, i) => {
+        const seed = i * 7.31 + 3;
+        // Place in formation: V = two trailing arms behind the leader; loose = scattered cloud.
+        let ox: number;
+        let oy: number;
+        if (formation === "v") {
+          const arm = i === 0 ? 0 : i % 2 === 1 ? -1 : 1;
+          const rank = Math.ceil(i / 2);
+          ox = -dirX * rank * 34 * s;
+          oy = arm * rank * 20 * s;
+        } else {
+          ox = (hash(seed) - 0.5) * 260 * s;
+          oy = (hash(seed + 1.7) - 0.5) * 110 * s;
+        }
+        // Drift inside the flock so it breathes.
+        ox += noise1(lf * 0.02 + seed) * 14 * s;
+        oy += noise1(lf * 0.025 + seed * 1.3) * 10 * s;
+        const bs = (0.75 + hash(seed + 4.2) * 0.5) * s; // near/far size variety
+        // Flap in pulses: a few beats, then a glide with wings held slightly up.
+        const period = 9 + Math.round(hash(seed + 2.9) * 5);
+        const glide = noise1(lf * 0.03 + seed * 2.1) > 0.25;
+        const beat = Math.sin(((lf + seed * 10) / period) * Math.PI * 2);
+        const wing = glide ? 0.35 : beat; // -1 = wings down, 1 = wings up
+        const w = 9 * bs;
+        const tip = -wing * 6 * bs;
+        const mid = 2.2 * bs;
+        const x = cx + ox;
+        const y = cy + oy;
+        return (
+          <path
+            key={i}
+            d={`M ${n1(x - w)} ${n1(y + tip)} Q ${n1(x - w * 0.45)} ${n1(y - mid - wing * 2 * bs)} ${n1(x)} ${n1(y)} Q ${n1(
+              x + w * 0.45,
+            )} ${n1(y - mid - wing * 2 * bs)} ${n1(x + w)} ${n1(y + tip)}`}
+            fill="none"
+            stroke="#2f2a26"
+            strokeWidth={n2(Math.max(1.1, 1.6 * bs))}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        );
+      })}
+    </g>
+  );
+};
+
 export const GhibliMorningMist: React.FC<{
   /** Base line of the mist (stage y). */
   y: number;

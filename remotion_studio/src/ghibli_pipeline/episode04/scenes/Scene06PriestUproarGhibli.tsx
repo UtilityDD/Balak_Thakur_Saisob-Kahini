@@ -2,8 +2,9 @@ import React from "react";
 import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
 import { clamp, EASE, lerp } from "../../../cinematic/core/anim";
 import { Cam } from "../../../cinematic/core/Stage";
-import { Puppet } from "../../../cinematic/rig/Puppet";
+import { Puppet, shoutMouth } from "../../../cinematic/rig/Puppet";
 import {
+  HELD_OBJECT_BOTTOM,
   HeldObjectArt,
   SeatedChild,
   type SeatedChildProps,
@@ -25,10 +26,31 @@ import {
   mouthFromRms,
   poseOf,
 } from "../Ep04GhibliShared";
-import { blinkAt, BOWL_AT, DHOOP_SET, ramp, SHRINE, ShrineArchFrame } from "./Scene05DhoopAndCoconutGhibli";
+import {
+  blinkAt,
+  BOWL_FLOOR,
+  BOWL_FLOOR_S,
+  DHOOP_SET,
+  PRIEST_CAST,
+  ramp,
+  SHRINE,
+  ShrineGobinda,
+  ShrineLampLight,
+} from "./Scene05DhoopAndCoconutGhibli";
 
 const SCENE_ID = "06_priest_uproar_and_ants";
 const SCENE_TOTAL_FRAMES = 1316;
+
+/**
+ * Where the family stops after rushing in from the doorway (off the left edge), staged in depth, not on one baseline:
+ * Sundar further back, Jyethi (who scolds) in the middle, Charu nearest the camera. All left of world x 430 so the
+ * medium shots on the boy (left frame edge >= 440) never cut them.
+ */
+const FAM = {
+  sundar: { x: 112, y: 972, s: 0.95 },
+  jyethi: { x: 250, y: 1008, s: 0.99 },
+  charu: { x: 372, y: 1048, s: 1.04 },
+} as const;
 
 const PRELOAD = [
   "images/ghibli_ep04/sky_ep04_purnima_dusk.png",
@@ -56,115 +78,143 @@ const evalCubicBezier = (
   return { x, y, deg: (Math.atan2(dy, dx) * 180) / Math.PI, nx: -dy / len, ny: dx / len };
 };
 
-/** Mask that feathers the memory vignette into the scene: no box, no painted border. */
-const VIGNETTE_MASK = "radial-gradient(ellipse 44% 41% at 50% 48%, #000 52%, rgba(0,0,0,0.55) 74%, transparent 100%)";
+/**
+ * Soft oval feather for the memory vignette: the painted veranda floor melts into warm cream paper at the edges (no
+ * box, no painted border). The vignette is a full cut (opaque once the short dissolve is done), so nothing of the live
+ * shrine scene shows through it, and there is no glow or bloom in it (the episode's only glow beat is Scene 04).
+ */
+const VIGNETTE_MASK = "radial-gradient(ellipse 62% 60% at 50% 50%, #000 58%, rgba(0,0,0,0.6) 78%, transparent 100%)";
 
 /**
- * The memory cutaway ("আমার পুতুলকে খাওয়াতে… সব তো পিঁপড়েরা খায়!"): a soft feathered dream-vignette over Balak's close
- * shot (the scene shows through around it): his painted wooden fair doll lying on the sunlit veranda, a tiny nail hole in
- * its painted mouth, rice grains by the mouth, and a neat line of tiny sepia-ink ants carrying the rice away.
+ * The memory cutaway ("আমার পুতুলকে খাওয়াতে… সব তো পিঁপড়েরা খায়!"): his painted wooden fair doll lying on its back on
+ * the sunlit veranda floor, a tiny nail hole in its painted mouth, grains of rice spilled on the floor by its mouth,
+ * and a neat line of tiny sepia-ink ants walking away across the same floor, each carrying a grain toward the doorway.
+ * Frame coordinates (1920 x 1080); the plate is scaled up a little so its painted border stays outside the frame.
  */
 const AntsOnDollCutawayVignette: React.FC<{ f: number; startF: number; opacity: number }> = ({ f, startF, opacity }) => {
   if (opacity <= 0.005) return null;
   const cf = Math.max(0, f - startF);
-  const drift = 1 + 0.035 * clamp(cf / 140, 0, 1);
+  const drift = 1 + 0.03 * clamp(cf / 140, 0, 1);
 
-  // the doll's painted mouth (nail hole) in vignette pixels, and the ants' path away from it across the floor
-  const DOLL = { x: 820, y: 600, k: 2.5 };
-  const mouth = { x: DOLL.x + 24.4 * DOLL.k, y: DOLL.y - 9.9 * DOLL.k };
-  const p0: [number, number] = [mouth.x + 16, mouth.y + 14];
-  const p1: [number, number] = [1080, 660];
-  const p2: [number, number] = [1240, 520];
-  const p3: [number, number] = [1420, 470];
+  // the doll lies flat on the veranda floor (plinth), head toward the right; nail-hole mouth in frame pixels
+  const DOLL = { x: 740, y: 728, k: 3.75, rot: 78 };
+  const dollArtRot = (DOLL.rot * Math.PI) / 180;
+  const mouthLocal = { x: 0, y: -17.0 * 1.55 }; // in the doll art, scaled by 1.55, before rotation
+  const mouth = {
+    x: DOLL.x + DOLL.k * (mouthLocal.x * Math.cos(dollArtRot) - mouthLocal.y * Math.sin(dollArtRot)),
+    y: DOLL.y + DOLL.k * (mouthLocal.x * Math.sin(dollArtRot) + mouthLocal.y * Math.cos(dollArtRot)),
+  };
+  // ants stay on the floor plane (never climb the wall): from the rice by the mouth, a low curve toward the sill
+  const p0: [number, number] = [mouth.x + 36, mouth.y + 28];
+  const p1: [number, number] = [mouth.x + 260, mouth.y + 78];
+  const p2: [number, number] = [1260, 655];
+  const p3: [number, number] = [1460, 575];
   const riceGrains: ReadonlyArray<{ x: number; y: number; rot: number; s: number }> = [
-    { x: 8, y: 6, rot: -18, s: 1.05 },
-    { x: 18, y: 14, rot: 34, s: 0.95 },
-    { x: 26, y: 2, rot: 12, s: 1.0 },
-    { x: 34, y: 18, rot: -42, s: 0.92 },
-    { x: 4, y: 20, rot: 25, s: 0.88 },
-    { x: 44, y: 9, rot: -8, s: 0.96 },
+    { x: 14, y: 8, rot: -18, s: 1.05 },
+    { x: 30, y: 22, rot: 34, s: 0.95 },
+    { x: 44, y: 4, rot: 12, s: 1.0 },
+    { x: 56, y: 28, rot: -42, s: 0.92 },
+    { x: 8, y: 30, rot: 25, s: 0.88 },
+    { x: 70, y: 14, rot: -8, s: 0.96 },
+    { x: 24, y: 40, rot: 60, s: 0.9 },
+    { x: 40, y: 48, rot: -30, s: 0.86 },
   ];
   const antCount = 10;
+  // the doll and ants come in with the painted floor, not ahead of it (they are saturated against a pale plate)
+  const propsOp = Math.pow(clamp(opacity), 4);
 
   return (
-    <AbsoluteFill style={{ opacity, pointerEvents: "none" }}>
-      {/* a soft warm memory haze where the vignette melts into the room */}
-      <AbsoluteFill style={{ background: "radial-gradient(ellipse 60% 56% at 50% 48%, rgba(255,240,210,0.16) 0%, rgba(255,240,210,0.06) 60%, transparent 100%)" }} />
+    <AbsoluteFill style={{ opacity, pointerEvents: "none", background: "#efe2c8" }}>
       <AbsoluteFill style={{ WebkitMaskImage: VIGNETTE_MASK, maskImage: VIGNETTE_MASK }}>
-        <div style={{ position: "absolute", inset: 0, transformOrigin: "50% 50%", transform: `scale(${(1.3 * drift).toFixed(4)})` }}>
+        <div style={{ position: "absolute", inset: 0, transformOrigin: "50% 50%", transform: `scale(${drift.toFixed(4)})` }}>
           <Img
             src={staticFile("images/ghibli_ep04/ants_cutaway_vignette_sketch.png")}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            style={{ position: "absolute", left: "-9%", top: "-9%", width: "118%", height: "118%", objectFit: "cover" }}
           />
-          <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-            <defs>
-              <radialGradient id="ep04g-doll-floor-shadow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#462d1b" stopOpacity={0.44} />
-                <stop offset="62%" stopColor="#5a3c26" stopOpacity={0.18} />
-                <stop offset="100%" stopColor="#5a3c26" stopOpacity={0} />
-              </radialGradient>
-            </defs>
-            <ellipse cx={DOLL.x - 4} cy={DOLL.y + 18} rx={112} ry={26} transform={`rotate(-12 ${DOLL.x} ${DOLL.y})`} fill="url(#ep04g-doll-floor-shadow)" />
-            {/* the wooden fair doll lying on the veranda, the nail hole in its painted smile */}
-            <g transform={`translate(${DOLL.x}, ${DOLL.y}) scale(${DOLL.k})`}>
-              <HeldObjectArt kind="doll" x={0} y={0} s={1.55} rot={68} />
-              <g transform="rotate(68) scale(1.55)">
-                <circle cx={0} cy={-17.0} r={1.1} fill="#23120b" />
-              </g>
-            </g>
-            {/* rice grains by the mouth */}
-            {riceGrains.map((g, idx) => (
-              <g key={idx} transform={`translate(${(mouth.x + 10 + g.x).toFixed(1)}, ${(mouth.y + 8 + g.y).toFixed(1)}) rotate(${g.rot}) scale(${(g.s * 1.5).toFixed(2)})`}>
-                <ellipse cx={0.6} cy={1.3} rx={4.2} ry={1.8} fill="#523824" opacity={0.28} />
-                <ellipse cx={0} cy={0} rx={4.1} ry={1.9} fill="#fffaf0" stroke="#6a4d35" strokeWidth={0.7} />
-              </g>
-            ))}
-            {/* the ants, marching away with the rice */}
-            {Array.from({ length: antCount }, (_, i) => {
-              const rawU = (cf * 0.0042 + i / antCount) % 1;
-              const edgeFade = clamp(rawU / 0.05, 0, 1) * clamp((1 - rawU) / 0.08, 0, 1);
-              const pt = evalCubicBezier(p0, p1, p2, p3, rawU);
-              const sway = Math.sin(cf * 0.19 + i * 2.1) * 2.4;
-              const ax = pt.x + pt.nx * sway;
-              const ay = pt.y + pt.ny * sway;
-              const rotDeg = pt.deg + Math.cos(cf * 0.19 + i * 2.1) * 5.5;
-              const sc = 1.7 + (i % 3) * 0.08;
-              return (
-                <g key={i} opacity={edgeFade * 0.95} transform={`translate(${ax.toFixed(2)}, ${ay.toFixed(2)}) rotate(${rotDeg.toFixed(2)}) scale(${sc.toFixed(3)})`}>
-                  <ellipse cx={0} cy={2.2} rx={8.5} ry={2.2} fill="#4c331f" opacity={0.22} />
-                  {[-1, 0, 1].map((legIdx) => {
-                    const stride = Math.sin(cf * 0.95 + i * 1.7 + legIdx * 2.15) * 2.1;
-                    const lx = legIdx * 2.6 - 0.5;
-                    return (
-                      <g key={legIdx} stroke="#2f1a0f" strokeWidth={0.95} strokeLinecap="round" fill="none">
-                        <path d={`M ${lx.toFixed(1)} -0.6 Q ${(lx + stride * 0.5).toFixed(1)} -4.2 ${(lx + stride).toFixed(1)} -5.6`} />
-                        <path d={`M ${lx.toFixed(1)} 0.6 Q ${(lx - stride * 0.5).toFixed(1)} 4.2 ${(lx - stride).toFixed(1)} 5.6`} />
-                      </g>
-                    );
-                  })}
-                  <ellipse cx={-6.3} cy={0} rx={4.2} ry={2.6} fill="#3d2214" />
-                  <ellipse cx={-0.4} cy={0} rx={2.7} ry={1.75} fill="#462818" />
-                  <circle cx={4.4} cy={-0.2} r={2.25} fill="#381f12" />
-                  <path
-                    d={`M 6.0 -1.2 Q 8.4 ${(-3.6 + Math.sin(cf * 0.45 + i) * 0.7).toFixed(1)} 10.2 -3.2 M 6.1 0.6 Q 8.5 ${(2.8 - Math.sin(cf * 0.45 + i) * 0.7).toFixed(1)} 10.1 2.2`}
-                    fill="none"
-                    stroke="#2c170d"
-                    strokeWidth={0.8}
-                    strokeLinecap="round"
-                  />
-                  <g transform={`translate(8.8, -1.3) rotate(${(-14 + Math.sin(cf * 0.3 + i) * 4).toFixed(1)})`}>
-                    <ellipse cx={0} cy={0} rx={4.0} ry={1.85} fill="#fffdf6" stroke="#654931" strokeWidth={0.7} />
-                  </g>
-                </g>
-              );
-            })}
-          </svg>
         </div>
-        <Img
-          src={staticFile("images/ghibli_ep04/watercolor_paper_grain.png")}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", mixBlendMode: "multiply", opacity: 0.14 }}
-        />
       </AbsoluteFill>
+      {/* the doll and ants: outside the masked plate layer (CSS opacity over the masked layer was ignored by the
+          headless compositor, so they showed fully opaque mid-dissolve); they fade in after the painted floor */}
+      <div style={{ position: "absolute", inset: 0, transformOrigin: "50% 50%", transform: `scale(${drift.toFixed(4)})`, opacity: propsOp }}>
+            <svg width={1920} height={1080} viewBox="0 0 1920 1080" style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+              <g>
+              <defs>
+                <filter id="ep04g-doll-contact-blur" x="-30%" y="-80%" width="160%" height="260%">
+                  <feGaussianBlur stdDeviation={5} />
+                </filter>
+                <radialGradient id="ep04g-doll-floor-shadow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#5a3a22" stopOpacity={0.5} />
+                  <stop offset="60%" stopColor="#6a4a2e" stopOpacity={0.22} />
+                  <stop offset="100%" stopColor="#6a4a2e" stopOpacity={0} />
+                </radialGradient>
+              </defs>
+              {/* soft contact shadow under the doll (grounds it on the plinth; sun high behind camera) */}
+              <ellipse cx={DOLL.x + 10} cy={DOLL.y + 34} rx={DOLL.k * 52} ry={DOLL.k * 15} transform={`rotate(${DOLL.rot - 90} ${DOLL.x} ${DOLL.y})`} fill="url(#ep04g-doll-floor-shadow)" />
+              <ellipse cx={DOLL.x + 4} cy={DOLL.y + 22} rx={DOLL.k * 32} ry={DOLL.k * 9} transform={`rotate(${DOLL.rot - 90} ${DOLL.x} ${DOLL.y})`} fill="#3d2818" opacity={0.28} />
+              {/* the darker contact line where the wooden doll's body touches the floor */}
+              <g filter="url(#ep04g-doll-contact-blur)">
+                <ellipse cx={DOLL.x + 6} cy={DOLL.y + 36} rx={DOLL.k * 24} ry={DOLL.k * 4.2} fill="#2e1d10" opacity={0.55} />
+              </g>
+              {/* the wooden fair doll lying on the veranda floor, the nail hole in its painted smile */}
+              <g transform={`translate(${DOLL.x}, ${DOLL.y}) scale(${DOLL.k})`}>
+                <HeldObjectArt kind="doll" x={0} y={0} s={1.55} rot={DOLL.rot} />
+                <g transform={`rotate(${DOLL.rot}) scale(1.55)`}>
+                  <circle cx={0} cy={-17.0} r={1.1} fill="#23120b" />
+                </g>
+              </g>
+              {/* grains of rice spilled on the floor by its mouth */}
+              {riceGrains.map((g, idx) => (
+                <g key={idx} transform={`translate(${(mouth.x + 18 + g.x * 1.25).toFixed(1)}, ${(mouth.y + 28 + g.y * 1.15).toFixed(1)}) rotate(${g.rot}) scale(${(g.s * 1.9).toFixed(2)})`}>
+                  <ellipse cx={0.8} cy={1.6} rx={4.2} ry={1.8} fill="#5a3e28" opacity={0.34} />
+                  <ellipse cx={0} cy={0} rx={4.1} ry={1.9} fill="#fffaf0" stroke="#7a5c40" strokeWidth={0.7} />
+                </g>
+              ))}
+              {/* the ants, walking away across the same floor with the rice (tiny, with contact shadows) */}
+              {Array.from({ length: antCount }, (_, i) => {
+                const rawU = (cf * 0.0038 + i / antCount) % 1;
+                const edgeFade = clamp(rawU / 0.05, 0, 1) * clamp((1 - rawU) / 0.08, 0, 1);
+                const pt = evalCubicBezier(p0, p1, p2, p3, rawU);
+                const sway = Math.sin(cf * 0.19 + i * 2.1) * 1.6;
+                const ax = pt.x + pt.nx * sway;
+                const ay = pt.y + pt.ny * sway;
+                const rotDeg = pt.deg + Math.cos(cf * 0.19 + i * 2.1) * 4.5;
+                const sc = 1.55 + (i % 3) * 0.08;
+                return (
+                  <g key={i} opacity={edgeFade} transform={`translate(${ax.toFixed(2)}, ${ay.toFixed(2)}) rotate(${rotDeg.toFixed(2)}) scale(${sc.toFixed(3)})`}>
+                    <ellipse cx={0} cy={2.8} rx={7.5} ry={1.7} fill="#4c331f" opacity={0.32} />
+                    {[-1, 0, 1].map((legIdx) => {
+                      const stride = Math.sin(cf * 0.95 + i * 1.7 + legIdx * 2.15) * 2.1;
+                      const lx = legIdx * 2.6 - 0.5;
+                      return (
+                        <g key={legIdx} stroke="#2f1a0f" strokeWidth={0.95} strokeLinecap="round" fill="none">
+                          <path d={`M ${lx.toFixed(1)} -0.6 Q ${(lx + stride * 0.5).toFixed(1)} -4.2 ${(lx + stride).toFixed(1)} -5.6`} />
+                          <path d={`M ${lx.toFixed(1)} 0.6 Q ${(lx - stride * 0.5).toFixed(1)} 4.2 ${(lx - stride).toFixed(1)} 5.6`} />
+                        </g>
+                      );
+                    })}
+                    <ellipse cx={-6.3} cy={0} rx={4.2} ry={2.6} fill="#3d2214" />
+                    <ellipse cx={-0.4} cy={0} rx={2.7} ry={1.75} fill="#462818" />
+                    <circle cx={4.4} cy={-0.2} r={2.25} fill="#381f12" />
+                    <path
+                      d={`M 6.0 -1.2 Q 8.4 ${(-3.6 + Math.sin(cf * 0.45 + i) * 0.7).toFixed(1)} 10.2 -3.2 M 6.1 0.6 Q 8.5 ${(2.8 - Math.sin(cf * 0.45 + i) * 0.7).toFixed(1)} 10.1 2.2`}
+                      fill="none"
+                      stroke="#2c170d"
+                      strokeWidth={0.8}
+                      strokeLinecap="round"
+                    />
+                    <g transform={`translate(8.8, -1.3) rotate(${(-14 + Math.sin(cf * 0.3 + i) * 4).toFixed(1)})`}>
+                      <ellipse cx={0} cy={0} rx={4.0} ry={1.85} fill="#fffdf6" stroke="#654931" strokeWidth={0.7} />
+                    </g>
+                  </g>
+                );
+              })}
+              </g>
+            </svg>
+      </div>
+      <Img
+        src={staticFile("images/ghibli_ep04/watercolor_paper_grain.png")}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", mixBlendMode: "multiply", opacity: 0.12 }}
+      />
     </AbsoluteFill>
   );
 };
@@ -213,7 +263,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
   const cutawayStart = B.putul + 40;
   const cutawayEnd = B.pipre + 38;
   const cutawayOp =
-    f >= cutawayStart && f < cutawayEnd ? EASE.inOut(clamp((f - cutawayStart) / 14, 0, 1)) * EASE.inOut(clamp((cutawayEnd - f) / 14, 0, 1)) : 0;
+    f >= cutawayStart && f < cutawayEnd ? EASE.inOut(clamp((f - cutawayStart) / 10, 0, 1)) * EASE.inOut(clamp((cutawayEnd - f) / 10, 0, 1)) : 0;
   const shrugAt = cutawayEnd - 8;
 
   /* ---------------- Camera ---------------- */
@@ -223,31 +273,40 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
   const cutE = s6e.from - 6; // Shot 29: medium close on Balak, slow push
   const cutF = p11.from - 4; // P11: reaction cut to the priest, blinking
   const cutG = p11.from + 30; // P11: everyone, smiling
+  // frameAt: world point (cx, wy) lands at screen (960, sy) at zoom z. Floors, laps and the bowl stay at screen
+  // y <= 810, clear of the caption band and the speaker pill.
+  const frameAt = (cx: number, wy: number, sy: number, z: number): Cam => ({ x: cx - 960, y: wy - 540 - (sy - 540) / z, zoom: z, focus: 1.0 });
   let cam: Cam;
-  let archOp = 0;
   if (f < cutB) {
+    // Shot 25: medium two-shot, Balak and the priest, the bowl between them
     const t = ramp(f, 0, cutB);
-    cam = { x: lerp(66, 74, t), y: 130, zoom: lerp(1.34, 1.38, t), focus: 1.0 };
+    cam = frameAt(lerp(996, 1004, t), SHRINE.floorY, 780, lerp(1.86, 1.9, t));
   } else if (f < cutC) {
+    // Shot 26: medium on the priest (the boy and the bone-dry bowl at the left edge, where he stares), P10 turning
+    // red, the explosion; room above him for the flung-up arms
     const push = ramp(f, B.ae, B.ae + 26);
     const shake = f >= B.sarbonash && f < B.sarbonash + 44 ? 2.4 * (1 - (f - B.sarbonash) / 44) : 0;
-    cam = { x: lerp(150, 162, push), y: lerp(146, 150, push), zoom: lerp(1.6, 1.7, push), shake, focus: 1.0 };
+    cam = { ...frameAt(lerp(1290, 1286, push), SHRINE.priestY, lerp(800, 790, push), lerp(2.1, 2.22, push)), shake };
   } else if (f < cutD) {
+    // Shot 27: medium close on Balak (+ the memory cutaway)
     const t = ramp(f, cutC, cutD);
-    cam = { x: lerp(-72, -68, t), y: 140, zoom: lerp(1.58, 1.64, t), focus: 1.0 };
+    cam = frameAt(lerp(800, 804, t), SHRINE.floorY, 770, lerp(2.6, 2.66, t));
   } else if (f < cutE) {
+    // Shot 28: wide; the family has rushed in from the doorway at the left and stands in depth (Sundar back,
+    // Jyethi scolding in the middle, Charu nearest), the boy and the priest at the khat
     const t = ramp(f, cutD, cutE);
-    cam = { x: lerp(-64, -56, t), y: 98, zoom: lerp(1.06, 1.08, t), focus: 1.0 };
-    archOp = 0.92;
+    cam = frameAt(lerp(660, 668, t), FAM.charu.y, 795, lerp(1.05, 1.07, t));
   } else if (f < cutF) {
+    // Shot 29: medium close on Balak, slow push (the family just off the left edge)
     const t = ramp(f, cutE, cutF);
-    cam = { x: lerp(-92, -84, t), y: lerp(134, 146, t), zoom: lerp(1.46, 1.62, t), focus: 1.0 };
+    cam = frameAt(lerp(800, 806, t), SHRINE.floorY, 770, lerp(2.8, 3.0, t));
   } else if (f < cutG) {
-    cam = { x: 222, y: 148, zoom: 1.72, focus: 1.0 };
+    // P11: reaction cut to the priest, blinking, the red draining from his face
+    cam = frameAt(1250, SHRINE.priestY, 790, 2.3);
   } else {
+    // P11: everyone, smiling
     const t = ramp(f, cutG, SCENE_TOTAL_FRAMES);
-    cam = { x: lerp(-40, -34, t), y: 98, zoom: lerp(1.1, 1.12, t), focus: 1.0 };
-    archOp = 0.92;
+    cam = frameAt(lerp(668, 674, t), FAM.charu.y, 795, lerp(1.07, 1.09, t));
   }
   cam.dof = zoomProportionalDof(cam.zoom);
 
@@ -260,8 +319,12 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     const stare = fr >= p10.from - 14 && fr < s6b.from;
     const inB = fr >= s6b.from && fr < s6c.from;
     const jerk = inB ? ramp(fr, B.ae, B.ae + 6) * (1 - ramp(fr, B.excl, B.excl + 10)) : 0;
+    // "অ্যাঁ?": comic shock face — brows shot up and drawn together, eyes wide, jaw drop, shoulders hiked
+    const shock = inB ? ramp(fr, B.ae - 4, B.ae + 4) * (1 - ramp(fr, B.sarbonash + 14, B.ore)) : 0;
     const head = inB ? ramp(fr, B.excl - 2, B.excl + 8) * (1 - ramp(fr, B.sarbonash - 4, B.sarbonash + 4)) : 0;
-    const up = inB ? ramp(fr, B.sarbonash - 2, B.sarbonash + 8) * (1 - ramp(fr, B.ore + 4, B.ore + 16)) : 0;
+    // both palms fly up on the first beat of shock, then "সর্বনাশ!" keeps one arm high
+    const fling = inB ? ramp(fr, B.ae - 2, B.ae + 8) * (1 - ramp(fr, B.sarbonash + 6, B.ore)) : 0;
+    const up = inB ? Math.max(fling * 0.85, ramp(fr, B.sarbonash - 2, B.sarbonash + 8) * (1 - ramp(fr, B.ore + 4, B.ore + 16))) : 0;
     const shout = inB && fr >= B.ore && fr < B.babur + 4;
     const point = inB && fr >= B.babur + 4 && fr < s6b.to + 6;
     const listenC = fr >= s6c.from && fr < s6d.from;
@@ -270,16 +333,17 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     const atFamily = fr >= s6d.from - 4 && fr < s6e.from;
     const realize = fr >= B.jigges + 30;
     const inP11 = fr >= p11.from;
+    // (the rig draws flush as a red face tint at 0.33 x flush; values above 1 make him properly red-faced)
     const flush =
       fr < p10.from - 14
         ? 0
         : fr < s6b.from
-          ? 0.85 * ramp(fr, p10.from - 14, s6b.from) // P10: slowly turning bright red
+          ? 1.5 * ramp(fr, p10.from - 14, s6b.from) // P10: slowly turning bright red
           : fr < s6c.from
-            ? 0.88
+            ? 1.6
             : fr < s6e.from
-              ? 0.6
-              : lerp(0.5, 0.18, ramp(fr, B.jigges, p11.to));
+              ? 1.0
+              : lerp(0.8, 0.2, ramp(fr, B.jigges, p11.to));
     const blink = Math.max(
       blinkAt(fr, p10.from + 16, 3.5),
       blinkAt(fr, s6c.from + 140),
@@ -291,32 +355,52 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     const wave = shout ? Math.sin(fr * 0.5) * 14 : point ? Math.sin(fr * 0.42) * 8 * (0.4 + rms) : 0;
     const scratch = inP11 ? ramp(fr, p11.from + 22, p11.from + 34) : 0;
     return poseOf({
-      kneel: 1,
-      lean: stare ? 9 : reachBowl > 0 ? 6 + 8 * reachBowl : jerk > 0 ? -7 * jerk : up > 0 ? -3 : shout ? 5 : point ? 4 : hips > 0 ? -2 : 0,
-      bodyY: -5 * up,
+      kneel: 0,
+      // Keep shock/reach extremes; idle and light speak stay nearly upright (no chronic forward hunch).
+      lean: stare
+        ? 5
+        : reachBowl > 0
+          ? 4 + 6 * reachBowl
+          : shock > 0.4
+            ? -12 * shock
+            : jerk > 0
+              ? -7 * jerk
+              : up > 0
+                ? -4
+                : shout
+                  ? 2.5
+                  : point
+                    ? 2
+                    : hips > 0
+                      ? -1
+                      : 0.3 * Math.sin(fr * 0.05),
+      bodyY: -6 * up + 5 * shock,
       bodyTurn: safeBodyTurn(lerp(0.3, -0.32, turnBack)),
       headTurn: lerp(0.42, shout ? -0.7 : atFamily ? -0.62 : -0.44, turnBack),
-      headNod: stare ? 9 : reachBowl > 0 ? 5 : jerk > 0 ? -6 * jerk : inP11 ? 2 : 0,
-      headTilt: inP11 ? -3 : 0,
-      eyeY: stare ? 0.55 : reachBowl > 0 ? 0.4 : inB ? 0.04 : 0.12,
-      eyeX: inP11 ? 0.12 * Math.sin((fr - p11.from) * 0.3) : 0,
-      lid: Math.max(blink, turnBack < 0.5 ? 0.66 : 0),
-      brow: stare ? 0.7 : inB ? 0.78 : offended ? 0.74 : realize || inP11 ? 0.62 : listenC || atFamily ? 0.42 : 0.22,
-      browTilt: listenC || atFamily ? 0.26 : realize ? -0.2 : 0,
-      smile: stare || inB ? -0.4 : listenC ? -0.15 : inP11 ? 0.1 : 0.05,
-      gasp: stare ? 0.55 + 0.3 * ramp(fr, p10.from, s6b.from) : inB ? (rms > 0.08 ? 0.4 : 0.72) : offended ? 0.4 : realize ? 0.22 : 0,
+      headNod: stare ? 9 : reachBowl > 0 ? 5 : shock > 0.4 ? -10 * shock : jerk > 0 ? -6 * jerk : inP11 ? 2 : 0,
+      hunch: 0.88 * shock,
+      headTilt: shock > 0.3 ? -5 * shock : inP11 ? -3 : 0,
+      eyeX: inP11 ? 0.12 * Math.sin((fr - p11.from) * 0.3) : shock > 0.3 ? -0.1 * shock : 0,
+      lid: shock > 0.2 ? 0 : Math.max(blink, turnBack < 0.5 ? 0.66 : 0),
+      eyeY: shock > 0.2 ? -0.16 : stare ? 0.55 : reachBowl > 0 ? 0.4 : inB ? 0.04 : 0.12,
+      brow: shock > 0.05 ? lerp(0.9, 1.0, shock) : stare ? 0.7 : inB ? 0.78 : offended ? 0.74 : realize || inP11 ? 0.62 : listenC || atFamily ? 0.42 : 0.22,
+      browTilt: shock > 0.05 ? 0.85 * shock : listenC || atFamily ? 0.26 : realize ? -0.2 : 0,
+      smile: stare || inB || shock > 0.2 ? -0.5 : listenC ? -0.15 : inP11 ? 0.1 : 0.05,
+      gasp: shock > 0.05 ? Math.max(0.98 * shock, rms > 0.08 ? 0.45 : 0.88) : stare ? 0.55 + 0.3 * ramp(fr, p10.from, s6b.from) : inB ? (rms > 0.08 ? 0.4 : 0.72) : offended ? 0.4 : realize ? 0.22 : 0,
       flush,
-      headHands: 0.9 * head,
-      throwUp: shout ? -0.85 : 0,
+      headHands: Math.max(0.9 * head, 0.55 * fling * (1 - up)),
+      throwUp: shout ? -0.85 : fling > 0.2 ? 0.7 * fling : 0,
       hips: 0.9 * hips,
       scratch: 0.85 * scratch,
       reach: reachBowl,
-      rHand: point ? "point" : reachBowl > 0.1 ? "open" : inB || atFamily ? "open" : "relaxed",
-      lHand: inB || atFamily ? "open" : "relaxed",
-      rS: point ? 62 + wave : atFamily ? 40 : lerp(16, 140, up) + wave * 0.5,
-      rE: point ? -18 : atFamily ? -40 : lerp(-32, -24, up),
-      lS: lerp(14, 134, up) - wave * 0.5,
-      lE: lerp(-28, -26, up),
+      // "বাবুর ছেলেটা…": the accusing finger jabs at the boy (toward his face, not off into the room)
+      jab: point ? -(0.9 + 0.08 * Math.sin(fr * 0.42)) : 0,
+      rHand: reachBowl > 0.1 ? "open" : inB || atFamily || fling > 0.2 ? "open" : "relaxed",
+      lHand: point ? "point" : inB || atFamily || fling > 0.2 ? "open" : "relaxed",
+      rS: point ? 20 : atFamily ? 40 : lerp(16, 148, up) + wave * 0.5,
+      rE: point ? -30 : atFamily ? -40 : lerp(-32, -18, up),
+      lS: lerp(14, 142, up) - wave * 0.5,
+      lE: lerp(-28, -20, up),
     });
   };
 
@@ -399,7 +483,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     pose = "pointIn";
     prevPose = "sitCross";
     poseStart = B.dhoop;
-    pointAt = { x: 170, y: -40 };
+    pointAt = { x: 280, y: -40 };
     expr = "serene";
     face = { lookX: 0.1, smile: 0.62 };
   } else if (f < p11.from) {
@@ -407,7 +491,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     pose = "pointIn";
     prevPose = "pointIn";
     poseStart = B.jigges;
-    pointAt = { x: 170, y: -128 };
+    pointAt = { x: 300, y: -150 };
     expr = "serene";
     face = { lookX: 0.46, smile: 0.78 };
   } else {
@@ -444,10 +528,9 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
 
   /* ---------------- Family rushing to the doorway (on the veranda, in front of the arch) ---------------- */
   const showFamily = f >= familyIn - 2;
-  const famY = 1000;
-  const sundarSpotFn = ghibliWalkSpot({ x: -300, y: famY, s: 1.0 }, { x: 470, y: famY, s: 1.0 }, familyIn, familyIn + 52, EP04G_CAST.sundar.seed);
-  const jyethiSpotFn = ghibliWalkSpot({ x: -200, y: famY, s: 0.98 }, { x: 600, y: famY, s: 0.98 }, familyIn - 4, familyIn + 46, EP04G_CAST.jyethi.seed);
-  const charuSpotFn = ghibliWalkSpot({ x: -120, y: famY, s: 0.98 }, { x: 728, y: famY, s: 0.98 }, familyIn, familyIn + 50, EP04G_CAST.charu.seed);
+  const sundarSpotFn = ghibliWalkSpot({ ...FAM.sundar, x: -420 }, FAM.sundar, familyIn, familyIn + 52, EP04G_CAST.sundar.seed);
+  const jyethiSpotFn = ghibliWalkSpot({ ...FAM.jyethi, x: -380 }, FAM.jyethi, familyIn - 4, familyIn + 46, EP04G_CAST.jyethi.seed);
+  const charuSpotFn = ghibliWalkSpot({ ...FAM.charu, x: -340 }, FAM.charu, familyIn, familyIn + 50, EP04G_CAST.charu.seed);
   const sundarSpot = sundarSpotFn(f);
   const jyethiSpot = jyethiSpotFn(f);
   const charuSpot = charuSpotFn(f);
@@ -461,42 +544,54 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     <GhibliStage cam={cam}>
       <GhibliPreload files={PRELOAD} />
       <GhibliShrineBackdrop f={f} />
+      <ShrineGobinda />
 
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} rimDir={-1} sunColor="#ffcf82" bounceColor="#8c9ab8" />
 
         {/* the empty stone bowl with the whole fopra, exactly where he set it back in Scene 05 */}
-        <ContactShadow x={BOWL_AT.x} y={SHRINE.floorY} rx={36} ry={8.5} opacity={0.32} sunDir={-1} />
-        <HeldObjectArt kind="stoneBowl" x={BOWL_AT.x} y={BOWL_AT.y} s={SHRINE.balakS} fill={0} />
+        <ContactShadow x={BOWL_FLOOR.x} y={SHRINE.floorY} rx={36 * (BOWL_FLOOR_S / 0.94)} ry={8.5} opacity={0.32} sunDir={-1} />
+        <HeldObjectArt kind="stoneBowl" x={BOWL_FLOOR.x} y={BOWL_FLOOR.y} s={BOWL_FLOOR_S} fill={0} />
 
         {/* the dhoop-dani where he set it down beside the priest, still smoking */}
-        <ContactShadow x={DHOOP_SET.x} y={SHRINE.floorY} rx={17} ry={4.5} opacity={0.3} sunDir={-1} />
+        <ContactShadow x={DHOOP_SET.x} y={DHOOP_SET.y + HELD_OBJECT_BOTTOM.incense * SHRINE.balakS} rx={17} ry={4.5} opacity={0.34} sunDir={-1} />
         <HeldObjectArt kind="incense" x={DHOOP_SET.x} y={DHOOP_SET.y} s={SHRINE.balakS} lifeF={f} />
         <GhibliSmokeCurls x={DHOOP_SET.x} y={DHOOP_SET.y - 10} f={f} scale={0.6} />
 
         {/* the hand-bell, put down at his side */}
-        <FloorBell x={SHRINE.priestX + 62} y={SHRINE.priestY + 2} />
+        <FloorBell x={SHRINE.priestX + 226} y={SHRINE.priestY + 10} />
+
+        {/* Thakurer ashon / khat base */}
+        <ContactShadow x={1080} y={SHRINE.priestY} rx={120} ry={18} opacity={0.42} sunDir={-1} />
 
         {/* Bhagabati Thakur */}
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={SHRINE.priestX} y={SHRINE.priestY + 2} rx={52} ry={11} opacity={0.32} sunDir={-1} />
+          <ContactShadow x={SHRINE.priestX} y={SHRINE.priestY} rx={92} ry={18} opacity={0.48} sunDir={-1} />
           <Puppet
-            cast={EP04G_CAST.bhagabati}
+            cast={PRIEST_CAST}
+            sitStyle="crossLegged"
             x={SHRINE.priestX}
             y={SHRINE.priestY}
             scale={SHRINE.priestS}
             f={f}
             lifeF={f}
             light={EP04G_SHRINE_LIGHT}
-            mouth={(fr) => mouthFromRms(priestRms(fr), fr)}
+            seated
+            mouth={(fr) => {
+              // "অ্যাঁ?": the jaw drops wide open in shock (then the line's own lip sync)
+              const sm = shoutMouth(fr, B.ae - 2, 30, 5);
+              const lm = mouthFromRms(priestRms(fr), fr);
+              return sm.open > lm.open ? sm : lm;
+            }}
             talk={(fr) => clamp(priestRms(fr) * 1.2, 0, 1)}
             acting={priestActing}
-            reachAt={() => ({ x: BOWL_AT.x + 70, y: BOWL_AT.y - 40 })}
+            reachAt={() => ({ x: BOWL_FLOOR.x + 70, y: BOWL_FLOOR.y - 40 })}
+            pointAt={() => ({ x: SHRINE.seatX + 10, y: SHRINE.floorY - 150 * SHRINE.balakS })}
           />
         </g>
 
         {/* Balak before the khat; steady soft light, no glow beat in this scene (BAL-05) */}
-        <GhibliBalakGroundGlow x={SHRINE.seatX} y={SHRINE.floorY + 5} level={0.45} />
+        <GhibliBalakGroundGlow x={SHRINE.seatX} y={SHRINE.floorY + 5} rx={120 * (SHRINE.balakS / 0.94)} ry={22 * (SHRINE.balakS / 0.94)} level={0.42} />
         <g
           transform={balakLivingBodyTransform({
             x: SHRINE.seatX,
@@ -507,23 +602,24 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
             tenderness: inP11 ? 0.45 : 0,
           })}
         >
-          <GhibliBalakAura cx={glowAnchor.cx} cy={glowAnchor.cy} r={78} glow={0.55} f={f} />
+          {/* the steady resting halo behind his head (BAL-06/11), same restrained level as Scene 05 inside */}
+          <GhibliBalakAura cx={glowAnchor.cx} cy={glowAnchor.cy} r={glowAnchor.r * 0.5} glow={0.5} f={f} />
           <g filter="url(#ghibli-char-ink)">
-            <ContactShadow x={SHRINE.seatX} y={SHRINE.floorY} rx={42} ry={9} opacity={0.28} sunDir={-1} />
+            <ContactShadow x={SHRINE.seatX} y={SHRINE.floorY} rx={52 * (SHRINE.balakS / 0.94)} ry={10 * (SHRINE.balakS / 0.94)} opacity={0.34} sunDir={-1} />
             <SeatedChild {...balakProps} />
             {kneel < 0.35 && <GhibliBalakLapDetails x={SHRINE.seatX} y={SHRINE.floorY} s={SHRINE.balakS} f={f} />}
           </g>
         </g>
       </GhibliLayer>
 
-      {/* the doorway arch, curtain drawn back (doorway shots only) */}
-      <ShrineArchFrame id="s06arch" opacity={archOp} f={f} />
+      {/* the lamplight on the people inside */}
+      <ShrineLampLight id="s06lamp" f={f} />
 
-      {/* Sundar, Jyethi and Charu rush to the doorway: on the veranda, outside the threshold */}
+      {/* Sundar, Jyethi and Charu rush in from the doorway (off the left edge) and stand in depth at the left */}
       {showFamily && (
         <GhibliLayer depth={1.0}>
           <g filter="url(#ghibli-char-ink)">
-            <ContactShadow x={sundarSpot.x} y={famY} rx={44} ry={10} opacity={0.28} sunDir={-1} />
+            <ContactShadow x={sundarSpot.x} y={sundarSpot.y} rx={46 * sundarSpot.s} ry={10.5 * sundarSpot.s} opacity={0.42} sunDir={-1} castStretch={1.15} />
             <Puppet
               cast={EP04G_CAST.sundar}
               x={sundarSpot.x}
@@ -557,7 +653,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
             />
           </g>
           <g filter="url(#ghibli-char-ink)">
-            <ContactShadow x={jyethiSpot.x} y={famY} rx={44} ry={10} opacity={0.29} sunDir={-1} />
+            <ContactShadow x={jyethiSpot.x} y={jyethiSpot.y} rx={46 * jyethiSpot.s} ry={10.5 * jyethiSpot.s} opacity={0.42} sunDir={-1} castStretch={1.15} />
             <Puppet
               cast={EP04G_CAST.jyethi}
               x={jyethiSpot.x}
@@ -574,7 +670,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
                 const wag = speaking ? Math.sin(fr * 0.62) * 9 : 0;
                 return poseOf({
                   stride: jyethiStrideFn(fr),
-                  lean: speaking ? 3.5 : 0.8,
+                  lean: speaking ? 1.2 : 0.2,
                   bodyTurn: safeBodyTurn(0.32),
                   headTurn: 0.42,
                   brow: speaking ? -0.3 : lerp(-0.1, 0.18, fond),
@@ -587,7 +683,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
             />
           </g>
           <g filter="url(#ghibli-char-ink)">
-            <ContactShadow x={charuSpot.x} y={famY} rx={45} ry={10} opacity={0.3} sunDir={-1} />
+            <ContactShadow x={charuSpot.x} y={charuSpot.y} rx={47 * charuSpot.s} ry={11 * charuSpot.s} opacity={0.44} sunDir={-1} castStretch={1.15} />
             <Puppet
               cast={EP04G_CAST.charu}
               x={charuSpot.x}

@@ -52,14 +52,8 @@ export const EP04G_CUES: SubtitleCue[] = [
   },
   {
     "from": 1287,
-    "to": 1336,
-    "text": "গলৈয়ার কাঠের পুতুল?",
-    "speaker": "মা"
-  },
-  {
-    "from": 1336,
     "to": 1354,
-    "text": "!",
+    "text": "গলৈয়ার কাঠের পুতুল?!",
     "speaker": "মা"
   },
   {

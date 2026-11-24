@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame } from "remotion";
+import { staticFile, useCurrentFrame } from "remotion";
 import { clamp, EASE, lerp } from "../../../cinematic/core/anim";
 import { Cam } from "../../../cinematic/core/Stage";
 import { Puppet, type PropRenderer } from "../../../cinematic/rig/Puppet";
@@ -43,32 +43,60 @@ import {
  * inside on the floor before the khat after he is allowed in. The stone bowl stands at DRINK_BOWL_AT in front of his
  * seat, the dhoop-dani where he set it down beside the priest.
  */
+/**
+ * Scales (CHR-09, BAL-26b): the plate Balak's head is about 1.086 x his rig scale against a Puppet head at scale 1
+ * (measured in Scene 04), so balakS / priestS = 0.76 puts his head at about 82% of the priest's.
+ */
 export const SHRINE = {
-  priestX: 1210,
-  priestY: 930,
-  priestS: 0.94,
-  /** Veranda (outside the doorway, in front of the arch plane). */
+  priestX: 1240,
+  /** Same ground line as the floor props and Balak: the room floor in front of the khat. */
+  priestY: 982,
+  priestS: 1.06,
+  /** Where his knee-walk in starts (the doorway sill, in the interior shots' world). */
   verandaX: 600,
-  verandaY: 1000,
-  verandaS: 1.0,
-  /** Inside: kneeling spot beside the priest where he sets the dhoop-dani down. */
-  setX: 1010,
-  /** Inside: his seat on the floor before the deity khat. */
-  seatX: 860,
-  floorY: 940,
-  balakS: 0.94,
+  verandaY: 1045,
+  verandaS: 0.8,
+  /** Inside: kneeling spot beside the priest where he sets the dhoop-dani down (it lands just left of his lap). */
+  setX: 920,
+  /**
+   * Inside: his seat on the floor at the left front corner of the khat, clear of the brass lota painted on the khat
+   * plate (world x ~820-880), with the stone bowl just in front of that lota.
+   */
+  seatX: 760,
+  /**
+   * The room floor (world y) where Balak, the bowl and the dhoop-dani sit: a little in front of the brass lota and bell
+   * painted at the foot of the khat (their bases measure 978-1021 depending on the shot, since the room plate sits at
+   * depth 0.58), so he always reads on the floor in front of them. The old 940 sat above the wall base (floating).
+   */
+  floorY: 1012,
+  balakS: 0.8,
 } as const;
+/**
+ * Outside the threshold (veranda shots of Scene 05 only, AG6 / Shot 20 / Shot 22): he sits on the veranda floor in
+ * front of the shrine's outer wall, just left of the doorway ("বারান্দায় বসে"), looking in. Left of the opening so
+ * the left pillar reads between him and the lamplit room; the veranda is drawn in front of the arch.
+ */
+export const VERANDA_OUT = { x: 428, y: 1128, s: 0.86 } as const;
 /** kneelReach target for the dhoop-dani on the floor (figure units). */
-export const DHOOP_REACH = { x: 92, y: -HELD_OBJECT_BOTTOM.incense } as const;
+/** (y +30 units: set down on the floor just in front of the khat's stepped base, not on its step) */
+export const DHOOP_REACH = { x: 92, y: -HELD_OBJECT_BOTTOM.incense + 30 } as const;
 export const DHOOP_SET = {
   x: SHRINE.setX + DHOOP_REACH.x * SHRINE.balakS,
   y: SHRINE.floorY + DHOOP_REACH.y * SHRINE.balakS,
 } as const;
-/** Stone bowl origin where drinkBowl finds it (DRINK_BOWL_AT from his seat). */
+/** drinkBowl reach target (figure units): a little further out than the rig default so his crossed knee never
+ * hides the brimming bowl in the insert. */
+export const BOWL_REACH = { x: DRINK_BOWL_AT.x + 22, y: DRINK_BOWL_AT.y } as const;
+/** Stone bowl origin where drinkBowl finds it (BOWL_REACH from his seat). */
 export const BOWL_AT = {
-  x: SHRINE.seatX + DRINK_BOWL_AT.x * SHRINE.balakS,
-  y: SHRINE.floorY + DRINK_BOWL_AT.y * SHRINE.balakS,
+  x: SHRINE.seatX + BOWL_REACH.x * SHRINE.balakS,
+  y: SHRINE.floorY + BOWL_REACH.y * SHRINE.balakS,
 } as const;
+/** The wide grey stone bowl on the floor is drawn larger than the rig's held bowl (STO-22c: the coconut shown large);
+ * the rig's own size takes over at the heist cut. */
+export const BOWL_FLOOR_S = SHRINE.balakS;
+/** One bowl, one place, one size: exactly where the drinkBowl pose picks it up and sets it back (no jumps). */
+export const BOWL_FLOOR = { x: BOWL_AT.x, y: BOWL_AT.y } as const;
 
 /* Doorway arch (the shared plate), drawn here so its curtain never hides the priest. */
 const ARCH_H = 1150;
@@ -90,7 +118,7 @@ const CURTAIN_PIN_X = 1131;
  * that hung across the opening is gathered as a narrow drape against the right pillar, so nobody inside is hidden.
  * `opacity` is per shot: the scenes show it only on the veranda / doorway shots and hide it on interior shots.
  */
-export const ShrineArchFrame: React.FC<{ id: string; opacity: number; f: number }> = ({ id, opacity, f }) => {
+export const ShrineArchFrame: React.FC<{ id: string; opacity: number; f: number; depth?: number }> = ({ id, opacity, f, depth = 1.14 }) => {
   if (opacity <= 0.01) return null;
   const xf = `translate(${ARCH_DX.toFixed(2)} ${ARCH_DY.toFixed(2)}) scale(${ARCH_K.toFixed(5)})`;
   const pinX = ARCH_DX + CURTAIN_PIN_X * ARCH_K;
@@ -105,7 +133,7 @@ export const ShrineArchFrame: React.FC<{ id: string; opacity: number; f: number 
     />
   );
   return (
-    <GhibliLayer depth={1.14} extraBlur={1.1} opacity={opacity}>
+    <GhibliLayer depth={depth} extraBlur={depth > 1.05 ? 1.1 : 0} opacity={opacity}>
       <defs>
         <filter id={`${id}-feather`} x="-5%" y="-5%" width="110%" height="110%">
           <feGaussianBlur stdDeviation={3} />
@@ -129,6 +157,220 @@ export const ShrineArchFrame: React.FC<{ id: string; opacity: number; f: number 
   );
 };
 
+/** The doorway opening in arch-plate pixels, generous (the frame plate is drawn over its edges). */
+const OPENING_D = "M 178 1336 L 178 560 A 505 400 0 0 1 1188 560 L 1188 1336 Z";
+const SILL_PY = 1336;
+
+/**
+ * The shrine's outer wall and the veranda floor in front of it (Scene 05 veranda shots, depth 1 with the arch): only
+ * the doorway shows the lamplit room, so Balak, sitting on the veranda floor in front of the wall, reads clearly as
+ * outside the threshold. Lime plaster cooled by the full moon, a red-oxide dado and floor, and the warm lamplight
+ * spilling out through the doorway onto the veranda floor.
+ */
+export const VerandaExterior: React.FC<{ id: string; f: number }> = ({ id, f }) => {
+  const xf = `translate(${ARCH_DX.toFixed(2)} ${ARCH_DY.toFixed(2)}) scale(${ARCH_K.toFixed(5)})`;
+  const flick = 0.92 + 0.05 * Math.sin(f * 0.31) + 0.03 * Math.sin(f * 0.83 + 1.1);
+  return (
+    <GhibliLayer depth={1.0}>
+      <defs>
+        <linearGradient id={`${id}-wall`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#c4b9a3" />
+          <stop offset="0.55" stopColor="#d8cab0" />
+          <stop offset="1" stopColor="#c9b698" />
+        </linearGradient>
+        <radialGradient id={`${id}-stain`} cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#8f7b60" stopOpacity={0.28} />
+          <stop offset="1" stopColor="#8f7b60" stopOpacity={0} />
+        </radialGradient>
+        <linearGradient id={`${id}-reveal`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#3a2a22" stopOpacity={0} />
+          <stop offset="1" stopColor="#3a2a22" stopOpacity={0.32} />
+        </linearGradient>
+        <linearGradient id={`${id}-floor`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#7a4636" />
+          <stop offset="0.5" stopColor="#5e3529" />
+          <stop offset="1" stopColor="#3f251e" />
+        </linearGradient>
+        <radialGradient id={`${id}-spill`} cx="50%" cy="0%" r="100%">
+          <stop offset="0" stopColor="#ffc27a" stopOpacity={0.55} />
+          <stop offset="0.6" stopColor="#ffae5c" stopOpacity={0.18} />
+          <stop offset="1" stopColor="#ffae5c" stopOpacity={0} />
+        </radialGradient>
+        <radialGradient id={`${id}-wallspill`} cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#ffc27a" stopOpacity={0.5} />
+          <stop offset="0.55" stopColor="#ffae5c" stopOpacity={0.16} />
+          <stop offset="1" stopColor="#ffae5c" stopOpacity={0} />
+        </radialGradient>
+        {/* full-moon night outside: the veranda cools to blue-grey away from the lamplit doorway */}
+        <radialGradient
+          id={`${id}-moon`}
+          gradientUnits="userSpaceOnUse"
+          cx={ARCH_DX + 683 * ARCH_K}
+          cy={ARCH_DY + 1100 * ARCH_K}
+          r={1500}
+        >
+          <stop offset="0" stopColor="#ffffff" stopOpacity={0} />
+          <stop offset="0.35" stopColor="#c4cde4" stopOpacity={0.55} />
+          <stop offset="1" stopColor="#7e8db8" stopOpacity={0.85} />
+        </radialGradient>
+        <linearGradient id={`${id}-beam`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#dfe9ff" stopOpacity={0.4} />
+          <stop offset="1" stopColor="#dfe9ff" stopOpacity={0.05} />
+        </linearGradient>
+        <filter id={`${id}-soft`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation={10} />
+        </filter>
+        <clipPath id={`${id}-wallclip`} clipPathUnits="userSpaceOnUse">
+          <path d={`M -4000 -4000 L 6000 -4000 L 6000 ${SILL_PY} L -4000 ${SILL_PY} Z ${OPENING_D}`} transform={xf} clipRule="evenodd" />
+        </clipPath>
+      </defs>
+      {/* the outer wall with the doorway cut out */}
+      <g clipPath={`url(#${id}-wallclip)`}>
+        <rect x={-2400} y={-2000} width={6400} height={3200} fill={`url(#${id}-wall)`} />
+        {/* red-oxide dado along the bottom of the wall */}
+        <rect x={-2400} y={ARCH_DY + 1150 * ARCH_K} width={6400} height={(SILL_PY - 1150) * ARCH_K + 2} fill="#8a4c3c" opacity={0.92} />
+        <rect x={-2400} y={ARCH_DY + 1146 * ARCH_K} width={6400} height={5} fill="#6b3a2e" opacity={0.7} />
+        <image
+          href={staticFile("images/ghibli_ep04/watercolor_paper_grain.png")}
+          x={-2400}
+          y={-2000}
+          width={6400}
+          height={3200}
+          preserveAspectRatio="none"
+          opacity={0.4}
+          style={{ mixBlendMode: "multiply" }}
+        />
+        {/* damp stains, and the shadow of the deep doorway reveal beside the left pillar */}
+        <ellipse cx={180} cy={520} rx={260} ry={340} fill={`url(#${id}-stain)`} />
+        <ellipse cx={1620} cy={420} rx={300} ry={300} fill={`url(#${id}-stain)`} />
+        <ellipse cx={-120} cy={900} rx={300} ry={160} fill={`url(#${id}-stain)`} />
+        <rect x={ARCH_DX + 40 * ARCH_K} y={-400} width={140 * ARCH_K} height={1600} fill={`url(#${id}-reveal)`} />
+        {/* a few soft plaster cracks in sepia ink */}
+        <g fill="none" stroke="#7d6a55" strokeWidth={1.4} strokeLinecap="round" opacity={0.45}>
+          <path d="M 150 360 q 14 40 -4 80 q -12 30 6 62 q 10 22 -2 48" />
+          <path d="M 300 620 q 20 22 12 54 q -6 24 10 40" />
+          <path d="M 1520 300 q -16 36 2 70 q 14 28 -6 58" />
+        </g>
+        {/* lamplight from the doorway warming the wall beside it (fades to nothing at its edge) */}
+        <ellipse cx={ARCH_DX + 683 * ARCH_K} cy={ARCH_DY + 1000 * ARCH_K} rx={760} ry={520} fill={`url(#${id}-wallspill)`} opacity={0.6 * flick} style={{ mixBlendMode: "screen" }} />
+      </g>
+      {/* the veranda floor in front of the wall */}
+      <rect x={-2400} y={ARCH_DY + (SILL_PY - 6) * ARCH_K} width={6400} height={1600} fill={`url(#${id}-floor)`} />
+      <rect x={-2400} y={ARCH_DY + (SILL_PY - 6) * ARCH_K} width={6400} height={10} fill="#2a1712" opacity={0.35} />
+      <image
+        href={staticFile("images/ghibli_ep04/watercolor_paper_grain.png")}
+        x={-2400}
+        y={ARCH_DY + (SILL_PY - 6) * ARCH_K}
+        width={6400}
+        height={1600}
+        preserveAspectRatio="none"
+        opacity={0.35}
+        style={{ mixBlendMode: "multiply" }}
+      />
+      {/* warm lamplight from the shrine spilling out over the threshold onto the veranda floor */}
+      <path
+        d={`M ${ARCH_DX + 300 * ARCH_K} ${ARCH_DY + SILL_PY * ARCH_K} L ${ARCH_DX + 1080 * ARCH_K} ${ARCH_DY + SILL_PY * ARCH_K} L ${ARCH_DX + 1480 * ARCH_K} ${ARCH_DY + SILL_PY * ARCH_K + 260} L ${ARCH_DX + 60 * ARCH_K} ${ARCH_DY + SILL_PY * ARCH_K + 260} Z`}
+        fill={`url(#${id}-spill)`}
+        opacity={flick}
+        style={{ mixBlendMode: "screen" }}
+      />
+      {/* moonlight from the open courtyard (camera left): a pale slanting pool on the veranda floor, broken by the
+          shadow of a veranda pillar, and the cool night over everything away from the doorway */}
+      <g filter={`url(#${id}-soft)`} style={{ mixBlendMode: "screen" }}>
+        <path
+          d={`M -520 ${ARCH_DY + SILL_PY * ARCH_K} L 330 ${ARCH_DY + SILL_PY * ARCH_K} L 560 1420 L -360 1420 Z`}
+          fill={`url(#${id}-beam)`}
+        />
+      </g>
+      <g filter={`url(#${id}-soft)`} opacity={0.35}>
+        <path d={`M -40 ${ARCH_DY + SILL_PY * ARCH_K} L 60 ${ARCH_DY + SILL_PY * ARCH_K} L 210 1420 L 80 1420 Z`} fill="#2a2f45" />
+      </g>
+      <rect x={-2400} y={-2000} width={6400} height={3600} fill={`url(#${id}-moon)`} style={{ mixBlendMode: "multiply" }} />
+    </GhibliLayer>
+  );
+};
+
+/**
+ * What makes the veranda read as a veranda (Scene 05 doorway shots): the underside of the veranda roof (a dark beam
+ * with rafter ends) across the top of the wide, and the nearest veranda pillar in soft focus at the left edge, cool
+ * and moonlit on its courtyard side.
+ */
+export const VerandaForeground: React.FC<{ id: string }> = ({ id }) => (
+  <>
+    <GhibliLayer depth={1.04}>
+      <defs>
+        <linearGradient id={`${id}-beam`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#1f1712" />
+          <stop offset="1" stopColor="#3a2b22" />
+        </linearGradient>
+      </defs>
+      <rect x={-2400} y={-1400} width={6400} height={1960} fill={`url(#${id}-beam)`} />
+      <rect x={-2400} y={556} width={6400} height={6} fill="#6b7896" opacity={0.55} />
+      {Array.from({ length: 34 }, (_, i) => (
+        <rect key={i} x={-2400 + i * 190} y={556} width={46} height={30} rx={3} fill="#2c211a" />
+      ))}
+    </GhibliLayer>
+    <GhibliLayer depth={1.12} extraBlur={2.2}>
+      <defs>
+        <linearGradient id={`${id}-pillar`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#aab4cc" />
+          <stop offset="0.28" stopColor="#8b8f9c" />
+          <stop offset="1" stopColor="#3e3a3c" />
+        </linearGradient>
+      </defs>
+      <rect x={40} y={-1400} width={150} height={2900} fill={`url(#${id}-pillar)`} />
+      <rect x={14} y={1190} width={202} height={350} fill={`url(#${id}-pillar)`} />
+      <rect x={14} y={1190} width={202} height={8} fill="#cfd8ea" opacity={0.6} />
+    </GhibliLayer>
+  </>
+);
+
+/** Cool moonlight on the people on the veranda (soft-light from the courtyard side), the warm lamp stays inside. */
+export const VerandaMoonOnPeople: React.FC<{ id: string }> = ({ id }) => (
+  <GhibliLayer depth={1.0} blend="soft-light">
+    <defs>
+      <linearGradient id={`${id}-cool`} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={ARCH_DX + 200 * ARCH_K} y2={0}>
+        <stop offset="0" stopColor="#5f74ad" stopOpacity={0.75} />
+        <stop offset="1" stopColor="#5f74ad" stopOpacity={0} />
+      </linearGradient>
+    </defs>
+    <rect x={-2400} y={-1400} width={6400} height={3200} fill={`url(#${id}-cool)`} />
+  </GhibliLayer>
+);
+
+/**
+ * Oil-lamp light on the people in the shrine (STO-22c): a flickering warm soft-light pool from the brass lamps at the
+ * right and the khat, so the priest and Balak take the lamplight. Ambient light for everyone, not the divine glow.
+ */
+export const ShrineLampLight: React.FC<{ id: string; f: number; strength?: number }> = ({ id, f, strength = 1 }) => {
+  const flick = 0.9 + 0.06 * Math.sin(f * 0.29) + 0.04 * Math.sin(f * 0.77 + 0.6);
+  return (
+    <GhibliLayer depth={1.0} blend="soft-light" opacity={strength * flick}>
+      <defs>
+        <radialGradient id={`${id}-lamp`} gradientUnits="userSpaceOnUse" cx={1380} cy={720} r={760}>
+          <stop offset="0" stopColor="#ffb24f" stopOpacity={0.9} />
+          <stop offset="0.45" stopColor="#ff9f45" stopOpacity={0.55} />
+          <stop offset="1" stopColor="#3c2a3a" stopOpacity={0.35} />
+        </radialGradient>
+      </defs>
+      <rect x={-1600} y={-1200} width={5200} height={3600} fill={`url(#${id}-lamp)`} />
+    </GhibliLayer>
+  );
+};
+
+/**
+ * The brass Gobinda on the khat, shown large (STO-22c), over the small idol painted on the khat plate. Same layer
+ * placement as the khat plate in GhibliShrineBackdrop (depth 0.78, ground-locked, drift -0.02). No light of its own.
+ */
+/** Gobinda sits on the khat; y tracks the khat ground lock (khat plate anchored at 940, +55 from the old 885 plate). */
+export const GOBINDA_AT = { x: 1031, y: 697 } as const;
+export const ShrineGobinda: React.FC = () => (
+  <GhibliLayer depth={0.78} groundLocked parallaxDrift={-0.02}>
+    <ellipse cx={1031} cy={697} rx={34} ry={6} fill="#2a160c" opacity={0.38} />
+    <HeldObjectArt kind="gobinda" x={1031} y={697 - HELD_OBJECT_BOTTOM.gobinda * 1.7} s={1.7} />
+  </GhibliLayer>
+);
+
 /** A small brass puja hand-bell (handle up), drawn in hand space. */
 export const BellProp: PropRenderer = ({ scale }) => (
   <g transform={`scale(${(scale * 0.55).toFixed(3)}) translate(0, 30)`}>
@@ -151,6 +393,13 @@ const FlowerProp: PropRenderer = ({ scale }) => (
   </g>
 );
 export const PRIEST_PROPS: Record<string, PropRenderer> = { bell: BellProp, flower: FlowerProp };
+
+/**
+ * Bhagabati Thakur with his white mustache readable (the face table gives him a thin brow-coloured one that vanished
+ * on screen): a string colour makes the rig draw it at full weight in white. Same face otherwise.
+ */
+const PRIEST_LOOK = (EP04G_CAST.bhagabati as typeof EP04G_CAST.bhagabati & { look?: Record<string, unknown> }).look ?? {};
+export const PRIEST_CAST = { ...EP04G_CAST.bhagabati, look: { ...PRIEST_LOOK, mustache: "#f8f6f1" } } as typeof EP04G_CAST.bhagabati;
 
 /** Bell ring: a quick wrist shake (degrees) over `dur` frames from `start`. */
 export const bellShake = (f: number, start: number, dur = 16, amp = 7): number => {
@@ -183,7 +432,7 @@ const PRELOAD = [
 ] as const;
 
 /** Veranda dhoop-dani: where Thakurma sets it, just outside the doorway, within Balak's reach. */
-const DHOOP_V = { x: SHRINE.verandaX + 88 * SHRINE.verandaS, y: SHRINE.verandaY - HELD_OBJECT_BOTTOM.incense * SHRINE.verandaS };
+const DHOOP_V = { x: VERANDA_OUT.x + 88 * VERANDA_OUT.s, y: VERANDA_OUT.y - HELD_OBJECT_BOTTOM.incense * VERANDA_OUT.s };
 
 /** Scene 05 story beats (local frames; line windows from timing.ts: 05a 60-339, 05b 351-454, P9 454-478, 05c 478-550,
  * 05d 558-614, 05e 638-728, 05f 736-809, AG7 821-941). */
@@ -213,6 +462,47 @@ export const S05 = {
 export const S05_DHOOP_CONTACT = S05.set + KNEEL_REACH_T.grip;
 export const S05_BOWL_DOWN = S05.drink + DRINK_BOWL_T.lower;
 
+/**
+ * Planted knee-walk / shuffle for SeatedChild: advances along a path in discrete steps with a
+ * hold (plant) after each move so the root never ice-skates. `stepPhase` is 0 while planted and
+ * peaks at 1 mid-move (for a small vertical bob / lean).
+ */
+const kneeStepTravel = (
+  fr: number,
+  a: number,
+  b: number,
+  from: { x: number; y: number; s: number },
+  to: { x: number; y: number; s: number },
+  steps: number,
+): { x: number; y: number; s: number; stepPhase: number } => {
+  const dur = Math.max(1, b - a);
+  const t = clamp((fr - a) / dur, 0, 1);
+  if (t <= 0) return { x: from.x, y: from.y, s: from.s, stepPhase: 0 };
+  if (t >= 1) return { x: to.x, y: to.y, s: to.s, stepPhase: 0 };
+  const n = Math.max(2, Math.floor(steps));
+  const u = t * n;
+  const i = Math.min(n - 1, Math.floor(u));
+  const local = u - i;
+  const moveFrac = 0.56;
+  const fromT = i / n;
+  const toT = (i + 1) / n;
+  if (local < moveFrac) {
+    const m = EASE.inOut(local / moveFrac);
+    return {
+      x: lerp(from.x, to.x, lerp(fromT, toT, m)),
+      y: lerp(from.y, to.y, lerp(fromT, toT, m)),
+      s: lerp(from.s, to.s, lerp(fromT, toT, m)),
+      stepPhase: Math.sin(m * Math.PI),
+    };
+  }
+  return {
+    x: lerp(from.x, to.x, toT),
+    y: lerp(from.y, to.y, toT),
+    s: lerp(from.s, to.s, toT),
+    stepPhase: 0,
+  };
+};
+
 export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   const f = useCurrentFrame();
 
@@ -229,54 +519,64 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   const cutB = s5b.from - 6; // Shot 21: medium interior on the priest (holds through P9)
   const cutC = s5c.from - 6; // Shot 22: medium close on Balak at the doorway
   const cutD = s5d.from - 6; // Shot 23: interior, Balak carries the dhoop-dani in
-  const cutE = s5f.from - 6; // Shot 24: two-shot, he sits before the khat
+  const cutE = s5e.from - 6; // Shot 24a: medium on Balak (05e), up on his knees beside the priest, pointing to the floor
+  const cutF = s5f.from - 4; // Shot 24b: two-shot (05f), the priest waves him in; he shuffles back and sits before the khat
+  const gobFrom = p9.from - 4; // P9 insert: Gobinda on the khat, no dhoop burning before Him (nobody comes)
   const cutInsert = s5f.to + 3; // AG7 insert: the brimming stone bowl
   const cutHeist = S05.widen - 2; // AG7: medium close on Balak, slow push
+  // frameAt: world point (cx, wy) lands at screen (960, sy) at zoom z (depth-1 world). Floors and laps go to screen
+  // y <= 810, clear of the caption band.
+  const frameAt = (cx: number, wy: number, sy: number, z: number): Cam => ({ x: cx - 960, y: wy - 540 - (sy - 540) / z, zoom: z, focus: 1.0 });
   let cam: Cam;
   let archOp = 0;
   if (f < cutB) {
-    // AG6 + Shot 20: wide through the arch, then a gentle push to Balak on "ঠাকুরঘরে ঢোকা বারণ—"
+    // AG6 + Shot 20: the veranda outside the shrine doorway; a gentle push to Balak on "ঠাকুরঘরে ঢোকা বারণ—", ending
+    // on a medium shot of him sitting outside the threshold, the left pillar and lamplit room beyond the doorway
     const drift = ramp(f, 0, s5a.from + 70);
     const push = ramp(f, S05.glanceSill - 4, S05.glanceSill + 50);
-    cam = {
-      x: lerp(lerp(-40, -26, drift), -190, push),
-      y: lerp(100, 124, push),
-      zoom: lerp(1.04, 1.28, push),
-      focus: 1.0,
-    };
-    archOp = 0.92;
-  } else if (f < cutC) {
-    // Shot 21 + P9: the priest calls for dhoop; nobody comes
+    cam = frameAt(lerp(lerp(820, 760, drift), 560, push), VERANDA_OUT.y, lerp(800, 785, push), lerp(1.28, 1.88, push));
+    archOp = 1;
+  } else if (f < gobFrom) {
+    // Shot 21: the priest calls for dhoop
     const t = ramp(f, cutB, s5b.to);
-    cam = { x: lerp(228, 236, t), y: 146, zoom: lerp(1.66, 1.7, t), focus: 1.0 };
+    cam = frameAt(lerp(1214, 1222, t), SHRINE.priestY, 790, lerp(1.66, 1.7, t));
+  } else if (f < cutC) {
+    // P9 insert: brass Gobinda on the khat, large, the lamp flames beside Him, no dhoop smoke before Him
+    const t = ramp(f, gobFrom, cutC);
+    cam = frameAt(GOBINDA_AT.x - 115, GOBINDA_AT.y - 40, 470, lerp(3.8, 3.92, t));
   } else if (f < cutD) {
-    // Shot 22: Balak at the doorframe, hand on the dhoop-dani's handle
+    // Shot 22: medium on Balak at the doorway, outside, hands on the dhoop-dani's handle as he asks; the doorframe
+    // between him and the lamplit room
     const t = ramp(f, cutC, s5c.to);
-    cam = { x: lerp(-236, -228, t), y: 172, zoom: lerp(1.48, 1.52, t), focus: 1.0 };
-    archOp = 0.92;
+    cam = frameAt(lerp(520, 526, t), VERANDA_OUT.y, 770, lerp(2.8, 2.88, t));
+    archOp = 1;
   } else if (f < cutE) {
     // Shot 23: interior; he hurries the dhoop-dani in and sets it beside the priest; the camera eases with him
     const t = ramp(f, S05.walkFrom, S05.walkTo + 20);
-    cam = { x: lerp(96, 150, t), y: lerp(112, 120, t), zoom: lerp(1.26, 1.3, t), focus: 1.0 };
+    cam = frameAt(lerp(930, 1040, t), SHRINE.floorY, 790, lerp(1.5, 1.56, t));
+  } else if (f < cutF) {
+    // Shot 24a: medium on Balak, up on his knees beside the priest's lap, a small open hand to the floor
+    const t = ramp(f, cutE, cutF);
+    cam = frameAt(lerp(952, 948, t), SHRINE.floorY, 760, lerp(3.0, 3.08, t));
   } else if (f < cutInsert) {
-    // Shot 24: two-shot, Balak goes back and sits down before the khat
-    const t = ramp(f, cutE, s5f.to);
-    cam = { x: lerp(78, 70, t), y: 122, zoom: lerp(1.34, 1.36, t), focus: 1.0 };
+    // Shot 24b: two-shot; the priest waves him in, he shuffles back to the front corner of the khat and sits
+    const t = ramp(f, cutF, s5f.to);
+    cam = frameAt(lerp(1010, 990, t), SHRINE.floorY, 790, lerp(1.78, 1.8, t));
   } else if (f < cutHeist) {
     // AG7 insert: the brimming stone bowl gleaming in the lamplight (his eyes on it at the top of frame)
     const t = ramp(f, cutInsert, cutHeist);
-    cam = { x: lerp(-52, -48, t), y: lerp(162, 166, t), zoom: lerp(1.96, 2.02, t), focus: 1.0 };
+    cam = frameAt(lerp(806, 808, t), SHRINE.floorY, 700, lerp(3.3, 3.36, t));
   } else {
-    // AG7: medium close on Balak and the bowl, slow push (1.0 -> 1.14) through the heist
+    // AG7: medium close on Balak lifting the wide stone bowl to his lips in both hands, slow push (1.0 -> 1.1)
     const t = ramp(f, cutHeist, ag7.to);
-    cam = { x: lerp(-82, -76, t), y: lerp(138, 150, t), zoom: lerp(1.58, 1.78, t), focus: 1.0 };
+    cam = frameAt(lerp(790, 792, t), SHRINE.floorY, 760, lerp(2.9, 3.2, t));
   }
   cam.dof = zoomProportionalDof(cam.zoom);
 
   /* ---------------- Thakurma: sets the dhoop-dani down outside the doorway, gets up, walks off ---------------- */
   const thkSpotFn = ghibliWalkSpot(
-    { x: 760, y: 990, s: 0.98 },
-    { x: -140, y: 990, s: 0.98 },
+    { x: VERANDA_OUT.x + 150, y: VERANDA_OUT.y - 8, s: 1.04 },
+    { x: -320, y: VERANDA_OUT.y - 8, s: 1.04 },
     S05.thkWalkFrom,
     S05.thkWalkTo,
     EP04G_CAST.thakurma.seed,
@@ -329,12 +629,18 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     const offer = Math.sin(fr * 0.085);
     const blink = Math.max(blinkAt(fr, p9.from + 9), blinkAt(fr, s5b.from + 60));
     const eyeDart = inP9 ? 0.25 * Math.sin((fr - p9.from) * 0.35) : 0;
+    const breath = 0.35 * Math.sin(fr * 0.06);
+    // Upright floor sit; lean only when offering / chanting (door look is head+eyes, not a body hunch).
+    const lean =
+      chant || (fr < cutC && !lookDoor && !lookRight && !wave1 && !wave2)
+        ? 2.4 + 0.9 * Math.sin(fr * 0.07) + (chant ? 0.6 : 0)
+        : breath;
     const base = poseOf({
-      kneel: 1,
-      lean: chant ? 4 + 1.4 * Math.sin(fr * 0.07) : lookDoor ? 3 : 2,
+      kneel: 0,
+      lean,
       bodyTurn: safeBodyTurn(lerp(lookRight ? 0.12 : lookDoor ? -0.32 : -0.24, 0.3, away)),
       headTurn: lerp(lookRight ? 0.46 : lookDoor ? -0.56 : wave1 || wave2 || chant ? -0.06 : -0.16, 0.42, away),
-      headNod: lookRight ? 6 : lookDoor ? 2 : chant ? -5 + 2.2 * Math.sin(fr * 0.11) : lerp(-4, -7, away),
+      headNod: lookRight ? 6 : lookDoor ? 2 : chant ? -5 + 2.2 * Math.sin(fr * 0.11) : lerp(-2, -4, away),
       eyeX: eyeDart,
       eyeY: in5b || inP9 ? 0.06 : -0.2,
       lid: Math.max(blink, away > 0.5 ? 0.72 : chant ? 0.56 : wave1 || wave2 ? 0.46 : 0.16),
@@ -368,24 +674,44 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   /* ---------------- Balak ---------------- */
   const balakRms = ep04gSpeakRms(SCENE_ID, ["05c_Balak_AskDhoop.wav", "05e_Balak_AskSit.wav"], f);
 
-  // Where he is: veranda (in front of the arch) -> knee-walk in across the threshold -> beside the priest -> his seat.
+  // Where he is: veranda -> planted knee-walk to the priest -> planted shuffle back to his seat.
+  // Continuous lerps ice-skated; kneeStepTravel advances only during each step's move and holds on plant.
   const walkU = ramp(f, S05.walkFrom, S05.walkTo);
-  const backU = ramp(f, S05.backFrom, S05.backTo);
   const inside = f >= S05.walkFrom;
-  let bx: number = SHRINE.verandaX;
-  let by: number = SHRINE.verandaY;
-  let bs: number = SHRINE.verandaS;
-  if (f >= S05.walkFrom) {
-    bx = lerp(SHRINE.verandaX, SHRINE.setX, walkU);
-    by = lerp(SHRINE.verandaY, SHRINE.floorY, EASE.inOut(clamp(walkU * 1.15, 0, 1)));
-    bs = lerp(SHRINE.verandaS, SHRINE.balakS, walkU);
-    const bob = f < S05.walkTo ? -3 * Math.abs(Math.sin((f - S05.walkFrom) * 0.42)) * Math.sin(walkU * Math.PI) : 0;
-    by += bob;
+  // the veranda shots (before the interior cut, Shot 23) draw him at VERANDA_OUT; the interior walk starts at the sill
+  const onVeranda = f < cutD;
+  let bx: number = onVeranda ? VERANDA_OUT.x : SHRINE.verandaX;
+  let by: number = onVeranda ? VERANDA_OUT.y : SHRINE.verandaY;
+  let bs: number = onVeranda ? VERANDA_OUT.s : SHRINE.verandaS;
+  /** Floor plant Y for the contact shadow (body may bob up during a knee-step). */
+  let plantY = by;
+  if (f >= S05.walkFrom && f < S05.backFrom) {
+    const trip = kneeStepTravel(
+      f,
+      S05.walkFrom,
+      S05.walkTo,
+      { x: SHRINE.verandaX, y: SHRINE.verandaY, s: SHRINE.verandaS },
+      { x: SHRINE.setX, y: SHRINE.floorY, s: SHRINE.balakS },
+      5,
+    );
+    bx = trip.x;
+    plantY = trip.y;
+    bs = trip.s;
+    by = trip.y - 5.5 * trip.stepPhase;
   }
   if (f >= S05.backFrom) {
-    bx = lerp(SHRINE.setX, SHRINE.seatX, backU);
-    by = SHRINE.floorY + (f < S05.backTo ? -2.2 * Math.abs(Math.sin((f - S05.backFrom) * 0.4)) * Math.sin(backU * Math.PI) : 0);
-    bs = SHRINE.balakS;
+    const trip = kneeStepTravel(
+      f,
+      S05.backFrom,
+      S05.backTo,
+      { x: SHRINE.setX, y: SHRINE.floorY, s: SHRINE.balakS },
+      { x: SHRINE.seatX, y: SHRINE.floorY, s: SHRINE.balakS },
+      3,
+    );
+    bx = trip.x;
+    plantY = trip.y;
+    bs = trip.s;
+    by = trip.y - 3.2 * trip.stepPhase;
   }
 
   let pose: SeatedPose = "sitCross";
@@ -423,7 +749,7 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     pose = "kneelReach";
     prevPose = "sitCross";
     poseStart = S05.reach;
-    reachAt = { x: (DHOOP_V.x - SHRINE.verandaX) / SHRINE.verandaS, y: (DHOOP_V.y - SHRINE.verandaY) / SHRINE.verandaS };
+    reachAt = { x: (DHOOP_V.x - VERANDA_OUT.x) / VERANDA_OUT.s, y: (DHOOP_V.y - VERANDA_OUT.y) / VERANDA_OUT.s };
     if (f >= S05.reach + KNEEL_REACH_T.grip) holding = "incense";
     else reachFor = "incense";
     kneel = 1.5;
@@ -476,6 +802,7 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     pose = "drinkBowl";
     prevPose = "sitCross";
     poseStart = S05.drink;
+    reachAt = BOWL_REACH;
     expr = "playful";
     prevExpr = "surprised";
     exprStart = S05.drink;
@@ -545,17 +872,22 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   const dhoopBesidePriest = f >= S05_DHOOP_CONTACT;
   const bowlFull = f < S05.drink;
   const bowlEmpty = f >= S05.drink + DRINK_BOWL_T.release;
+  const bowlBig = f < cutHeist;
+  const bowlX = bowlBig ? BOWL_FLOOR.x : BOWL_AT.x;
+  const bowlY = bowlBig ? BOWL_FLOOR.y : BOWL_AT.y;
+  const bowlS = bowlBig ? BOWL_FLOOR_S : SHRINE.balakS;
 
   // Lamp-light glint dancing on the brimming coconut water (the insert), not divine light
   const glint = bowlFull ? 0.5 + 0.5 * Math.sin(f * 0.21) * Math.sin(f * 0.07 + 1) : 0;
 
   const balakNode = (
     <>
-      <GhibliBalakGroundGlow x={bx} y={by + 5} level={0.45} />
+      <GhibliBalakGroundGlow x={bx} y={plantY + 5} rx={120 * (bs / 0.94)} ry={22 * (bs / 0.94)} level={onVeranda ? 0.3 : 0.42} />
       <g transform={living}>
-        <GhibliBalakAura cx={glowAnchor.cx} cy={glowAnchor.cy} r={78 * (bs / 0.94)} glow={0.55} f={f} />
+        {/* the steady resting halo behind his head (BAL-06/11): restrained, below Scene 04's glow beat */}
+        <GhibliBalakAura cx={glowAnchor.cx} cy={glowAnchor.cy} r={glowAnchor.r * 0.5} glow={onVeranda ? 0.36 : 0.5} f={f} />
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={bx} y={by} rx={42 * (bs / 0.94)} ry={9} opacity={0.28} sunDir={-1} />
+          <ContactShadow x={bx} y={plantY} rx={52 * (bs / 0.94)} ry={10 * (bs / 0.94)} opacity={0.3} sunDir={-1} />
           <SeatedChild {...balakProps} />
           {kneel < 0.35 && pose !== "drinkBowl" && <GhibliBalakLapDetails x={bx} y={by} s={bs} f={f} />}
         </g>
@@ -567,32 +899,39 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     <GhibliStage cam={cam} background="#241710">
       <GhibliPreload files={PRELOAD} />
       <GhibliShrineBackdrop f={f} />
+      <ShrineGobinda />
 
       {/* Inside the shrine room (behind the doorway arch) */}
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} rimDir={-1} sunColor="#ffd088" bounceColor="#7c6e8c" />
 
         {/* Stone bowl with the coconut water and the whole fopra, before the khat */}
-        <ContactShadow x={BOWL_AT.x} y={SHRINE.floorY} rx={36} ry={8.5} opacity={0.32} sunDir={-1} />
+        {/* (large on the floor until the heist cut; from that cut the rig's own size, so the pick-up matches) */}
+        <ContactShadow x={bowlX} y={SHRINE.floorY} rx={36 * (bowlS / 0.94)} ry={8.5} opacity={0.32} sunDir={-1} />
         {bowlFull && (
           <g>
-            <HeldObjectArt kind="stoneBowl" x={BOWL_AT.x} y={BOWL_AT.y} s={SHRINE.balakS} fill={1} />
-            <ellipse cx={BOWL_AT.x - 6} cy={BOWL_AT.y - 12} rx={9 + 3 * glint} ry={2.2} fill="#fff8e0" opacity={0.25 + 0.4 * glint} />
+            <HeldObjectArt kind="stoneBowl" x={bowlX} y={bowlY} s={bowlS} fill={1} />
+            <ellipse cx={bowlX - 6} cy={bowlY - 12} rx={9 + 3 * glint} ry={2.2} fill="#fff8e0" opacity={0.25 + 0.4 * glint} />
           </g>
         )}
         {bowlEmpty && <HeldObjectArt kind="stoneBowl" x={BOWL_AT.x} y={BOWL_AT.y} s={SHRINE.balakS} fill={0} />}
 
-        {/* Bhagabati Thakur kneeling at the right end of the khat, clear of the doorway */}
+        {/* Thakurer ashon / khat base on the shared floor line */}
+        <ContactShadow x={1080} y={SHRINE.priestY} rx={120} ry={18} opacity={0.42} sunDir={-1} />
+
+        {/* Bhagabati Thakur seated at the right end of the khat, clear of the doorway */}
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={SHRINE.priestX} y={SHRINE.priestY} rx={50} ry={12} opacity={0.34} sunDir={-1} />
+          <ContactShadow x={SHRINE.priestX} y={SHRINE.priestY} rx={92} ry={18} opacity={0.48} sunDir={-1} />
           <Puppet
-            cast={EP04G_CAST.bhagabati}
+            cast={PRIEST_CAST}
+            sitStyle="crossLegged"
             x={SHRINE.priestX}
             y={SHRINE.priestY}
             scale={SHRINE.priestS}
             f={f}
             lifeF={f}
             light={EP04G_SHRINE_LIGHT}
+            seated
             mouth={priestMouth}
             talk={priestTalk}
             acting={priestActing}
@@ -603,7 +942,7 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
         {/* Dhoop-dani set down beside the priest */}
         {dhoopBesidePriest && (
           <g>
-            <ContactShadow x={DHOOP_SET.x} y={SHRINE.floorY} rx={17} ry={4.5} opacity={0.3} sunDir={-1} />
+            <ContactShadow x={DHOOP_SET.x} y={DHOOP_SET.y + HELD_OBJECT_BOTTOM.incense * SHRINE.balakS} rx={17} ry={4.5} opacity={0.34} sunDir={-1} />
             <HeldObjectArt kind="incense" x={DHOOP_SET.x} y={DHOOP_SET.y} s={SHRINE.balakS} lifeF={f} />
             <GhibliSmokeCurls x={DHOOP_SET.x} y={DHOOP_SET.y - 10} f={f} scale={0.6} />
           </g>
@@ -613,25 +952,29 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
         {inside && balakNode}
       </GhibliLayer>
 
-      {/* The doorway arch, curtain drawn back (veranda shots only) */}
-      <ShrineArchFrame id="s05arch" opacity={archOp} f={f} />
+      {/* The lamplight on the people inside */}
+      <ShrineLampLight id="s05lamp" f={f} strength={archOp > 0 ? 0.7 : 1} />
+
+      {/* Veranda shots: the outer wall and the veranda floor, then the doorway arch (curtain drawn back) in the same plane */}
+      {archOp > 0 && <VerandaExterior id="s05ext" f={f} />}
+      <ShrineArchFrame id="s05arch" opacity={archOp} f={f} depth={1.0} />
 
       {/* The veranda, outside the threshold (in front of the arch) */}
       <GhibliLayer depth={1.0}>
         {dhoopOnVeranda && (
           <g>
-            <ContactShadow x={DHOOP_V.x} y={SHRINE.verandaY} rx={17 * (dhoopVY >= DHOOP_V.y - 0.5 ? 1 : 0.7)} ry={4.5} opacity={0.28} sunDir={-1} />
-            <HeldObjectArt kind="incense" x={DHOOP_V.x} y={dhoopVY} s={SHRINE.verandaS} lifeF={f} />
+            <ContactShadow x={DHOOP_V.x} y={VERANDA_OUT.y} rx={17 * (dhoopVY >= DHOOP_V.y - 0.5 ? 1 : 0.7)} ry={4.5} opacity={0.28} sunDir={-1} />
+            <HeldObjectArt kind="incense" x={DHOOP_V.x} y={dhoopVY} s={VERANDA_OUT.s} lifeF={f} />
             <GhibliSmokeCurls x={DHOOP_V.x} y={dhoopVY - 10} f={f} scale={0.6} />
           </g>
         )}
         {thkVisible && (
           <g filter="url(#ghibli-char-ink)">
-            <ContactShadow x={thkSpot.x} y={990} rx={42} ry={10} opacity={0.28} sunDir={-1} />
+            <ContactShadow x={thkSpot.x} y={thkSpot.y} rx={42} ry={10} opacity={0.28} sunDir={-1} />
             <Puppet
               cast={EP04G_CAST.thakurma}
               x={thkSpot.x}
-              y={990}
+              y={thkSpot.y}
               scale={thkSpot.s}
               f={f}
               lifeF={f}
@@ -643,6 +986,8 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
         )}
         {!inside && balakNode}
       </GhibliLayer>
+      {archOp > 0 && <VerandaMoonOnPeople id="s05moon" />}
+      {archOp > 0 && <VerandaForeground id="s05fg" />}
 
       <GhibliEp04ForegroundFinish f={f} zoom={cam.zoom} warmth={0.3} />
     </GhibliStage>

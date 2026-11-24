@@ -4,12 +4,12 @@ import { clamp, EASE, lerp, makeActing, type PoseKey } from "../../../cinematic/
 import { Cam } from "../../../cinematic/core/Stage";
 import { type CastMember, type Pose, type PuppetAnchors, Puppet, walkPose, walkTravel } from "../../../cinematic/rig/Puppet";
 import { type SeatedChildProps, type SeatedPose, SeatedChild, seatedChildHands } from "../../../episode03/rig/SeatedChild";
-import { ContactShadow, GhibliCharFilterDefs, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
+import { GhibliCharFilterDefs, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
 import { balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
 import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
 import { GhibliFootstepDust } from "../../core/GhibliAtmosphere";
-import { GhibliGroundCover, GhibliLilyPads } from "../../core/GhibliLifeKit";
-import { zoomProportionalDof } from "../../core/ghibliMotion";
+import { GhibliDappledLight, GhibliGroundCover } from "../../core/GhibliLifeKit";
+import { safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
 import { ep04gSpan, ep04gSpeakRms } from "../timing";
 import {
   EP04G_CAST,
@@ -55,8 +55,9 @@ const PRELOAD = [
 
 type V = { x: number; y: number };
 
-const BAL = { x: 1790, y: 940, s: 0.94 };
-const MANG = { x: 1615, y: 935, s: 0.92 };
+// Balak downstage on the bank; Mangla a half-step upstage (smaller, higher ground line) so the two-shot has depth.
+const BAL = { x: 1790, y: 942, s: 0.94 };
+const MANG = { x: 1608, y: 916, s: 0.86 };
 const MANGLA: CastMember = EP04G_CAST.mangla;
 /** Mangla without the gamchha on his shoulder (it has fallen / is in his fist). */
 const MANGLA_BARE: CastMember = { ...EP04G_CAST.mangla, scarf: undefined };
@@ -121,6 +122,62 @@ const MandarBlossom: React.FC<{ x: number; y: number; rot: number; s?: number }>
   </g>
 );
 
+/**
+ * A soft, grounded contact shadow on the grass (drawn OUTSIDE the character ink filter, so it never takes an ink
+ * contour and reads as a stand base): a wide feathered cast pool toward the left (the sun is upper right) and a small
+ * darker occlusion under the feet, both multiplied into the grass. Front grass blades are laid over its edge by the
+ * caller (GhibliGroundCover part="front").
+ */
+const SoftGroundShadow: React.FC<{ x: number; y: number; rx: number; opacity?: number; id: string }> = ({ x, y, rx, opacity = 1, id }) => (
+  <g pointerEvents="none" style={{ mixBlendMode: "multiply" }}>
+    <defs>
+      <filter id={`${id}-wide`} x="-80%" y="-400%" width="260%" height="900%">
+        <feGaussianBlur stdDeviation={rx * 0.28} />
+      </filter>
+      <filter id={`${id}-near`} x="-70%" y="-350%" width="240%" height="800%">
+        <feGaussianBlur stdDeviation={rx * 0.11} />
+      </filter>
+    </defs>
+    <ellipse cx={x - rx * 0.32} cy={y + 4} rx={rx * 1.35} ry={rx * 0.26} fill="#33401c" opacity={0.48 * opacity} filter={`url(#${id}-wide)`} />
+    <ellipse cx={x - rx * 0.08} cy={y + 1} rx={rx * 0.72} ry={rx * 0.14} fill="#241d0e" opacity={0.58 * opacity} filter={`url(#${id}-near)`} />
+  </g>
+);
+
+/**
+ * Water-plate lily pads (painted in pond_water_emerald_sketch.png) parallax onto this dry bank under zoom.
+ * Soft grass washes (blurred, bank-matched, never pad-shaped) bury those pads so they never float on the lawn.
+ */
+const DryBankPadCover: React.FC = () => (
+  <g pointerEvents="none">
+    <defs>
+      <filter id="s02-padhide" x="-50%" y="-120%" width="200%" height="340%">
+        <feGaussianBlur stdDeviation={18} />
+      </filter>
+    </defs>
+    {/* wide soft grass strip under the mandar bank — matches ep4pb-base mid tones */}
+    <ellipse cx={1680} cy={900} rx={420} ry={58} fill="#9fb06a" opacity={0.78} filter="url(#s02-padhide)" />
+    <ellipse cx={1580} cy={918} rx={280} ry={42} fill="#90a55d" opacity={0.72} filter="url(#s02-padhide)" />
+    <ellipse cx={1820} cy={912} rx={260} ry={40} fill="#849c55" opacity={0.62} filter="url(#s02-padhide)" />
+    <ellipse cx={1720} cy={888} rx={200} ry={36} fill="#b3bc80" opacity={0.45} filter="url(#s02-padhide)" />
+  </g>
+);
+
+/**
+ * The rigs draw their own faint ambient-occlusion oval under the feet; passed through the ink filter
+ * (ghibli-char-ink) its low-alpha pixels pick up the filter's tan pigment mottle and read as a flat grey stand base.
+ * This pre-filter drops every pixel under about 55% alpha (the AO oval peaks near 0.55 and the rig's foot shadows at
+ * 0.3) and keeps the opaque figure, so the grounding comes from SoftGroundShadow + grass alone.
+ */
+const SolidFigureDefs: React.FC<{ id: string }> = ({ id }) => (
+  <defs>
+    <filter id={id} x="-25%" y="-15%" width="150%" height="130%" colorInterpolationFilters="sRGB">
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0 0 0 0 0 0.45 1 1 1 1" />
+      </feComponentTransfer>
+    </filter>
+  </defs>
+);
+
 /* ------------------------------------------------------------------ */
 /* Scene                                                                */
 /* ------------------------------------------------------------------ */
@@ -148,13 +205,14 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   const s2c = ep04gSpan(SCENE_ID, "02c_Mangla_Panic.wav");
   const sceneEnd = s2c.to + 30; // P4
 
-  // Phrase beats inside 02a (clip silences: 186-191, 220-226, 257-262, 307-320, 384-391, 409-417)
+  // Phrase beats inside 02a, on the caption cues (local 48-137-241-292-406-523): "জানিস মংলা, এতদিন ছোট ছিলাম /
+  // বলে কাঠের পুতুল নিয়ে খেলতাম। / এখন বড় হয়েছি— / তাই আজ পিতলের পুতুলটা নিয়ে খেলব, / আর কাল পাথরের গোপালটাকে নিয়ে আসব!"
   const a0 = s2a.from;
-  const RAISE = a0 + 188; // "এখন বড় হয়েছি—" : holds the Gobinda up, proud
-  const STONE = a0 + 262; // "আর কাল পাথরের গোপালটাকে নিয়ে আসব!"
-  const BATH = a0 + 318; // "জ্যেঠামশায়রাও তো ওদের স্নান করান," : pours water over it
-  const FEED = a0 + 386; // "খাওয়ান—" : fingers to its mouth
-  const HUG = a0 + 412; // "ঠিক আমার পুতুলের মতো!" : hugs it
+  const RAISE = a0 + 193; // "এখন বড় হয়েছি—" : holds the Gobinda up, proud
+  const BATH = a0 + 246; // "তাই আজ পিতলের পুতুলটা নিয়ে খেলব," : plays with it (tips and turns it, as if bathing it)
+  const FEED = a0 + 310; // "...খেলব," : brings it up, admiring it
+  const STONE = a0 + 358; // "আর কাল পাথরের গোপালটাকে নিয়ে আসব!" : Mangla's terror peaks
+  const HUG = a0 + 425; // "...আসব!" : hugs it, delighted with his plan
   const PERK = ag4.from - 2; // distant shouts: ears perk, looks to the house
   const LEAN = ag4.from + 16; // leans in to Mangla
   const OFFER = s2b.from + 66; // "এই পুতুলটা সুন্দর জ্যেঠাকে দিয়ে..." : holds it out to Mangla
@@ -189,7 +247,7 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     kind: "run" as const,
     startIn: 7,
     stopIn: 8,
-    bodyTurn: -0.85,
+    bodyTurn: safeBodyTurn(-0.34),
   };
   const runX = running ? walkTravel(runClock, runOpts).bodyX : 0;
   const manglaX = standX + runX;
@@ -200,26 +258,48 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   const behindTree = running;
 
   const MK = (k: PoseKey<Pose>): PoseKey<Pose> => k;
-  const manglaBase = makeActing<Pose>(poseOf({ crouch: 0.85, bodyTurn: 0.32, headTurn: 0.02, lean: 4, smile: 0.25, brow: 0.05, eyeY: 0.28 }), [
-    MK({ f: 0, crouch: 0.85, bodyTurn: 0.32, headTurn: 0.02, lean: 4, smile: 0.25, brow: 0.05, eyeY: 0.28 }),
+  // Village squat: open knees (Puppet dhoti kneel ab), cloth on each thigh — not a women's balloon skirt.
+  // Hands rest on the knees (hold); acting below releases them for reactions. Heel-rock / breath keep him alive.
+  const SQUAT = {
+    kneel: 1,
+    crouch: 0.28,
+    bodyTurn: safeBodyTurn(0.28),
+    headTurn: 0.08,
+    // Resting squat more upright; big leans only on keyed beats below.
+    lean: 3,
+    smile: 0.28,
+    brow: 0.05,
+    eyeY: 0.3,
+    hold: 1,
+    hunch: 0.08,
+  };
+  const manglaBase = makeActing<Pose>(poseOf(SQUAT), [
+    MK({ f: 0, ...SQUAT }),
+    // AG3 / start of 02a: idly turning to the boy, weight shifting on the heels
+    MK({ f: a0 - 10, in: 18, ease: "inOut", headTurn: 0.14, headTilt: 4, lean: 10, crouch: 0.16 }),
     // Shot 8: his eyes grow wider and wider
-    MK({ f: a0 + 70, in: 24, ease: "inOut", brow: 0.25, smile: 0.1, headTilt: -2 }),
-    MK({ f: RAISE + 12, in: 16, ease: "inOut", brow: 0.5, smile: 0, lean: 0, headTilt: -4, hunch: 0.15 }),
-    MK({ f: STONE + 14, in: 14, ease: "backOut", brow: 0.75, lean: -5, mouthHand: -0.9, hunch: 0.35 }),
-    MK({ f: BATH + 10, in: 16, ease: "inOut", brow: 0.85, mouthHand: 0, lean: -8, hunch: 0.5, headTurn: 0.3 }),
-    MK({ f: FEED + 8, in: 10, ease: "backOut", brow: 0.95, lean: -10, hunch: 0.65, headTilt: -6 }),
-    MK({ f: HUG + 20, in: 18, ease: "inOut", brow: 0.9, hunch: 0.5, lean: -8 }),
+    MK({ f: a0 + 70, in: 24, ease: "inOut", brow: 0.28, smile: 0.08, headTilt: -2, crouch: 0.14 }),
+    MK({ f: RAISE + 12, in: 16, ease: "inOut", brow: 0.5, smile: 0, lean: 2, headTilt: -4, hunch: 0.18, hold: 0.55, crouch: 0.18 }),
+    // "...পিতলের পুতুলটা নিয়ে খেলব,": the boy plays with the Thakur's own Gobinda - Mangla shrinks back, a nervous
+    // sideways look as if someone might see
+    MK({ f: BATH + 10, in: 16, ease: "inOut", brow: 0.62, gasp: 0.12, lean: -6, hunch: 0.4, headTurn: 0.28, hold: 1, crouch: 0.2 }),
+    MK({ f: BATH + 40, in: 10, ease: "inOut", headTurn: -0.18, headTilt: -3 }),
+    MK({ f: BATH + 56, in: 10, ease: "inOut", headTurn: 0.3, headTilt: -6 }),
+    MK({ f: FEED + 8, in: 12, ease: "inOut", brow: 0.72, gasp: 0.2, lean: -8, hunch: 0.5, headTilt: -4, crouch: 0.22 }),
+    // "আর কাল পাথরের গোপালটাকে নিয়ে আসব!": a gasp, the hand flies to his mouth, jaw dropping, eyes wide
+    MK({ f: STONE + 14, in: 12, ease: "backOut", brow: 1, gasp: 0.5, lean: -10, mouthHand: -0.9, hunch: 0.62, hold: 0, headTilt: -6, crouch: 0.24 }),
+    MK({ f: HUG + 20, in: 18, ease: "inOut", brow: 0.95, gasp: 0.3, mouthHand: -0.35, hunch: 0.55, lean: -8, hold: 0.5, crouch: 0.18 }),
     // AG4: the shouts from the house - he looks over his shoulder
-    MK({ f: PERK + 6, in: 8, ease: "inOut", headTurn: -0.35, brow: 0.7, hunch: 0.35 }),
-    MK({ f: LEAN + 8, in: 10, ease: "inOut", headTurn: 0.3, brow: 0.8 }),
+    MK({ f: PERK + 6, in: 8, ease: "inOut", headTurn: -0.32, brow: 0.7, hunch: 0.32, crouch: 0.16 }),
+    MK({ f: LEAN + 8, in: 10, ease: "inOut", headTurn: 0.28, brow: 0.8, crouch: 0.14 }),
     // Shot 9: the Gobinda held out at him - he shrinks back
-    MK({ f: OFFER + 6, in: 12, ease: "inOut", lean: -14, hunch: 0.85, brow: 1, headTurn: 0.25, headTilt: -8 }),
+    MK({ f: OFFER + 6, in: 12, ease: "inOut", lean: -7, hunch: 0.8, brow: 1, headTurn: 0.22, headTilt: -8, crouch: 0.28 }),
     // Shot 10: jumps back, clutching his head
-    MK({ f: JUMP + 4, in: 4, ease: "out", crouch: 0.1, lean: -12, hunch: 0.4, headHands: 1, brow: 1, gasp: 0.0 }),
-    MK({ f: WAVE_A, in: 6, ease: "inOut", headHands: 0, crouch: 0.08, lean: -6 }),
-    MK({ f: GRAB - 4, in: 6, ease: "inOut", crouch: 0.08 }),
-    MK({ f: GRAB + 6, in: 8, ease: "inOut", crouch: 0.55, lean: 10, headTurn: 0.1, headTilt: 6 }),
-    MK({ f: GRIP + 2, in: 6, ease: "inOut", crouch: 0.12, lean: 0, headTilt: 0 }),
+    MK({ f: JUMP + 4, in: 4, ease: "out", kneel: 0, hold: 0, mouthHand: 0, crouch: 0.12, bodyTurn: safeBodyTurn(0.3), lean: -12, hunch: 0.4, headHands: 1, brow: 1, gasp: 0.15, rS: 6, rE: -8, lS: 6, lE: -8 }),
+    MK({ f: WAVE_A, in: 6, ease: "inOut", headHands: 0, crouch: 0.1, lean: -6 }),
+    MK({ f: GRAB - 4, in: 6, ease: "inOut", crouch: 0.1, rS: 6, rE: -8, lS: 6, lE: -8 }),
+    MK({ f: GRAB + 6, in: 8, ease: "inOut", crouch: 0.5, lean: 10, headTurn: 0.1, headTilt: 6 }),
+    MK({ f: GRIP + 2, in: 6, ease: "inOut", crouch: 0.14, lean: 0, headTilt: 0 }),
   ]);
   const manglaActing = (): Pose => {
     const p = manglaBase(f);
@@ -227,10 +307,28 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     const flapW = clamp((f - WAVE_A) / 4) * (1 - clamp((f - (WAVE_B - 6)) / 6));
     const flap = flapW > 0 ? Math.sin((f - WAVE_A) * 0.95) : 0;
     const reachW = f < GRAB ? 0 : f < GRAB + 8 ? smooth((f - GRAB) / 8) : f < TURN ? 1 : 1 - smooth((f - TURN) / 6);
+    // life while he squats: heel rock, shoulder breath, idle finger fidget — not a frozen cutout
+    const squatting = f < JUMP ? 1 : 0;
+    const rock = squatting * Math.sin(f * 0.048 + 0.6);
+    const bob = squatting * Math.sin(f * 0.078 + 1.9);
+    const breath = squatting * Math.sin(f * 0.095 + 0.4);
+    const weight = squatting * Math.sin(f * 0.027 + 2.4);
+    // superstitious terror growing through Shot 8: a small nervous tremble that builds from the stone-Gopal line on
+    const terror = squatting * smooth((f - STONE) / 140);
+    const shiver = terror * (Math.sin(f * 1.9) + 0.6 * Math.sin(f * 2.7 + 1.1));
     let out: Pose = {
       ...p,
+      bodyTurn: safeBodyTurn(p.bodyTurn + squatting * 0.055 * Math.sin(f * 0.031) + 0.03 * weight),
+      lean: p.lean + 4.2 * rock + 1.6 * weight,
+      headTilt: p.headTilt + 3.8 * bob + 1.1 * shiver,
+      headNod: p.headNod + 2.4 * Math.sin(f * 0.056) + 1.5 * breath,
+      headTurn: p.headTurn + squatting * 0.05 * Math.sin(f * 0.022 + 1.3),
+      hunch: p.hunch + squatting * 0.08 * breath + 0.02 * shiver,
+      crouch: p.crouch + squatting * 0.05 * Math.sin(f * 0.041 + 1.1),
+      rE: p.rE + squatting * 11 * Math.sin(f * 0.039 + 2.2),
+      lE: p.lE + squatting * 8 * Math.sin(f * 0.033 + 0.7),
       throwUp: flapW * 0.95 * flap,
-      bodyY: p.bodyY + hopY,
+      bodyY: p.bodyY + hopY + squatting * 1.8 * breath,
       reach: reachW,
       reachUp: 0,
       rHand: reachW > 0.5 ? "relaxed" : flapW > 0.2 ? "open" : p.rHand,
@@ -239,15 +337,21 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     // fright breathing in the shoulders while he listens
     if (f >= TURN) {
       const tT = smooth((f - TURN) / 8);
-      out = { ...out, bodyTurn: lerp(0.32, -0.85, tT), headTurn: lerp(out.headTurn, -0.3, tT), hunch: lerp(out.hunch, 0.2, tT) };
+      out = {
+        ...out,
+        bodyTurn: safeBodyTurn(lerp(out.bodyTurn, -0.34, tT)),
+        headTurn: lerp(out.headTurn, -0.28, tT),
+        hunch: lerp(out.hunch, 0.22, tT),
+      };
     }
     if (running) {
       const w = walkPose(runClock, runOpts);
       out = {
         ...out,
         ...w,
-        crouch: 0.06,
-        hunch: 0.2,
+        bodyTurn: safeBodyTurn(w.bodyTurn ?? -0.34),
+        crouch: 0.08,
+        hunch: 0.22,
         brow: 1,
         reach: 0,
         throwUp: 0,
@@ -281,8 +385,10 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   };
 
   const manglaNode = (
-    <g filter="url(#ghibli-char-ink)">
-      <ContactShadow x={manglaX} y={manglaY} rx={44 * (manglaS / MANG.s)} ry={10} opacity={0.28} />
+    <g>
+      <SoftGroundShadow id="s02-mang-sh" x={manglaX + 6} y={manglaY} rx={(running ? 52 : 64) * (manglaS / MANG.s)} opacity={running ? 0.8 : 1} />
+      <g filter="url(#ghibli-char-ink)">
+      <g filter="url(#s02-solid)">
       <Puppet
         cast={manglaCast}
         x={manglaX}
@@ -291,16 +397,27 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
         f={runClock}
         lifeF={f}
         light={EP04G_POND_LIGHT}
-        breathRate={f >= LEAN ? 1.7 : f >= STONE ? 1.35 : 1}
+        // Kneel squat only — seated=true zeroes male kneel legs and inflates the dhoti into a women's balloon.
+        seated={false}
+        sitStyle="crossLegged"
+        breathRate={f >= JUMP ? 1.9 : f >= LEAN ? 1.55 : f >= STONE ? 1.4 : 1.15}
         mouth={() => mouthFromRms(manglaRms(f), f)}
         talk={() => manglaRms(f)}
         acting={() => manglaActing()}
         reachAt={() => ({ x: gamchhaAt.x + 6, y: gamchhaAt.y - 8 })}
+        holdAt={() => {
+          // clasped over the knees; drawn up to the chest as he shrinks from the offered Gobinda (Shot 9)
+          const up = smooth((f - (OFFER + 2)) / 14);
+          return { x: manglaX + lerp(40, 26, up) * manglaS, y: manglaY - lerp(34, 110, up) * manglaS }; // lap height for the cross-legged seat
+        }}
         anchors={(a) => {
           manglaAnchors.a = a;
         }}
       />
+      </g>
       <Hold />
+      </g>
+      <GhibliGroundCover x={manglaX + 4} y={manglaY + 6} w={150} lifeF={f} s={1.25} preset="pond" part="front" litter={false} />
       <GhibliFootstepDust x={manglaX + 30} y={manglaY} activity={running ? 1 : f >= JUMP + 7 && f < JUMP + 16 ? 0.7 : 0} dir={running ? -1 : -1} s={1.1} f={f} />
     </g>
   );
@@ -309,8 +426,7 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   const seatKeys: SeatKey[] = [
     { at: -40, pose: "holdInLap" },
     { at: RAISE, pose: "offerUp" },
-    { at: STONE + 30, pose: "holdInLap" },
-    { at: BATH, pose: "pointIn" },
+    { at: STONE + 6, pose: "holdInLap" },
     { at: HUG, pose: "holdToChest" },
     { at: LEAN, pose: "holdInLap" },
     { at: OFFER, pose: "offerUp" },
@@ -318,7 +434,16 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   ];
   const st = seatAt(f, seatKeys);
   // where the Gobinda is held out: up and proud (RAISE), then out toward Mangla (OFFER)
-  const reachAt: V = f < OFFER - 20 ? { x: 52, y: -168 + 3 * Math.sin(f * 0.05) } : { x: 98, y: -128 };
+  // RAISE: lifted proudly in front of him, clear of his face; BATH / FEED: the mime with the Gobinda in both hands (tipped
+  // and turned as if pouring water over it, then brought up to his mouth level "feeding" it); OFFER: out to Mangla
+  const reachAt: V =
+    f < BATH
+      ? { x: 86, y: -150 + 3 * Math.sin(f * 0.05) }
+      : f < FEED
+        ? { x: 74 + 8 * Math.cos((f - BATH) * 0.22), y: -118 + 6 * Math.sin((f - BATH) * 0.22) }
+        : f < OFFER - 20
+          ? { x: 80 + 3 * Math.sin((f - FEED) * 0.5), y: -134 + 2 * Math.sin((f - FEED) * 0.35) }
+          : { x: 98, y: -128 };
   // the mime: a cupped hand pours water over it in small circles, then fingers to its mouth
   const lapTop: V = { x: 52, y: -92 };
   const pointAt: V =
@@ -396,20 +521,41 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     const t = f / Math.max(1, ag3.frames + 48);
     cam = { x: 380 + 14 * t, y: 50, zoom: 1.2 };
   } else if (f < cutShot9) {
-    // Shot 8 + AG4: medium two-shot. Felt push of 0.36 starts as Balak speaks, then holds on both faces and the Gobinda.
+    // Shot 8 + AG4 (~500 f): no longer one held two-shot. Medium two-shot (felt push as Balak starts) -> medium close on
+    // Balak lifting the Gobinda proudly ("এখন বড় হয়েছি—") -> close-up of Mangla's face as the stone-Gopal line lands
+    // (the gasp, hand to his mouth) -> back to the two-shot for the bath / feed mime -> Mangla's close-up again at the
+    // peak of his terror (the hug) -> the two-shot for AG4's shouts and the lean. Cuts sit in the clip's silences.
     const push = smooth((f - a0) / 84);
-    cam = framePair(lerp(1684, 1708, push), lerp(776, 792, push), lerp(2.16, 2.52, push));
+    const twoShot = framePair(lerp(1695, 1715, push), lerp(798, 808, push), lerp(2.35, 2.62, push));
+    const centreOn = (wx: number, wy: number, z: number): Cam => ({ x: wx - 960, y: wy - 540, zoom: z, focus: 1 });
+    const CUT_BAL = RAISE; // "এখন বড় হয়েছি—"
+    const CUT_BAL_OUT = BATH - 2; // back to the two-shot for the play
+    const CUT_MANG1 = STONE; // the stone-Gopal line: Mangla's face
+    const CUT_BACK = STONE + 64;
+    const CUT_MANG2 = a0 + 452; // the end of the line: his terror at its peak
+    const CUT_AG4 = s2a.to + 8; // AG4 (the shouts) in the two-shot
+    if (f >= CUT_BAL && f < CUT_BAL_OUT) {
+      // medium close on Balak (speaker): his lap and the Gobinda clear of the caption band
+      cam = centreOn(1792, lerp(849, 846, smooth((f - CUT_BAL) / 60)), lerp(2.95, 3.05, smooth((f - CUT_BAL) / 120)));
+    } else if ((f >= CUT_MANG1 && f < CUT_BACK) || (f >= CUT_MANG2 && f < CUT_AG4)) {
+      // close-up on Mangla: wide eyes, the tremble; a slow creep in as the fear grows
+      const t0 = f < CUT_BACK ? CUT_MANG1 : CUT_MANG2;
+      cam = centreOn(1592, 790, lerp(4.2, 4.45, smooth((f - t0) / 70)));
+    } else {
+      cam = twoShot;
+    }
   } else if (f < cutShot10) {
-    // Shot 9: medium close on the two faces and the Gobinda. Cut 6 f early; a further push starts on the line.
-    // Past about 2.64 both full figures no longer fit: Mangla's head meets the top, or the soles meet the caption.
-    const push = smooth((f - s2b.from) / 72);
-    cam = framePair(lerp(1708, 1716, push), lerp(790, 796, push), lerp(2.52, 2.64, push));
+    // Shot 9: MEDIUM CLOSE ON BALAK (speaker). Gobinda large at centre; Mangla's reacting face stays readable at left.
+    const push = smooth((f - s2b.from) / 96);
+    cam = framePair(lerp(1758, 1768, push), lerp(802, 808, push), lerp(3.15, 3.32, push));
   } else {
     // Shot 10 + P4: stay with Mangla at a medium as he sprints, then settle back on Balak for the blink
     const runT = smooth((f - RUN0) / 40);
     const settle = f < sceneEnd - 40 ? 0 : smooth((f - (sceneEnd - 40)) / 28);
-    const cx = lerp(lerp(standX + 30, manglaX + 80, runT), BAL.x - 30, settle);
-    cam = framePair(cx, lerp(788, 800, settle), lerp(1.9, 2.1, settle));
+    // the pan follows his sprint only as far as the bank before the ghat (world x >= 1200 keeps the ghat's diagonal
+    // parapet out of the foreground); he runs on out of frame left
+    const cx = lerp(Math.max(1200, lerp(standX + 30, manglaX + 80, runT)), BAL.x - 30, settle);
+    cam = framePair(cx, lerp(792, 804, settle), lerp(1.95, 2.15, settle));
   }
   cam.focus = 1;
   cam.dof = zoomProportionalDof(cam.zoom);
@@ -417,35 +563,55 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   return (
     <GhibliStage cam={cam}>
       <GhibliPreload files={PRELOAD} />
-      <GhibliPondBackdrop f={f} upstageBehindTree={behindTree ? manglaNode : undefined} />
+      {/* the pad cover sits UNDER the mandar (drawn over it, it washed out the trunk's lower half: see-through trunk) */}
+      <GhibliPondBackdrop
+        f={f}
+        upstageBehindTree={
+          <>
+            <DryBankPadCover />
+            {behindTree && manglaNode}
+          </>
+        }
+        dragonfly={false}
+      />
 
       <GhibliLayer depth={1.0}>
-        <GhibliCharFilterDefs f={f} />
-        <GhibliLilyPads
-          lifeF={f}
-          s={1.1}
-          pads={[
-            { x: 1480, y: 868, kind: "lily" },
-            { x: 1560, y: 888, kind: "lotus" },
-            { x: 1688, y: 876, kind: "bud" },
-            { x: 1880, y: 900, kind: "lily" },
-          ]}
-        />
+        {/* the grove's warm dappled light: sun-gold rim, leaf shade and moving flecks on the figures (STO-22c) */}
+        <GhibliCharFilterDefs f={f} dapple shadeFactor={0.14} sunColor="#ffd98a" bounceColor="#86a070" />
+        <SolidFigureDefs id="s02-solid" />
         <GhibliGroundCover x={1680} y={948} w={520} lifeF={f} preset="pond" part="back" />
         {!behindTree && manglaNode}
 
         <MandarBlossom x={blossom.x} y={blossom.y} rot={blossom.rot} s={1.1} />
 
-        <GhibliBalakGroundGlow x={BAL.x} y={BAL.y + 5} level={0.45} />
         <g transform={balakLivingBodyTransform({ x: BAL.x, y: BAL.y, f, facing: -1, speechRms: balakRms + whisperLean * 0.4 })}>
-          <GhibliBalakAura cx={hands.glowAnchor.cx} cy={hands.glowAnchor.cy} r={hands.glowAnchor.r * 0.62} glow={0.55} f={f} />
+          {/* the restrained resting aura (BAL-05..09), visible but never the big glow beat: a soft halo behind the head
+              and a warm pool on the grass laid OVER the contact shadow (under it, the multiply swallowed it) */}
+          <GhibliBalakAura cx={hands.glowAnchor.cx} cy={hands.glowAnchor.cy} r={hands.glowAnchor.r * 0.7} glow={0.78} f={f} />
+          <SoftGroundShadow id="s02-bal-sh" x={BAL.x + 4} y={BAL.y + 2} rx={70} />
+          <GhibliBalakGroundGlow x={BAL.x} y={BAL.y + 4} rx={120} ry={20} level={0.7} />
           <g filter="url(#ghibli-char-ink)">
-            <ContactShadow x={BAL.x} y={BAL.y} rx={52} ry={10} opacity={0.3} />
-            <SeatedChild {...balakProps} />
+            <g filter="url(#s02-solid)">
+              <SeatedChild {...balakProps} />
+            </g>
             <GhibliBalakLapDetails x={BAL.x} y={BAL.y} s={BAL.s} flip f={f} />
           </g>
         </g>
         <GhibliGroundCover x={1700} y={956} w={420} lifeF={f} preset="pond" part="front" litter={false} />
+        <GhibliGroundCover x={BAL.x + 6} y={BAL.y + 8} w={180} lifeF={f + 40} s={1.2} preset="pond" part="front" litter={false} />
+        {/* leaf-dapple from the mandar and banana canopy moving over the two of them and the grass */}
+        <GhibliDappledLight region={{ x: 1420, y: 640, w: 600, h: 340 }} lifeF={f} mode="shadow" intensity={0.5} squash={0.7} wind={0.8} />
+        {/* warm late-morning sun through the canopy gap, from the upper right, washing over the pair */}
+        <g pointerEvents="none" style={{ mixBlendMode: "screen" }}>
+          <defs>
+            <radialGradient id="s02-sunwash" cx="0.62" cy="0.3" r="0.6">
+              <stop offset="0%" stopColor="#ffd78c" stopOpacity={0.34} />
+              <stop offset="55%" stopColor="#f5c56e" stopOpacity={0.14} />
+              <stop offset="100%" stopColor="#f5c56e" stopOpacity={0} />
+            </radialGradient>
+          </defs>
+          <ellipse cx={1760} cy={790} rx={340} ry={240} fill="url(#s02-sunwash)" opacity={0.9 + 0.1 * Math.sin(f * 0.03)} />
+        </g>
       </GhibliLayer>
 
       <GhibliEp04ForegroundFinish f={f} zoom={cam.zoom} petals />

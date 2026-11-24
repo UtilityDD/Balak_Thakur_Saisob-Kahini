@@ -10,7 +10,7 @@ import { GHIBLI_ANCHORS } from "../plateAnchors";
 import { withGhibliActing } from "../../core/ghibliActing";
 import { GhibliBalakLapDetails } from "../../core/ghibliBalak";
 import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
-import { zoomProportionalDof } from "../../core/ghibliMotion";
+import { safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
 import { EP04G_RMS, EP04G_SCENES, ep04gSpan } from "../timing";
 import {
   EP04G_AFTERNOON_LIGHT,
@@ -111,13 +111,20 @@ const thakurmaTalk = clipTalk("04b_Thakurma_Prophecy.wav");
 
 type V = { x: number; y: number };
 /** Ground line just in front of the veranda plinth (floor top at stage y 734): the arcade reads behind the group. */
-const HARENDRA = { x: 470, y: 776, s: 0.94 };
-const JYETHI = { x: 680, y: 790, s: 0.98 };
-const CHARU = { x: 820, y: 812, s: 1.0 };
-const BALAK = { x: 960, y: 808, s: 0.72 };
-const THAKURMA = { x: 1088, y: 794, s: 1.0 };
+/**
+ * STO-22c: the family stands in depth, not in a row. Harendra stands back by the plinth, Jyethi in the middle ground
+ * behind Charu, Thakurma kneels on the mat a little behind the boy, and Charu and Balak are nearest the camera. Scale
+ * follows depth (about 1.0 at y 840, 0.9 at y 750).
+ */
+const HARENDRA = { x: 520, y: 744, s: 0.88 };
+const JYETHI = { x: 690, y: 768, s: 0.92 };
+const CHARU = { x: 800, y: 846, s: 1.02 };
+/** BAL-26b: 0.755 puts his head at about 82% of Charu's (measured on the 5250 still at the same depth; 0.72 gave ~78%). */
+const BALAK = { x: 972, y: 850, s: 0.755 };
+/** Thakurma kneels just behind the boy and to his right (her near hand reaches his shoulder without strain). */
+const THAKURMA = { x: 1068, y: 810, s: 0.97 };
 /** The madur mat under Balak and Thakurma (drawn here at the figures' ground line, not by the backdrop). */
-const MAT = { x: 985, y: 850, h: 116 };
+const MAT = { x: 1014, y: 874, h: 126 };
 /** Head centres when kneeling upright (measured on the stills). */
 const KNEEL_HEAD_DY = -170;
 
@@ -180,10 +187,11 @@ const balakProps = (fr: number): SeatedChildProps => {
     mouth: 0,
   };
 };
-/** Balak's shoulder (world, the near one, facing Thakurma) for her hand: from the rig's own head point each frame. */
+/** Balak's near shoulder (world, facing Thakurma) for her hand: from the rig's own head point each frame. */
 const balakShoulder = (fr: number): V => {
   const a = seatedEp6Anchors(balakProps(fr));
-  return { x: a.head.x + 12 * BALAK.s, y: a.head.y + 60 * BALAK.s };
+  // a little toward Thakurma so her palm lands on the cloth, not floating past the neck
+  return { x: a.head.x + 22 * BALAK.s, y: a.head.y + 56 * BALAK.s };
 };
 const BALAK_HEAD = seatedEp6Anchors(balakProps(GLOW_BEAT)).head;
 
@@ -193,11 +201,13 @@ const BALAK_HEAD = seatedEp6Anchors(balakProps(GLOW_BEAT)).head;
 
 const harendraBase = (fr: number): Partial<Pose> => {
   // exasperated palms on "ঠাকুর-দেবতা কিচ্ছু মানছে না!", chin up on "হুকুম দিচ্ছি", the warning finger on the order
-  const palms = track(fr, [
+  // only a small exasperated open far hand on "ঠাকুর-দেবতা কিচ্ছু মানছে না!" (no stiff both-arms-out); the warning
+  // index finger carries the line
+  const palms = 0.35 * track(fr, [
     [A_GODS - 6, 0],
     [A_GODS + 8, 1, "inOut"],
-    [A_ORDER - 16, 1],
-    [A_ORDER - 2, 0, "inOut"],
+    [A_ORDER - 36, 1],
+    [A_ORDER - 22, 0, "inOut"],
   ]);
   const chin = track(fr, [
     [A_ORDER - 4, 0],
@@ -205,11 +215,13 @@ const harendraBase = (fr: number): Partial<Pose> => {
     [A_WARN + 30, 1],
     [S4A.to + 20, 0.3, "inOut"],
   ]);
+  // the raised warning index finger (MOT-21: index only, the other three shut, thumb beside it) from "হুকুম দিচ্ছি"
+  // through the order on "ঠাকুরঘরে ঢুকতে দেওয়া না হয়!"
   const warn = track(fr, [
-    [A_WARN - 2, 0],
-    [A_WARN + 14, 1, "inOut"],
-    [S4A.to + 8, 1],
-    [S4A.to + 30, 0, "inOut"],
+    [A_GODS - 14, 0],
+    [A_GODS + 4, 1, "inOut"],
+    [A_WARN + 48, 1],
+    [S4A.to + 18, 0, "inOut"],
   ]);
   // listening to Thakurma: the sternness eases a little, a doubtful glance
   const soften = track(fr, [
@@ -218,7 +230,7 @@ const harendraBase = (fr: number): Partial<Pose> => {
   ]);
   const near = warn > 0.01 ? warn : 0;
   return {
-    bodyTurn: 0.3,
+    bodyTurn: safeBodyTurn(0.3),
     headTurn: 0.34 + headShake(fr, S4A.from + 4, 58, 0.22, 2.5) + 0.06 * near,
     headTilt: headShakeTilt(fr, S4A.from + 4, 58, 2.5, 2.5) - 3 * chin,
     headNod: -3 * chin + headNods(fr, A_WARN + 34, 2, 14, 3),
@@ -227,15 +239,19 @@ const harendraBase = (fr: number): Partial<Pose> => {
     lid: 0.12,
     smile: 0,
     lean: 2 + 3 * near - 2 * chin,
-    // the near (left) arm: palms up, then the raised warning index finger with a small firm wag
-    lS: lerp(lerp(6, GESTURES.palmsUp.lS!, palms), -40, near),
-    lE: lerp(lerp(-10, GESTURES.palmsUp.lE!, palms), -100, near) + wobble(fr, A_WARN + 16, 56, 7, 14) * near,
-    lHand: near > 0.4 ? "point" : palms > 0.4 ? "open" : "relaxed",
-    rS: lerp(6, GESTURES.palmsUp.rS!, palms),
-    rE: lerp(-10, GESTURES.palmsUp.rE!, palms),
-    rHand: palms > 0.4 ? "open" : "relaxed",
+    // camera-near (left) arm: palms up, then raised warning index finger (jab toward HARENDRA_WARN_AT)
+    jab: -(near * (0.95 + 0.05 * Math.max(0, wobble(fr, A_WARN + 16, 56, 1, 14)))),
+    lS: lerp(4, 4, near),
+    lE: lerp(-22, -22, near),
+    lHand: near > 0.35 ? "point" : "relaxed",
+    // the free hand rests against his side
+    rS: lerp(4, GESTURES.palmsUp.rS!, palms),
+    rE: lerp(-26, GESTURES.palmsUp.rE!, palms),
+    rHand: palms > 0.2 ? "open" : "relaxed",
   };
 };
+/** Where his raised warning finger points: up and forward above his head (a warning, not a jab at anyone). */
+const HARENDRA_WARN_AT: V = { x: HARENDRA.x + 200, y: HARENDRA.y - 400 * HARENDRA.s };
 const harendraActing = withGhibliActing(harendraBase, { personality: "stomp", seed: 19, speechRms: harendraTalk, speechActAmp: 0.7 });
 
 const charuBase = (fr: number): Partial<Pose> => {
@@ -249,7 +265,8 @@ const charuBase = (fr: number): Partial<Pose> => {
   ]);
   return {
     kneel: 1,
-    bodyTurn: 0.12,
+    lean: 0.8,
+    bodyTurn: safeBodyTurn(0.12),
     headTurn: lerp(-0.42, 0.4, toThakurma),
     headTilt: 2 + 3 * moved,
     // she nods gravely at the order
@@ -281,7 +298,7 @@ const jyethiBase = (fr: number): Partial<Pose> => {
     [GLOW_BEAT + 24, 1, "inOut"],
   ]);
   return {
-    bodyTurn: 0.26,
+    bodyTurn: safeBodyTurn(0.26),
     headTurn: lerp(-0.3, 0.42, toThakurma),
     headNod: headNods(fr, A_WARN + 24, 2, 15, 4),
     brow: 0.15 + 0.45 * surprised,
@@ -320,7 +337,7 @@ const thakurmaBase = (fr: number): Partial<Pose> => {
   ]);
   return {
     kneel: 1,
-    bodyTurn: -0.34,
+    bodyTurn: safeBodyTurn(-0.34),
     // a knowing glance at Balak during the grumble, warmly to the family as she speaks, to the boy on the beat
     headTurn:
       lerp(track(fr, [
@@ -336,7 +353,7 @@ const thakurmaBase = (fr: number): Partial<Pose> => {
     smile: lerp(0.38, 0.6, Math.max(speak * 0.6, beat)),
     cheeks: 0.15 + 0.15 * beat,
     lid: 0.1,
-    lean: 2 + 3 * hand,
+    lean: 0.6 + 3.5 * hand,
     reach: hand,
     reachUp: 0,
     rHand: "open",
@@ -354,29 +371,45 @@ const thakurmaActing = withGhibliActing(thakurmaBase, { personality: "mother", s
 
 const frameAt = (cx: number, wy: number, sy: number, z: number): Cam => ({ x: cx - 960, y: wy - 540 - (sy - 540) / z, zoom: z, focus: 1 });
 
+/** Shot 19 close-up zoom (start; the push ends 1.28x this). */
+const CU_ZOOM = 6.6;
+/** Shot 19 opening zoom (medium close: both faces). */
+const CU_START_ZOOM = 4.1;
+
 const cameraAt = (fr: number): Cam => {
-  if (fr < SHOT18) return frameAt(812, CHARU.y, 905, 1.55); // Shot 17 + P7: medium wide group, held
-  if (fr < SHOT19) return frameAt(1036, THAKURMA.y + KNEEL_HEAD_DY, 420, 2.6); // Shot 18: Thakurma, hand on Balak
+  // Shot 17 + P7: medium wide group in depth, held; the nearest knees sit at screen y ~800, above the caption band
+  if (fr < SHOT18) return frameAt(820, BALAK.y, 810, 1.72);
+  // Shot 18: medium on Thakurma with her hand on the boy; the laps stay above the caption band
+  if (fr < SHOT19) return frameAt(THAKURMA.x - 70, THAKURMA.y + KNEEL_HEAD_DY * THAKURMA.s, 300, 2.4);
   if (fr < CHARU_EYES) {
-    // Shot 19 + P8: close-up on Balak, slow push 1.0 -> 1.28x
+    // Shot 19 + P8: close-up on Balak (head and chest, his grandmother's hand on his shoulder), slow push 1.0 -> 1.28x
+    // It opens as a medium close two-shot (Thakurma's face in frame while she still speaks) and pushes slowly in to
+    // the close-up on the boy's glowing face for P8.
     const t = EASE.inOut(clamp((fr - SHOT19) / (CHARU_EYES - SHOT19)));
-    return frameAt(BALAK_HEAD.x + 18, BALAK_HEAD.y, 450, lerp(5.2, 6.65, t));
+    return frameAt(lerp(1012, BALAK_HEAD.x + 22, t), BALAK_HEAD.y, lerp(540, 290, t), lerp(CU_START_ZOOM, CU_ZOOM * 1.2, t));
   }
-  return frameAt(CHARU.x + 6, CHARU.y + KNEEL_HEAD_DY, 440, 5.0); // last second of P8: Charu's moved eyes
+  // last second of P8: Charu's moved eyes, on the left third, the glowing boy beside her; the left frame edge stays
+  // right of Jyethi (standing behind her) so nobody is cut at the chest
+  return frameAt(CHARU.x + 140, CHARU.y + KNEEL_HEAD_DY * CHARU.s, 440, 4.7);
 };
 
 /* ------------------------------------------------------------------ */
 /* Motes                                                                */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Four slow motes in the close-up, all on HIM: they rise from his shoulders past his cheeks and fade before the top of
+ * the frame (world units; at the close-up zoom 1 unit is about 9 screen px). They stay beside his head, off the face, and none drifts toward Thakurma.
+ */
 const MOTE_SPECS = [
-  { dx: -62, startOffsetY: -64, speed: 0.34, swayAmp: 6.5, swayFreq: 0.046, phase: 0.4, r: 3.4, delay: 0 },
-  { dx: -32, startOffsetY: -102, speed: 0.41, swayAmp: 5.2, swayFreq: 0.052, phase: 2.1, r: 2.8, delay: 14 },
-  { dx: 36, startOffsetY: -82, speed: 0.37, swayAmp: 6.0, swayFreq: 0.043, phase: 3.8, r: 3.6, delay: 8 },
-  { dx: 66, startOffsetY: -114, speed: 0.31, swayAmp: 5.6, swayFreq: 0.049, phase: 5.3, r: 3.0, delay: 22 },
+  { dx: -42, startOffsetY: 40, speed: 0.16, swayAmp: 1.6, swayFreq: 0.046, phase: 0.4, r: 1.15, delay: 0 },
+  { dx: -32, startOffsetY: 22, speed: 0.19, swayAmp: 1.3, swayFreq: 0.052, phase: 2.1, r: 0.95, delay: 16 },
+  { dx: 32, startOffsetY: 34, speed: 0.17, swayAmp: 1.5, swayFreq: 0.043, phase: 3.8, r: 1.2, delay: 8 },
+  { dx: 38, startOffsetY: 16, speed: 0.15, swayAmp: 1.2, swayFreq: 0.049, phase: 5.3, r: 1.0, delay: 26 },
 ] as const;
+const MOTE_RISE = 64;
 
-/** 4 slow-rising soft golden motes around Balak on the beat (BAL-11): soft dots, no rays. */
+/** 4 slow-rising soft golden motes around Balak on the beat (BAL-11): soft dots, no rays. `seatY` = his head centre. */
 const SacredGoldenMotes: React.FC<{ cx: number; seatY: number; f: number; startFrame: number; intensity: number }> = ({
   cx,
   seatY,
@@ -400,21 +433,75 @@ const SacredGoldenMotes: React.FC<{ cx: number; seatY: number; f: number; startF
         const elapsed = Math.max(0, f - (startFrame + m.delay));
         const fadeIn = EASE.inOut(clamp(elapsed / 28, 0, 1));
         if (fadeIn <= 0.01) return null;
-        const cycleRise = (elapsed * m.speed) % 108;
-        const cycleEdge = cycleRise < 14 ? cycleRise / 14 : cycleRise > 88 ? (108 - cycleRise) / 20 : 1;
+        const cycleRise = (elapsed * m.speed) % MOTE_RISE;
+        const cycleEdge = cycleRise < 8 ? cycleRise / 8 : cycleRise > MOTE_RISE - 14 ? (MOTE_RISE - cycleRise) / 14 : 1;
         const mx = cx + m.dx + Math.sin(f * m.swayFreq + m.phase) * m.swayAmp;
         const my = seatY + m.startOffsetY - cycleRise;
         const op = intensity * fadeIn * cycleEdge * (0.82 + 0.18 * Math.sin(f * 0.05 + m.phase * 1.7));
         return (
           <g key={idx} transform={`translate(${mx.toFixed(2)}, ${my.toFixed(2)})`} opacity={op}>
-            <circle cx={0} cy={0} r={m.r * 3.2} fill={`url(#${uid}-halo)`} />
-            <circle cx={0} cy={0} r={m.r * 0.8} fill="#fffef7" opacity={0.9} />
+            <circle cx={0} cy={0} r={m.r * 4.2} fill={`url(#${uid}-halo)`} />
+            <circle cx={0} cy={0} r={m.r * 1.0} fill="#fffef7" opacity={0.95} />
           </g>
         );
       })}
     </g>
   );
 };
+
+/**
+ * THE GLOW BEAT halo (BAL-06/07/11): a soft warm-white to golden radial glow behind his head, about twice the head's
+ * size, fading to nothing at its edge (no rings, no rays). Normal blend so it holds against the pale courtyard wall;
+ * `k` 0..1 is the beat's rise.
+ */
+const BeatHalo: React.FC<{ cx: number; cy: number; r: number; k: number; f: number }> = ({ cx, cy, r, k, f }) => {
+  if (k <= 0.01) return null;
+  const breath = 1 + 0.03 * Math.sin(f * 0.05);
+  return (
+    <g pointerEvents="none" opacity={k}>
+      <defs>
+        <radialGradient id="ep04g-s04-beat-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fffaea" stopOpacity={0.95} />
+          <stop offset="40%" stopColor="#fff0c2" stopOpacity={0.82} />
+          <stop offset="62%" stopColor="#ffdc8a" stopOpacity={0.5} />
+          <stop offset="82%" stopColor="#ffc965" stopOpacity={0.18} />
+          <stop offset="100%" stopColor="#ffc965" stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      <circle cx={cx} cy={cy} r={r * breath} fill="url(#ep04g-s04-beat-halo)" />
+    </g>
+  );
+};
+
+/** Filter for BAL-08's warm golden rim light: the figure's silhouette grown a little, blurred and filled gold. */
+const GoldRimDefs: React.FC = () => (
+  <defs>
+    <filter id="ep04g-s04-goldrim" x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
+      <feMorphology in="SourceAlpha" operator="dilate" radius={1.1} result="d" />
+      <feGaussianBlur in="d" stdDeviation={1.5} result="b" />
+      <feFlood floodColor="#ffc95a" result="c" />
+      <feComposite in="c" in2="b" operator="in" />
+    </filter>
+  </defs>
+);
+
+/**
+ * The low amber afternoon sun from the left (STO-22c: people take the light of the place): a warm soft-light pass that
+ * is strongest on the sunlit (left, upper) side of the group and cools a little toward the shade side, so the figures
+ * are modelled rather than flat. Natural light over everyone and the ground; it is not the divine glow.
+ */
+const AmberAfternoonLight: React.FC = () => (
+  <GhibliLayer depth={1.0} blend="soft-light">
+    <defs>
+      <linearGradient id="ep04g-s04-amber" gradientUnits="userSpaceOnUse" x1={420} y1={360} x2={1360} y2={980}>
+        <stop offset="0%" stopColor="#ffb257" stopOpacity={0.72} />
+        <stop offset="55%" stopColor="#ffc27a" stopOpacity={0.42} />
+        <stop offset="100%" stopColor="#5d4a78" stopOpacity={0.3} />
+      </linearGradient>
+    </defs>
+    <rect x={-1600} y={-1200} width={5200} height={3600} fill="url(#ep04g-s04-amber)" />
+  </GhibliLayer>
+);
 
 /* ------------------------------------------------------------------ */
 /* Scene                                                                */
@@ -429,21 +516,44 @@ export const Scene04KailashpatiProphecyGhibli: React.FC = () => {
   const anchors = seatedEp6Anchors(bp);
   const g = glowK(f);
   const glowAt = anchors.glowAnchor;
+  const shoulder = balakShoulder(f);
+  // Shot 19: in the close-up her body is soft (rack focus on the boy); only her hand on his shoulder stays sharp
+  const inCloseUp = f >= SHOT19 && f < CHARU_EYES;
+  const thkX = THAKURMA.x;
+  const thakurmaEl = (
+    <Puppet
+      cast={EP04G_CAST.thakurma}
+      sitStyle="kneel"
+      softSleeves
+      x={thkX}
+      y={THAKURMA.y}
+      scale={THAKURMA.s}
+      f={f}
+      lifeF={f}
+      light={EP04G_AFTERNOON_LIGHT}
+      seated
+      acting={thakurmaActing}
+      mouth={thakurmaMouth}
+      talk={thakurmaTalk}
+      reachAt={balakShoulder}
+    />
+  );
 
   return (
     <GhibliStage cam={cam}>
       <GhibliPreload files={PRELOAD} />
-      <GhibliCourtyardBackdrop f={f} mode="afternoon" />
+      <GhibliCourtyardBackdrop f={f} mode="afternoon" lampFlames={false} />
       <GhibliLayer depth={0.92} groundLocked parallaxDrift={-0.012}>
         <GhibliCutout file="images/ghibli_ep04/madur_mat_veranda_sketch.png" anchor={GHIBLI_ANCHORS.madur_mat_veranda_sketch} x={MAT.x} y={MAT.y} targetHeight={MAT.h} />
       </GhibliLayer>
 
+      {/* close-up: no full Thakurma body (ghost arms read as floating shadows); her hand is clipped sharp on him */}
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} rimDir={-1} sunColor="#ffd08a" />
 
-        {/* Harendra Thakur (left): the grumble and the order */}
+        {/* Harendra Thakur (left, furthest back): the grumble and the order */}
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={HARENDRA.x} y={HARENDRA.y} rx={48} ry={11} opacity={0.3} sunDir={-1} castStretch={1.25} />
+          <ContactShadow x={HARENDRA.x} y={HARENDRA.y} rx={58} ry={12} opacity={0.28} sunDir={-1} castStretch={1.2} />
           <Puppet
             cast={EP04G_CAST.harendra}
             x={HARENDRA.x}
@@ -453,6 +563,7 @@ export const Scene04KailashpatiProphecyGhibli: React.FC = () => {
             lifeF={f}
             light={EP04G_AFTERNOON_LIGHT}
             acting={harendraActing}
+            pointAt={() => HARENDRA_WARN_AT}
             mouth={harendraMouth}
             talk={harendraTalk}
             breathRate={track(f, [
@@ -462,9 +573,9 @@ export const Scene04KailashpatiProphecyGhibli: React.FC = () => {
           />
         </g>
 
-        {/* Jyethi (standing behind Charu) */}
+        {/* Jyethi (middle ground, standing behind Charu) */}
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={JYETHI.x} y={JYETHI.y} rx={42} ry={10} opacity={0.28} sunDir={-1} castStretch={1.2} />
+          <ContactShadow x={JYETHI.x} y={JYETHI.y} rx={40} ry={9.5} opacity={0.26} sunDir={-1} castStretch={1.15} />
           <Puppet
             cast={EP04G_CAST.jyethi}
             x={JYETHI.x}
@@ -477,17 +588,20 @@ export const Scene04KailashpatiProphecyGhibli: React.FC = () => {
           />
         </g>
 
-        {/* Charu, kneeling on the mat: grave at the order, moved to tears at the prophecy */}
+        {/* Charu, kneeling nearest the camera: grave at the order, moved to tears at the prophecy */}
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={CHARU.x + 8} y={CHARU.y} rx={56} ry={11} opacity={0.3} sunDir={-1} castStretch={1.25} />
+          <ContactShadow x={CHARU.x + 6} y={CHARU.y} rx={86} ry={15} opacity={0.3} sunDir={-1} castStretch={1.2} />
           <Puppet
             cast={EP04G_CAST.charu}
+            sitStyle="kneel"
+            softSleeves
             x={CHARU.x}
             y={CHARU.y}
             scale={CHARU.s}
             f={f}
             lifeF={f}
             light={EP04G_AFTERNOON_LIGHT}
+            seated
             acting={charuActing}
             sigh={(fr) => {
               // a quiet moved breath as the words land
@@ -498,35 +612,48 @@ export const Scene04KailashpatiProphecyGhibli: React.FC = () => {
           />
         </g>
 
-        {/* Balak on the mat with his doll, and the episode's one gentle glow beat (BAL-11) */}
-        <GhibliBalakGroundGlow x={BALAK.x} y={BALAK.y + 4} rx={lerp(110, 132, g)} ry={lerp(20, 24, g)} level={lerp(0.42, 0.72, g)} />
-        <GhibliBalakAura cx={glowAt.cx} cy={glowAt.cy} r={glowAt.r * lerp(0.62, 0.72, g)} glow={lerp(0.5, 0.86, g)} f={f} />
+        {/* Thakurma, kneeling just behind him at the right: the prophecy (drawn before him: she is further back) */}
+        {(
+          <g filter="url(#ghibli-char-ink)">
+            <ContactShadow x={thkX - 6} y={THAKURMA.y} rx={84} ry={15} opacity={0.3} sunDir={-1} castStretch={1.2} />
+            {thakurmaEl}
+          </g>
+        )}
+
+        {/* Balak on the mat with his doll, and the episode's one gentle glow beat (BAL-11 / BAL-05: 0.55 → ~0.95) */}
+        <GhibliBalakGroundGlow x={BALAK.x} y={BALAK.y + 4} rx={lerp(110, 132, g)} ry={lerp(20, 24, g)} level={lerp(0.38, 0.68, g)} />
+        {/* his restrained halo behind the head: head-sized, so it reads in the close-up (BAL-06); it brightens on the beat */}
+        <GhibliBalakAura cx={glowAt.cx} cy={glowAt.cy} r={glowAt.r * lerp(0.56, 0.62, g)} glow={lerp(0.55, 0.95, g)} f={f} />
+        {/* the beat: a clear warm halo behind his head (about twice the head) and a golden rim round his hair,
+            shoulders and back, rising over 2 s, then held */}
+        <BeatHalo cx={glowAt.cx} cy={glowAt.cy - 4 * BALAK.s} r={glowAt.r * 0.62} k={g} f={f} />
+        <GoldRimDefs />
+        {g > 0.01 && (
+          <g filter="url(#ep04g-s04-goldrim)" opacity={0.95 * g}>
+            <SeatedChild {...bp} />
+          </g>
+        )}
         <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={BALAK.x} y={BALAK.y} rx={46} ry={9.5} opacity={0.28} sunDir={-1} castStretch={1.2} />
+          <ContactShadow x={BALAK.x} y={BALAK.y} rx={48} ry={10} opacity={0.28} sunDir={-1} castStretch={1.15} />
           <SeatedChild {...bp} />
           <GhibliBalakLapDetails x={BALAK.x} y={BALAK.y} s={BALAK.s} f={f} />
         </g>
-        <SacredGoldenMotes cx={glowAt.cx} seatY={glowAt.cy + 90} f={f} startFrame={GLOW_BEAT} intensity={g} />
-
-        {/* Thakurma, kneeling at the right: the prophecy, her hand on his shoulder (drawn after him: her hand on top) */}
-        <g filter="url(#ghibli-char-ink)">
-          <ContactShadow x={THAKURMA.x - 8} y={THAKURMA.y} rx={56} ry={11} opacity={0.3} sunDir={-1} castStretch={1.25} />
-          <Puppet
-            cast={EP04G_CAST.thakurma}
-            x={THAKURMA.x}
-            y={THAKURMA.y}
-            scale={THAKURMA.s}
-            f={f}
-            lifeF={f}
-            light={EP04G_AFTERNOON_LIGHT}
-            acting={thakurmaActing}
-            mouth={thakurmaMouth}
-            talk={thakurmaTalk}
-            reachAt={balakShoulder}
-          />
+        {/* her hand on his shoulder (always): same Thakurma again, clipped to forearm + palm so only contact reads */}
+        <defs>
+          <clipPath id="ep04g-s04-thk-hand" clipPathUnits="userSpaceOnUse">
+            {/* tight on palm + forearm only — a larger ellipse read as a circular blotch on the doll in the CU */}
+            <ellipse cx={shoulder.x + 10} cy={shoulder.y + 6} rx={32} ry={24} />
+          </clipPath>
+        </defs>
+        <g clipPath="url(#ep04g-s04-thk-hand)">
+          <g filter="url(#ghibli-char-ink)">{thakurmaEl}</g>
         </g>
+        {/* the 4 slow motes rise on him only, in the close-up (not in the cut to Charu) */}
+        <SacredGoldenMotes cx={glowAt.cx} seatY={glowAt.cy} f={f} startFrame={GLOW_BEAT} intensity={inCloseUp ? g : 0} />
+
       </GhibliLayer>
 
+      <AmberAfternoonLight />
       <GhibliEp04ForegroundFinish f={f} zoom={cam.zoom} warmth={lerp(0.34, 0.4, g)} />
     </GhibliStage>
   );
