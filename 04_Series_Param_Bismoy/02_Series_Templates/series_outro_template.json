@@ -1,0 +1,9 @@
+{
+  "template_id": "param_bismoy_outro_v1",
+  "source_attribution_bn": "তথ্যসূত্র: অধ্যাপক পি. কে. রায় (রায়দা) রচিত ‘পরম বিস্ময় বালক ঠাকুর’ গ্রন্থ অবলম্বনে",
+  "speech_template_bn": "{reflection_bn} <short pause> পরম বিস্ময় বালক ঠাকুর—আসছে পরের পর্ব: {next_title_bn}! {next_hook_bn}",
+  "finale_speech_template_bn": "{reflection_bn} <short pause> অধ্যাপক পি. কে. রায় রচিত ‘পরম বিস্ময় বালক ঠাকুর’-এর এই মহাযাত্রা এখানেই পূর্ণ হলো—কিন্তু ঠাকুরের অমর বাণী ও করুণা চিরকাল আমাদের পথ দেখাবে।",
+  "voice_speaker": "narrator",
+  "voice_preset": "Enzo",
+  "style_box": "Deep, reflective, resonant Bengali storyteller slowing peacefully, then building warm anticipation on the next-episode teaser."
+}

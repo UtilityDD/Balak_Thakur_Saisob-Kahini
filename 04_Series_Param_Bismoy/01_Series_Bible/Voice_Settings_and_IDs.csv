@@ -1,0 +1,18 @@
+CharacterID,DisplayName,PresetVoice,DefaultStyleBox,Notes
+narrator,Lady Narrator (Kathak),Sola,"Speak in a warm, calm, soulful, cinematic Bengali female narrator voice—like a classic literary film storyteller (gentler, natural, deeply evocative, NOT overly theatrical or melodramatic, measured pacing, soft resonance).",Consistent Lady Narrator across Series 2
+thakur_child,Balak Thakur (Child S1),Sami,"Luminous, serene, fearless child voice, gentle smile.",Season 1 (Ages 2-8)
+thakur_kishor,Balak Thakur (Adolescent S2),Mako,"Composed, witty, compassionate youth with quiet depth.",Season 2 (Ages 9-15)
+thakur_youth,Balak Thakur (Young Adult S3),Rami,"Deep, calm, magnetic spiritual authority and warmth.",Season 3 (Dhaka & Kolkata)
+charu,Charushila Devi (Mother),Lumi,"Tender, soft-spoken, deeply caring Bengali mother.",Recurring
+surendra,Surendra Chandra (Father),Achird,"Warm, steady, affectionate Bengali father.",Recurring
+thakurma,Thakurma / Elder Women,Cleo,"Spirited, wise, warm elderly Bengali grandmother.",Recurring
+anandamayi_ma,Anandamayi Ma,Sola,"Radiant, serene, playfully affectionate motherly voice.",Season 3 Ep 21
+bholagiri,Bholagiri / Ram Thakur / Naga Sannyasi,Knox,"Deep, resonant, weathered ascetic sage.",Ep 8, 13, 21
+netaji_subhas,Netaji Subhas Chandra Bose,Zubenelgenubi,"Dignified, resolute, fiery patriot and deep thinker.",Season 2 Finale Ep 20
+scholar_gentleman,Zamindar / Naval Officer / Scholar,Bodi,"Educated, analytical, amazed Bengali gentleman.",Recurring
+mystic_devotee,Monai Fakir / Kanchan Mia / Mann Mia's Father,Zali,"Soulful, warm, earthy East Bengali devotion.",Ep 9, 11, 20, 22
+ananda_master,Ananda Master / Teacher,Jori,"Warm, observant, affectionate rural teacher.",Ep 6, 7, 10
+youth_friend_1,Ashu / Bhupen / Friend 1,Brio,"Lively, earnest, curious young Bengali voice.",Recurring
+youth_friend_2,Sudhir / Rajen / Friend 2,Riko,"Expressive, thoughtful young Bengali voice.",Recurring
+skeptic_elder,Skeptic / Outlaw / Conspirator,Daro,"Rough, skeptical, tense or complaining dramatic tone.",Recurring
+woman_devotee,Woman Devotee / Mother,Nika,"Sincere, emotional, tearful turning to joyful relief.",Recurring

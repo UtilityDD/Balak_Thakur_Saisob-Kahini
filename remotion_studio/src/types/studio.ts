@@ -1,3 +1,5 @@
+import type { EaseName } from "../lib/motion";
+
 export type LightingMood =
   | "bright_orange_flat"
   | "golden_daytime"
@@ -49,4 +51,8 @@ export interface CameraKeyframe {
   y: number;
   zoom: number;
   rotateDeg?: number;
+  /** Optional per-keyframe lens focus plane (0.15 sky -> 1.0 characters) for rack focus. */
+  focusDepth?: number;
+  /** Easing used to arrive at this keyframe from the previous one. */
+  ease?: EaseName;
 }

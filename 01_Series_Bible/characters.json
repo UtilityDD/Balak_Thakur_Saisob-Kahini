@@ -189,7 +189,7 @@
       "visual_prompt": "Borderless 2.5D painterly cartoon, radiant 4-year-old Bengali boy with soft curly dark hair, luminous calm eyes, simple white cotton dhoti, barefoot, subtle warm golden-white aura, serene joyful smile, clean alpha transparent background, no outline",
       "voice_design_prompt": "A clear, luminous, unusually calm 5-year-old Bengali child with gentle, fearless clarity and sweet innocent warmth.",
       "default_style_prompt": "Serene, innocent, quietly wise.",
-      "voice_id": "PASTE_VOICE_ID_HERE",
+      "voice_id": "preset:Sami",
       "rig_layers": [
         "head",
         "torso",
@@ -206,7 +206,7 @@
       "visual_prompt": "Borderless 2.5D painterly cartoon, luminous 8-year-old Bengali boy, shoulder-length dark wavy hair, calm penetrating eyes full of compassion, simple white dhoti and cotton uttariya, subtle white-gold aura, clean alpha transparent background, no outline",
       "voice_design_prompt": "A clear, luminous, unusually calm 8-year-old Bengali boy with gentle, fearless clarity and zero childish whining.",
       "default_style_prompt": "Calm, compassionate, quietly authoritative.",
-      "voice_id": "PASTE_VOICE_ID_HERE",
+      "voice_id": "preset:Sami",
       "rig_layers": [
         "head",
         "torso",
@@ -223,7 +223,7 @@
       "visual_prompt": "Borderless 2.5D painterly cartoon, serene 11-year-old Bengali boy, radiant face, flowing dark hair, simple white dhoti, peaceful upright posture, soft divine white-gold aura, clean alpha transparent background, no outline",
       "voice_design_prompt": "A serene, resonant, composed 11-year-old Bengali boy with quiet spiritual authority and compassionate warmth.",
       "default_style_prompt": "Composed, luminous, deeply compassionate.",
-      "voice_id": "PASTE_VOICE_ID_HERE",
+      "voice_id": "preset:Mako",
       "rig_layers": [
         "head",
         "torso",
@@ -240,7 +240,7 @@
       "visual_prompt": "Borderless 2.5D painterly cartoon, affectionate rural Bengali schoolteacher in his 40s, round wire-rimmed glasses, white cotton panjabi and dhoti, holding palm-leaf manuscript, warm observant smile, clean alpha transparent background, no outline",
       "voice_design_prompt": "An affectionate, observant rural Bengali schoolteacher in his 40s with a warm, clear, slightly poetic voice.",
       "default_style_prompt": "Warm, observant, affectionate teacher.",
-      "voice_id": "PASTE_VOICE_ID_HERE",
+      "voice_id": "preset:Jori",
       "rig_layers": [
         "head",
         "torso",
@@ -271,7 +271,7 @@
       "visual_prompt": "Borderless 2.5D painterly cartoon, dignified elderly Bengali Muslim gentleman in his 60s, neat white beard, white embroidered cap and clean cotton punjabi, kind earnest eyes, clean alpha transparent background, no outline",
       "voice_design_prompt": "A dignified, earnest elderly Bengali gentleman in his 60s, respectful, warm, and awe-struck.",
       "default_style_prompt": "Respectful, earnest, deeply moved.",
-      "voice_id": "PASTE_VOICE_ID_HERE",
+      "voice_id": "preset:Knox",
       "rig_layers": [
         "head",
         "torso",

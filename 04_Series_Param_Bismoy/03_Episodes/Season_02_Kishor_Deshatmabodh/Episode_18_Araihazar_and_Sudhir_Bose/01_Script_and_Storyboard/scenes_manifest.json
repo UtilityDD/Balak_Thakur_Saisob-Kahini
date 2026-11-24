@@ -1,0 +1,98 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 2,
+  "episode_number": 18,
+  "episode_title": "Araihazar & Revival of Sudhir Bose",
+  "episode_title_bn": "আড়াইহাজার ও সুধীর বোসের পুনর্জীবন",
+  "next_episode_title_bn": "রাজেন চৌধুরীর দীক্ষা ও বাস্তব সমাধান",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_nibaran_master_algebra",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "ananda_master"
+      ],
+      "audio_files": [
+        "01a_Narrator_Araihazar.wav",
+        "01b_Krishnadhan_Awe.wav"
+      ],
+      "ambient_bed": "village_morning.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "page_turn.wav"
+      ]
+    },
+    {
+      "scene_id": "02_jogesh_chowdhury_ochre_cloth",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "thakur_kishor",
+        "scholar_gentleman"
+      ],
+      "audio_files": [
+        "02a_Narrator_Prophecy_Fulfilled.wav",
+        "02b_Thakur_Kishor_Ochre.wav",
+        "02c_Jogesh_Tears.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "03_sudhir_bose_awakening",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "youth_friend_2",
+        "thakur_kishor"
+      ],
+      "audio_files": [
+        "03a_Sudhir_Bose.wav",
+        "03b_Thakur_Kishor_Science.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

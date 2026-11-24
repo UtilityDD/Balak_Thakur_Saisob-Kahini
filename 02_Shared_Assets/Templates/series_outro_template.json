@@ -16,6 +16,8 @@
     "voice_style": "Serene, inspiring, gentle storyteller slowing down peacefully, then warm curiosity on the next-episode teaser.",
     "speech_template_bn": "{moral_reflection_bn} <short pause> ছোটদের বালক ঠাকুরের গল্প—আসছে পরের পর্ব: {next_episode_title_bn}! {next_episode_hook_bn}",
     "finale_speech_template_bn": "{moral_reflection_bn} <short pause> ছোটদের বালক ঠাকুরের গল্পের এই যাত্রা এখানেই পূর্ণ হলো—কিন্তু ঠাকুরের ভালোবাসা ও শিক্ষা চিরকাল আমাদের সাথেই থাকবে।",
+    "source_attribution_bn": "তথ্যসূত্র: ‘শ্রীশ্রীবালক ব্রহ্মচারীর শৈশব কাহিনী’ (জননী শ্রীচারুশীলা দেবী ও ছোট মাসীমা শ্রীসরলা দেবীর স্মৃতিকথা অবলম্বনে)",
+    "source_attribution_en": "Based on \"Sri Sri Balak Brahmachari's Childhood Stories\" (accounts of Mother Charushila Devi, Sarala Devi & eyewitnesses)",
     "audio_file": "99_Outro_Sequential.wav",
     "ambient_bed": "padma_river_day.wav",
     "music_cue": "Theme_Intro_Bansuri.wav",

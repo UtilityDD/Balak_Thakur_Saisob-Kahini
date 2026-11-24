@@ -24,6 +24,9 @@
     "voice_speaker": "01_Narrator_Kathak",
     "voice_style": "Cheerful, bright, welcoming Bengali children's show announcer, warm smile in voice.",
     "speech_template_bn": "ছোটদের বালক ঠাকুরের গল্প। <short pause> পর্ব {episode_bn}: {episode_title_bn}।",
+    "source_attribution_bn": "তথ্যসূত্র: ‘শ্রীশ্রীবালক ব্রহ্মচারীর শৈশব কাহিনী’ (জননী শ্রীচারুশীলা দেবী ও ছোট মাসীমা শ্রীসরলা দেবীর স্মৃতিকথা অবলম্বনে)",
+    "source_attribution_en": "Based on \"Sri Sri Balak Brahmachari's Childhood Stories\" (accounts of Mother Charushila Devi, Sarala Devi & eyewitnesses)",
+    "source_attribution_audio": "02_Shared_Assets/Templates/00a_Source_Attribution.wav",
     "audio_file": "00_Intro.wav",
     "music_cue": "Theme_Intro_Bansuri.wav",
     "sfx": ["chime_pop.wav"]

@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episode 4 — Full Production Blueprint (পর্ব ৪: শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6ef;
+    --surface: #ffffff;
+    --surface-2: #f4ece0;
+    --border: #e3d5c1;
+    --text: #2a2118;
+    --muted: #6c5c4b;
+    --accent: #b85d19;
+    --accent-soft: #fdf1e4;
+    --narr: #3b5e8a;
+    --narr-bg: #edf4fc;
+    --char: #9c4a12;
+    --char-bg: #fff3e6;
+    --hl: #fff9e6;
+    --font-scale: 1;
+  }
+  [data-theme="dark"] {
+    --bg: #161310;
+    --surface: #211c17;
+    --surface-2: #2b241d;
+    --border: #3d3328;
+    --text: #f2e9de;
+    --muted: #b09f8d;
+    --accent: #eb9346;
+    --accent-soft: #362618;
+    --narr: #8db8f0;
+    --narr-bg: #1c2736;
+    --char: #f2a463;
+    --char-bg: #332315;
+    --hl: #2e2818;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Serif Bengali", "Baloo Da 2", Georgia, serif;
+    font-size: calc(15.5px * var(--font-scale));
+    line-height: 1.72;
+  }
+  h1, h2, h3, .nav-a, .ctrl-btn, .copy-btn, .spk-badge {
+    font-family: "Baloo Da 2", "Noto Serif Bengali", sans-serif;
+  }
+  code {
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 0.84em;
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 270px 1fr;
+    min-height: 100vh;
+  }
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 18px 14px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .brand {
+    padding-bottom: 12px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand h1 { margin: 0; font-size: 1.2rem; color: var(--accent); }
+  .brand p { margin: 4px 0 0; font-size: 0.84rem; color: var(--muted); }
+  .nav-group {
+    font-family: "Baloo Da 2", sans-serif;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin: 10px 8px 2px;
+  }
+  .nav-a {
+    display: block;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.92rem;
+  }
+  .nav-a:hover { background: var(--accent-soft); color: var(--accent); }
+  .voice-prog {
+    margin-top: 8px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .pbar { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .pfill { height: 100%; width: 0%; background: #2f7d4c; transition: width 0.2s; }
+
+  .main {
+    padding: 20px 36px 80px;
+    max-width: 1120px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: color-mix(in srgb, var(--bg) 93%, transparent);
+    backdrop-filter: blur(8px);
+    padding: 10px 0 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .search-box {
+    flex: 1;
+    min-width: 220px;
+    padding: 8px 13px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.93rem;
+  }
+  .ctrl-btn {
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.86rem;
+  }
+  .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .content h1 { font-size: 1.65rem; color: var(--accent); margin: 0 0 4px; }
+  .content h2 {
+    font-size: 1.35rem;
+    color: var(--accent);
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--border);
+    scroll-margin-top: 76px;
+  }
+  .content h3 {
+    font-size: 1.12rem;
+    margin: 22px 0 10px;
+    color: var(--text);
+    scroll-margin-top: 76px;
+  }
+  hr { border: none; border-top: 1px dashed var(--border); margin: 24px 0; }
+  .callout {
+    margin: 12px 0 18px;
+    padding: 12px 16px;
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    margin: 12px 0 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  th, td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--surface-2);
+    font-family: "Baloo Da 2", sans-serif;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.row-highlight td { background: var(--hl); }
+
+  /* Voice Cards */
+  .voice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 15px;
+    margin-bottom: 11px;
+  }
+  .voice-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .voice-chk {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.9rem;
+  }
+  .voice-chk input { width: 16px; height: 16px; accent-color: #2f7d4c; }
+  .spk-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 99px;
+  }
+  .badge-narr { background: var(--narr-bg); color: var(--narr); }
+  .badge-char { background: var(--char-bg); color: var(--char); }
+  .voice-style {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .voice-speech {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface-2);
+    padding: 10px 13px;
+    border-radius: 9px;
+    border-left: 3px solid var(--accent);
+  }
+  .speech-text {
+    flex: 1;
+    font-size: 1.03rem;
+    font-weight: 500;
+  }
+  .copy-btn {
+    padding: 4px 10px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { background: #2f7d4c; color: #fff; border-color: #2f7d4c; }
+
+  mark.hl { background: #ffe066; color: #111; padding: 0 2px; border-radius: 3px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { padding: 14px 16px 60px; }
+  }
+  @media print {
+    .sidebar, .topbar, .copy-btn { display: none !important; }
+    .layout { display: block; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>পর্ব ৪ — Production Blueprint</h1>
+      <p>শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক (~5:15)</p>
+      <div class="voice-prog">
+        <span id="vProgText">ভয়েস তৈরি: 0 / 31 WAV</span>
+        <div class="pbar"><div class="pfill" id="vProgFill"></div></div>
+      </div>
+    </div>
+    <div class="nav-group">Sections</div>
+    <a class="nav-a" href="#sec-rules">1. Rules & Guardrails</a>
+    <a class="nav-a" href="#sec-cast">2. Cast, Rigs & Voices</a>
+    <a class="nav-a" href="#sec-sets">3. Sets, Lighting & Props</a>
+    <a class="nav-a" href="#sec-voices">4. Voice Script (31 WAVs)</a>
+    <a class="nav-a" href="#sec-scenes">5. Scene-by-Scene Visuals</a>
+    <a class="nav-a" href="#sec-audio">6. Audio, Music & SFX</a>
+    <a class="nav-a" href="#sec-checklist">7. Agent Build Checklist</a>
+
+    <div class="nav-group">Jump to Scenes</div>
+    <a class="nav-a" href="#scene-01">Scene 01 — মাটির শিবলিঙ্গ</a>
+    <a class="nav-a" href="#scene-02">Scene 02 — পুকুরপাড় ও মংলা</a>
+    <a class="nav-a" href="#scene-03">Scene 03 — গোবিন্দ উদ্ধার</a>
+    <a class="nav-a" href="#scene-04">Scene 04 — কৈলাসপতি (Glow)</a>
+    <a class="nav-a" href="#scene-05">Scene 05 — ধূপ ও নারকেল জল</a>
+    <a class="nav-a" href="#scene-06">Scene 06 — পুরোহিত ও পিঁপড়ে</a>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <input type="search" id="searchInput" class="search-box" placeholder="Search shots, voices, SFX, Bengali lines...">
+      <button class="ctrl-btn" id="fontDown">A−</button>
+      <button class="ctrl-btn" id="fontReset">A</button>
+      <button class="ctrl-btn" id="fontUp">A+</button>
+      <button class="ctrl-btn" id="themeToggle">🌙 ডার্ক মোড</button>
+    </div>
+    <div class="content" id="content">
+      <h1 id="sec-0">Episode 4 — 100% Complete Agent-Executable Production Blueprint</h1>
+<h2 id="sec-1">পর্ব ৪: শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক (Idols, Wooden Doll &amp; Coconut Water)</h2>
+<blockquote class="callout"><strong>Purpose:</strong> Complete, zero-ambiguity production blueprint for <strong>Episode 4</strong> (<code>03_Episodes/Episode_04_Idols_and_Coconut_Water/</code>). Any AI agent or production team can follow this single document to generate all voice WAVs, source/mix all SFX &amp; music, build all Remotion sets/rigs/props/VFX, and assemble the full episode.<br><strong>Source Fidelity:</strong> 100% faithful to <code>book.xlsx</code> — Chapter 6 (<em>পূজার শিবলিঙ্গ ও গোবিন্দ মূর্ত্তি নিয়ে শিশু ঠাকুরের খেলা</em>, Row 12) and Chapter 7 (<em>বিগ্রহ অভিষেকের সময় ভোগের নারিকেলোদক পান</em>, Row 13).<br><strong>Target Specs:</strong> 1920×1080, 24 fps, <strong>~5 min 15 sec</strong> (~7,560 frames), Bengali audio + Baloo Da 2 subtitles.</blockquote>
+<hr>
+<h2 id="sec-rules">1. Standing Rules &amp; Creative Guardrails (Must Follow)</h2>
+<ul>
+<li><strong>Balak Design (<code>BAL-26b</code>, <code>BAL-01</code>–<code>BAL-14</code>):</strong> Age 5 (<code>SeatedChild design=&quot;plate&quot; age={5}</code> + <code>StandingChild design=&quot;plate&quot; age={5}</code> where standing/walking). Short straight black hair with side part (reference plate 01), plain white/cream cotton dhoti + uttariya across chest, barefoot. <strong>NO tilak, bangles, anklets, jewellery, or sacred thread.</strong></li>
+<li><strong>Divine Light (<code>BAL-05</code>–<code>BAL-11</code>):</strong> Divine light appears on Balak <strong>ONLY</strong> (never on clay Shiva, brass Gobinda, or shrine idols). Restrained soft warm-white halo behind head + warm golden rim + 3–4 slow motes. <strong>Only ONE gentle glow brightening beat in the entire episode:</strong> Scene 04 on Thakurma&#x27;s <em>&quot;এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!&quot;</em></li>
+<li><strong>Tone (<code>STO-19</code> + <code>STO-22</code>):</strong> Playful, humorous, logical, affectionate, and deeply Bengali. Omit physical hitting (<em>চড়চাপড়</em> / <em>উত্তম-মধ্যম</em>)—replace with verbal scolding, dramatic hand-on-forehead exasperation, and warm family comedy suitable for children.</li>
+<li><strong>Camera Grammar (<code>CAM-01</code>–<code>CAM-14</code>):</strong> No aimless drift; at most 1 camera move per sentence; ~2 s holds between moves; close-ups cut 6–8 frames <em>before</em> a speaker&#x27;s line; faces &amp; key action above <code>y = 820</code> (clear of captions band); no handheld shake (<code>CAM-03</code>—this is a comedy-devotional episode, not horror/danger).</li>
+<li><strong>Audio Levels (<code>AUD-01</code>–<code>AUD-08</code>):</strong> Voices normalized to <code>-16 LUFS / -1.5 dBTP</code>; ambient loops <code>≤ 0.25</code> (ducked to <code>0.08–0.12</code> under voice, rising to <code>0.18–0.24</code> in pauses); one-shot SFX <code>0.15–0.45</code>; Indian-instrument score (<code>AUD-07</code>) <code>-36 to -40 LUFS</code> under voice, <code>-29 to -34 LUFS</code> in pauses.</li>
+</ul>
+<hr>
+<h2 id="sec-cast">2. Complete Cast, Rigs, Costumes &amp; Voice Design Table</h2>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Character</th><th>Caption Chip</th><th>Visual Rig / Costume</th><th>Voice Speaker ID</th><th>Voice Design Prompt (for Google AI Studio <code>gemini-3.8-flash-tts</code>)</th></tr></thead><tbody>
+<tr><td>1</td><td><strong>Narrator (Kathak)</strong></td><td><em>(none — <code>TTL-08</code>)</em></td><td>Off-screen</td><td><code>01_Narrator_Kathak</code></td><td><em>(Saved Series Voice)</em> Warm, soothing Bengali storyteller in early 40s, affectionate children&#x27;s audiobook cadence.</td></tr>
+<tr><td>2</td><td><strong>Balak Thakur (Biru, age 5)</strong></td><td><code>বীরু</code></td><td><code>SeatedChild</code> &amp; <code>StandingChild</code> (<code>design=&quot;plate&quot; age={5}</code>), cream dhoti + uttariya, barefoot (<code>BAL-26b</code>)</td><td><code>12_Balak_Thakur_Child</code></td><td><em>(Saved Series Voice)</em> Clear, sweet, innocent 5-year-old Bengali boy, calm, fearless, logical, unhurried smile in voice.</td></tr>
+<tr><td>3</td><td><strong>Charu (Charushila Devi)</strong></td><td><code>মা</code></td><td><code>CAST.charu</code> Puppet: white sari, red border, sindoor, thin red alta (<code>CHR-01</code>–<code>03</code>). Needs kneeling <code>pranam</code> pose.</td><td><code>05_Charu</code></td><td><em>(Saved Series Voice)</em> Soft-spoken mid-20s rural Bengali mother, expressive between shock, frustration, and love.</td></tr>
+<tr><td>4</td><td><strong>Elder Brother (Dada, age 8–9)</strong></td><td><code>বড়দা</code></td><td>Existing Ep 6 <code>ElderBrother</code> Puppet (scaled to ~8 yrs, printed cotton shirt &amp; shorts/dhoti)</td><td><code>02_Gopal_Boy1</code> <em>(reuse)</em></td><td><em>(Saved Series Voice)</em> Lively 8–9 yr old Bengali boy, slightly tattletale/excited energy.</td></tr>
+<tr><td>5</td><td><strong>Jyethi (Bhagabati&#x27;s wife)</strong></td><td><code>জ্যেঠাইমা</code></td><td><code>CAST</code> adult woman Puppet: cream/white sari with maroon border, neat bun, expressive brows</td><td><code>06_Manorama_Devi</code> <em>(reuse)</em></td><td><em>(Saved Series Voice)</em> Grounded late-30s Bengali aunt, slightly dramatic/traditional tone.</td></tr>
+<tr><td>6</td><td><strong>Mangla (House Servant)</strong></td><td><code>মংলা</code></td><td><strong>New Puppet:</strong> lean rural Bengali man in late 20s, knee-length cotton dhoti, gamchha over shoulder, wide expressive eyes</td><td><code>14_Mangla_Servant</code> <em>(NEW)</em></td><td><code>A lively, slightly nervous rural East Bengali young man in his late 20s with an expressive, comedic, high-energy village voice.</code></td></tr>
+<tr><td>7</td><td><strong>Sundar Jyetha (Sundar Thakur)</strong></td><td><code>সুন্দর জ্যেঠা</code></td><td><code>SUNDAR</code> from Ep 1 (<code>Scene05Rain.tsx</code>): spectacles, white kurta, brown shawl</td><td><code>08_Sundar_Thakur</code></td><td><em>(Saved Series Voice)</em> Scholarly, warm, gentle late-40s Bengali uncle, affectionate coaxing voice.</td></tr>
+<tr><td>8</td><td><strong>Harendra Thakur (Elder Uncle)</strong></td><td><code>হরেন্দ্র ঠাকুর</code></td><td><strong>New Elder Puppet:</strong> stern late-50s Brahmin elder, white dhoti, chadar, grey mustache, furrowed brows</td><td><code>10_Grumpy_Relative</code> <em>(reuse)</em></td><td><em>(Saved Series Voice)</em> Dry, fussy, traditional 60s Bengali elder, slightly dramatic exasperation.</td></tr>
+<tr><td>9</td><td><strong>Thakurma (Grandmother)</strong></td><td><code>ঠাকুরমা</code></td><td><code>THAKURMA</code> from Ep 2 (<code>Scene01eFather.tsx</code>): plain white sari, grey hair, gentle age lines, no alta (<code>CHR-04</code>)</td><td><code>11_Thakurma</code></td><td><em>(Saved Series Voice)</em> Spirited, loving, wise late-60s Bengali grandmother with warm raspy pride.</td></tr>
+<tr><td>10</td><td><strong>Bhagabati Thakur (Head Priest)</strong></td><td><code>পুরোহিত ঠাকুর</code></td><td><code>CAST.bhagabati</code> from Ep 1: silver-streaked hair, white mustache, bare-chested with namaboli shawl</td><td><code>07_Bhagabati_Thakur</code></td><td><em>(Saved Series Voice)</em> Dignified late-50s Brahmin priest, deep resonant voice; flustered &amp; booming when shocked.</td></tr>
+<tr><td>11</td><td><strong>Family Members / Runner Cousin</strong></td><td><code>বাড়ির লোক</code></td><td>2–3 <code>CAST</code> background elders/cousins + 1 fast-running cousin Puppet</td><td><code>03_Rama_Boy2</code> <em>(reuse for runner/crowd)</em></td><td><em>(Saved Series Voice)</em> Energetic Bengali youth voice.</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id="sec-sets">3. Studio Ghibli Watercolor + Sepia-Ink Visual Pipeline (Full Plate, Cutout, Prop &amp; Multiplane Spec)</h2>
+<blockquote class="callout"><strong>Pipeline Isolation Rule (<code>ghibli-pipeline</code> skill):</strong> Never overwrite existing pure-SVG <code>src/episode04/*</code> or <code>Final_Render/</code>. All Ghibli Episode 4 code lives in <code>remotion_studio/src/ghibli_pipeline/episode04/</code>, raw &amp; processed plates live in <code>remotion_studio/public/images/ghibli_ep04/</code>, manifest lives in <code>scripts/ghibli_pipeline/manifests/ep04_ghibli.json</code>, and QA stills/MP4 render to <code>03_Episodes/Episode_04_Idols_and_Coconut_Water/04_Video_Assembly/Ghibli_Test_Render/</code>.</blockquote>
+<h3 id="sec-30">3.1 Mandatory Ghibli Rendering &amp; Motion Standards (All 6 Scenes)</h3>
+<ol>
+<li><strong>Character Sepia-Ink Contour (<code>#ghibli-char-ink</code>):</strong> Place <code>&lt;GhibliCharFilterDefs /&gt;</code> inside every character <code>&lt;GhibliLayer&gt;</code> and wrap every <code>&lt;Puppet&gt;</code>, <code>&lt;LooseHair&gt;</code>, <code>&lt;SeatedChild&gt;</code>, and <code>&lt;StandingChild&gt;</code> in <code>&lt;g filter=&quot;url(#ghibli-char-ink)&quot;&gt;...&lt;/g&gt;</code>.</li>
+<li><strong>Zoom-Proportional Depth-of-Field:</strong> Drive <code>cam.dof = zoomProportionalDof(cam.zoom)</code> (<code>0.28</code> on <code>1.0×</code> wides → <code>1.85</code> on <code>3.0×–3.8×</code> close-ups on Balak&#x27;s face, the brass <em>tata</em>, or the stone bowl).</li>
+<li><strong>Zero-Slip Foot-Locked Motion (<code>ghibliMotion.ts</code>):</strong></li>
+</ol>
+<ul>
+<li>Walking entrances (Elder Brother bringing Balak in Scene 01, Mangla sprinting away in Scene 02, Family &amp; Runner Cousin sprinting along the pond bank in Scene 03, Thakurma walking off in Scene 05, Family rushing to shrine in Scene 06) MUST use <code>ghibliWalkSpot()</code> + <code>ghibliStrideOf()</code>.</li>
+<li>Working/standing characters (Charu at puja, Sundar coaxing, Bhagabati performing abhishek) step smoothly via <code>withFootLockedSteps()</code> with <code>&lt;ContactShadow&gt;</code> anchored to <code>POS.x + ACT(f).bodyX</code>.</li>
+<li>Keep <code>|bodyTurn| &lt;= 0.36</code> (<code>safeBodyTurn()</code>) whenever both arms are visible so the rear arm never flips dark in <code>Puppet.tsx</code>.</li>
+</ul>
+<ol>
+<li><strong>Upstage Occlusion:</strong> In Scenes 02–03 (<code>VedicPondDay</code>), render Mangla&#x27;s escape and the Runner Cousin&#x27;s sprint <strong>behind</strong> the <code>tree_mandar_bloom_sketch</code> trunk (<code>depth=0.82</code>) for genuine 3D parallax depth.</li>
+</ol>
+<h3 id="sec-44">3.2 Exact 10-Plane Cinematic Multiplane Parallax Stack (True Ghibli 3D Depth)</h3>
+<blockquote class="callout"><strong>Why 10 Planes (Upgraded from Episode 3&#x27;s 8 Planes):</strong> Separating slow-drifting clouds (<code>0.08</code>), far misty horizon (<code>0.26</code>), volumetric sunbeams/lamp-cones (<code>0.68</code>), near-foreground doorway/pillar framing (<code>1.14</code>), and extreme foreground bokeh (<code>1.30</code>) makes even a subtle <code>60–90 px</code> lateral camera truck or <code>1.0→2.6×</code> push-in feel like a genuine theatrical Studio Ghibli multiplane camera!</blockquote>
+<div class="table-wrap"><table><thead><tr><th>Depth Plane</th><th>Parallax / Blur</th><th>Courtyard (Scenes 01 &amp; 04)</th><th>Daytime Pond (Scenes 02 &amp; 03)</th><th>Evening Shrine (Scenes 05 &amp; 06)</th></tr></thead><tbody>
+<tr><td><code>depth=0.08</code></td><td>Sky + Slow Clouds (<code>parallaxDrift=+0.004</code>)</td><td><code>sky_ep04_morning_courtyard.png</code> / <code>sky_ep04_afternoon_gold.png</code> + slow drifting watercolor cloud wisps</td><td><code>sky_ep04_pond_day.png</code> + bright cumulus drift</td><td><code>sky_ep04_purnima_dusk.png</code> (glowing full moon + faint twinkling stars)</td></tr>
+<tr><td><code>depth=0.26</code></td><td>Far Atmospheric Horizon (<code>extraBlur=1.2</code>)</td><td>Soft misty Bengal palms &amp; banyan silhouettes (<code>far_trees_ep04_sketch.png</code>)</td><td>Distant misty village treeline beyond the Vedic house</td><td>Deep indigo moonlit treetop silhouettes</td></tr>
+<tr><td><code>depth=0.45</code></td><td>Mid-Far Architecture (<code>5040×1320</code>)</td><td>Distant courtyard garden wall &amp; upper mango canopy</td><td><code>pond_far_bank_baidik_sketch.png</code> (<code>BaidikBariDay</code> ochre roofline &amp; coconut palms across water)</td><td>Moonlit outer courtyard arcade seen through shrine window</td></tr>
+<tr><td><code>depth=0.58</code></td><td>Primary Set Back / Water (<code>5040×1320</code> / <code>3840×2160</code>)</td><td><code>courtyard_back_ep04_morning.png</code> (Vedic veranda arches, terracotta pillars, wooden shutters)</td><td><code>pond_water_emerald_sketch.png</code> + <strong>animated watercolor caustic shimmer &amp; horizontal ripple bands</strong></td><td><code>thakur_ghar_interior_sketch.png</code> (4K whitewashed shrine walls, red-oxide dado, warm lamp pools)</td></tr>
+<tr><td><code>depth=0.68</code></td><td><strong>Volumetric Light &amp; Atmospheric Haze</strong></td><td><strong>Diagonal golden morning/afternoon sunbeams</strong> + <code>&lt;GhibliAtmosphericHaze f={lifeF} /&gt;</code> (24 drifting sunlit pollen/dust motes)</td><td>Soft pond mist shimmer + sunbeams filtering through <em>mandar</em> canopy</td><td><strong>Flickering warm amber oil-lamp light cone</strong> + rising layered incense smoke veil (contrasting cool moonlight outside!)</td></tr>
+<tr><td><code>depth=0.78</code></td><td><strong>Upstage Occluders &amp; Living Micro-Life</strong> (<code>groundLocked, parallaxDrift=-0.03</code>)</td><td><code>tulsi_mancha_ep04_sketch.png</code> + <strong>hopping sparrow</strong> + Jyethi upstage</td><td><code>brick_ghat_steps_sketch.png</code> (left) + <strong>Mangla &amp; Runner occluding BEHIND <code>tree_mandar_bloom_sketch.png</code> trunk</strong> (right) + <strong>skimming dragonfly</strong> + <code>banana_clump_pond_sketch.png</code></td><td><code>deity_khat_shrine_sketch.png</code> (carved teakwood <em>khat</em> with <code>BrassGobinda</code>, stone Gopal, shalagram — NO glow)</td></tr>
+<tr><td><code>depth=0.92</code></td><td>Mid-Ground Floor &amp; Static Props (<code>groundLocked, parallaxDrift=-0.012</code>)</td><td><code>courtyard_floor_ep04_sketch.png</code> + <code>madur_mat_veranda_sketch.png</code> (Sc 04) + scattered shiuli petals</td><td>Grassy pond bank + fallen crimson <em>mandar</em> petals + water-edge reeds</td><td>Smooth red-oxide shrine floor + woven <em>ashan</em> + cut green coconuts + <code>BrassDhupDani</code> at threshold</td></tr>
+<tr><td><code>depth=1.00</code></td><td><strong>Hero Focal Plane (<code>focus=1.0</code>, crisp)</strong></td><td>Charu, Balak, Elder Brother, Harendra, Thakurma (<code>#ghibli-char-ink</code>) + interactive <code>GhibliClayShivalinga</code> / <code>GhibliWoodenAhladiDoll</code> + <code>&lt;ContactShadow&gt;</code></td><td>Balak, Mangla, Sundar, Runner, Family (<code>#ghibli-char-ink</code>) + interactive <code>GhibliBrassGobinda</code> / <code>GhibliWoodenAhladiDoll</code></td><td>Bhagabati Thakur, Balak, Charu, Jyethi, Sundar (<code>#ghibli-char-ink</code>) + interactive <code>GhibliStoneBowlFopra</code> / <code>GhibliBrassDhupDani</code></td></tr>
+<tr><td><code>depth=1.14</code></td><td><strong>Near-Foreground Architectural Framing</strong> (<code>extraBlur=1.4</code>)</td><td>Soft foreground veranda terracotta pillar edge (left/right frame anchor)</td><td>Soft foreground mossy bank grass blades &amp; over-shoulder framing silhouettes</td><td><strong><code>shrine_arch_frame_sketch.png</code></strong> (veranda doorway arch &amp; <strong>gently swaying tied-back red-border curtain</strong> peeking into the shrine!)</td></tr>
+<tr><td><code>depth=1.30</code></td><td><strong>Extreme Foreground Parallax Bokeh</strong> (<code>extraBlur=3.8, parallaxDrift=+0.045</code>)</td><td><code>&lt;GhibliForegroundBokeh&gt;</code> out-of-focus hibiscus &amp; jasmine sprig (recedes automatically on <code>&gt;2.2×</code> close-ups)</td><td>Out-of-focus overhanging crimson <em>mandar</em> blossom branch &amp; banana leaf tip gliding rapidly during lateral trucks</td><td>Soft foreground brass hanging lamp rim / veranda vine leaves in cool moonlight</td></tr>
+</tbody></table></div>
+<h3 id="sec-58">3.2b Per-Scene Cinematic Parallax, Rack-Focus &amp; Living-World Choreography</h3>
+<ul>
+<li><strong>Scene 01 (Courtyard):</strong> AG1 opens with a <strong>gentle <code>90 px</code> lateral parallax truck</strong> (<code>cam.x: -50 → +40</code>) so foreground hibiscus bokeh (<code>1.30</code>), tulsi-mancha (<code>0.78</code>), and veranda pillars (<code>0.58</code>) glide across three speeds while morning sunbeams (<code>0.68</code>) shimmer. On Charu&#x27;s shock (Shot 2), use a <strong>rack-focus pull (<code>focus: 1.0 → 0.78 → 1.0</code>)</strong> from the wooden doll on the plate to the empty courtyard arch!</li>
+<li><strong>Scene 02 (Pond &amp; Mangla):</strong> Crimson <em>mandar</em> petals drift across <strong>three simultaneous depth planes (<code>0.78</code>, <code>1.00</code>, <code>1.30</code>)</strong> with expanding water ripple rings when petals hit <code>pond_water_emerald_sketch.png</code>. During Mangla&#x27;s panic sprint (Shot 10), a <strong>motivated lateral pan</strong> follows him passing *<em>behind the </em>mandar<em> tree trunk (<code>0.78</code>)</em>* while foreground banana bokeh (<code>1.30</code>) sweeps across!</li>
+<li><strong>Scene 03 (Pond Standoff):</strong> On Balak&#x27;s <em>&quot;পুকুরে ছুঁড়ে ফেলে দেব!&quot;</em> (Shot 12), use <strong>deep-to-shallow rack focus</strong>: Balak holding <code>BrassGobinda</code> sharp at <code>1.00</code> while the freezing cousins &amp; Charu sit soft at <code>0.78</code>, then rack cleanly to Sundar Jyetha stepping forward.</li>
+<li><strong>Scene 04 (Thakurma&#x27;s Prophecy — Sacred Cinematic Peak):</strong> Warm amber afternoon sunbeam (<code>0.68</code>) slants directly onto Balak. On <em>&quot;এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!&quot;</em> (Shot 19), a slow <strong><code>1.0 → 2.6×</code> push-in</strong> triggers <code>zoomProportionalDof</code> (<code>0.28 → 1.55</code>), melting Harendra and the courtyard pillars into creamy golden watercolor bokeh while Balak&#x27;s subtle halo (<code>BAL-11</code>) and 4 slow rising motes glow softly!</li>
+<li><strong>Scene 05 (Purnima Shrine Room):</strong> <strong>Warm-vs-Cool Cinematic Split Lighting</strong> — cool silver-blue Purnima moonlight outside the veranda arch (<code>0.12</code>, <code>1.14</code>) contrasting with warm flickering golden oil-lamp cones inside <code>ThakurGhar</code> (<code>0.58</code>, <code>0.68</code>). The camera slowly glides <strong>through</strong> the foreground veranda arch (<code>1.14</code>, swaying curtain) as Balak enters! During the coconut-water heist (<code>AG7</code>), a tight <strong><code>1.2 → 2.8×</code> push-in</strong> melts the carved deity <em>khat</em> (<code>0.78</code>) into glowing amber bokeh behind Balak&#x27;s lifting stone bowl!</li>
+<li><strong>Scene 06 (Priest Uproar &amp; Ant Cutaway):</strong> Dual-plane comic staging—red-faced Bhagabati Thakur sharp at <code>1.00</code> while the rushing family appears framed in the moonlit doorway arch (<code>0.78/1.14</code>). On <em>&quot;আমার পুতুলকে খাওয়াতে…&quot;</em> (Shot 27), dissolve into a <strong>macro shallow-DOF Ghibli storybook vignette</strong> (<code>ants_cutaway_vignette_sketch.png</code>) where tiny sepia-ink ants march across soft warm bokeh!</li>
+</ul>
+<h3 id="sec-67">3.3 Complete Ghibli Plate &amp; Cutout Manifest (<code>ep04_ghibli.json</code>)</h3>
+<blockquote class="callout"><strong>Mandatory Raw Plate Style Prefix (prepend to every prompt below):</strong><br><em>&quot;Studio Ghibli hand-drawn watercolor and gouache background illustration on warm cold-press watercolor paper, delicate sepia and charcoal pencil linework, visible paper tooth, no characters, no people, no text, no watermarks.&quot;</em><br><em>(For all Cutouts, append: &quot;isolated on a pure solid <code>#FFFFFF</code> white background, full object centered with clean margin around all edges, no outer cast shadow puddle on the white paper.&quot;)</em></blockquote>
+<div class="table-wrap"><table><thead><tr><th>Plate / Cutout File</th><th>Kind &amp; Target Size</th><th>Detailed Watercolor Prompt (for <code>public/images/ghibli_ep04/raw/</code>)</th></tr></thead><tbody>
+<tr><td><code>sky_ep04_morning_courtyard.png</code></td><td>Full Plate (<code>2560×1440</code>)</td><td>Crisp pale-azure Bengal morning sky warming to soft honey-gold near the upper-right horizon, wispy hand-painted cumulus clouds, subtle watercolor blooms.</td></tr>
+<tr><td><code>sky_ep04_pond_day.png</code></td><td>Full Plate (<code>2560×1440</code>)</td><td>Bright late-morning cerulean rural Bengal sky with luminous cream-white puff clouds and soft atmospheric warmth at the horizon.</td></tr>
+<tr><td><code>sky_ep04_afternoon_gold.png</code></td><td>Full Plate (<code>2560×1440</code>)</td><td>Warm amber and peach late-afternoon Bengal sky, gentle golden light slant from upper-left, soft nostalgic Ghibli clouds.</td></tr>
+<tr><td><code>sky_ep04_purnima_dusk.png</code></td><td>Full Plate (<code>2560×1440</code>)</td><td>Deep serene indigo-teal Bengal full-moon evening sky with a softly glowing cream-silver Purnima moon, faint hand-dotted stars, wispy moonlit cloud bands.</td></tr>
+<tr><td><code>thakur_ghar_interior_sketch.png</code></td><td>Full Plate (<code>3840×2160</code>, 4K for close-ups)</td><td>Traditional rural Bengal Brahmin family shrine room (<em>Thakur Ghar</em>) interior: hand-plastered cream lime-whitewashed walls with aged terracotta red-oxide lower dado, dark wooden ceiling beams, a small barred wooden window showing cool blue moonlit night outside, warm flickering amber glow from brass oil lamps on the left wall, woven <em>ashan</em> prayer mat on the smooth red-oxide floor, empty center space for the wooden deity <em>khat</em> and priest.</td></tr>
+<tr><td><code>ants_cutaway_vignette_sketch.png</code></td><td>Full Plate (<code>2560×1440</code>)</td><td>Soft sunlit cream-ochre Bengal mud-and-lime veranda floor in warm top-down three-quarter angle, gentle feathered pastel watercolor border fading softly into warm cream paper edges, tiny fallen jasmine petals, leaving clean center floor for animated wooden doll and ants.</td></tr>
+<tr><td><code>glimpse_ep05_cow_grove_sketch.png</code></td><td>Full Plate (<code>2560×1440</code>)</td><td>Sun-dappled rural Bengal banana grove in warm afternoon gold, broad translucent green banana leaves, a gentle white humped Bengal zebu cow standing peacefully in soft watercolor haze.</td></tr>
+<tr><td><code>courtyard_back_ep04_morning.png</code></td><td>Panorama (<code>5040×1320</code>)</td><td>Continuous traditional Medinimandal Vedic house (<em>Baidik Bari</em>) arched veranda facade, weathered cream-ochre lime plaster with terracotta pillars, dark wooden louvered doors, red-oxide plinth steps, warm morning sunlight slanting from upper-right (matched to Episode 3 continuity).</td></tr>
+<tr><td><code>courtyard_floor_ep04_sketch.png</code></td><td>Panorama (<code>5440×1200</code>)</td><td>Wide perspective rural Bengal inner courtyard ground: worn terracotta-red lime floor with soft hand-painted sweep marks, subtle cracked plaster grain, scattered white shiuli and bel leaves, clean feathered upper edge.</td></tr>
+<tr><td><code>pond_far_bank_baidik_sketch.png</code></td><td>Panorama (<code>5040×1320</code>)</td><td>Distant rural Bengal village bank across a pond: ochre terracotta roofline of a traditional Vedic house nestled among tall coconut palms, betel-nut trees, bamboo clumps, and dense mango foliage under soft late-morning haze.</td></tr>
+<tr><td><code>pond_water_emerald_sketch.png</code></td><td>Panorama (<code>5440×1200</code>)</td><td>Calm emerald-jade rural Bengal village pond water in perspective, hand-painted horizontal gouache sky reflections, clustered green water-lily pads near the far edge, subtle sunlit ripple strokes.</td></tr>
+<tr><td><code>tree_mandar_bloom_sketch.png</code></td><td>Cutout (<code>1350px</code> tall, <code>chokeLightHalo: true</code>)</td><td>Gnarled rural Bengal <em>mandar</em> (Indian coral) tree in full spring bloom with twisting sepia-ink bark, lush green leaves, and clusters of vibrant crimson-red coral blossoms; open trunk fork so characters can walk behind it.</td></tr>
+<tr><td><code>brick_ghat_steps_sketch.png</code></td><td>Cutout (<code>1100px</code> tall)</td><td>Weathered mossy terracotta brick pond <em>ghat</em> steps descending to the left into water, chipped lime mortar, small fern tufts in cracks, damp darker lower steps.</td></tr>
+<tr><td><code>deity_khat_shrine_sketch.png</code></td><td>Cutout (<code>1200px</code> tall)</td><td>Carved dark teakwood Bengali family shrine altar (<em>thakur-khat</em>) draped in crimson-and-gold cotton cloth, holding a small brass oil lamp, white conch shell, copper <em>kosha-kushi</em> water vessel, tiny stone Gopal, and black shalagram stone on a miniature brass throne, decorated with fresh marigolds and bel leaves. <strong>No glowing aura or rays.</strong></td></tr>
+<tr><td><code>shrine_arch_frame_sketch.png</code></td><td>Cutout (<code>1440px</code> tall)</td><td>Foreground lime-plaster Bengali veranda doorway arch with wooden threshold and a soft white-and-red-bordered cotton curtain tied neatly to the right side, clean open center doorway.</td></tr>
+<tr><td><code>tulsi_mancha_ep04_sketch.png</code></td><td>Cutout (<code>1400px</code> tall)</td><td>Weathered terracotta-and-lime Bengali <em>tulsi mancha</em> altar with a lush green holy basil plant on top, tiny clay diya niche, subtle hand-drawn sepia cracks (matched to Episode 3).</td></tr>
+<tr><td><code>madur_mat_veranda_sketch.png</code></td><td>Cutout (<code>600px</code> wide)</td><td>Flat woven rural Bengal <em>madur</em> reed floor mat in warm golden straw tones with hand-painted crimson woven border, viewed in gentle perspective.</td></tr>
+<tr><td><code>banana_clump_pond_sketch.png</code></td><td>Cutout (<code>1150px</code> tall)</td><td>Lush cluster of rural Bengal banana plants with broad backlit sunlit emerald leaves and softly frayed leaf edges.</td></tr>
+</tbody></table></div>
+<h3 id="sec-89">3.4 Interactive Zero-Float Ink-Styled SVG Props (<code>src/ghibli_pipeline/episode04/Ep04GhibliProps.tsx</code>)</h3>
+<p>Every prop actively picked up, rolled, handed off, or drunk from is coded as a <strong>hand-inked watercolor SVG</strong> (<code>stroke=&quot;#3A2618&quot;</code>, <code>strokeWidth={1.6}</code>, layered warm wash gradients + <code>#ghibli-char-ink</code> harmony) pinned to exact IK hand coordinates so hands <strong>never float</strong>:</p>
+<ol>
+<li><strong><code>GhibliClayShivalinga</code> &amp; <code>GhibliClayBall</code>:</strong> Hand-molded dark grey-brown wet field-clay lingam (<code>#5A4D43</code> → <code>#7C6D60</code>) with subtle sepia thumb-ridge lines, 3-lobed fresh green bel leaf (<code>#4C7A3B</code>), two white shiuli/kunda blossoms, sitting on a hammered warm-brass <em>tata</em> plate (<code>#D4A24C</code>) beside a tiny clay diya with animated flame. Smoothly morphs into <code>GhibliClayBall</code> (soft uneven round clay lump) between Balak&#x27;s rolling palms in Scene 01.</li>
+<li>*<em><code>GhibliWoodenAhladiDoll</code> (</em>গলৈয়ার আহ্লাদী<em>):</em>* Cheerful Bengal fairground folk doll (~22 cm): lathe-turned wooden silhouette painted in bright vermilion red (<code>#C93B2B</code>), turmeric yellow (<code>#E6B43C</code>), and leaf green (<code>#3A7D44</code>), oversized round black-and-white folk eyes, rosy cheeks, red crescent smile, delicate sepia wood-grain lines. Used in Scenes 01, 02, 03, and Scene 06 cutaway (with tiny dark nail-dot near the mouth!).</li>
+<li><strong><code>GhibliBrassGobinda</code>:</strong> Dignified ~25 cm standing antique-brass figure (<code>#C6933A</code> → <code>#F2D27B</code> specular wash, dark umber patina <code>#6E4B18</code>) holding a slender flute on a lotus pedestal. <strong>Zero halo or divine glow (<code>BAL-05</code>).</strong> Anchored to two-hand grip coordinates for both Balak (<code>holdInLap</code>, <code>offerUp</code>) and Sundar Jyetha.</li>
+<li><strong><code>GhibliStoneBowlFopra</code>:</strong> Wide hand-carved speckled grey granite bowl (<code>#6B6E70</code> → <code>#9DA0A2</code>) with <strong>animated translucent coconut-water surface (<code>waterLevel: 1 → 0</code>)</strong> that tilts with gravity and drains smoothly during Balak&#x27;s <code>drinkBowl</code> action in Scene 05, revealing the whole creamy spongy coconut <em>fopra</em> (<code>#F4EAD5</code>) resting inside; accompanied by two halved green coconuts (<code>#4E7D38</code>) on the floor.</li>
+<li><strong><code>GhibliBrassDhupDani</code>:</strong> Traditional Bengali handheld brass incense burner with curved handle, glowing orange-red charcoal embers (<code>#E0531C</code>), and procedural rising sepia-cream watercolor smoke curls (<code>lifeF</code>-driven).</li>
+<li><strong><code>GhibliPujaBell</code>:</strong> Small turned-brass handbell held in Charu&#x27;s (Scene 01) and Bhagabati Thakur&#x27;s (Scene 05) right hand with wrist-shake oscillation synced to <code>temple_bell_small.wav</code>.</li>
+<li><strong><code>GhibliAntsLine</code> (Scene 06 Cutaway):</strong> 8–10 tiny sepia-ink ants animated along a gentle bezier curve on <code>ants_cutaway_vignette_sketch.png</code>, each carrying a tiny white painted rice grain away from <code>GhibliWoodenAhladiDoll</code>&#x27;s mouth!</li>
+</ol>
+<hr>
+<h2 id="sec-voices">4. Complete Google AI Studio Voice Script (100% Ready to Generate)</h2>
+<ul>
+<li><strong>Workspace:</strong> <code>https://aistudio.google.com/generate-speech</code></li>
+<li><strong>Model:</strong> <code>gemini-3.8-flash-tts</code></li>
+<li><strong>Save all <code>.wav</code> files into:</strong> <code>03_Episodes/Episode_04_Idols_and_Coconut_Water/02_Audio/Voice_WAVs/</code></li>
+<li><strong>Total Voice Blocks:</strong> 30 WAV files (Narrator is <strong>only 6 short blocks</strong>; <strong>24 blocks are lively character dialogue!</strong>)</li>
+</ul>
+<h3 id="sec-108">Block 00 — Series Intro</h3>
+
+            <div class="voice-card" data-voice="1">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_1"> <strong>00_Intro.wav</strong></label>
+                <span class="spk-badge badge-narr">01_Narrator_Kathak</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Cheerful, bright, welcoming Bengali children&#x27;s show announcer.</code></span>
+                <button class="copy-btn" data-copy="Cheerful, bright, welcoming Bengali children&#x27;s show announcer.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ছোটদের বালক ঠাকুরের গল্প। &lt;short pause&gt; পর্ব চার: শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক।</div>
+                <button class="copy-btn copy-speech" data-copy="ছোটদের বালক ঠাকুরের গল্প। &lt;short pause&gt; পর্ব চার: শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক।">Copy Bangla</button>
+              </div>
+            </div>
+<hr>
+<h3 id="sec-111">Story 1 — মাটির শিবলিঙ্গ ও কাঠের পুতুল (Scene 01)</h3>
+
+            <div class="voice-card" data-voice="2">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_2"> <strong>01a_Narrator_Morning.wav</strong></label>
+                <span class="spk-badge badge-narr">01_Narrator_Kathak</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Warm, gentle, light storybook morning tone.</code></span>
+                <button class="copy-btn" data-copy="Warm, gentle, light storybook morning tone.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">মেদিনীমণ্ডলের বৈদিক বাড়ি। রোজ সকালে মা চারুশীলা মাটির শিবলিঙ্গ গড়ে পূজো করেন—আর পাঁচ বছরের বীরু অবাক হয়ে দেখে।</div>
+                <button class="copy-btn copy-speech" data-copy="মেদিনীমণ্ডলের বৈদিক বাড়ি। রোজ সকালে মা চারুশীলা মাটির শিবলিঙ্গ গড়ে পূজো করেন—আর পাঁচ বছরের বীরু অবাক হয়ে দেখে।">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="3">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_3"> <strong>01b_Charu_Shock.wav</strong></label>
+                <span class="spk-badge badge-char">05_Charu</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Startled gasp turning into flustered, scolding motherly alarm.</code></span>
+                <button class="copy-btn" data-copy="Startled gasp turning into flustered, scolding motherly alarm.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">অ্যাঁ! একি কাণ্ড! আমার মাটির শিব কোথায় গেল? &lt;short pause&gt; থালায় ওটা কী—গলৈয়ার কাঠের পুতুল?! ওরে বীরু! বীরু কোথায় গেলি?</div>
+                <button class="copy-btn copy-speech" data-copy="অ্যাঁ! একি কাণ্ড! আমার মাটির শিব কোথায় গেল? &lt;short pause&gt; থালায় ওটা কী—গলৈয়ার কাঠের পুতুল?! ওরে বীরু! বীরু কোথায় গেলি?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="4">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_4"> <strong>01c_ElderBrother_Report.wav</strong></label>
+                <span class="spk-badge badge-char">02_Gopal_Boy1</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Breathless, excited older brother reporting mischief.</code></span>
+                <button class="copy-btn" data-copy="Breathless, excited older brother reporting mischief.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">মা, ধরে এনেছি! কই, শিব তো দেখলাম না—দেখলাম ও শিবের মাটিটা হাতে পাকিয়ে গোল গোল লাড্ডু বানাচ্ছে!</div>
+                <button class="copy-btn copy-speech" data-copy="মা, ধরে এনেছি! কই, শিব তো দেখলাম না—দেখলাম ও শিবের মাটিটা হাতে পাকিয়ে গোল গোল লাড্ডু বানাচ্ছে!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="5">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_5"> <strong>01d_Charu_Scold.wav</strong></label>
+                <span class="spk-badge badge-char">05_Charu</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Exasperated, worried traditional mother, hands on hips.</code></span>
+                <button class="copy-btn" data-copy="Exasperated, worried traditional mother, hands on hips.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ওরে দুষ্টু ছেলে, ঠাকুরের শিবলিঙ্গ নিয়ে কেউ খেলা করে? তোর কি একটুও ভয়-ডর নেই?</div>
+                <button class="copy-btn copy-speech" data-copy="ওরে দুষ্টু ছেলে, ঠাকুরের শিবলিঙ্গ নিয়ে কেউ খেলা করে? তোর কি একটুও ভয়-ডর নেই?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="6">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_6"> <strong>01e_Balak_ClayLogic.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Completely calm, innocent, logical, smiling 5-year-old boy.</code></span>
+                <button class="copy-btn" data-copy="Completely calm, innocent, logical, smiling 5-year-old boy.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">মা, তুমি তো রোজ ক্ষেতের মাটির ঢেলা আনিয়ে শিব গড়ে পুজো করে ঘরের পেছনে ফেলে দাও! তখন তো চটো না? &lt;short pause&gt; আমি তো শুধু ওটা নিয়ে খেলছি, আর বদলে আমার রঙচঙে পুতুলটা তো তোমায় দিয়ে গেলাম—ওটা আর ফেলতে হবে না!</div>
+                <button class="copy-btn copy-speech" data-copy="মা, তুমি তো রোজ ক্ষেতের মাটির ঢেলা আনিয়ে শিব গড়ে পুজো করে ঘরের পেছনে ফেলে দাও! তখন তো চটো না? &lt;short pause&gt; আমি তো শুধু ওটা নিয়ে খেলছি, আর বদলে আমার রঙচঙে পুতুলটা তো তোমায় দিয়ে গেলাম—ওটা আর ফেলতে হবে না!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="7">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_7"> <strong>01f_Jyethi_Remark.wav</strong></label>
+                <span class="spk-badge badge-char">06_Manorama_Devi</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Shaking head in half-shocked, gossiping aunt tone.</code></span>
+                <button class="copy-btn" data-copy="Shaking head in half-shocked, gossiping aunt tone.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">চারু, তোর ছেলেটা তো বড্ড ঠেটা! বাড়ির আর সবার দেব-দেবীতে কত ভক্তি—আর তোর বীরুর একটুও ভয় নেই!</div>
+                <button class="copy-btn copy-speech" data-copy="চারু, তোর ছেলেটা তো বড্ড ঠেটা! বাড়ির আর সবার দেব-দেবীতে কত ভক্তি—আর তোর বীরুর একটুও ভয় নেই!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="8">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_8"> <strong>01g_Charu_FlashbackIntro.wav</strong></label>
+                <span class="spk-badge badge-char">05_Charu</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Sighing with mixed exasperation and motherly awe, lowering voice to tell a story.</code></span>
+                <button class="copy-btn" data-copy="Sighing with mixed exasperation and motherly awe, lowering voice to tell a story.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">কী আর বলব দিদি! সেদিন তুমি ছিলে না—আমার পাঁচ বছরের ছেলে কী বুকের পাটা নিয়ে ঠাকুরঘর থেকে পিতলের গোবিন্দ মূর্তি নিয়ে পালাল, শুনলে অবাক হবে!</div>
+                <button class="copy-btn copy-speech" data-copy="কী আর বলব দিদি! সেদিন তুমি ছিলে না—আমার পাঁচ বছরের ছেলে কী বুকের পাটা নিয়ে ঠাকুরঘর থেকে পিতলের গোবিন্দ মূর্তি নিয়ে পালাল, শুনলে অবাক হবে!">Copy Bangla</button>
+              </div>
+            </div>
+<hr>
+<h3 id="sec-120">Story 2 — পুকুরপাড়ে গোবিন্দ ও ঠাকুরমার ভবিষ্যদ্বাণী (Scenes 02, 03, 04)</h3>
+
+            <div class="voice-card" data-voice="9">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_9"> <strong>02a_Balak_ToMangla.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Playful, matter-of-fact, proud 5-year-old explaining to a friend.</code></span>
+                <button class="copy-btn" data-copy="Playful, matter-of-fact, proud 5-year-old explaining to a friend.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">জানিস মংলা, এতদিন ছোট ছিলাম বলে কাঠের পুতুল নিয়ে খেলতাম। এখন তো বড় হয়েছি—তাই আজ পিতলের পুতুলটা নিয়ে খেলব, আর কাল পাথরের গোপালটাকে নিয়ে আসব! &lt;short pause&gt; জ্যেঠামশায়রাও তো ওদের স্নান করান, খাওয়ান—ঠিক আমার পুতুলের মতো!</div>
+                <button class="copy-btn copy-speech" data-copy="জানিস মংলা, এতদিন ছোট ছিলাম বলে কাঠের পুতুল নিয়ে খেলতাম। এখন তো বড় হয়েছি—তাই আজ পিতলের পুতুলটা নিয়ে খেলব, আর কাল পাথরের গোপালটাকে নিয়ে আসব! &lt;short pause&gt; জ্যেঠামশায়রাও তো ওদের স্নান করান, খাওয়ান—ঠিক আমার পুতুলের মতো!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="10">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_10"> <strong>02b_Balak_DealMangla.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Quick, cheeky whisper hearing footsteps from the house.</code></span>
+                <button class="copy-btn" data-copy="Quick, cheeky whisper hearing footsteps from the house.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">এই মংলা, বাড়িতে খোঁজ পড়েছে! তুই এক কাজ কর—এই পুতুলটা সুন্দর জ্যেঠাকে দিয়ে আমার কাঠের পুতুলটা নিয়ে আয় তো!</div>
+                <button class="copy-btn copy-speech" data-copy="এই মংলা, বাড়িতে খোঁজ পড়েছে! তুই এক কাজ কর—এই পুতুলটা সুন্দর জ্যেঠাকে দিয়ে আমার কাঠের পুতুলটা নিয়ে আয় তো!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="11">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_11"> <strong>02c_Mangla_Panic.wav</strong></label>
+                <span class="spk-badge badge-char">14_Mangla_Servant</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Comedically terrified, high-pitched rural Bengali gasp while running away.</code></span>
+                <button class="copy-btn" data-copy="Comedically terrified, high-pitched rural Bengali gasp while running away.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ওরে বাবা! ঠাকুরের গোবিন্দ ছুঁলে আমার হাত খসে পড়বে যে! আমি পালালাম—বাপ রে বাপ!</div>
+                <button class="copy-btn copy-speech" data-copy="ওরে বাবা! ঠাকুরের গোবিন্দ ছুঁলে আমার হাত খসে পড়বে যে! আমি পালালাম—বাপ রে বাপ!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="12">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_12"> <strong>03a_Family_Shout.wav</strong></label>
+                <span class="spk-badge badge-char">03_Rama_Boy2</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Urgent, loud shouting from across the pond bank.</code></span>
+                <button class="copy-btn" data-copy="Urgent, loud shouting from across the pond bank.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ওই তো বীরু! ওই হতচ্ছাড়া, গোবিন্দ দিয়ে যা—এক্ষুনি আয় বলছি!</div>
+                <button class="copy-btn copy-speech" data-copy="ওই তো বীরু! ওই হতচ্ছাড়া, গোবিন্দ দিয়ে যা—এক্ষুনি আয় বলছি!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="13">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_13"> <strong>03b_Balak_Standoff.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Fearless, firm, mischievous warning, holding ground.</code></span>
+                <button class="copy-btn" data-copy="Fearless, firm, mischievous warning, holding ground.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">না, যাব না—তোমরা বকবে! &lt;short pause&gt; এই, এসো না বলছি! আর এক পা এলেই আমি কিন্তু এটা পুকুরে ছুঁড়ে ফেলে দেব!</div>
+                <button class="copy-btn copy-speech" data-copy="না, যাব না—তোমরা বকবে! &lt;short pause&gt; এই, এসো না বলছি! আর এক পা এলেই আমি কিন্তু এটা পুকুরে ছুঁড়ে ফেলে দেব!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="14">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_14"> <strong>03c_Sundar_Coax.wav</strong></label>
+                <span class="spk-badge badge-char">08_Sundar_Thakur</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Very gentle, sweet, diplomatic uncle coaxing a child with a smile.</code></span>
+                <button class="copy-btn" data-copy="Very gentle, sweet, diplomatic uncle coaxing a child with a smile.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">আরে থামো সবাই, যেও না! &lt;short pause&gt; শোনো বীরু, তুমি তো খুব লক্ষ্মী ছেলে! গোবিন্দটা আমায় দিয়ে দাও—তোমায় মেলা থেকে আরও একটা নতুন পুতুল কিনে দেব, কেমন?</div>
+                <button class="copy-btn copy-speech" data-copy="আরে থামো সবাই, যেও না! &lt;short pause&gt; শোনো বীরু, তুমি তো খুব লক্ষ্মী ছেলে! গোবিন্দটা আমায় দিয়ে দাও—তোমায় মেলা থেকে আরও একটা নতুন পুতুল কিনে দেব, কেমন?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="15">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_15"> <strong>03d_Balak_Negotiate.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Calm, smart little negotiator.</code></span>
+                <button class="copy-btn" data-copy="Calm, smart little negotiator.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">দিতে পারি—যদি তোমরা আমায় কিছু না বলো। আর আগে আমার কাঠের পুতুলটা এখানে এনে দাও!</div>
+                <button class="copy-btn copy-speech" data-copy="দিতে পারি—যদি তোমরা আমায় কিছু না বলো। আর আগে আমার কাঠের পুতুলটা এখানে এনে দাও!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="16">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_16"> <strong>03e_Runner_Handover.wav</strong></label>
+                <span class="spk-badge badge-char">03_Rama_Boy2</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Panting slightly after running, holding out the wooden doll.</code></span>
+                <button class="copy-btn" data-copy="Panting slightly after running, holding out the wooden doll.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">এই নে তোর কাঠের পুতুল! দে, এবার গোবিন্দ দে!</div>
+                <button class="copy-btn copy-speech" data-copy="এই নে তোর কাঠের পুতুল! দে, এবার গোবিন্দ দে!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="17">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_17"> <strong>03f_Balak_ToSundar.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Sweet, trusting, smiling warmly at Sundar uncle.</code></span>
+                <button class="copy-btn" data-copy="Sweet, trusting, smiling warmly at Sundar uncle.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">না, তোমাকে দেব না—সুন্দর জ্যেঠাকে দেব! &lt;short pause&gt; এই নাও জ্যেঠা।</div>
+                <button class="copy-btn copy-speech" data-copy="না, তোমাকে দেব না—সুন্দর জ্যেঠাকে দেব! &lt;short pause&gt; এই নাও জ্যেঠা।">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="18">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_18"> <strong>04a_Harendra_Grumble.wav</strong></label>
+                <span class="spk-badge badge-char">10_Grumpy_Relative</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Stern, exasperated elder shaking his head in the courtyard.</code></span>
+                <button class="copy-btn" data-copy="Stern, exasperated elder shaking his head in the courtyard.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">কী যে কালাপাহাড় এল আমাদের ঘরে! ঠাকুর-দেবতা কিচ্ছু মানছে না! হুকুম দিচ্ছি—ওকে যেন আর কোনোদিন ঠাকুরঘরে ঢুকতে দেওয়া না হয়!</div>
+                <button class="copy-btn copy-speech" data-copy="কী যে কালাপাহাড় এল আমাদের ঘরে! ঠাকুর-দেবতা কিচ্ছু মানছে না! হুকুম দিচ্ছি—ওকে যেন আর কোনোদিন ঠাকুরঘরে ঢুকতে দেওয়া না হয়!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="19">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_19"> <strong>04b_Thakurma_Prophecy.wav</strong></label>
+                <span class="spk-badge badge-char">11_Thakurma</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Warm, deeply proud, wise, resonant grandmotherly voice with awe.</code></span>
+                <button class="copy-btn" data-copy="Warm, deeply proud, wise, resonant grandmotherly voice with awe.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">তোরা ওকে যতই কালাপাহাড় বলিস—দেখিস, &lt;short pause&gt; এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!</div>
+                <button class="copy-btn copy-speech" data-copy="তোরা ওকে যতই কালাপাহাড় বলিস—দেখিস, &lt;short pause&gt; এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!">Copy Bangla</button>
+              </div>
+            </div>
+<hr>
+<h3 id="sec-133">Story 3 — পূর্ণিমার অভিষেক ও নারিকেলোদক (Scenes 05, 06)</h3>
+
+            <div class="voice-card" data-voice="20">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_20"> <strong>05a_Narrator_Abhishek.wav</strong></label>
+                <span class="spk-badge badge-narr">01_Narrator_Kathak</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Quiet, devotional, slightly playful storyteller.</code></span>
+                <button class="copy-btn" data-copy="Quiet, devotional, slightly playful storyteller.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">সেদিন পূর্ণিমার বিশেষ অভিষেক। ঠাকুরঘরে ঢোকা বারণ—তাই বীরু চুপচাপ বারান্দায় বসে পুরোহিত ঠাকুরের পূজো দেখছে।</div>
+                <button class="copy-btn copy-speech" data-copy="সেদিন পূর্ণিমার বিশেষ অভিষেক। ঠাকুরঘরে ঢোকা বারণ—তাই বীরু চুপচাপ বারান্দায় বসে পুরোহিত ঠাকুরের পূজো দেখছে।">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="21">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_21"> <strong>05b_Bhagabati_Dhoop.wav</strong></label>
+                <span class="spk-badge badge-char">07_Bhagabati_Thakur</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Busy, slightly impatient elder priest calling out during ritual.</code></span>
+                <button class="copy-btn" data-copy="Busy, slightly impatient elder priest calling out during ritual.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ধূপ! &lt;short pause&gt; আরে, ধূপ কই? কেউ কি নেই নাকি?</div>
+                <button class="copy-btn copy-speech" data-copy="ধূপ! &lt;short pause&gt; আরে, ধূপ কই? কেউ কি নেই নাকি?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="22">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_22"> <strong>05c_Balak_AskDhoop.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Soft, polite, eager little voice from the doorway.</code></span>
+                <button class="copy-btn" data-copy="Soft, polite, eager little voice from the doorway.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ঠাকুরমশায়, আমি ধূপ দেব?</div>
+                <button class="copy-btn copy-speech" data-copy="ঠাকুরমশায়, আমি ধূপ দেব?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="23">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_23"> <strong>05d_Bhagabati_Huhu1.wav</strong></label>
+                <span class="spk-badge badge-char">07_Bhagabati_Thakur</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Absent-minded, hurried muttered agreement while chanting.</code></span>
+                <button class="copy-btn" data-copy="Absent-minded, hurried muttered agreement while chanting.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">হুঁ হুঁ, দে—তাড়াতাড়ি দে।</div>
+                <button class="copy-btn copy-speech" data-copy="হুঁ হুঁ, দে—তাড়াতাড়ি দে।">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="24">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_24"> <strong>05e_Balak_AskSit.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Innocent, sweet little request.</code></span>
+                <button class="copy-btn" data-copy="Innocent, sweet little request.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ঠাকুরমশায়, আমি একটু ঘরে বসব?</div>
+                <button class="copy-btn copy-speech" data-copy="ঠাকুরমশায়, আমি একটু ঘরে বসব?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="25">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_25"> <strong>05f_Bhagabati_Huhu2.wav</strong></label>
+                <span class="spk-badge badge-char">07_Bhagabati_Thakur</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Completely absorbed in mantra, waving hand absent-mindedly.</code></span>
+                <button class="copy-btn" data-copy="Completely absorbed in mantra, waving hand absent-mindedly.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">হুঁ হুঁ, বোস… এতে গন্ধে পুষ্পে…</div>
+                <button class="copy-btn copy-speech" data-copy="হুঁ হুঁ, বোস… এতে গন্ধে পুষ্পে…">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="26">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_26"> <strong>06a_Balak_CoconutConfess.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Completely cheerful, satisfied, innocent 5-year-old.</code></span>
+                <button class="copy-btn" data-copy="Completely cheerful, satisfied, innocent 5-year-old.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ঠাকুরমশায়, আপনার ঠাকুর তো মুখ দিয়ে খায় না—তাই আমি নারকেলের জলটা খেয়ে ফোপড়াটা ওর জন্য রেখে দিয়েছি!</div>
+                <button class="copy-btn copy-speech" data-copy="ঠাকুরমশায়, আপনার ঠাকুর তো মুখ দিয়ে খায় না—তাই আমি নারকেলের জলটা খেয়ে ফোপড়াটা ওর জন্য রেখে দিয়েছি!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="27">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_27"> <strong>06b_Bhagabati_Explode.wav</strong></label>
+                <span class="spk-badge badge-char">07_Bhagabati_Thakur</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Shocked, loud, flustered, comically indignant priest.</code></span>
+                <button class="copy-btn" data-copy="Shocked, loud, flustered, comically indignant priest.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">অ্যাঁ?! সর্বনাশ! ওরে সবাই এসে দ্যাখ—বাবুর ছেলেটা ঠাকুরভোগের সব নারকেলের জল খেয়ে এঁটো ফোপড়াটা ঠাকুরের জন্য রেখে দিয়েছে!</div>
+                <button class="copy-btn copy-speech" data-copy="অ্যাঁ?! সর্বনাশ! ওরে সবাই এসে দ্যাখ—বাবুর ছেলেটা ঠাকুরভোগের সব নারকেলের জল খেয়ে এঁটো ফোপড়াটা ঠাকুরের জন্য রেখে দিয়েছে!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="28">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_28"> <strong>06c_Balak_AntsLogic.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Wide-eyed, genuinely trying to calm the priest down, sweet &amp; funny.</code></span>
+                <button class="copy-btn" data-copy="Wide-eyed, genuinely trying to calm the priest down, sweet &amp; funny.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ও ঠাকুরমশায়, আপনি চেঁচাচ্ছেন কেন? আচ্ছা, ফোপড়াটা না হয় আপনিই খেয়ে ফেলুন, আমি কাউকে বলব না! &lt;short pause&gt; আরে পুতুল কি আর খায়? আমার পুতুলকে খাওয়াতে মুখে পেরেক দিয়ে ফুটো করেছিলাম—তবুও খেল না, সব তো পিঁপড়েরা খায়!</div>
+                <button class="copy-btn copy-speech" data-copy="ও ঠাকুরমশায়, আপনি চেঁচাচ্ছেন কেন? আচ্ছা, ফোপড়াটা না হয় আপনিই খেয়ে ফেলুন, আমি কাউকে বলব না! &lt;short pause&gt; আরে পুতুল কি আর খায়? আমার পুতুলকে খাওয়াতে মুখে পেরেক দিয়ে ফুটো করেছিলাম—তবুও খেল না, সব তো পিঁপড়েরা খায়!">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="29">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_29"> <strong>06d_Family_ScoldShrine.wav</strong></label>
+                <span class="spk-badge badge-char">06_Manorama_Devi</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Rushing in, scolding in disbelief.</code></span>
+                <button class="copy-btn" data-copy="Rushing in, scolding in disbelief.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ওরে বীরু, তোকে এত বারণ করা হলো, তবু তুই ঠাকুরঘরে ঢুকলি কেন? তোর একটুও ভয় নেই?</div>
+                <button class="copy-btn copy-speech" data-copy="ওরে বীরু, তোকে এত বারণ করা হলো, তবু তুই ঠাকুরঘরে ঢুকলি কেন? তোর একটুও ভয় নেই?">Copy Bangla</button>
+              </div>
+            </div>
+
+            <div class="voice-card" data-voice="30">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_30"> <strong>06e_Balak_LegalDefense.wav</strong></label>
+                <span class="spk-badge badge-char">12_Balak_Thakur_Child</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Completely calm, honest, matter-of-fact smile.</code></span>
+                <button class="copy-btn" data-copy="Completely calm, honest, matter-of-fact smile.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">আমি তো ইচ্ছে করে ঢুকিনি! ধূপ দেওয়ার কেউ ছিল না—আমি তো ঠাকুরমশায়কে জিজ্ঞেস করেই ভেতরে ঢুকেছি!</div>
+                <button class="copy-btn copy-speech" data-copy="আমি তো ইচ্ছে করে ঢুকিনি! ধূপ দেওয়ার কেউ ছিল না—আমি তো ঠাকুরমশায়কে জিজ্ঞেস করেই ভেতরে ঢুকেছি!">Copy Bangla</button>
+              </div>
+            </div>
+<hr>
+<h3 id="scene-99">Block 99 — Closing Moral &amp; Episode 5 Teaser</h3>
+
+            <div class="voice-card" data-voice="31">
+              <div class="voice-head">
+                <label class="voice-chk"><input type="checkbox" class="v-done" data-key="ep04_v_31"> <strong>99_Outro_Sequential.wav</strong></label>
+                <span class="spk-badge badge-narr">01_Narrator_Kathak</span>
+              </div>
+              <div class="voice-style">
+                <span><strong>Style:</strong> <code>Serene, warm, smiling storyteller, then curious for the teaser.</code></span>
+                <button class="copy-btn" data-copy="Serene, warm, smiling storyteller, then curious for the teaser.">Copy Style</button>
+              </div>
+              <div class="voice-speech">
+                <div class="speech-text">ভয়ের আচারে নয়—সরল সত্য আর জীবন্ত প্রাণের প্রতি ভালোবাসাতেই সত্যিকারের পূজো সম্পূর্ণ হয়। &lt;short pause&gt; ছোটদের বালক ঠাকুরের গল্প—আসছে পরের পর্ব: কচ্ছপ খেলা ও গাভী রক্ষা! কলাবাগিচায় বাঁশ হাতে হরিচরণের সামনে দাঁড়িয়ে ছোট্ট বীরু কীভাবে অসহায় গাভীকে বাঁচাল, দেখুন পরের পর্বে!</div>
+                <button class="copy-btn copy-speech" data-copy="ভয়ের আচারে নয়—সরল সত্য আর জীবন্ত প্রাণের প্রতি ভালোবাসাতেই সত্যিকারের পূজো সম্পূর্ণ হয়। &lt;short pause&gt; ছোটদের বালক ঠাকুরের গল্প—আসছে পরের পর্ব: কচ্ছপ খেলা ও গাভী রক্ষা! কলাবাগিচায় বাঁশ হাতে হরিচরণের সামনে দাঁড়িয়ে ছোট্ট বীরু কীভাবে অসহায় গাভীকে বাঁচাল, দেখুন পরের পর্বে!">Copy Bangla</button>
+              </div>
+            </div>
+<hr>
+<h2 id="sec-scenes">5. Scene-by-Scene Complete Visualization, Shot List, Blocking, Pauses &amp; VFX</h2>
+<blockquote class="callout"><strong>Legend:</strong> <code>AG</code> = Action Gap (story moves wordlessly, drives choreography on story clock); <code>P</code> = Pause (story holds 1–2 s, breathing/blinks/breeze/ambient continue on <code>lifeF</code>); <code>CB</code> = Chapter Break (<code>CAM-10</code>: fade to black, 1 s hold, soft chime, fade in). All faces &amp; key props framed <strong>above <code>y = 820</code></strong>.</blockquote>
+<hr>
+<h3 id="scene-00">Intro &amp; Source Card (0:00 – 0:26 | ~624 f)</h3>
+<ul>
+<li><strong>Visuals:</strong> Series template (<code>TTL-02</code>–<code>TTL-06</code>): saffron-orange gradient, gold pill <code>পর্ব চার</code>, title <code>শিবলিঙ্গ, গোবিন্দ ও নারিকেলোদক</code> animated word-by-word, golden sparkles, followed by centered book-page Source Attribution card. No captions on title page.</li>
+<li><strong>Audio:</strong> <code>00_Intro.wav</code> + <code>00a_Source_Attribution.wav</code>; <code>Theme_Intro_Bansuri</code> (<code>0.14</code> open / <code>0.08</code> under voice); <code>chime_pop</code> (<code>0.30</code>).</li>
+</ul>
+<hr>
+<h3 id="scene-01">Scene 01 — <code>01_clay_shiva_swap</code> (Morning Courtyard: Clay Shiva &amp; Wooden Doll)</h3>
+<ul>
+<li><strong>Set &amp; Grade:</strong> <code>CourtyardBack</code> + <code>CourtyardFloor</code> + <code>TulsiMancha</code> (Morning Grade: cool-warm diagonal sun, soft dust motes, sparrow on tulsi-tala).</li>
+<li><strong>Duration:</strong> ~62 s (~1,488 f)</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>Shot / Beat</th><th>Audio / Timing</th><th>Framing &amp; Camera (<code>CAM-13</code>)</th><th>Character Blocking, Expressions &amp; Props</th><th>VFX &amp; SFX</th></tr></thead><tbody>
+<tr class="row-highlight"><td><strong>AG1 (World Open, 2.5 s)</strong></td><td>Wordless (<code>STO-22</code>)</td><td><strong>Held Wide:</strong> Full morning courtyard; veranda plinth at center-left with Charu&#x27;s brass <em>tata</em>, <code>ClayShivalinga</code>, diya &amp; bell; Balak seated at right holding <code>WoodenAhladiDoll</code> in his lap</td><td>Sparrow hops on tulsi-tala and flies off; Charu lights diya and rings tiny brass bell; Balak watches with wide, curious, calm eyes (slow blink)</td><td>VFX: thin incense smoke curl, morning dust motes. SFX: <code>birds_village</code> (0.20), <code>temple_bell_small</code> (0.22)</td></tr>
+<tr><td><strong>Shot 1</strong></td><td><code>01a_Narrator_Morning</code></td><td><strong>Medium Two-Shot</strong> (cut on line): Charu doing puja at left, Balak seated at right watching intently</td><td>Charu finishes offering a bel leaf, joins palms, and bows forward into a deep kneeling <code>pranam</code> (forehead to veranda floor, eyes closed)</td><td>Bed: <code>Village_Peace_Loop</code> (-37 LUFS under voice), <code>tanpura_drone</code></td></tr>
+<tr class="row-highlight"><td><strong>AG2 (The Swap, 3.5 s)</strong></td><td>Wordless comedy beat</td><td><strong>Medium Close on Plate &amp; Hands</strong> (slow push <code>1.0 → 1.15x</code> as he reaches): <code>y &lt; 800</code></td><td>Balak rises onto his knees (<code>kneelReach</code>), leans silently to the brass <em>tata</em>, lifts <code>ClayShivalinga</code> with his left hand, sets bright <code>WoodenAhladiDoll</code> right in the center of the plate with a distinct <strong>brass clink</strong>, and scoots back calmly rolling the clay Shiva into a smooth round ball (<code>ClayBall</code>)!</td><td>SFX: <code>cloth_rustle</code> (0.15), <strong><code>wood_on_brass_tap</code> (0.28)</strong> (triggers Charu&#x27;s head lift!), <code>clay_pat</code> (0.18). Music: <code>cheeky_pluck_3</code> + <code>tabla_soft</code> tiptoe</td></tr>
+<tr><td><strong>Shot 2 + P1 (1.0 s)</strong></td><td><code>01b_Charu_Shock</code></td><td><strong>Close-Up on Charu</strong> (cut 6 f before line) → <strong>Insert Cut</strong> to the gaudy <code>WoodenAhladiDoll</code> sitting proudly on the sacred brass plate!</td><td>Charu&#x27;s head snaps up at the tap; hand flies to mouth on <em>&quot;অ্যাঁ!&quot;</em>; eyes dart from the smiling painted doll to the empty spot where Balak was</td><td>SFX: <code>cheeky_pluck_1</code> swarmandal flurry on the doll insert!</td></tr>
+<tr><td><strong>Shot 3</strong></td><td><code>01c_ElderBrother_Report</code></td><td><strong>Medium Wide:</strong> Courtyard right arch</td><td>Elder Brother marches in holding Balak gently by the wrist; Balak walks calmly, happily rolling the round <code>ClayBall</code> between both palms</td><td>SFX: <code>footsteps_floor</code> (0.20)</td></tr>
+<tr><td><strong>Shot 4</strong></td><td><code>01d_Charu_Scold</code></td><td><strong>Medium Two-Shot:</strong> Charu kneeling/bending at Balak&#x27;s eye level, hands on hips</td><td>Charu&#x27;s brows knit, wagging a finger gently (NO hitting); Balak completely unbothered, faint serene smile</td><td>Bed: <code>birds_village</code> (0.10)</td></tr>
+<tr><td><strong>Shot 5 + P2 (1.5 s)</strong></td><td><code>01e_Balak_ClayLogic</code></td><td><strong>Medium Close-Up on Balak</strong> (cut 6 f before line; gentle push <code>1.0 → 1.15x</code> on <em>&quot;আমার রঙচঙে পুতুলটা&quot;</em>)</td><td>Balak holds up the <code>ClayBall</code>, gestures openly toward the backyard on <em>&quot;ঘরের পেছনে ফেলে দাও&quot;</em>, then gestures sweetly toward the painted doll on <em>&quot;ওটা আর ফেলতে হবে না!&quot;</em>. In <strong>P2</strong>, cut to Charu pressing her palm to her forehead in helpless disbelief</td><td>Music: light tender <code>play_plucks</code> rising in P2</td></tr>
+<tr><td><strong>Shot 6</strong></td><td><code>01f_Jyethi_Remark</code></td><td><strong>Medium Shot:</strong> Jyethi standing by the veranda pillar, shaking head</td><td>Jyethi raises eyebrows dramatically, hand on cheek; Charu glances over at her</td><td>SFX: <code>cloth_rustle</code> (0.15)</td></tr>
+<tr><td><strong>Shot 7 + P3 (1.5 s)</strong></td><td><code>01g_Charu_FlashbackIntro</code></td><td><strong>Medium Close on Charu</strong> → slow <strong>Cross-Dissolve (36 f, <code>CAM-09</code>)</strong> into Scene 02&#x27;s daytime pond</td><td>Charu sighs with a half-smile of awe and leans in to tell Jyethi the Gobinda story; sunlight warms into the flashback</td><td>Music: <code>Warm_Family_Flute</code> enters softly over dissolve</td></tr>
+</tbody></table></div>
+<hr>
+<h3 id="scene-02">Scene 02 — <code>02_gobinda_and_mangla</code> (Pond Bank: Brass Gobinda &amp; Servant Mangla)</h3>
+<ul>
+<li><strong>Set &amp; Grade:</strong> <code>VedicPondDay</code> (bright late-morning sun, brick ghat left, emerald pond reflections, red blooming <em>mandar</em> tree right, <code>BaidikBariDay</code> roofline across water).</li>
+<li><strong>Duration:</strong> ~32 s (~768 f)</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>Shot / Beat</th><th>Audio / Timing</th><th>Framing &amp; Camera</th><th>Character Blocking, Expressions &amp; Props</th><th>VFX &amp; SFX</th></tr></thead><tbody>
+<tr class="row-highlight"><td><strong>AG3 (Pond Open, 2.0 s)</strong></td><td>Wordless (<code>STO-22</code>)</td><td><strong>Held Wide</strong> of <code>VedicPondDay</code>: red <em>mandar</em> petals drifting onto the green water; Balak seated under the tree turning <code>BrassGobinda</code> in the sunlight; servant Mangla crouching nearby with a gamchha</td><td>A red <em>mandar</em> blossom drops onto the grass beside Balak; ripples spread on the pond; Balak examines the shiny brass flute-player with delighted curiosity</td><td>VFX: falling red petals, animated water ripple rings. SFX: <code>pond_water_lap</code> (0.16), <code>birds_village</code> (0.20), <code>blossom_plop</code> (0.18)</td></tr>
+<tr><td><strong>Shot 8</strong></td><td><code>02a_Balak_ToMangla</code></td><td><strong>Medium Two-Shot</strong> under the <em>mandar</em> tree: Balak at right holding <code>BrassGobinda</code>, Mangla at left wide-eyed</td><td>Balak holds up <code>BrassGobinda</code> proudly; mimics bathing/feeding gestures playfully; Mangla&#x27;s eyes grow wider and wider in sheer superstitious terror</td><td>Music: playful <code>play_plucks</code> + light <code>tabla_soft</code></td></tr>
+<tr class="row-highlight"><td><strong>AG4 (Distant Shouts, 1.2 s)</strong></td><td>Wordless cue</td><td><strong>Same Two-Shot</strong></td><td>Faint muffled shouts echo from <code>BaidikBariDay</code> across the pond! Balak&#x27;s ears perk up; he leans conspiratorially toward Mangla</td><td>SFX: <code>distant_family_calls_muffled</code> (0.16)</td></tr>
+<tr><td><strong>Shot 9</strong></td><td><code>02b_Balak_DealMangla</code></td><td><strong>Medium Close on Balak</strong> (cut 6 f before line)</td><td>Balak holds <code>BrassGobinda</code> out toward Mangla with both hands (<code>offerUp</code>), cheeky innocent whisper</td><td>—</td></tr>
+<tr><td><strong>Shot 10 + P4 (1.2 s)</strong></td><td><code>02c_Mangla_Panic</code></td><td><strong>Medium Wide</strong> (cut on Mangla jumping backward!)</td><td>Mangla recoils as if the brass idol were hot fire, waves both hands frantically, drops his gamchha, grabs it, and <strong>sprints off left</strong> in a comical dust puff! In <strong>P4</strong>, Balak watches him run with an amused blink</td><td>VFX: tiny cartoon-realistic dust puff at Mangla&#x27;s heels. SFX: <code>footsteps_mud_run</code> (0.30), <code>cheeky_pluck_2</code></td></tr>
+</tbody></table></div>
+<hr>
+<h3 id="scene-03">Scene 03 — <code>03_pond_standoff_and_rescue</code> (Pond Bank Standoff &amp; Sundar Jyetha&#x27;s Rescue)</h3>
+<ul>
+<li><strong>Set &amp; Grade:</strong> <code>VedicPondDay</code> (continuous from Scene 02).</li>
+<li><strong>Duration:</strong> ~48 s (~1,152 f)</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>Shot / Beat</th><th>Audio / Timing</th><th>Framing &amp; Camera</th><th>Character Blocking, Expressions &amp; Props</th><th>VFX &amp; SFX</th></tr></thead><tbody>
+<tr><td><strong>Shot 11</strong></td><td><code>03a_Family_Shout</code></td><td><strong>Wide Bank Shot:</strong> Left brick ghat — Sundar Jyetha, Charu, and 2–3 cousins rush into frame pointing across to the <em>mandar</em> tree</td><td>Two cousins start dashing along the bank toward Balak; Charu holds her sari hem anxious</td><td>SFX: <code>footsteps_mud</code> (0.28), <code>birds_scatter_wings</code> (0.20)</td></tr>
+<tr><td><strong>Shot 12 + P5 (1.5 s)</strong></td><td><code>03b_Balak_Standoff</code></td><td><strong>Medium Shot on Balak</strong> (standing at water&#x27;s edge, <code>StandingChild</code> plate rig) → <strong>Quick Cut</strong> to the rushing family <strong>freezing mid-stride</strong>!</td><td>Balak stands calmly by the water, holding <code>BrassGobinda</code> out over the pond edge! On <em>&quot;পুকুরে ছুঁড়ে ফেলে দেব!&quot;</em>, the cousins skid to a halt, hands up, mouths open in horror; Charu gasps</td><td>SFX: <code>drum_hit_low</code> soft comic sting (0.22) on the freeze!</td></tr>
+<tr><td><strong>Shot 13</strong></td><td><code>03c_Sundar_Coax</code></td><td><strong>Medium Close on Sundar Jyetha</strong> (cut 6 f before line)</td><td>Sundar waves the cousins back, steps forward gently, bends slightly with spectacles glinting and a warm coaxing smile, palms open</td><td>Music: <code>Warm_Family_Flute</code> fades in softly</td></tr>
+<tr><td><strong>Shot 14</strong></td><td><code>03d_Balak_Negotiate</code></td><td><strong>Medium Close on Balak</strong> (cut 6 f before line)</td><td>Balak lowers <code>BrassGobinda</code> safely to his chest (<code>holdInLap</code>), tilts head slightly, logical and calm</td><td>—</td></tr>
+<tr class="row-highlight"><td><strong>AG5 (The Sprint, 2.0 s)</strong></td><td>Wordless action</td><td><strong>Wide Shot:</strong> Sundar nods to the Runner Cousin, who sprints back toward <code>BaidikBariDay</code> and dashes back holding bright <code>WoodenAhladiDoll</code></td><td>Fast, comical run along the bank; water glints</td><td>SFX: <code>footsteps_mud_run</code> (0.25), light <code>tabla_soft</code></td></tr>
+<tr><td><strong>Shot 15</strong></td><td><code>03e_Runner_Handover</code></td><td><strong>Medium Two-Shot:</strong> Runner Cousin panting, thrusting <code>WoodenAhladiDoll</code> toward Balak and reaching for <code>BrassGobinda</code></td><td>Balak takes his beloved wooden doll happily with one hand, but pulls <code>BrassGobinda</code> away from the cousin!</td><td>—</td></tr>
+<tr><td><strong>Shot 16 + P6 (2.0 s)</strong></td><td><code>03f_Balak_ToSundar</code></td><td><strong>Two-Shot (Balak &amp; Sundar):</strong> Slow gentle push <code>1.0 → 1.12x</code> as Balak walks two steps and hands <code>BrassGobinda</code> cleanly into Sundar&#x27;s two waiting hands</td><td>Sundar draws <code>BrassGobinda</code> to his chest with deep relief and smiles down at Balak; in the background, Charu lets out a visible sigh of relief (<code>MOT-20</code>). <strong>Slow Cross-Dissolve (40 f)</strong> to Scene 04 afternoon courtyard</td><td>SFX: <code>cloth_rustle</code> (0.15). Music: <code>Warm_Family_Flute</code> swells warmly then dims over dissolve</td></tr>
+</tbody></table></div>
+<hr>
+<h3 id="scene-04">Scene 04 — <code>04_kalapahar_to_kailashpati</code> (Afternoon Courtyard: The Prophecy — Sacred Beat)</h3>
+<ul>
+<li><strong>Set &amp; Grade:</strong> <code>CourtyardBack</code> + <code>CourtyardFloor</code> (Afternoon warm amber grade; family seated on <em>madur</em> mats on veranda).</li>
+<li><strong>Duration:</strong> ~30 s (~720 f)</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>Shot / Beat</th><th>Audio / Timing</th><th>Framing &amp; Camera</th><th>Character Blocking, Expressions &amp; Props</th><th>VFX &amp; SFX</th></tr></thead><tbody>
+<tr><td><strong>Shot 17 + P7 (1.0 s)</strong></td><td><code>04a_Harendra_Grumble</code></td><td><strong>Medium Wide Group:</strong> Harendra Thakur at left gesturing sternly; Charu &amp; Jyethi listening; Thakurma seated calmly at center-right; Balak seated quietly near Thakurma&#x27;s knees hugging <code>WoodenAhladiDoll</code></td><td>Harendra shakes his head firmly and points a warning finger on <em>&quot;ঠাকুরঘরে ঢুকতে দেওয়া না হয়!&quot;</em> Everyone nods gravely—except Thakurma, who smiles knowingly</td><td>Music: <code>tanpura_drone_low</code> + single soft <code>drum_hit_low</code></td></tr>
+<tr><td><strong>Shot 18</strong></td><td><code>04b_Thakurma_Prophecy</code> (part 1: <em>&quot;তোরা ওকে যতই কালাপাহাড় বলিস—&quot;</em>)</td><td><strong>Medium Close on Thakurma</strong> (cut 6 f before line)</td><td>Thakurma turns warmly to the family, eyes shining with quiet certainty, resting a loving hand on Balak&#x27;s shoulder</td><td>Music: C layers fade out cleanly; C# <code>tanpura_drone_cs</code> enters</td></tr>
+<tr class="row-highlight"><td><strong>Shot 19 + P8 (2.5 s) [KEY BEAT]</strong></td><td><code>04b_Thakurma_Prophecy</code> (part 2: <em>&quot;এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!&quot;</em>)</td><td><strong>Close-Up on Balak</strong> (cut on <em>&quot;এই কালাপাহাড়ই&quot;</em>, slow push <code>1.0 → 1.28x</code>, held through <strong>P8</strong>)</td><td>Balak lifts his calm, luminous half-lidded eyes (<code>BAL-12</code>) toward Thakurma with a serene, knowing half-smile; slow blink (<code>BAL-14</code>). In the last 1 s of P8, cut briefly to Charu&#x27;s glistening, moved eyes (<code>CAM-12</code>)</td><td><strong>VFX (Episode&#x27;s ONLY Glow Beat, <code>BAL-11</code>):</strong> Balak&#x27;s soft warm-white halo + golden rim light brighten gently; 4 slow golden motes rise. SFX: <code>soft_magical_shimmer</code> (0.16). Music: <strong><code>Divine_Motif</code> (C#)</strong> swells gently!</td></tr>
+</tbody></table></div>
+<h3 id="sec-213"><strong>Chapter Break (<code>CB1</code>, 1.2 s | 29 f)</strong></h3>
+<ul>
+<li>Fade to black (12 f) → Hold black (8 f) + soft <code>temple_bell_drop</code> / chime (0.20) → Fade in (12 f) to Scene 05.</li>
+</ul>
+<hr>
+<h3 id="scene-05">Scene 05 — <code>05_dhoop_and_coconut_water</code> (Full-Moon Abhishek: The Dhoop &amp; One-Gulp Heist)</h3>
+<ul>
+<li><strong>Set &amp; Grade:</strong> Veranda Arcade (<code>CourtyardBack</code> dusk/moonlit outside) ↔ <code>ThakurGhar</code> Interior (warm flickering brass oil-lamp light inside, <code>BrassGobinda</code> back on the carved <em>khat</em>, <code>StoneBowlAndFopra</code> in front).</li>
+<li><strong>Duration:</strong> ~52 s (~1,248 f)</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>Shot / Beat</th><th>Audio / Timing</th><th>Framing &amp; Camera</th><th>Character Blocking, Expressions &amp; Props</th><th>VFX &amp; SFX</th></tr></thead><tbody>
+<tr class="row-highlight"><td><strong>AG6 (World Open, 2.5 s)</strong></td><td>Wordless (<code>STO-22</code>)</td><td><strong>Wide Split-Depth Shot:</strong> Through the open shrine arch — inside, warm oil lamps flicker as Bhagabati Thakur performs evening abhishek; Thakurma sets <code>BrassDhupDani</code> just outside the doorway and walks away into the courtyard; Balak sits cross-legged on the veranda just outside the forbidden threshold, watching intently</td><td>Incense smoke curls lazily upward; oil-lamp flame flickers softly; Balak&#x27;s eyes follow every ritual movement</td><td>VFX: warm lamp flicker, animated incense smoke curl. SFX: <code>temple_bell_small</code> (0.24), <code>evening_crickets_soft</code> (0.12)</td></tr>
+<tr><td><strong>Shot 20</strong></td><td><code>05a_Narrator_Abhishek</code></td><td><strong>Medium Shot on Balak (Veranda):</strong> Seated neatly outside the threshold line, chin slightly up, looking inside</td><td>Balak glances at the doorway line (remembering he is forbidden) and sighs softly, staying obediently outside</td><td>Music: warm <code>tanpura_drone</code> (C)</td></tr>
+<tr><td><strong>Shot 21 + P9 (1.0 s)</strong></td><td><code>05b_Bhagabati_Dhoop</code></td><td><strong>Medium Interior (<code>ThakurGhar</code>):</strong> Bhagabati Thakur seated at puja, right hand holding a flower, looking around impatiently</td><td>He calls out; <strong>P9</strong> holds on the empty veranda—nobody answers!</td><td>Music: tanpura dips to floor in P9 (comic silence)</td></tr>
+<tr><td><strong>Shot 22</strong></td><td><code>05c_Balak_AskDhoop</code></td><td><strong>Medium Close on Balak (Doorway):</strong> Leaning forward slightly, peeking around the doorframe</td><td>Polite, eager eyes; one hand gently touching the handle of <code>BrassDhupDani</code></td><td>—</td></tr>
+<tr><td><strong>Shot 23</strong></td><td><code>05d_Bhagabati_Huhu1</code></td><td><strong>Over-Shoulder Interior:</strong> Bhagabati Thakur not even turning around, waving his left hand absent-mindedly</td><td>Balak rises (<code>StandingChild</code>), carries smoking <code>BrassDhupDani</code> carefully across the threshold and places it right beside the priest!</td><td>SFX: tiny <code>footsteps_floor</code> (0.14), <code>brass_set_down</code> (0.20)</td></tr>
+<tr><td><strong>Shot 24</strong></td><td><code>05e_Balak_AskSit</code> + <code>05f_Bhagabati_Huhu2</code></td><td><strong>Two-Shot Interior:</strong> Balak standing politely beside the priest, pointing down at the floor; priest nodding with eyes half-closed chanting <em>&quot;এতে গন্ধে পুষ্পে…&quot;</em></td><td>Balak sits down cross-legged right in front of the deity <em>khat</em>!</td><td>Music: <code>cheeky_pluck_3</code> (mischief seeded!)</td></tr>
+<tr class="row-highlight"><td><strong>AG7 (The Coconut Water Heist, 5.0 s)</strong></td><td>Wordless Suspense-Comedy!</td><td><strong>Insert Close-Up</strong> on <code>StoneBowlAndFopra</code> gleaming in lamplight → <strong>Medium Close on Balak</strong> (slow push <code>1.0 → 1.18x</code>)</td><td>Balak&#x27;s eyes widen softly at the brimming stone bowl. While Bhagabati Thakur&#x27;s back is half-turned ringing the bell, Balak lifts the wide grey stone bowl with <strong>both hands (<code>drinkBowl</code>)</strong>, tilts it up, and <strong>drinks EVERY DROP in one long, smooth gulp</strong> (liquid level drops cleanly)! He wipes his mouth delicately with the back of his hand, sets the bowl with the whole <em>fopra</em> neatly back in its exact spot, and sits back completely content!</td><td>Music: <strong><code>tension_rise</code></strong> (rising tabla + low dhol roll, 1.5 s) cresting at the lip → <strong><code>cheeky_pluck_2</code></strong> 5-note swarmandal release on the gulp! SFX: <strong><code>drink_gulp</code> (0.30)</strong>, <code>stone_bowl_set</code> (0.22)</td></tr>
+</tbody></table></div>
+<hr>
+<h3 id="scene-06">Scene 06 — <code>06_priest_uproar_and_ants</code> (The Priest&#x27;s Uproar, Ant Cutaway &amp; Legal Defense)</h3>
+<ul>
+<li><strong>Set &amp; Grade:</strong> <code>ThakurGhar</code> Interior + quick 2.5 s comic visual cutaway (pastel vignette of <code>WoodenAhladiDoll</code> with ants).</li>
+<li><strong>Duration:</strong> ~48 s (~1,152 f)</li>
+</ul>
+<div class="table-wrap"><table><thead><tr><th>Shot / Beat</th><th>Audio / Timing</th><th>Framing &amp; Camera</th><th>Character Blocking, Expressions &amp; Props</th><th>VFX &amp; SFX</th></tr></thead><tbody>
+<tr><td><strong>Shot 25 + P10 (1.0 s)</strong></td><td><code>06a_Balak_CoconutConfess</code></td><td><strong>Medium Two-Shot (<code>ThakurGhar</code>):</strong> Balak smiling cheerfully at the priest; Bhagabati Thakur turning to reach for the coconut water bowl</td><td>Balak points casually at the empty bowl with the lonely <em>fopra</em>. In <strong>P10</strong>, Bhagabati Thakur stares into the bone-dry bowl, his face slowly turning bright red!</td><td>SFX: <code>temple_bell_drop</code> comic clink (0.18) as priest&#x27;s bell freezes</td></tr>
+<tr><td><strong>Shot 26</strong></td><td><code>06b_Bhagabati_Explode</code></td><td><strong>Medium Close on Bhagabati Thakur</strong> (cut 6 f before line)</td><td>Arms thrown up in comic shock, white mustache twitching, shouting toward the courtyard doorway!</td><td>Music: quick comic <code>tabla_soft</code> flurry</td></tr>
+<tr><td><strong>Shot 27 + Cutaway</strong></td><td><code>06c_Balak_AntsLogic</code></td><td><strong>Medium Close on Balak</strong> → <strong>2.5 s Comic Vignette Cutaway</strong> on <em>&quot;আমার পুতুলকে খাওয়াতে…&quot;</em> → back to Balak</td><td>Balak leans forward earnestly, gesturing toward the <em>fopra</em> to offer it to the priest! <strong>Cutaway Visual:</strong> Soft feathered dream-vignette showing <code>WoodenAhladiDoll</code> on a veranda floor with tiny painted grains of rice near its mouth and a neat line of tiny black ants happily carrying the rice away! Back to Balak shrugging innocently</td><td>VFX: soft feathered memory-vignette border (no box). SFX: tiny playful <code>santoor_plink</code> on the ants!</td></tr>
+<tr><td><strong>Shot 28</strong></td><td><code>06d_Family_ScoldShrine</code></td><td><strong>Wide Interior/Doorway:</strong> Jyethi, Charu, and Sundar rush to the shrine doorway in alarm</td><td>Jyethi wags a finger; Charu covers her face half-embarrassed, half-amused; Sundar hides a smile behind his spectacles</td><td>SFX: <code>footsteps_floor</code> (0.22)</td></tr>
+<tr><td><strong>Shot 29 + P11 (2.5 s) [Afterglow]</strong></td><td><code>06e_Balak_LegalDefense</code></td><td><strong>Medium Close on Balak</strong> (cut 6 f before line; slow push <code>1.0 → 1.12x</code>) → <strong>Reaction Cut</strong> in P11 to Bhagabati Thakur blinking speechlessly, realizing he <em>did</em> say <em>&quot;হুঁ হুঁ&quot;</em>!</td><td>Balak points politely toward Bhagabati Thakur with an open palm and gives his serene, fearless smile. Sundar chuckles softly; even Charu can&#x27;t hold back a tiny smile</td><td>Music: tender <strong><code>bansuri_compassion</code></strong> swells warmly in P11, settling on Sa before the fade to Outro</td></tr>
+</tbody></table></div>
+<hr>
+<h3 id="scene-99">Block 99 — Closing Sunset &amp; Episode 5 Glimpse (~26 s | ~624 f)</h3>
+<ul>
+<li><strong>Visuals:</strong> Series template (<code>TTL-09</code>, <code>TTL-10a</code>): Padma sunrise/sunset over water, series title, captions; soft feathered boxless glimpse of <strong>Episode 5</strong> (6-year-old Balak seated gently stroking the calm white Bengal zebu cow in the banana grove, <code>STO-19</code>/<code>BAL-26b</code>).</li>
+<li><strong>Audio:</strong> <code>99_Outro_Sequential.wav</code>; <code>padma_river_day</code> (0.15); <code>Theme_Intro_Bansuri</code> (0.08 under voice, 0.14 open); <code>soft_magical_shimmer</code> at <code>0.12</code> (<code>AUD-08a</code>).</li>
+</ul>
+<hr>
+<h2 id="sec-audio">6. Complete Audio Architecture (Beds, Music Cues &amp; SFX Sourcing)</h2>
+<h3 id="sec-253">A. Ambient Beds (Loops, <code>≤ 0.25</code>, Ducked Under Voice)</h3>
+<div class="table-wrap"><table><thead><tr><th>Scene</th><th>Bed File (<code>public/audio/</code>)</th><th>Under Voice</th><th>In Pause / AG</th></tr></thead><tbody>
+<tr><td><strong>01</strong> (Morning Courtyard)</td><td><code>sfx/ep02/birds_village.wav</code> + <code>sfx/ep02/wind_soft.wav</code></td><td><code>0.10</code> / <code>0.06</code></td><td><code>0.20</code> / <code>0.12</code></td></tr>
+<tr><td><strong>02–03</strong> (Daytime Pond)</td><td><code>sfx/ep02/birds_village.wav</code> + <code>sfx/ep04/pond_water_lap.wav</code> <em>(or <code>sfx/river_water.wav</code>)</em></td><td><code>0.10</code> / <code>0.08</code></td><td><code>0.20</code> / <code>0.16</code></td></tr>
+<tr><td><strong>04</strong> (Afternoon Courtyard)</td><td><code>sfx/ep02/birds_village.wav</code> + <code>sfx/ep02/wind_soft.wav</code></td><td><code>0.08</code> / <code>0.06</code></td><td><code>0.18</code> / <code>0.12</code></td></tr>
+<tr><td><strong>05–06</strong> (Evening Shrine)</td><td><code>ambient/bengal_night_crickets.wav</code> <em>(soft)</em> + <code>sfx/ep02/wind_soft.wav</code></td><td><code>0.08</code> / <code>0.05</code></td><td><code>0.14</code> / <code>0.10</code></td></tr>
+<tr><td><strong>99</strong> (Outro)</td><td><code>ambient/padma_river_day.wav</code></td><td><code>0.10</code></td><td><code>0.16</code></td></tr>
+</tbody></table></div>
+<h3 id="sec-261">B. One-Shot SFX List (All Volumes <code>0.15–0.45</code>)</h3>
+<ul>
+<li><strong>Already in Repo:</strong> <code>chime_pop.wav</code>, <code>temple_bell_drop.wav</code>, <code>soft_magical_shimmer.wav</code>, <code>sfx/ep02/cloth_rustle.wav</code>, <code>sfx/ep02/footsteps_floor.wav</code>, <code>sfx/ep02/footsteps_mud.wav</code>, <code>sfx/ep02/clay_thud.wav</code>, <code>sfx/ep02/water_splash.wav</code>.</li>
+<li><strong>New CC Recordings to Source (<code>sfx-from-commons</code> skill, save in <code>public/audio/sfx/ep04/</code>):</strong></li>
+</ul>
+<ol>
+<li><code>wood_on_brass_tap.wav</code> — crisp wooden doll tap onto brass plate (Scene 01 AG2).</li>
+<li><code>clay_pat.wav</code> — soft clay-rolling pats (Scene 01 AG2).</li>
+<li><code>temple_bell_small.wav</code> — gentle handheld brass puja bell (Scenes 01 &amp; 05).</li>
+<li><code>pond_water_lap.wav</code> — gentle still pond lapping (Scenes 02–03).</li>
+<li><code>blossom_plop.wav</code> — light petal/blossom landing (Scene 02 AG3).</li>
+<li><code>drink_gulp.wav</code> — clear gentle drinking gulp (Scene 05 AG7).</li>
+<li><code>stone_bowl_set.wav</code> — stone bowl set cleanly on floor (Scene 05 AG7).</li>
+<li><code>birds_scatter_wings.wav</code> — soft fluttering wings when family runs to pond (Scene 03).</li>
+</ol>
+<h3 id="sec-276">C. Indian Instrument Music Cues (<code>public/audio/music/ep05/</code> + <code>music/</code>)</h3>
+<ol>
+<li><strong>Scene 01:</strong> <code>Village_Peace_Loop</code> + <code>tanpura_drone</code> (C) → <code>cheeky_pluck_3</code> + <code>tabla_soft</code> (swap) → <code>cheeky_pluck_1</code> (Charu shock) → <code>play_plucks</code> (Balak&#x27;s clay logic).</li>
+<li><strong>Scenes 02–03:</strong> <code>tanpura_drone</code> (C) + <code>play_plucks</code> (Mangla talk) → <code>cheeky_pluck_2</code> (Mangla runs) → <code>drum_hit_low</code> (pond freeze) → <code>Warm_Family_Flute</code> (Sundar coaxing &amp; relief).</li>
+<li><strong>Scene 04:</strong> <code>tanpura_drone_low</code> + <code>drum_hit_low</code> (Harendra grumble) → crossfade to C# <code>tanpura_drone_cs</code> + <strong><code>Divine_Motif</code></strong> (Thakurma&#x27;s prophecy &amp; glow beat).</li>
+<li><strong>Scenes 05–06:</strong> <code>tanpura_drone</code> (C) → <code>cheeky_pluck_3</code> (Balak asks to sit) → <code>tension_rise</code> + <code>cheeky_pluck_2</code> (coconut water gulp!) → <code>santoor_plink</code> (ants cutaway) → <code>bansuri_compassion</code> (legal defense &amp; smiling afterglow).</li>
+</ol>
+<hr>
+<h2 id="sec-checklist">7. Agent Execution Checklist (Ghibli Pipeline — Exact Files to Build)</h2>
+<ol>
+<li><strong>Voice Generation:</strong> Generate all 31 WAVs from Section 4 in Google AI Studio → save to <code>03_Episodes/Episode_04_Idols_and_Coconut_Water/02_Audio/Voice_WAVs/</code> → run <code>python scripts/normalize_audio.py</code> (<code>-16 LUFS / -1.5 dBTP</code>) → copy to <code>remotion_studio/public/audio/ep04/</code>.</li>
+<li><strong>Ghibli Plate Generation &amp; Processing:</strong></li>
+</ol>
+<ul>
+<li>Generate all raw watercolor plates &amp; <code>#FFFFFF</code> cutouts from Section 3.3 into <code>remotion_studio/public/images/ghibli_ep04/raw/</code>.</li>
+<li>Create <code>scripts/ghibli_pipeline/manifests/ep04_ghibli.json</code> matching Section 3.3 and run:</li>
+</ul>
+<p><code>python C:/Dipankar/Balak_Thakur_Production/scripts/ghibli_pipeline/prepare_episode_plates.py --manifest C:/Dipankar/Balak_Thakur_Production/scripts/ghibli_pipeline/manifests/ep04_ghibli.json</code></p>
+<ul>
+<li>Verify generated <code>src/ghibli_pipeline/episode04/plateAnchors.ts</code> and zero white halos on <code>tree_mandar_bloom_sketch.png</code>, <code>deity_khat_shrine_sketch.png</code>, and <code>tulsi_mancha_ep04_sketch.png</code>.</li>
+</ul>
+<ol>
+<li><strong>SFX &amp; Subtitles:</strong> Source the 8 CC SFX files into <code>remotion_studio/public/audio/sfx/ep04/</code> (measure RMS dBFS on quiet reactions per <code>ghibli-pipeline</code> rule 6; credit in <code>docs/AUDIO_CREDITS.md</code>); generate source SRT via <code>scripts/generate_srt.py</code>.</li>
+<li><strong>Timing Generator:</strong> Create/update <code>scripts/build_ep04_ghibli_timing.js</code> with all 6 scenes, 11 pauses (<code>P1</code>–<code>P11</code>), 7 action gaps (<code>AG1</code>–<code>AG7</code>), and 1 chapter break (<code>CB1</code>) → generate <code>src/ghibli_pipeline/episode04/timing.ts</code> and <code>subtitles.ts</code>.</li>
+<li><strong>Remotion Ghibli Code (Strictly Isolated in <code>src/ghibli_pipeline/episode04/</code>, 1 agent per file):</strong></li>
+</ol>
+<ul>
+<li><code>Ep04GhibliProps.tsx</code> (all 7 zero-float ink-styled SVG props from Section 3.4)</li>
+<li><code>Ep04GhibliCast.tsx</code> (reused <code>CAST.charu</code>, <code>SUNDAR</code>, <code>THAKURMA</code>, <code>CAST.bhagabati</code>, <code>ElderBrother</code> + new <code>Mangla</code> &amp; <code>Harendra</code>, all wrapped in <code>#ghibli-char-ink</code> with <code>safeBodyTurn</code>)</li>
+<li><code>Scene01ClayShivaGhibli.tsx</code> through <code>Scene06PriestUproarGhibli.tsx</code> (using <code>&lt;GhibliStage&gt;</code>, 8-layer depth stack, <code>zoomProportionalDof</code>, <code>withFootLockedSteps</code>, <code>ghibliWalkSpot</code>, and upstage <em>mandar</em>-tree occlusion)</li>
+<li><code>Episode04Ghibli.tsx</code> (master composition + <code>SCENE_BEDS</code>, <code>MUSIC_CUES</code>, SFX triggers)</li>
+<li>Register <code>Episode04GhibliFull</code> in <code>src/ghibli_pipeline/registry.ts</code> and <code>src/Root.tsx</code>.</li>
+</ul>
+<ol>
+<li><strong>QA &amp; Chunked Render:</strong> Run <code>tsc --noEmit</code> → preview on <code>http://localhost:3100</code> &amp; render QA stills/contact sheets into <code>04_Video_Assembly/Ghibli_Test_Render/</code> → director approval → run <code>scripts/ghibli_pipeline/render_ghibli_episode.sh Episode04GhibliFull &lt;TOTAL_FRAMES&gt; ...</code> → export final SRT.</li>
+</ol>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Copy buttons for AI Studio
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✓ Copied';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1200);
+      });
+    });
+  });
+
+  // Voice WAV progress checklist
+  const vChecks = [...document.querySelectorAll('.v-done')];
+  function updateVProg() {
+    const done = vChecks.filter(c => c.checked).length;
+    document.getElementById('vProgText').textContent = `ভয়েস তৈরি: ${done} / ${vChecks.length} WAV`;
+    document.getElementById('vProgFill').style.width = `${(done / Math.max(1, vChecks.length)) * 100}%`;
+  }
+  vChecks.forEach(c => {
+    c.checked = localStorage.getItem(c.dataset.key) === '1';
+    c.addEventListener('change', () => {
+      localStorage.setItem(c.dataset.key, c.checked ? '1' : '0');
+      updateVProg();
+    });
+  });
+  updateVProg();
+
+  // Font size
+  let fs = parseFloat(localStorage.getItem('ep04_fs') || '1');
+  function setFs(v) {
+    fs = Math.min(1.4, Math.max(0.85, v));
+    document.documentElement.style.setProperty('--font-scale', fs);
+    localStorage.setItem('ep04_fs', fs);
+  }
+  setFs(fs);
+  document.getElementById('fontUp').onclick = () => setFs(fs + 0.08);
+  document.getElementById('fontDown').onclick = () => setFs(fs - 0.08);
+  document.getElementById('fontReset').onclick = () => setFs(1);
+
+  // Dark mode
+  const tBtn = document.getElementById('themeToggle');
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    tBtn.textContent = t === 'dark' ? '☀️ লাইট মোড' : '🌙 ডার্ক মোড';
+    localStorage.setItem('ep04_theme', t);
+  }
+  setTheme(localStorage.getItem('ep04_theme') || 'light');
+  tBtn.onclick = () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+
+  // Filter voice cards & table rows on search
+  const sInput = document.getElementById('searchInput');
+  const voiceCards = [...document.querySelectorAll('.voice-card')];
+  const tableRows = [...document.querySelectorAll('tbody tr')];
+  sInput.addEventListener('input', () => {
+    const q = sInput.value.trim().toLowerCase();
+    voiceCards.forEach(el => el.style.display = (!q || el.innerText.toLowerCase().includes(q)) ? '' : 'none');
+    tableRows.forEach(el => el.style.display = (!q || el.innerText.toLowerCase().includes(q)) ? '' : 'none');
+  });
+</script>
+</body>
+</html>

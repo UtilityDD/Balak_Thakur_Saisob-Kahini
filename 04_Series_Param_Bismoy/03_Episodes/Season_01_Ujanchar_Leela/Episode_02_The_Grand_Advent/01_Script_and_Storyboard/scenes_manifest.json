@@ -1,0 +1,103 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 1,
+  "episode_number": 2,
+  "episode_title": "The Grand Advent",
+  "episode_title_bn": "মহা আবির্ভাব",
+  "next_episode_title_bn": "অষ্টসিদ্ধি ও ধ্যানমগ্ন শিশু",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_diwali_birth_courtyard",
+      "lighting": "deep_indigo_warm_diyas",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "woman_devotee",
+        "charu"
+      ],
+      "audio_files": [
+        "01a_Narrator_KaliPuja.wav",
+        "01b_Manorama_Shock.wav",
+        "01c_Charu_Stunned.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": [
+        "sparkler_crackle.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_shashthi_rain_control",
+      "lighting": "cool_slate_rain",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "thakurma",
+        "surendra"
+      ],
+      "audio_files": [
+        "02a_Narrator_Shashthi.wav",
+        "02b_Thakurma_Rain.wav",
+        "02c_Surendra_Awe.wav"
+      ],
+      "ambient_bed": "monsoon_rain_courtyard.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "monsoon_rain.wav"
+      ]
+    },
+    {
+      "scene_id": "03_madhavacharya_mahim",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "scholar_gentleman",
+        "bholagiri"
+      ],
+      "audio_files": [
+        "03a_Narrator_Sages.wav",
+        "03b_Madhavacharya.wav",
+        "03c_Mahim_Acharya.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "series_id": "series_02_param_bismoy",
+  "series_title": "Param Bismoy Balak Thakur",
+  "series_title_bn": "পরম বিস্ময় বালক ঠাকুর",
+  "source_book": "param bismoy balok thakur.xlsx",
+  "source_author_bn": "অধ্যাপক পি. কে. রায় (রায়দা)",
+  "language": "bn-IN",
+  "target_audience": "Family, Youth & Devotees (Premium Cinematic Audio-Visual Drama)",
+  "seasons": 3,
+  "total_episodes": 32,
+  "video_specs": {
+    "resolution": "1920x1080",
+    "aspect_ratio": "16:9",
+    "fps": 24,
+    "codec": "libx264",
+    "crf": 16,
+    "animation_style": "Rig v2 2.5D multiplane cinematic animation with Doraemon-clean 2-tone cel polish, overlapping joint lag, eye-lead, and divine white-gold (#FFF4D6) atmosphere reserved for Balak Thakur"
+  },
+  "audio_specs": {
+    "tts_engine": "Google AI Studio - gemini-3.8-flash-tts",
+    "master_sample_rate_hz": 48000,
+    "voice_target_lufs": -16.0,
+    "master_true_peak_dbtp": -1.5,
+    "narration_volume": 1.0,
+    "ambient_bed_volume": 0.24,
+    "music_duck_volume": 0.16,
+    "music_swell_volume": 0.40,
+    "sfx_volume": 0.45,
+    "dialogue_ratio_target": "65% live character conversations / 35% atmospheric narrator"
+  }
+}

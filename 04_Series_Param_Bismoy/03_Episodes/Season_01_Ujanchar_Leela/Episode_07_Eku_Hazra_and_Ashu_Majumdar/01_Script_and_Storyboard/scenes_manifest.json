@@ -1,0 +1,82 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 1,
+  "episode_number": 7,
+  "episode_title": "Eku Hazra's School & Ashu Majumdar's Initiation",
+  "episode_title_bn": "একু হাজরার স্কুল ও আশু মজুমদারের দীক্ষা",
+  "next_episode_title_bn": "ভোলাগিরির সঙ্গে সাক্ষাৎ",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_dogachi_gopal_thakur",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "youth_friend_1",
+        "thakur_child"
+      ],
+      "audio_files": [
+        "01a_Narrator_Dogachi.wav",
+        "01b_Friends_Wish.wav",
+        "01c_Thakur_Heart.wav"
+      ],
+      "ambient_bed": "dawn_birds_temple.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "02_ashu_majumdar_pride_melts",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "scholar_gentleman",
+        "thakur_child"
+      ],
+      "audio_files": [
+        "02a_Narrator_Ashu.wav",
+        "02b_Ashu_Inner_Conflict.wav",
+        "02c_Thakur_First_Diksha.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

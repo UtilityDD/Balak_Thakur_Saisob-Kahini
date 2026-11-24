@@ -1,0 +1,84 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 3,
+  "episode_number": 26,
+  "episode_title": "Living Kali Vision & Locked Pigeons in Dhaka",
+  "episode_title_bn": "ভক্তের ধ্যান ও মহাবিশ্বের সুর",
+  "next_episode_title_bn": "ভূপেন রায়ের সাথে পাহাড় ও ষড়যন্ত্র",
+  "is_series_finale": false,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_living_kali_meditation",
+      "lighting": "sacred_midnight_glow",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "woman_devotee",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "01a_Narrator_KaliVision.wav",
+        "01b_Devotee_Trance.wav",
+        "01c_Thakur_Youth_Calm.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "temple_bell.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_locked_pigeons_miracle",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "youth_friend_1",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "02a_Narrator_Pigeons.wav",
+        "02b_Friend_Stunned.wav",
+        "02c_Thakur_Youth_Playful.wav"
+      ],
+      "ambient_bed": "dhaka_street_evening.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "bird_wings_flutter.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

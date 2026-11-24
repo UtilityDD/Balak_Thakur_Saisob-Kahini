@@ -1,0 +1,103 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 1,
+  "episode_number": 3,
+  "episode_title": "Ashtasiddhi & The Meditating Infant",
+  "episode_title_bn": "অষ্টসিদ্ধি ও ধ্যানমগ্ন শিশু",
+  "next_episode_title_bn": "তত্ত্বরূপী শিশু ও প্রকৃতি নিয়ন্তা",
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_feather_fall_and_fragrance",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "skeptic_elder",
+        "woman_devotee",
+        "scholar_gentleman"
+      ],
+      "audio_files": [
+        "01a_Narrator_Bed.wav",
+        "01b_Trailokya_Doubt.wav",
+        "01c_Shishirkumari_Reply.wav",
+        "01d_Trailokya_Amazed.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_dhaka_janmashtami_railing",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator",
+        "charu",
+        "scholar_gentleman"
+      ],
+      "audio_files": [
+        "02a_Narrator_Dhaka.wav",
+        "02b_Charu_Scream.wav",
+        "02c_Gentleman_Catch.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Festival_Folk_Loop.wav",
+      "sfx": [
+        "chime_pop.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "03_kitchen_cobra_fearless",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "charu"
+      ],
+      "audio_files": [
+        "03a_Narrator_Snake.wav",
+        "03b_Charu_Relief.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

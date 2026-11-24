@@ -1,0 +1,24 @@
+{
+  "schema_version": "2.2",
+  "series": "Param Bismoy Balak Thakur",
+  "iconography_rule": "Strictly follows production_rules.md: no tilak/bangles/anklets/ringlets on Balak Thakur at any age; divine light (#FFF4D6) reserved exclusively for Balak Thakur.",
+  "characters": [
+    { "id": "narrator", "name": "Lady Narrator (Kathak)", "voice_id": "preset:Sola", "role": "Warm, calm, soulful, literary Bengali female storyteller—gentler, natural, deeply evocative, with smooth contextual transitions between scenes." },
+    { "id": "thakur_child", "name": "Balak Thakur (Child, S1 Ages 2-8)", "voice_id": "preset:Sami", "role": "Luminous, serene, fearless child with soft dark hair and plain white dhoti." },
+    { "id": "thakur_kishor", "name": "Balak Thakur (Adolescent, S2 Ages 9-15)", "voice_id": "preset:Mako", "role": "Composed, witty, magnetic youth with quiet spiritual clarity." },
+    { "id": "thakur_youth", "name": "Balak Thakur (Young Adult, S3 Ages 16+)", "voice_id": "preset:Rami", "role": "Deep, compassionate, unshakable spiritual authority in Dhaka & Kolkata." },
+    { "id": "charu", "name": "Charushila Devi (Mother)", "voice_id": "preset:Lumi", "role": "Tender, anxious-yet-devoted Bengali mother." },
+    { "id": "surendra", "name": "Surendra Chandra (Father / Babukaka)", "voice_id": "preset:Achird", "role": "Warm, grounded, affectionate fatherly baritone." },
+    { "id": "thakurma", "name": "Thakurma / Elder Matriarch", "voice_id": "preset:Cleo", "role": "Spirited, loving, wise grandmother." },
+    { "id": "anandamayi_ma", "name": "Anandamayi Ma", "voice_id": "preset:Sola", "role": "Radiant, serene, playfully affectionate motherly presence." },
+    { "id": "bholagiri", "name": "Bholagiri Maharaj / Ram Thakur / Naga Sannyasi", "voice_id": "preset:Knox", "role": "Deep, resonant, weathered ascetic mystic." },
+    { "id": "netaji_subhas", "name": "Netaji Subhas Chandra Bose", "voice_id": "preset:Zubenelgenubi", "role": "Dignified, resolute, fiery patriot and sincere seeker." },
+    { "id": "scholar_gentleman", "name": "Baldha Zamindar / Naval Officer / Astrologer", "voice_id": "preset:Bodi", "role": "Educated, analytical, skeptical-turned-awed gentleman." },
+    { "id": "mystic_devotee", "name": "Monai Fakir / Kanchan Mia / Mann Mia's Father", "voice_id": "preset:Zali", "role": "Soulful, earthy East Bengali devotion and warmth." },
+    { "id": "ananda_master", "name": "Ananda Master / Schoolteacher", "voice_id": "preset:Jori", "role": "Observant, warm, poetic rural teacher." },
+    { "id": "youth_friend_1", "name": "Ashu Majumdar / Bhupen Roy / Schoolmate 1", "voice_id": "preset:Brio", "role": "Lively, curious, heartfelt youthful companion." },
+    { "id": "youth_friend_2", "name": "Sudhir Bose / Rajen Chowdhury / Schoolmate 2", "voice_id": "preset:Riko", "role": "Expressive, inquisitive youth seeker." },
+    { "id": "skeptic_elder", "name": "Skeptical Villager / Grumpy Elder / Galakata Santosh", "voice_id": "preset:Daro", "role": "Rough, suspicious, complaining or tense dramatic foil." },
+    { "id": "woman_devotee", "name": "Woman Devotee / Grieving Mother", "voice_id": "preset:Nika", "role": "Emotional, tearful desperation transforming into grateful joy." }
+  ]
+}

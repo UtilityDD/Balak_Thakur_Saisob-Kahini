@@ -1,0 +1,10 @@
+{
+  "template_id": "param_bismoy_intro_v1",
+  "series_title_bn": "পরম বিস্ময় বালক ঠাকুর",
+  "source_attribution_bn": "তথ্যসূত্র: অধ্যাপক পি. কে. রায় (রায়দা) রচিত ‘পরম বিস্ময় বালক ঠাকুর’ গ্রন্থ অবলম্বনে",
+  "source_attribution_en": "Based on \"Param Bismoy Balak Thakur\" by Prof. P. K. Ray (Rayda)",
+  "speech_template_bn": "পরম বিস্ময় বালক ঠাকুর। <short pause> {season_bn}, পর্ব {ep_bn}: {ep_title_bn}।",
+  "voice_speaker": "narrator",
+  "voice_preset": "Enzo",
+  "style_box": "Rich, cinematic, warm Bengali audio-drama announcer with quiet reverence."
+}

@@ -1,0 +1,81 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 3,
+  "episode_number": 31,
+  "episode_title": "Rescue in Kolkata & Grandmother's Departure",
+  "episode_title_bn": "কলকাতায় বিপন্মুক্তি ও ভগ্নির বিবাহ",
+  "next_episode_title_bn": "১৯৪৭ ভারত বিভাগ ও পূর্ববঙ্গ ত্যাগ",
+  "is_series_finale": false,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_bishwapada_japa_account",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "thakur_youth",
+        "youth_friend_1"
+      ],
+      "audio_files": [
+        "01a_Narrator_Bishwapada.wav",
+        "01b_Thakur_Youth_Japa.wav",
+        "01c_Bishwapada_Awe.wav",
+        "01d_Thakur_Youth_Ledger.wav"
+      ],
+      "ambient_bed": "dhaka_street_evening.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "tram_bell.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_ganga_separation_and_didima",
+      "lighting": "warm_sunset_amber",
+      "camera_motion": "slow_horizontal_pan_left_to_right",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "02a_Narrator_1946.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "river_water.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}

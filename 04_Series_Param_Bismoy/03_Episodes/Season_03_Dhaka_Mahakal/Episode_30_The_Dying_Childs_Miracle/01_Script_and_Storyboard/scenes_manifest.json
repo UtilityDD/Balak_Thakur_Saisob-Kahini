@@ -1,0 +1,83 @@
+{
+  "series": "Param Bismoy Balak Thakur",
+  "season": 3,
+  "episode_number": 30,
+  "episode_title": "The Dying Child's Miracle & Indra Sen",
+  "episode_title_bn": "কঙ্কালসার শিশুর আরোগ্যলাভ",
+  "next_episode_title_bn": "কলকাতায় বিপন্মুক্তি ও ভগ্নির বিবাহ",
+  "is_series_finale": false,
+  "scenes": [
+    {
+      "scene_id": "00_intro",
+      "lighting": "bright_orange_flat",
+      "camera_motion": "bounce_title_pop",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "00_Intro.wav"
+      ],
+      "ambient_bed": "NONE",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "01_skeletal_child_hot_water",
+      "lighting": "warm_indoor_amber",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "woman_devotee",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "01a_Narrator_Child.wav",
+        "01b_Mother_Weeping.wav",
+        "01c_Thakur_Youth_Miracle.wav",
+        "01d_Mother_Ecstatic.wav"
+      ],
+      "ambient_bed": "bengal_night_crickets.wav",
+      "music_cue": "Sacred_Night_Ambient.wav",
+      "sfx": [
+        "water_splash.wav",
+        "soft_magical_shimmer.wav"
+      ]
+    },
+    {
+      "scene_id": "02_indra_sen_roof_leap",
+      "lighting": "golden_daytime",
+      "camera_motion": "slow_dolly_push_in",
+      "characters": [
+        "narrator",
+        "thakur_youth"
+      ],
+      "audio_files": [
+        "02a_Narrator_IndraSen.wav",
+        "02b_Thakur_Youth_Gentle.wav"
+      ],
+      "ambient_bed": "dhaka_street_evening.wav",
+      "music_cue": "Warm_Family_Flute.wav",
+      "sfx": [
+        "chime_pop.wav"
+      ]
+    },
+    {
+      "scene_id": "99_closing_sequential_outro",
+      "lighting": "soft_golden_dawn",
+      "camera_motion": "slow_dolly_pull_out_padma_sunrise",
+      "characters": [
+        "narrator"
+      ],
+      "audio_files": [
+        "99_Outro_Sequential.wav"
+      ],
+      "ambient_bed": "padma_river_day.wav",
+      "music_cue": "Theme_Intro_Bansuri.wav",
+      "sfx": [
+        "soft_magical_shimmer.wav"
+      ]
+    }
+  ]
+}
