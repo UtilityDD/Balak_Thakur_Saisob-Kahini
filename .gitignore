@@ -17,3 +17,17 @@ remotion_studio/public/audio/
 
 # Original (pre-normalisation) audio masters — kept locally, not versioned (like public/audio/)
 remotion_studio/audio_raw_backup/
+
+# Google Drive media cache (scripts/sync_media.py)
+_drive_cache/
+
+# Local style references (not ours to commit)
+_reference/
+remotion_studio/public/video/_PLACEHOLDERS.txt
+
+# Local scratch: review stills, temp render scripts, agent backups
+remotion_studio/test_*.png
+remotion_studio/still_*.png
+remotion_studio/_stills*.mjs
+_tmp_*/
+render_final_ep04_ghibli/

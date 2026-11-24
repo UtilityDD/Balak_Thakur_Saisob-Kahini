@@ -11,15 +11,34 @@ The timing builders read inputs from `REPO_ROOT` (default `C:/Dipankar/Balak_Tha
 
 | Script | What it does |
 |---|---|
+| `sync_media.py` | **Run first on a new machine and after every Drive upload.** Pulls the shared Drive media folder (see `media_sources.json`) into `_drive_cache/`, mirrors it into `remotion_studio/public/`, then lists any `staticFile()` asset still missing. |
 | `build_ep02_timing.js` | Episode 2 timing (below). |
 | `build_ep03_timing.js` | Episode 3 timing (below). |
 | `export_ep02_srt.js` | Final as-rendered SRT for any episode. |
 | `render_locked.sh` | One Remotion still or render at a time, with a lock and a time limit. |
 | `normalize_audio.py` | Voice loudness to -16 LUFS / -1.5 dBTP, plus lip-sync envelopes. |
 | `synthesize_ep02_sfx.js`, `synthesize_sfx.js`, `synthesize_divine_motif.js` | Procedural SFX and the divine motif. |
+| `synthesize_ep05_music_library.py` | Procedural replacements for the lost `music/ep05` library and `sfx/ep06/plate_clink` (below). |
 | `generate_srt.py`, `cartesia_tts.py`, `validate_studio.py` | SRT from the voice script, Cartesia TTS, bible and manifest checks. |
 | `synthesize_audio.py`, `render_25d_scene.py`, `assemble_episode.py` | The older FFmpeg/PNG pipeline (kept for reference; the studio's `music/` and `ambient/` came from `synthesize_audio.py`). |
 | `../render_chunks.sh` (worktree root) | Episode 1 example of the chunked full render. Its `TOTAL=9246` is stale (Episode 1 is 9705 frames) and its output name is a rerun file. |
+
+## `sync_media.py` (media from Google Drive)
+
+Git holds code, scripts, images and fonts. Large media (character videos `*.mp4`, `public/audio/`) is gitignored
+and lives in a shared Google Drive folder whose layout mirrors `remotion_studio/public/` (`audio/`, `video/`, `images/`).
+
+Workflow for every update:
+
+1. On the machine that produced new media, upload it to the Drive folder at the same path it has under `public/`
+   (for example `video/s2_ep01/p1b_idle_24.mp4`).
+2. On any other machine: `pip install gdown` once, then `python scripts/sync_media.py`.
+3. Read the `[check]` lines at the end. `MISSING` means a path in `src/` has no file yet; "small videos that may still
+   be placeholders" means a stand-in clip hasn't been replaced by the real one.
+
+Options: `--skip-download` (mirror from the existing cache), `--check-only`, `--prune` (delete untracked public media
+that is no longer on Drive). The cache and its temp files stay inside the repo folder (`_drive_cache/`, gitignored),
+so nothing is written to the system drive. The folder link must be shared as "Anyone with the link".
 
 ## `build_ep02_timing.js`
 
@@ -97,3 +116,28 @@ original there, rebuild that episode's timing so its parts match.
 - `synthesize_sfx.js`: Episode 1 SFX (`padma_river_day`, `cracker_burst`, `sparkler_crackle`,
   `distant_ship_horn`) into `public/audio/sfx/`.
 - `synthesize_divine_motif.js [out.wav]`: Balak's divine motif, default `public/audio/music/Divine_Motif.wav`.
+
+## `synthesize_ep05_music_library.py` (the Episode 5 music library, procedural)
+
+The `public/audio/music/ep05/` recordings (tanpura, swarmandal, tabla, dhol, bansuri; shared by Episodes 3, 4, 6 and
+the Ghibli 03/04 cuts) and `sfx/ep06/plate_clink.wav` were lost with the machine that held them. This script
+rebuilds the 14 files those episodes use, under the same names, with the length and loudness the episodes'
+`MUSIC_LIB` tables expect (the cues turn LUFS targets into volumes from each file's `lufs`, and some are timed from
+its `seconds`): loops at -24 LUFS (`tanpura_drone_low` -28, `cheeky_plucks` -22), one-shots at -20 (`tabla_run`
+-20.1) with a -3 dBFS sample peak, `plate_clink` peak-normalised to -6 dBFS. Tanpura Sa = C3
+(`tanpura_drone_cs` in C#3, to sit under `Divine_Motif`; `tanpura_drone_low` an octave down), the swarmandal and the
+bansuri in Bhupali on C, the dayan tuned to Sa. Loops are built on a circular timeline (tails and reverb wrap), so
+they repeat without a seam. 48 kHz, 16-bit, stereo; fixed seeds, so every run gives the same files. Needs NumPy
+and SciPy; about two minutes.
+
+```bash
+python scripts/synthesize_ep05_music_library.py                    # all 14 files + a check table
+python scripts/synthesize_ep05_music_library.py --only tabla_soft   # just some
+python scripts/synthesize_ep05_music_library.py --verify-only       # measure: length, peak, LUFS, DC, loop seam
+# spectrogram PNGs need matplotlib, e.g. the JoyVASA venv's Python:
+D:/AI_Tools/JoyVASA/.venv/Scripts/python.exe scripts/synthesize_ep05_music_library.py --verify-only --spectrograms _reference/music_check
+```
+
+If the original recordings turn up, `sync_media.py` mirroring them in over these files is fine: the names and
+levels match. The library's other files (`bansuri_relief`, `drum_pulse*`, `tanpura_drone_low_hot`,
+`cheeky_pluck_4`) are not made here.

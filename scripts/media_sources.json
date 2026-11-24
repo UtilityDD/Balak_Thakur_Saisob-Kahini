@@ -1,0 +1,5 @@
+{
+  "drive_folder_url": "https://drive.google.com/drive/folders/1TSyqSocmF0W1VQx0Z5D0ydDEOyzh7BLr",
+  "cache_dir": "_drive_cache",
+  "note": "The Drive folder mirrors remotion_studio/public/ (audio/, video/, images/). Run: python scripts/sync_media.py"
+}
