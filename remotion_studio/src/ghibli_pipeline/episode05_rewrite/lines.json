@@ -1,0 +1,820 @@
+{
+  "_about": "Ghibli Episode 5 conversation-led rewrite (STO-23): every voice line in order and the scene layout. Source: 03_Episodes/Episode_05_Tortoise_and_Gentle_Cow/01_Script_and_Storyboard/Episode_05_FULL_PRODUCTION_BLUEPRINT.md sections 4, 5, 7 and 10 (DRAFT, 2026-11-26). Edit THIS file when the director changes a line, a speaker, a pause or an action gap, then rerun python scripts/prepare_ep05g_voices.py and node scripts/build_ep05g_timing.js. Pauses (P), action gaps (AG) and the chapter break are anchored by their order in `items` ('after' names the line or beat they follow), so they move with the measured voice lengths. `estSec` is the blueprint's estimate, used only while a WAV is missing.",
+  "fps": 24,
+  "voiceSourceDir": "C:/Dipankar/Balak_Thakur_AI_Studio/03_Episodes/Episode_05_Tortoise_and_Gentle_Cow/02_Audio/Voice_WAVs_Full_Rewrite",
+  "publicAudioDir": "audio/ep05_ghibli_rewrite",
+  "layout": {
+    "lineGapFrames": 10,
+    "speakerChangeGapFrames": 12,
+    "gapAfterLineFrames": 6,
+    "pauseAfterLineFrames": 0,
+    "storyOpenFrames": 12,
+    "storyTailFrames": 12
+  },
+  "captions": {
+    "maxChars": 44,
+    "minPieceFrames": 18,
+    "pauseMarker": "<short pause>"
+  },
+  "lines": [
+    {
+      "file": "00_Intro.wav",
+      "sceneId": "00_intro",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "ছোটদের বালক ঠাকুরের গল্প। <short pause> পর্ব পাঁচ: কচ্ছপ খেলা ও গাভী রক্ষা।",
+      "estSec": 6.6,
+      "caption": false,
+      "style": "Cheerful, bright, welcoming Bengali children's show announcer.",
+      "source": "*template*"
+    },
+    {
+      "file": "00a_Source_Attribution.wav",
+      "sceneId": "00b_source_attribution",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "(existing source-card narration, reused: blueprint Q16)",
+      "estSec": 18.6,
+      "caption": false,
+      "sourcePath": "remotion_studio/public/audio/ep05/00a_Source_Attribution.wav",
+      "style": "(existing take)",
+      "source": "reused from the delivered Episode 5 (Q16)",
+      "prelevelled": true
+    },
+    {
+      "file": "01a_Narrator_Kachari.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "উজানচরের কৃষ্ণনগর কাছারি—বীরুর বাবা সুরেনবাবু এখানেই কাজ করেন। <short pause> আর ছোট্ট বীরু? সে এখন বেশ একটু দুষ্টুমি শিখে উঠেছে!",
+      "estSec": 11.7,
+      "style": "Warm, gentle Bengali storyteller, a playful smile on the last sentence.",
+      "source": "*bridge* (ch. 8 first lines; workplace from ch. 4)"
+    },
+    {
+      "file": "01b_Charu_EyeOnHim.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "charu",
+      "speaker": "মা",
+      "voice": "05_Charu",
+      "text": "আজকাল ওকে একদণ্ড চোখের আড়াল করার জো নেই! <short pause> একটু ফাঁক পেলেই—সবার চোখ এড়িয়ে টুক করে বেরিয়ে যায়।",
+      "estSec": 8.2,
+      "style": "Fond, half-exasperated young mother chatting on the veranda, light laugh in the voice.",
+      "source": "**[implied]** (\"একটু ফাঁক পেলেই সবার চোখ এড়িয়ে টুক করে বেরিয়ে যায়। তাই সব সময় তাকে চোখে চোখে রাখতে হয়।\")"
+    },
+    {
+      "file": "01c_Surendra_Chuckle.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "surendra",
+      "speaker": "বাবা",
+      "voice": "04_Babukaka",
+      "text": "দুষ্টুমি শিখেছে তাহলে! <short pause> তবে তো ওকে চোখে চোখেই রাখতে হবে।",
+      "estSec": 5.0,
+      "style": "Warm, amused father, chuckling softly, relaxed.",
+      "source": "**[implied]** (same sentence)"
+    },
+    {
+      "file": "01d_Narrator_Slip.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "সেদিন সবাই মিলে বেশ গল্পগুজব চলছে। <short pause> কখন যে বীরু টুক করে বেরিয়ে গেছে—কেউ টেরই পেল না!",
+      "estSec": 8.8,
+      "style": "Hushed, playful storyteller, like sharing a secret with the children.",
+      "source": "*bridge* (\"সেদিন সবাই মিলে বেশ গল্প গুজব করছে। ঐদিন কখন যে শিশু বেরিয়ে গেছে কেউ তা লক্ষ্য করেনি।\")"
+    },
+    {
+      "file": "01e_Binoy_Shout.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "binoy",
+      "speaker": "বিনয়",
+      "voice": "15_Binoy_Teen",
+      "text": "হায় হায়, গেল গেল—হাতটা গেল!",
+      "estSec": 2.5,
+      "style": "Sudden panicked teenage shout from the next house, loud, off-screen.",
+      "source": "*book, verbatim*"
+    },
+    {
+      "file": "01f_Charu_Alarm.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "charu",
+      "speaker": "মা",
+      "voice": "05_Charu",
+      "text": "ও কী! বিনয়ের গলা না? <short pause> বীরু... বীরু কোথায় গেল?!",
+      "estSec": 4.4,
+      "style": "Startled, then a rising fear as she realises her son is gone.",
+      "source": "**[implied]** (\"চীৎকার শুনে সবাই দৌড়ে এসেছে\")"
+    },
+    {
+      "file": "01g_Surendra_Run.wav",
+      "sceneId": "01_kachari_chat_and_slip",
+      "role": "surendra",
+      "speaker": "বাবা",
+      "voice": "04_Babukaka",
+      "text": "পাশের বাড়ি থেকে! চলো, শিগগির চলো!",
+      "estSec": 3.0,
+      "style": "Urgent, already getting up to run.",
+      "source": "**[implied]**"
+    },
+    {
+      "file": "02a_Surendra_Bitten.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "surendra",
+      "speaker": "বাবা",
+      "voice": "04_Babukaka",
+      "text": "সর্বনাশ! কচ্ছপে হাত কামড়ে ধরেছে!",
+      "estSec": 2.9,
+      "style": "Shocked gasp, breathless from running.",
+      "source": "**[implied]** (\"লক্ষ্য করে দেখা গেল, একটা কচ্ছপ শিশুর হাত কামড়ে ধরেছে\")"
+    },
+    {
+      "file": "02b_Charu_FreeHand.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "charu",
+      "speaker": "মা",
+      "voice": "05_Charu",
+      "text": "ছাড়াও, ছাড়াও—শিগগির হাতটা ছাড়িয়ে দাও!",
+      "estSec": 3.5,
+      "style": "Frantic, breathless mother rushing in.",
+      "source": "**[implied]** (\"দু'তিন জন দৌড়ে গিয়েছে বালকের হাত ছাড়িয়ে দিতে\")"
+    },
+    {
+      "file": "02c_Charu_NoMark.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "charu",
+      "speaker": "মা",
+      "voice": "05_Charu",
+      "text": "দেখি বাবা, দেখি হাতটা... <short pause> ওমা! কোথাও তো একটা দাগও নেই! <short pause> একটা আঁচড়ও না!",
+      "estSec": 6.6,
+      "style": "Breathless worry melting into astonished relief, very tender.",
+      "source": "**[implied]** (\"শিশুর হাতে কচ্ছপের কামড়ের কোন ক্ষত বা দাগ নাই\")"
+    },
+    {
+      "file": "02d_Surendra_AskBinoy.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "surendra",
+      "speaker": "বাবা",
+      "voice": "04_Babukaka",
+      "text": "আশ্চর্য তো! <short pause> বিনয়, কী হয়েছিল রে? খুলে বল তো।",
+      "estSec": 4.3,
+      "style": "Puzzled and gentle, turning to the teenage boy.",
+      "source": "**[implied]** (\"বিনয়কে জিজ্ঞেস করে ব্যাপারটা জানা গেল\")"
+    },
+    {
+      "file": "02e_Binoy_Account1.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "binoy",
+      "speaker": "বিনয়",
+      "voice": "15_Binoy_Teen",
+      "text": "আমি বাইরে থেকে ফিরছিলাম, কাকা। <short pause> হঠাৎ শুনি, কোণের ঘরের দিকে খুটখাট শব্দ! <short pause> গিয়ে দেখি—",
+      "estSec": 7.3,
+      "style": "Still out of breath, wide-eyed, eager to tell the story.",
+      "source": "**[implied]** (\"বিনয় বা'র থেকে ফিরছিল, হঠাৎ কোণের ঘরের দিকে শব্দ শুনে গিয়ে দেখতে পেল\")"
+    },
+    {
+      "file": "02f_Binoy_Account2.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "binoy",
+      "speaker": "বিনয়",
+      "voice": "15_Binoy_Teen",
+      "text": "বীরু কালকের কেনা কচ্ছপগুলো—একটা একটা করে উল্টে দিচ্ছে! <short pause> এইটুকু ছেলের কাণ্ড দেখে আমি তো অবাক। চুপ করে দাঁড়িয়ে দেখতে লাগলাম, ও কী করে।",
+      "estSec": 10.7,
+      "style": "Storytelling teenager, amazed, a little laugh in the voice.",
+      "source": "**[implied]** (\"তার সুরেন কাকার বাচ্চা ছেলে বীরু কালকের কেনা কচ্ছপগুলো উল্টে উল্টে দিচ্ছে। এতটুকু বাচ্চার এই কাজ দেখে বিনয় বিশেষ উৎসুক হয়েছিল এবং চুপ করে দাঁড়িয়ে দেখছিল শিশু কি করে।\")"
+    },
+    {
+      "file": "02g_Binoy_Account3.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "binoy",
+      "speaker": "বিনয়",
+      "voice": "15_Binoy_Teen",
+      "text": "লেজ ধরে, পাশ ধরে—নানাভাবে উল্টে দিচ্ছে। <short pause> তারপর একবার লেজ ভেবে যেই না শুঁড়টা ধরেছে— <short pause> অমনি কচ্ছপটা খপ করে হাত কামড়ে ধরল!",
+      "estSec": 10.0,
+      "style": "Building suspense, slowing down, then a sudden jolt on the bite.",
+      "source": "**[implied]** (\"উপুড় করা কচ্ছপগুলোকে লেজ ধরে পাশে ধরে নানাভাবে উল্টে দিচ্ছে… লেজ মনে করে শিশু কচ্ছপের শুঁড় ধরেই ওল্টাতে গেছে, অমনি কচ্ছপটা শিশুর হাত কামড়ে ধরেছে\")"
+    },
+    {
+      "file": "02h_Balak_Tortoise.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "balak",
+      "speaker": "বীরু",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "ছাড়লি না, ছাড়লি না— <short pause> দাঁড়া, দেখাচ্ছি মজা!",
+      "estSec": 4.7,
+      "style": "Playful, unafraid six-year-old gently teasing the tortoise, no pain, a smile in the voice.",
+      "source": "*book, verbatim* (\"ছাড়লি না, ছাড়লি না—দাঁড়া দেখাচ্ছি মজা।\")"
+    },
+    {
+      "file": "02i_Binoy_Shouted.wav",
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "role": "binoy",
+      "speaker": "বিনয়",
+      "voice": "15_Binoy_Teen",
+      "text": "আর ওই দেখেই তো আমি চেঁচিয়ে উঠলাম!",
+      "estSec": 2.9,
+      "style": "Sheepish teenager, half laughing at himself.",
+      "source": "**[implied]** (\"এমন সময় বিনয় চীৎকার করে উঠেছিল\")"
+    },
+    {
+      "file": "03a_Narrator_Six.wav",
+      "sceneId": "03_six_and_alone",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "বীরু সবে পাঁচ পেরিয়ে ছয়ে পা দিয়েছে। <short pause> কিন্তু ওর চলন-বলন, ওর চুপচাপ ভাব—আশপাশের কারো সাথেই ঠিক মেলে না।",
+      "estSec": 10.6,
+      "style": "Tender, thoughtful storyteller, slower pace.",
+      "source": "*bridge* (\"বালক সবেমাত্র পাঁচ বছর পেরিয়ে ছয় বছরে পা দিয়েছে… চতুষ্পার্শ্বের রীতিনীতি বালকের নিজস্ব গতিবিধির সাথে খাপ খাচ্ছে না।\")"
+    },
+    {
+      "file": "03b_Surendra_Scold.wav",
+      "sceneId": "03_six_and_alone",
+      "role": "surendra",
+      "speaker": "বাবা",
+      "voice": "04_Babukaka",
+      "text": "এই বীরু! ডাকলে সাড়া নেই, কাজের কথায় মন নেই— <short pause> খালি খেয়াল আর দুষ্টুমি!",
+      "estSec": 6.2,
+      "style": "Impatient father scolding across the yard, stern but not raging.",
+      "source": "**[implied]** (\"খেয়াল, অবহেলা, জড়ত্ব, দুষ্টুমি ইত্যাদি নাম দিয়ে বালককে অযথা তাড়ন ও পীড়ন\")"
+    },
+    {
+      "file": "03c_Narrator_Alone.wav",
+      "sceneId": "03_six_and_alone",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "বকুনি তো লেগেই থাকত, <short pause> কখনো কখনো মারও জুটত। <short pause> তাই বীরু আরও চুপচাপ, আরও একা হয়ে গেল।",
+      "estSec": 8.9,
+      "style": "Gentle, a little wistful, soft on the second phrase.",
+      "source": "*bridge* (\"সবাই মিলে তাকে পদে পদে অপদস্থ ও মারধর করাতে বালক আরও বেশী উদাসীনতার দিকে এগিয়ে চলল\")"
+    },
+    {
+      "file": "03d_Narrator_Places.wav",
+      "sceneId": "03_six_and_alone",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "ওকে পাওয়া যেত কখনো কলাবাগিচায়, <short pause> কখনো মাঠের শেষে দেবদারু গাছের নীচে, <short pause> কখনো নদীর ধারে জামগাছতলায়—একা, চুপটি করে বসে।",
+      "estSec": 12.2,
+      "style": "Soft, unhurried, painting three quiet pictures.",
+      "source": "*bridge* (\"হয় কলাবাগিচায়, না হয় মাঠের শেষে দেবদারু গাছের নীচে, না হয় নদীর ধারে জামগাছতলায় বসে। এতটুকু বালক নিৰ্জ্জনে চুপচাপ বসে থাকে\")"
+    },
+    {
+      "file": "03e_Charu_Relief.wav",
+      "sceneId": "03_six_and_alone",
+      "role": "charu",
+      "speaker": "মা",
+      "voice": "05_Charu",
+      "text": "যাক, চুপচাপ এক কোণে বসে আছে— <short pause> নতুন কোনো কাণ্ড তো বাধাচ্ছে না। তাতেই রক্ষে!",
+      "estSec": 6.4,
+      "style": "Tired, relieved sigh, half to herself while working.",
+      "source": "**[implied]** (\"বালক কোন একটা কিছু করে আবার একটা সাংঘাতিক অবস্থার সৃষ্টি যে করছে না তাতেই সবাই খুশী\")"
+    },
+    {
+      "file": "04a_Narrator_ThatDay.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "সেদিন দুপুরে বীরু কাছারি ঘরের পেছনে, কলাবাগিচায় বসে আপন মনে খেলছে।",
+      "estSec": 6.7,
+      "style": "Warm, calm, setting a peaceful scene.",
+      "source": "*bridge* (\"সেদিন বালক কাছারী ঘরের পেছনে কলাবাগিচায় বসে খেলা করছে।\")"
+    },
+    {
+      "file": "04b_Haricharan_Q1.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "এই বীরু! <short pause> গরুটা কোন দিকে গেছে, দেখেছিস?",
+      "estSec": 3.7,
+      "style": "Out of breath, hot-tempered village man, bamboo in hand.",
+      "source": "*book* (\"গরুটা কোন দিকে গেছে দেখেছিস?\"; \"এই বীরু!\" added)"
+    },
+    {
+      "file": "04c_Balak_WhatHappened.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "balak",
+      "speaker": "বীরু",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "হরিচরণদা, কী হয়েছে?",
+      "estSec": 2.2,
+      "style": "Calm, innocent, curious six-year-old.",
+      "source": "*book, verbatim*"
+    },
+    {
+      "file": "04d_Haricharan_Cucumber.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "কী হয়েছে? <short pause> আমার অত বড় শশা গাছটা—গোটা ঝাঁকা জুড়ে লতিয়ে উঠেছিল! <short pause> ডগায় ডগায় কচি কচি শশা! <short pause> হতচ্ছাড়া গরু সব খেয়ে গেছে— <short pause> শুধু খায়নি, গাছটা গোড়াসুদ্ধ উপড়ে দিয়েছে!",
+      "estSec": 14.7,
+      "style": "Indignant and aggrieved, comically exaggerated grief over his cucumbers.",
+      "source": "**[implied]** (\"বিরাট একটা শশা গাছ, একটা ঝাঁকাতে বেয়ে শাখা-প্রশাখায় ছড়িয়ে পড়েছে। আর তার ডগায় কচি বড় বহু শশা। গাভীটা শুধু শশাই খায়নি, গাছটির মূলও উচ্ছেদ করেছে।\")"
+    },
+    {
+      "file": "04e_Balak_Inner1.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "balak",
+      "speaker": "বীরু (মনে মনে)",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "এখন যদি বলে দিই— <short pause> ওর তো একেবারে দফা রফা হয়ে যাবে।",
+      "estSec": 6.0,
+      "inner": true,
+      "style": "Soft whispered inner thought, very calm, close to the microphone.",
+      "source": "*book thought* (\"সে ভাবল, এখন যদি সে বলে দেয়, তা হলে তো একেবারেই ওর দফা রফা হবে।\")"
+    },
+    {
+      "file": "04f_Haricharan_Q2.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "কী রে, চুপ করে আছিস কেন? <short pause> তাড়াতাড়ি বল, কোন দিকে গেছে?",
+      "estSec": 5.0,
+      "style": "Impatient and more heated, leaning down.",
+      "source": "*book* (\"তাড়াতাড়ি বল কোন দিকে গেছে?\"); first sentence **[implied]** (his silence: \"নিরীহ ভাব দেখিয়ে চুপ করে আছে\")"
+    },
+    {
+      "file": "04g_Balak_Inner2.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "balak",
+      "speaker": "বীরু (মনে মনে)",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "'জানি' বললে, গরুটা ভীষণ মার খাবে। <short pause> 'জানি না' বললে, সত্যটা যাবে। <short pause> না—গরুও থাকবে, সত্যও থাকবে।",
+      "estSec": 10.7,
+      "inner": true,
+      "style": "Whispered inner thought, slow, weighing two things, then quietly decided.",
+      "source": "*book narration as thought* (\"'জানি' বললে গাভীটি ভীষণ মার খায়, আর 'জানি না' বললেও 'সত্য' যায়। কিন্তু তাতো চলবে না, গাভী এবং সত্য দুটোকেই রাখতে হবে।\")"
+    },
+    {
+      "file": "04h_Balak_Truth1.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "balak",
+      "speaker": "বীরু",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "দেখলেও বলব না। <short pause> বলে দিলে আপনি তো আর রক্ষা রাখবেন না। <short pause> আমি কিছুতেই বলব না।",
+      "estSec": 7.7,
+      "style": "Calm, gentle, completely firm and respectful six-year-old.",
+      "source": "*book, verbatim* (\"দেখলেও বলবো না, কারণ বলে দিলে আপনি তো আর রক্ষা রাখবেন না। আমি কিছুতেই বলব না।\")"
+    },
+    {
+      "file": "04i_Haricharan_Sputter.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "অ্যাঁ! বলবি না মানে?!",
+      "estSec": 2.0,
+      "style": "Flabbergasted splutter.",
+      "source": "**[implied]** (\"উত্তেজিত হরিচরণ\")"
+    },
+    {
+      "file": "04j_Balak_Truth2.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "balak",
+      "speaker": "বীরু",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "আমি বলে দিই, আর অমনি আপনি গিয়ে ওকে ধরে লাগান! <short pause> ও যে শশা গাছ খেয়েছে— <short pause> তা আপনার গাছ, কি আমার গাছ—ও কি বুঝে খেয়েছে?",
+      "estSec": 11.5,
+      "style": "Simple, earnest, compassionate, never preachy.",
+      "source": "*book, verbatim* (\"আমি বলে দি আর অমনি আপনি গিয়ে ওকে ধরে লাগান। ও যে শশা গাছ খেয়েছে—তা আপনার গাছ কি আমার গাছ—ও কি বুঝে খেয়েছে।\")"
+    },
+    {
+      "file": "04k_Balak_Truth3.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "balak",
+      "speaker": "বীরু",
+      "voice": "12_Balak_Thakur_Child",
+      "text": "ওর খাওয়া দরকার, তাই খেয়েছে। <short pause> ও কি আর বুঝেছিল, আপনি ওর জন্য বাঁশ নিয়ে আসবেন? <short pause> আমি ওর খবর বলতে পারব না।",
+      "estSec": 10.5,
+      "style": "Softer and tender, settling; the last sentence quiet and final.",
+      "source": "*book, verbatim* (\"ওর খাওয়া দরকার তাই খেয়েছে। ও কি আর বুঝেছিল যে আপনি ওর জন্য বাঁশ নিয়ে আসবেন। আমি ওর খবর বলতে পারবো না।\")"
+    },
+    {
+      "file": "04l_Haricharan_Storm.wav",
+      "sceneId": "04_cucumber_and_bamboo",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "বাঃ! খুব ভালো! গরুর হয়ে ওকালতি হচ্ছে! <short pause> যত্তসব অদ্ভুত কাণ্ড!",
+      "estSec": 5.3,
+      "style": "Exploding in comic exasperation, turning to stomp away.",
+      "source": "**[implied]** (\"উত্তেজিত হরিচরণ অধিকতর উত্তেজিত হয়ে চলে গেল\")"
+    },
+    {
+      "file": "05a_Haricharan_Report.wav",
+      "sceneId": "05_sereshta_gossip",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "শুনেছেন বাবুরা? <short pause> সুরেনবাবুর ছেলে ঠিক জানে গরুটা কোথায়— <short pause> অথচ কিছুতেই বলবে না! <short pause> উল্টে বলে কিনা, 'ও কি বুঝে খেয়েছে!'",
+      "estSec": 10.3,
+      "style": "Still fuming, gossiping to the clerks; mimics a child's voice on the quote.",
+      "source": "**[implied]** (\"কাছারির সেরেস্তায় এ নিয়ে বেশ খানিকটা জল্পনা কল্পনা চলল\")"
+    },
+    {
+      "file": "05b_ClerkA_SawEat.wav",
+      "sceneId": "05_sereshta_gossip",
+      "role": "clerkSenior",
+      "speaker": "বড়বাবু",
+      "voice": "10_Grumpy_Relative",
+      "text": "হুঁ... <short pause> মনে হয়, ও খেতেও দেখেছে।",
+      "estSec": 3.2,
+      "style": "Dry, knowing, slow; peering over his spectacles.",
+      "source": "*book, verbatim* (\"মনে হয় ও খেতেও দেখেছে।\")"
+    },
+    {
+      "file": "05c_ClerkB_FedIt.wav",
+      "sceneId": "05_sereshta_gossip",
+      "role": "clerkJunior",
+      "speaker": "মুহুরিবাবু",
+      "voice": "18_Kachari_Muhuri",
+      "text": "আরে মশাই, শুধু দেখা কেন? <short pause> ও নিজে ধরে নিয়েও খাইয়ে আসতে পারে!",
+      "estSec": 5.4,
+      "style": "Theatrical, leaning in, dramatic conspiratorial certainty.",
+      "source": "*book, verbatim* (\"ও নিজে ধরে নিয়েও খাইয়ে আসতে পারে।\"); lead-in **[implied]**"
+    },
+    {
+      "file": "05d_ClerkA_Verdict.wav",
+      "sceneId": "05_sereshta_gossip",
+      "role": "clerkSenior",
+      "speaker": "বড়বাবু",
+      "voice": "10_Grumpy_Relative",
+      "text": "যাই বলো, সুরেনবাবুর এই ছেলেটির— <short pause> বিষয়বুদ্ধি বলে কিচ্ছু নেই! <short pause> একটা অদ্ভুত পদার্থ!",
+      "estSec": 7.3,
+      "style": "Shaking his head, a dry and gently comic verdict.",
+      "source": "**[implied, near-verbatim]** (\"সুরেনবাবুর এই ছেলেটি যে বিষয়বুদ্ধিহীন একটি অদ্ভূত পদার্থ, তা সেদিন বুঝতে কারো আর বাকী রইল না।\")"
+    },
+    {
+      "file": "05e_Haricharan_Agree.wav",
+      "sceneId": "05_sereshta_gossip",
+      "role": "haricharan",
+      "speaker": "হরিচরণ",
+      "voice": "17_Haricharan",
+      "text": "ঠিক বলেছেন! একদম ঠিক!",
+      "estSec": 2.0,
+      "style": "Emphatic, vindicated.",
+      "source": "**[implied]** (\"বুঝতে কারো আর বাকী রইল না\"; optional line, Q14)"
+    },
+    {
+      "file": "99_Outro_Sequential.wav",
+      "sceneId": "99_closing_sequential_outro",
+      "role": "narrator",
+      "speaker": "কথক",
+      "voice": "01_Narrator_Kathak",
+      "text": "কাছারির বাবুরা ভাবলেন, ছেলেটার বিষয়বুদ্ধি নেই। <short pause> কিন্তু ছোট্ট বীরু সেদিন দুটোকেই বাঁচিয়েছিল— <short pause> অবলা গাভীটিকে, আর সত্যকে। <short pause> ছোটদের বালক ঠাকুরের গল্প— <short pause> আসছে পরের পর্ব: জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী! <short pause> বড় ভাইয়ের মার খেয়েও ছোট্ট ঠাকুর— <short pause> কীভাবে দাদাকে বাবার হাত থেকে বাঁচালেন? <short pause> দেখুন পরের পর্বে!",
+      "estSec": 31.2,
+      "style": "Serene, warm, gently smiling storyteller; then warm curiosity for the teaser.",
+      "source": "*bridge*; teaser text as delivered, split for one-line captions"
+    }
+  ],
+  "scenes": [
+    {
+      "sceneId": "00_intro",
+      "kind": "intro",
+      "open": 12,
+      "tail": 18,
+      "minFrames": 200,
+      "items": [
+        {
+          "line": "00_Intro.wav"
+        }
+      ]
+    },
+    {
+      "sceneId": "00b_source_attribution",
+      "kind": "source",
+      "open": 12,
+      "tail": 20,
+      "items": [
+        {
+          "line": "00a_Source_Attribution.wav"
+        }
+      ]
+    },
+    {
+      "sceneId": "01_kachari_chat_and_slip",
+      "kind": "story",
+      "tail": 12,
+      "items": [
+        {
+          "gap": "AG1_world_open",
+          "sec": 4.0,
+          "after": null,
+          "note": "held kachari wide, truck right past Binoy's house to the family veranda"
+        },
+        {
+          "line": "01a_Narrator_Kachari.wav"
+        },
+        {
+          "line": "01b_Charu_EyeOnHim.wav"
+        },
+        {
+          "line": "01c_Surendra_Chuckle.wav"
+        },
+        {
+          "pause": "P1",
+          "sec": 1.5,
+          "after": "01c_Surendra_Chuckle.wav",
+          "note": "both laugh, turn to each other, backs to Balak"
+        },
+        {
+          "gap": "AG2_the_slip",
+          "sec": 3.0,
+          "after": "P1",
+          "note": "Balak rises behind Charu, tiptoes off the plinth, out through the fence gap; the leaf drops"
+        },
+        {
+          "line": "01d_Narrator_Slip.wav"
+        },
+        {
+          "pause": "P2",
+          "sec": 1.0,
+          "after": "01d_Narrator_Slip.wav",
+          "note": "the leaf stirs on the empty mat"
+        },
+        {
+          "gap": "AG3_time_passes",
+          "sec": 2.0,
+          "after": "P2",
+          "note": "held wide, shadow creeps, crow on the fence"
+        },
+        {
+          "line": "01e_Binoy_Shout.wav"
+        },
+        {
+          "line": "01f_Charu_Alarm.wav"
+        },
+        {
+          "line": "01g_Surendra_Run.wav"
+        },
+        {
+          "gap": "AG4_the_run",
+          "sec": 2.5,
+          "after": "01g_Surendra_Run.wav",
+          "note": "they run through the fence gap"
+        }
+      ]
+    },
+    {
+      "sceneId": "02_tortoise_bite_and_binoy",
+      "kind": "story",
+      "open": 6,
+      "tail": 12,
+      "items": [
+        {
+          "line": "02a_Surendra_Bitten.wav"
+        },
+        {
+          "line": "02b_Charu_FreeHand.wav"
+        },
+        {
+          "gap": "AG5_already_free",
+          "sec": 2.0,
+          "after": "02b_Charu_FreeHand.wav",
+          "note": "three hands arrive; the tortoise has already let go"
+        },
+        {
+          "line": "02c_Charu_NoMark.wav"
+        },
+        {
+          "pause": "P3",
+          "sec": 1.5,
+          "after": "02c_Charu_NoMark.wav",
+          "note": "GLOW BEAT 1: Charu presses his hand to her cheek, a sigh"
+        },
+        {
+          "line": "02d_Surendra_AskBinoy.wav"
+        },
+        {
+          "line": "02e_Binoy_Account1.wav"
+        },
+        {
+          "line": "02f_Binoy_Account2.wav"
+        },
+        {
+          "gap": "AG6_the_play",
+          "sec": 3.0,
+          "after": "02f_Binoy_Account2.wav",
+          "note": "flashback: slow push in on Balak's smiling play"
+        },
+        {
+          "line": "02g_Binoy_Account3.wav"
+        },
+        {
+          "line": "02h_Balak_Tortoise.wav"
+        },
+        {
+          "gap": "AG7_the_shout",
+          "sec": 1.0,
+          "after": "02h_Balak_Tortoise.wav",
+          "note": "flashback Binoy's hands fly to his head; dissolve back to the present"
+        },
+        {
+          "line": "02i_Binoy_Shouted.wav"
+        },
+        {
+          "pause": "P4",
+          "sec": 2.5,
+          "after": "02i_Binoy_Shouted.wav",
+          "note": "afterglow: the tortoise pokes its head out toward Balak"
+        }
+      ]
+    },
+    {
+      "sceneId": "cb1_chapter_break",
+      "kind": "break",
+      "frames": 29,
+      "items": []
+    },
+    {
+      "sceneId": "03_six_and_alone",
+      "kind": "story",
+      "tail": 12,
+      "items": [
+        {
+          "gap": "AG8_world_open",
+          "sec": 3.0,
+          "after": null,
+          "note": "the family yard in afternoon light; Balak on the veranda step"
+        },
+        {
+          "line": "03a_Narrator_Six.wav"
+        },
+        {
+          "line": "03b_Surendra_Scold.wav"
+        },
+        {
+          "line": "03c_Narrator_Alone.wav"
+        },
+        {
+          "line": "03d_Narrator_Places.wav"
+        },
+        {
+          "pause": "P5",
+          "sec": 1.5,
+          "after": "03d_Narrator_Places.wav",
+          "note": "holds on the jam tree by the river; kingfisher"
+        },
+        {
+          "line": "03e_Charu_Relief.wav"
+        },
+        {
+          "pause": "P6",
+          "sec": 1.5,
+          "after": "03e_Charu_Relief.wav",
+          "note": "soft 30 f dissolve to the grove"
+        }
+      ]
+    },
+    {
+      "sceneId": "04_cucumber_and_bamboo",
+      "kind": "story",
+      "tail": 0,
+      "items": [
+        {
+          "gap": "AG9_world_open",
+          "sec": 3.5,
+          "after": null,
+          "note": "held wide of the grove, Balak with his pebbles"
+        },
+        {
+          "line": "04a_Narrator_ThatDay.wav"
+        },
+        {
+          "gap": "AG10_the_cow",
+          "sec": 4.0,
+          "after": "04a_Narrator_ThatDay.wav",
+          "note": "the cow tugs the vine, tears the root, hides behind the banana clump"
+        },
+        {
+          "gap": "AG11_haricharan",
+          "sec": 1.5,
+          "after": "AG10_the_cow",
+          "note": "the back door bangs open, Haricharan runs out with his bamboo"
+        },
+        {
+          "line": "04b_Haricharan_Q1.wav"
+        },
+        {
+          "line": "04c_Balak_WhatHappened.wav"
+        },
+        {
+          "line": "04d_Haricharan_Cucumber.wav"
+        },
+        {
+          "line": "04e_Balak_Inner1.wav"
+        },
+        {
+          "pause": "P7",
+          "sec": 1.5,
+          "after": "04e_Balak_Inner1.wav",
+          "note": "he innocently sets down one pebble"
+        },
+        {
+          "line": "04f_Haricharan_Q2.wav"
+        },
+        {
+          "line": "04g_Balak_Inner2.wav"
+        },
+        {
+          "pause": "P8",
+          "sec": 2.0,
+          "after": "04g_Balak_Inner2.wav",
+          "note": "near-silence before the decision"
+        },
+        {
+          "line": "04h_Balak_Truth1.wav"
+        },
+        {
+          "line": "04i_Haricharan_Sputter.wav"
+        },
+        {
+          "line": "04j_Balak_Truth2.wav"
+        },
+        {
+          "line": "04k_Balak_Truth3.wav"
+        },
+        {
+          "line": "04l_Haricharan_Storm.wav"
+        },
+        {
+          "gap": "AG12_storms_off",
+          "sec": 2.5,
+          "after": "04l_Haricharan_Storm.wav",
+          "note": "one bamboo thump, he stomps back into the kachari"
+        },
+        {
+          "pause": "P9",
+          "sec": 3.0,
+          "after": "AG12_storms_off",
+          "note": "GLOW BEAT 2: the cow comes out and lowers her muzzle; he strokes her"
+        }
+      ]
+    },
+    {
+      "sceneId": "05_sereshta_gossip",
+      "kind": "story",
+      "tail": 0,
+      "items": [
+        {
+          "gap": "AG13_world_open",
+          "sec": 2.5,
+          "after": null,
+          "note": "the kachari veranda: clerks at work, Haricharan stomps up the steps"
+        },
+        {
+          "line": "05a_Haricharan_Report.wav"
+        },
+        {
+          "line": "05b_ClerkA_SawEat.wav"
+        },
+        {
+          "line": "05c_ClerkB_FedIt.wav"
+        },
+        {
+          "pause": "P10",
+          "sec": 1.5,
+          "after": "05c_ClerkB_FedIt.wav",
+          "note": "the other two turn slowly to stare at him"
+        },
+        {
+          "line": "05d_ClerkA_Verdict.wav"
+        },
+        {
+          "line": "05e_Haricharan_Agree.wav"
+        },
+        {
+          "pause": "P11",
+          "sec": 1.0,
+          "after": "05e_Haricharan_Agree.wav",
+          "note": "all three nod together"
+        },
+        {
+          "gap": "AG14_afterglow",
+          "sec": 4.0,
+          "after": "P11",
+          "note": "40 f dissolve to the riverbank at sunset, Balak alone under the jam tree"
+        }
+      ]
+    },
+    {
+      "sceneId": "99_closing_sequential_outro",
+      "kind": "outro",
+      "open": 14,
+      "tail": 34,
+      "items": [
+        {
+          "line": "99_Outro_Sequential.wav"
+        }
+      ]
+    }
+  ]
+}

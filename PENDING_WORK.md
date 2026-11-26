@@ -1,5 +1,109 @@
 # Pending work — live handoff (read this first when resuming)
 
+Any agent (Claude, Cursor, another machine) picking this project up: start here. Keep this file current.
+Last updated: **2026-11-26 09:35** (Claude Code session on the director's laptop). Everything below "Older notes" is
+the 2026-11-24 handoff from the other machine and is kept for history only.
+
+## Where things are (this laptop)
+
+| What | Where |
+|---|---|
+| Production worktree (code) | `C:\Dipankar\Balak_Thakur_Production`, branch `feat/ep01-polish-and-rules` (pushed) |
+| Main repo (bible, scripts, voices, renders) | `C:\Dipankar\Balak_Thakur_AI_Studio`, branch `feat/cinematic-animation` (pushed) |
+| Rules | main repo `CLAUDE.md`, `01_Series_Bible/DIRECTOR_DECISIONS.md`, `docs/PIPELINE_DECISIONS.md`, `docs/decisions/CHANGELOG.md` |
+| Gitignored audio | `remotion_studio/public/audio/`; backups in main repo `_backups/` (latest: `2026-11-26b_worktree_public_ep05rewrite`) |
+| Original book text | main repo `book.xlsx` (one chapter per row); per-episode extracts `01_Script_and_Storyboard/EpNN_Book_Source_Text.md` |
+| Studio | `npx remotion studio src/index.ts --port=3100 --no-open` from `remotion_studio` (LAN http://192.168.1.8:3100) |
+
+Rules that changed this week (details in the decision files):
+- Renders use the GPU: `--gl=angle`, concurrency 2, heavy Ghibli scenes in pieces of about 320 frames (REN-GPU-01; `scripts/ghibli_render/`).
+- Captions are one line (TTL-14).
+- The `music/ep05` instrument library is the series score (AUD-09).
+- Ghibli rewrites are conversation-led and drafted from the book (STO-23).
+- Balak's new look is opt-in `plateLook="ref2"`, for new episodes only (BAL-26e/f).
+
+## Done
+
+- **Ghibli Episode 4 delivered for review** (2026-11-26):
+  `03_Episodes/Episode_04_Idols_and_Coconut_Water/04_Video_Assembly/Ghibli_Test_Render/Episode04GhibliFull_2026-11-26.mp4`
+  with `_bn.srt` (8,594 frames, 5:58, -16.5 LUFS). Rendered from commit `5d27c0e`.
+- **Ghibli Episode 5 rewrite, preparation** (all in `src/ghibli_pipeline/episode05_rewrite/`, composition `Episode05GhibliRewrite`):
+  - blueprint: main repo `Episode_05_FULL_PRODUCTION_BLUEPRINT.md` (DRAFT);
+  - timing generator and skeleton scenes (9,316 frames on estimated line lengths);
+  - cast and props (`Ep05RewriteCastQA`);
+  - 10 CC sound effects (`public/audio/sfx/ep05_rewrite/`).
+
+## Next work, in order
+
+### 1. Ghibli Episode 5 rewrite: BLOCKED on the director's voices and answers
+- The director is generating the 40 voice WAVs into main repo
+  `03_Episodes/Episode_05_Tortoise_and_Gentle_Cow/02_Audio/Voice_WAVs_Full_Rewrite/`. 2 of 40 are there
+  (`00_Intro`, `01a_Narrator_Kachari`). File names are in the blueprint's section 10.
+- When more WAVs land, run from the worktree root:
+  `python scripts/prepare_ep05g_voices.py && node scripts/build_ep05g_timing.js`
+  It levels voices to -16 LUFS and rebuilds `timing.ts` and the one-line `subtitles.ts`. Lines without a WAV stay on
+  estimates and stay silent.
+- The director still has to answer the blueprint's section 9 (26 open questions). The main ones:
+  - the lines marked [implied];
+  - the line "কখনো কখনো মারও জুটত";
+  - new voices (Binoy, Haricharan, junior clerk) and Binoy's height;
+  - whether Balak's new look applies to Episode 5;
+  - the 6 new paintings (Gemini prompts are in the blueprint; process them like the `ghibli_ep04` plates, GHB-PLATE-01).
+- Then, with agents (brief: `AGENT_BRIEF_ep5_rewrite.md`, one agent per file):
+  1. acting and gesture pass per scene on the real lines (switch stand-ins to `Ep05RewriteCast.tsx` and
+     `Ep05RewriteProps.tsx`; turn off `SKELETON_LABELS`);
+  2. life layer (STO-22b);
+  3. sound pass (AUD-09 score at about -22 LUFS in wordless moments, about -16 in dialogue; the new sound effects);
+  4. main-session review with stills and clips, then the director's approval;
+  5. GPU render (`scripts/ghibli_render/`, about 40 minutes).
+
+### 2. Balak new-look rig (ref2): PAUSED mid round 5 by the director (2026-11-26 08:20)
+- Files: `src/episode05/rig/StandingChild.tsx`, `src/episode03/rig/SeatedChild.tsx`,
+  `src/cinematic/rig/ThakurHeadPlate.tsx`. Test bed: `BalakRef2PoseQA` (480 frames, 13 gestures).
+- ref2 ONLY. Episodes 3, 5 and 6 were verified pixel-identical after the last edit (8 frames, 0 differing pixels).
+  Baselines are `out_balakrig/iso/head_*.png`. Re-verify after any rig change.
+- In so far: broad shawl chadar, shorter arms, shoulder follows the arm, standing namaskar (`handDirs`), and the opt-in
+  props `bodyLean` (with a partial twist) on StandingChild and `offerTuck` on SeatedChild.
+- Still wrong (the director's list plus the last sheet `out_balakrig/r5_standing_zoom.png`):
+  - pointing bunches the shawl into a towel-like block at the neck;
+  - offering leaves the far raised elbow bare and sharp;
+  - shrug forearms tangle;
+  - seated offering forearms read long (Episode 4 frames 2960-3580);
+  - the twist has not been reviewed.
+- Round 5 was stopped before its report. Review it before building on it.
+- NOTE: Ghibli Episode 4 in the studio now shows these newer rig rounds, so it no longer matches the delivered MP4
+  exactly (the MP4 is commit `5d27c0e`). Re-check Episode 4 stills before any Episode 4 re-render.
+
+### 3. Ghibli Episode 4: open review points (the director has the MP4)
+- Flat veranda pillar and roof beams at 5760-5815.
+- Charu's palms-joined moment in Scene 04 needs approval.
+- The kingfisher dive is small in frame.
+- Soft spot effects are partly masked by the louder music.
+- The director's new 17.9 s `01a_Narrator_Morning.wav` take (adds "কিন্তু একদিন হলো কী…") is NOT in the episode. It needs
+  the voice swapped, a caption added and a shift of about 5.6 s, then a re-render.
+
+### 4. Ghibli Episode 6 rewrite: NOT started (after Episode 5, STO-23)
+Episode 6 has 25 painted plates and `Episode06GhibliTest`, but it is about 94% narration. Draft
+`Episode_06_FULL_PRODUCTION_BLUEPRINT.md` from the book (`book.xlsx` chapters দশ, এগার, বার), with the same method as Episode 5.
+
+### 5. Smaller open items
+- Episode 6 immersive SVG re-cut (STO-22a): review set and approval pending.
+- Episode 2 outro re-render: paused at 2 of 4 chunks.
+- Episode 1 re-render for the shared rig fixes: the director said "not now".
+- GitHub Actions rendering: possible (public repo), not needed since the GPU switch.
+
+## Housekeeping notes
+- Scratch folders in the worktree root (`bundle_*`, `check_*`, `out*`, `review*`, `chunks_ep4g`, `bench`, `ep5r_qa` and
+  similar) are untracked render output. They are safe to delete when disk is needed; keep the `out_balakrig/iso/` baselines.
+- Close heavy apps before rendering (16 GB RAM). Run two GPU renders at most; agents render one at a time through
+  `scripts/render_locked.sh`.
+- Commit and push only when the director asks.
+
+---
+
+# Older notes (other machine, 2026-11-24): history only
+
+
 Any agent (Claude, Cursor, another machine) picking this project up: start here. Keep this file current —
 update it whenever a task starts, finishes, gets blocked, or a director decision changes the plan.
 Last updated: **2026-11-24** (Cursor: Thakurmoshai floor-sit + ashon ground + upright lean landed).

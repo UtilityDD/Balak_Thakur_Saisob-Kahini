@@ -314,6 +314,12 @@ export interface SeatedChildProps {
   prevReachFor?: HeldObject | null;
   /** ref2 only: the camera zoom of the layer he is in, so the face's fine ink line stays about 1 px on screen. */
   inkZoom?: number;
+  /**
+   * ref2 only, opt-in (round 4; default 0 = unchanged): offerUp held a little nearer the chest with the forearms
+   * foreshortened (coming toward the camera): the elbows sit closer to the hands and a little lower, so the forearms
+   * read shorter, never as long straight bars. 0..1. The object stays in both hands (contact exact).
+   */
+  offerTuck?: number;
   /** "plate" design only: age in years (default 5, 4 to 12). Older lengthens the face and the neck a little. */
   age?: number;
   /**
@@ -560,6 +566,8 @@ interface SolveOpts {
   plateRest?: boolean;
   /** BAL-26e (plateLook "ref2"): the resting hands lie together a little lower and closer in the lap. */
   plateRef2?: boolean;
+  /** ref2 offerUp: how far it is tucked toward the chest (see SeatedChildProps.offerTuck). */
+  offerTuck?: number;
   /** Episode 5, handsTo / palmUp (see SeatedChildProps). */
   handTargets?: { near?: V; far?: V };
   handShapes?: { near?: SeatedHandShape; far?: SeatedHandShape };
@@ -1736,6 +1744,7 @@ function solveEp5(pose: SeatedPose, f: number, breath: number, poseStart: number
     const shF0 = { x: PIVOT.x + SH_FRONT.x, y: PIVOT.y + SH_FRONT.y - lift };
     const shB0 = { x: PIVOT.x + SH_BACK.x, y: PIVOT.y + SH_BACK.y - lift };
     const hF = T.near ? handFor(T.near, shF0) : null;
+    const tgs0 = [T.near, T.far].filter((q): q is V => !!q);
     const hB = T.far ? handFor(T.far, shB0) : null;
     // Lean and forward bend: the least that brings each targeted wrist within reach (grid search, pure).
     let best = { lean: idleLean, drop: 0, miss: Infinity, cost: Infinity };
@@ -1750,7 +1759,9 @@ function solveEp5(pose: SeatedPose, f: number, breath: number, poseStart: number
         if (miss < best.miss - 1e-6 || (miss <= best.miss + 1e-6 && cost < best.cost)) best = { lean, drop, miss, cost };
       }
     }
-    const lean = lerp(idleLean, Math.max(idleLean, best.lean), travel);
+    // BAL-26f (ref2): the torso leans a little into a forward reach (weight forward), never a stiff upright body
+    const fwd = opts.plateRef2 ? Math.max(0, ...tgs0.map((q) => clamp((q.x - 40) / 70, 0, 1) * (q.y > -150 ? 1 : 0.5))) : 0;
+    const lean = lerp(idleLean, Math.max(idleLean, best.lean, idleLean + 9 * fwd), travel);
     const drop = best.drop * travel;
     const sF = shapeOf(opts.handShapes?.near);
     const sB = shapeOf(opts.handShapes?.far);
@@ -2303,7 +2314,10 @@ function solveEp4(pose: SeatedPose, f: number, breath: number, poseStart: number
     }
     case "offerUp": {
       // Held out in both hands (to Sundar, into the shrine room); he leans and bends as far as he must.
-      const base = opts.reachAt ?? { x: 80, y: -122 - lift };
+      const base0 = opts.reachAt ?? { x: 80, y: -122 - lift };
+      // ref2 offerTuck: held a little nearer the chest
+      const tk = opts.plateRef2 ? clamp(opts.offerTuck ?? 0, 0, 1) : 0;
+      const base = tk > 0 ? lerpV(base0, { x: 50, y: -114 - lift }, tk * (0.3 + 0.25 * clamp((base0.x - 60) / 50, 0, 1))) : base0;
       const O = { x: base.x + 0.8 * wob(fl, 18.3, 0.4), y: base.y + 0.6 * wob(fl, 19.1, 0.4) - 0.3 * bN };
       const rot = -4;
       // ref2 (BAL-26f): the hands lower round the base, so the near hand reads under it and the far one on its body
@@ -4055,6 +4069,7 @@ function seatedRig(props: SeatedChildProps) {
     prevReachAt,
     prevHolding,
     prevReachFor,
+    offerTuck,
   } = props;
   // BAL-26e/f: the ref2 look (Ghibli Episode 4, opt-in) implies the plate design.
   const ref2 = plateLook === "ref2";
@@ -4085,6 +4100,7 @@ function seatedRig(props: SeatedChildProps) {
     strokeDir: strokeDir ? { x: strokeDir.x, y: strokeDir.y } : undefined,
     plateRest: plate ? true : undefined,
     plateRef2: ref2 ? true : undefined,
+    offerTuck: ref2 && offerTuck ? offerTuck : undefined,
     handTargets: handTargets ? { near: handTargets.near ? { x: handTargets.near.x, y: handTargets.near.y } : undefined, far: handTargets.far ? { x: handTargets.far.x, y: handTargets.far.y } : undefined } : undefined,
     handShapes,
     handTurns,
@@ -4269,7 +4285,16 @@ function seatedRig(props: SeatedChildProps) {
     const p = up(rel);
     // Lifts a little when the hand rises; drops and reaches forward a little when the hand goes far down.
     const down = smooth((tgt.y - p.y - 80) / 25);
-    return { x: p.x + 2 * down * clamp((tgt.x - p.x) / 12, -1, 1), y: p.y - 1.8 * smooth((p.y + 30 - tgt.y) / 30) + 3.5 * down };
+    const base = { x: p.x + 2 * down * clamp((tgt.x - p.x) / 12, -1, 1), y: p.y - 1.8 * smooth((p.y + 30 - tgt.y) / 30) + 3.5 * down };
+    if (!ref2) return base;
+    // BAL-26f (ref2): the shoulder goes with the arm: a reach past about 80% of the arm draws it toward the hand (the
+    // elbow keeps a soft bend), a raised hand lifts it a little more (never a fixed pivot)
+    const dx = tgt.x - base.x;
+    const dy = tgt.y - base.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const pull = clamp(dist - 0.8 * (UPPER + FORE), 0, 9);
+    const raise = smooth((base.y - tgt.y) / 60);
+    return { x: base.x + (dx / dist) * pull, y: base.y + (dy / dist) * pull - 3.5 * raise };
   };
   const shF = shoulderAt(SH_FRONT, sol.front);
   const shB = shoulderAt(SH_BACK, sol.back);
@@ -4304,7 +4329,7 @@ function seatedRig(props: SeatedChildProps) {
   // Far arm in front of the body (holding / joining): pick the more outboard elbow so the forearm
   // emerges from the far side of the chest rather than mid-torso in side / ¾ view.
   const farFront = plate && ((sol.farArmFront ?? 0) > 0.3 || (sol.joinW ?? 0) > 0.3 || !!sol.farOverCape);
-  const armB = farFront
+  const armB0 = farFront
     ? (() => {
         const a0 = overlapArm(shB, sol.back, before.back, -1);
         const a1 = overlapArm(shB, sol.back, before.back, 1);
@@ -4313,7 +4338,24 @@ function seatedRig(props: SeatedChildProps) {
         return score(a0.E) >= score(a1.E) ? a0 : a1;
       })()
     : overlapArm(shB, sol.back, before.back, -1);
-  const armF = overlapArm(shF, sol.front, before.front, 1);
+  const armF0 = overlapArm(shF, sol.front, before.front, 1);
+  // ref2 offerTuck: the forearm comes toward the camera, so it is drawn foreshortened: the elbow nearer the hand and a
+  // little lower (the wrist exactly where it was, so the object stays in the hands)
+  const tuckW =
+    ref2 && offerTuck
+      ? clamp(offerTuck, 0, 1) * (pose === "offerUp" ? (prevPose && prevPose !== pose ? smooth(clamp((f - poseStart) / 16, 0, 1)) : 1) : prevPose === "offerUp" ? 1 - smooth(clamp((f - poseStart) / 16, 0, 1)) : 0)
+      : 0;
+  const tuckArm = (a: { E: V; H: V }): { E: V; H: V } =>
+    tuckW > 0.001
+      ? (() => {
+          // the drawn forearm is capped at about 0.68 of its length (a child's short forearm coming toward the camera)
+          const d = Math.hypot(a.H.x - a.E.x, a.H.y - a.E.y) || 1;
+          const t = Math.max(0.24, 1 - (0.68 * FORE) / d) * tuckW;
+          return { E: { x: lerp(a.E.x, a.H.x, t), y: lerp(a.E.y, a.H.y, t) + 5 * tuckW }, H: a.H };
+        })()
+      : a;
+  const armF = tuckArm(armF0);
+  const armB = tuckArm(armB0);
   const dirLag = (a: V, b: V) => unit(lerp(a.x, b.x, 0.55), lerp(a.y, b.y, 0.55));
   const frontDir = dirLag(sol.frontDir, fingerLag.frontDir);
   const backDir = dirLag(sol.backDir, fingerLag.backDir);
@@ -4442,6 +4484,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
   prevHolding,
   prevReachFor,
   inkZoom,
+  offerTuck,
 }) => {
   const uid = safeId(useId());
   const {
@@ -4554,6 +4597,7 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
     prevReachAt,
     prevHolding,
     prevReachFor,
+    offerTuck,
   });
 
   const torso = TORSO_REL.map(up);
@@ -4906,57 +4950,74 @@ export const SeatedChild: React.FC<SeatedChildProps> = ({
       </g>
     );
 
-    /** The shawl falling over one upper arm: broad and loose, from over the shoulder (on the body cloth, so no gap at the
-     *  shoulder or the armpit) down to about the elbow, widening into a soft triangle with an irregular hem (no cuff, no
-     *  sleeve tube). It lies on the upper/outer side of the arm and hangs away from it with gravity when the arm lifts. */
+    /** The shawl over one shoulder and upper arm (BAL-26f): one cloth with the body's, draped from the shoulder and the
+     *  root of the upper arm, hanging by gravity to about the elbow line. It follows the arm only near the shoulder (a
+     *  raised arm comes out of it, the cloth falls below the shoulder like a curtain); the hanging edge lags the hand's
+     *  motion (`trail`, damped) and sways a little on the life clock; folds gather at the shoulder. No cuff, no tube. */
     const torsoMid = up({ x: 0, y: -66 });
     const nk = up({ x: 0, y: -106 });
-    const drape = (shP: V, E: V, lit: boolean): React.ReactElement => {
+    const drape = (shP: V, E: V, lit: boolean, trail: V = { x: 0, y: 0 }): React.ReactElement => {
       const ua = unit(E.x - shP.x, E.y - shP.y);
       const L0 = Math.hypot(E.x - shP.x, E.y - shP.y);
-      const out = unit(shP.x - torsoMid.x, shP.y - torsoMid.y);
+      const ou = unit(shP.x - torsoMid.x, 0.25 * (shP.y - torsoMid.y));
       const nA: V = { x: -ua.y, y: ua.x };
-      const sc = (n: V) => -n.y + 0.7 * (n.x * out.x + n.y * out.y);
+      const sc = (n: V) => -n.y + 0.7 * (n.x * ou.x + n.y * ou.y);
       const nT: V = sc(nA) >= sc({ x: -nA.x, y: -nA.y }) ? nA : { x: -nA.x, y: -nA.y };
-      const h = clamp(1 - Math.abs(ua.y), 0, 1); // 0 = the arm hangs, 1 = the arm is level (the cloth hangs below it)
-      const A = (t: number): V => ({ x: shP.x + ua.x * t * L0, y: shP.y + ua.y * t * L0 });
-      const top = (t: number, w: number): V => ({ x: A(t).x + nT.x * w, y: A(t).y + nT.y * w });
-      const bot = (t: number, w: number, drop: number): V => ({ x: A(t).x - nT.x * w, y: A(t).y - nT.y * w + drop });
-      const dEnd = 3 + 0.6 * L0 * h;
-      const dMid = 2 + 0.36 * L0 * h;
-      const c = top(1.1, 18.5);
-      const b = bot(0.94, 11.5, dEnd);
-      const hm = (k: number, sag: number): V => ({ x: lerp(c.x, b.x, k) + ua.x * 3, y: lerp(c.y, b.y, k) + sag });
-      const pts: V[] = [
-        { x: lerp(shP.x, nk.x, 0.6), y: lerp(shP.y, nk.y, 0.6) - 1.5 },
-        { x: lerp(shP.x, nk.x, 0.3), y: lerp(shP.y, nk.y, 0.3) - 5 },
-        top(-0.1, 12.5),
-        top(0.35, 13.5),
-        top(0.72, 15.5),
-        c,
-        hm(0.3, 6 + 3 * h),
-        hm(0.55, 3 + 1.5 * h),
-        hm(0.8, 5 + 2 * h),
-        b,
-        bot(0.6, 11.5, dMid),
-        bot(0.28, 11.5, 0.4 * dMid),
-        { x: lerp(shP.x, nk.x, 0.5), y: lerp(shP.y, nk.y, 0.5) + 8 },
+      const r = 9.6;
+      const Lh = 0.98 * UPPER;
+      const sw = { x: 1.1 * wob(L, lit ? 4.7 : 7, 0.35), y: 0.4 * wob(L, 7.1, 0.3) };
+      const tr = (k: number): V => ({ x: (trail.x + sw.x) * k, y: (trail.y + sw.y) * k });
+      const ad = (a: V, b: V): V => ({ x: a.x + b.x, y: a.y + b.y });
+      const R1: V = { x: shP.x + ua.x * 0.3 * L0, y: shP.y + ua.y * 0.3 * L0 };
+      const P0: V = { x: lerp(shP.x, nk.x, 0.6), y: lerp(shP.y, nk.y, 0.6) - 2.5 };
+      const P1: V = { x: shP.x + ou.x * 0.4 * r, y: shP.y - 1.15 * r };
+      const P2: V = { x: R1.x + nT.x * 1.2 * r, y: R1.y + nT.y * 1.2 * r };
+      const hemY = Math.max(shP.y + Lh, P2.y + 0.55 * Lh);
+      const O = ad({ x: P2.x + ou.x * 0.3 * r, y: P2.y + 0.45 * (hemY - P2.y) }, tr(0.5));
+      const H1 = ad({ x: P2.x + ou.x * 0.5 * r, y: hemY }, tr(1));
+      const H3 = ad({ x: shP.x - ou.x * 1.05 * r, y: shP.y + 0.9 * Lh }, tr(0.55));
+      const H2 = ad({ x: lerp(H1.x, H3.x, 0.5), y: lerp(H1.y, H3.y, 0.5) + 4 }, tr(0.85));
+      const H1b: V = { x: lerp(H1.x, H2.x, 0.5), y: lerp(H1.y, H2.y, 0.5) - 1.8 };
+      const I1: V = { x: shP.x - ou.x * 1.1 * r, y: shP.y - ou.y * 1.1 * r + 0.35 * Lh };
+      // while the arm hangs the shawl lies over the whole upper arm to the elbow; as it lifts it slides back to the
+      // shoulder and falls below it like a curtain
+      const kF = smooth((ua.y - 0.05) / 0.6);
+      const At = (t: number): V => ({ x: shP.x + ua.x * t * L0, y: shP.y + ua.y * t * L0 });
+      const off = (q: V, w: number): V => ({ x: q.x + nT.x * w, y: q.y + nT.y * w });
+      const fol: V[] = [
+        P0,
+        P1,
+        off(At(0.15), 1.4 * r),
+        off(At(0.35), 1.45 * r),
+        off(At(0.72), 1.6 * r),
+        ad(off(At(1.0), 1.75 * r), tr(1)),
+        ad({ x: At(1.1).x, y: At(1.1).y + 4 }, tr(0.9)),
+        ad(off(At(1.0), -1.6 * r), tr(0.7)),
+        off(At(0.7), -1.75 * r),
+        off(At(0.35), -1.8 * r),
       ];
+      const cur: V[] = [P0, P1, { x: shP.x + ou.x * 1.15 * r, y: shP.y + ou.y * 1.15 * r + 0.45 * r }, P2, O, H1, H1b, H2, H3, I1];
+      const pts: V[] = cur.map((q, i) => lerpV(q, fol[i], kF));
       return (
         <g>
-          {/* one cloth with the body's: no edge where it lies on the chest, a soft shade line only on the outer edge and hem */}
           <path d={smoothClosed(pts)} fill={lit ? PAL.cloth : PAL.clothMid} />
-          <path d={smoothOpen([top(0.2, 13.2), top(0.72, 15.5), c, hm(0.3, 6 + 3 * h), hm(0.55, 3 + 1.5 * h), hm(0.8, 5 + 2 * h), b])} fill="none" stroke={PAL.clothShade} strokeWidth={1.2} strokeLinecap="round" opacity={0.5} />
-          {/* long soft folds falling from the shoulder to the hem; warm cream shade on the underside */}
-          <path d={smoothOpen([top(0.05, 9), top(0.55, 10), lerpV(c, hm(0.3, 4 + 3 * h), 0.6)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.1} strokeLinecap="round" opacity={0.5} />
-          <path d={smoothOpen([A(0.12), lerpV(A(0.6), hm(0.55, 0), 0.5), hm(0.62, 1.5 + 1.5 * h)])} fill="none" stroke={PAL.clothFold} strokeWidth={1} strokeLinecap="round" opacity={0.42} />
-          <path d={smoothOpen([bot(0.2, 4, 0.3 * dMid), bot(0.6, 4, 0.8 * dMid), lerpV(b, hm(0.8, 0), 0.5)])} fill="none" stroke={PAL.clothShade} strokeWidth={4} strokeLinecap="round" opacity={0.18} />
-          <path d={smoothOpen([top(-0.05, 11.5), top(0.35, 12.5), top(0.7, 14)])} fill="none" stroke={PAL.clothLit} strokeWidth={1.5} strokeLinecap="round" opacity={lit ? 0.7 : 0.35} />
+          <path d={smoothOpen(pts.slice(1, 9))} fill="none" stroke={PAL.clothShade} strokeWidth={1.1} strokeLinecap="round" opacity={0.48} />
+          <path d={smoothOpen([lerpV(pts[1], pts[3], 0.4), lerpV(pts[3], pts[4], 0.5), lerpV(pts[5], pts[6], 0.6)])} fill="none" stroke={PAL.clothFold} strokeWidth={1} strokeLinecap="round" opacity={0.5} />
+          <path d={smoothOpen([lerpV(P0, P1, 0.7), lerpV(shP, pts[7], 0.55), { x: pts[7].x, y: pts[7].y - 3 }])} fill="none" stroke={PAL.clothFold} strokeWidth={0.95} strokeLinecap="round" opacity={0.42} />
+          <path d={smoothOpen([lerpV(shP, pts[9], 0.6), lerpV(pts[9], pts[8], 0.5), { x: lerp(pts[8].x, pts[7].x, 0.3), y: lerp(pts[8].y, pts[7].y, 0.3) - 2 }])} fill="none" stroke={PAL.clothShade} strokeWidth={4} strokeLinecap="round" opacity={0.16} />
+          <path d={smoothOpen([P0, P1, lerpV(pts[1], pts[3], 0.6)])} fill="none" stroke={PAL.clothLit} strokeWidth={1.5} strokeLinecap="round" opacity={lit ? 0.7 : 0.35} />
         </g>
       );
     };
-    plateCapeB = drape(shB, armB.E, false);
-    plateCapeF = drape(shF, armF.E, true);
+    /** The hand's move over the last 3 frames, reversed and damped: the shawl's hanging edge lags it. */
+    const trailOf = (now: V, was: V): V => {
+      const dx = 0.5 * (was.x - now.x);
+      const dy = 0.5 * (was.y - now.y);
+      const l = Math.hypot(dx, dy);
+      return l > 6 ? { x: (dx * 6) / l, y: (dy * 6) / l } : { x: dx, y: dy };
+    };
+    plateCapeB = drape(shB, armB.E, false, trailOf(sol.back, before.back));
+    plateCapeF = drape(shF, armF.E, true, trailOf(sol.front, before.front));
     plateFarSleeveOver = null;
     plateCapeShadows = null;
     plateArmOverB = null;

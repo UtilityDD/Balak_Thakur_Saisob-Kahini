@@ -283,6 +283,19 @@ export interface StandingChildProps {
    * delivered look, unchanged.
    */
   plateLook?: PlateLook;
+  /**
+   * Optional, opt-in (BAL-26f round 4; default off = the rig exactly as before): the upper body leans into reaches,
+   * offers, pointing and a raised arm. "auto" = up to about 7.5 degrees toward the reaching hand with the weight onto the
+   * near foot; a number scales that (0 = off, 1 = "auto"). The hands still go exactly to their targets and every joint
+   * of standingChildJoints follows the leaned body.
+   */
+  bodyLean?: "auto" | number;
+  /** With bodyLean: scales the slight twist of the chest and shoulders toward the reaching hand (default 1; 0 = lean
+   *  only). Hips, legs and feet do not move; the shoulder and hand joints follow the twist. */
+  bodyTwist?: number;
+  /** Optional (handInHands): the direction each hand points (wrist toward fingertips, figure units), e.g. both up for
+   *  folded hands (namaskar). Absent = the pose's own directions. */
+  handDirs?: { near?: V; far?: V };
   /** ref2 only: the camera zoom of the layer he is in, so the face's fine ink line stays about 1 px on screen. */
   inkZoom?: number;
 }
@@ -382,8 +395,9 @@ const applyBuild = (p: StandingChildProps): void => {
   HIP_HALF = h ? B.hipHalf : 12;
   TORSO = h ? B.torso : 126;
   SH_HALF = h ? B.shoulderHalf : 32;
-  UPPER = h ? B.upper : 76;
-  FORE = h ? B.fore : 68;
+  // BAL-26f (ref2): a six-year-old's shorter, softer arms (the hands still go to their targets)
+  UPPER = h ? B.upper * (r2 ? 0.94 : 1) : 76;
+  FORE = h ? B.fore * (r2 ? 0.9 : 1) : 68;
   REACH = (UPPER + FORE) * 0.95;
   HAND_L = h ? B.hand : 50;
   PALM_OFF = 0.24 * HAND_L * HAND_SY;
@@ -1118,8 +1132,8 @@ function solvePoseBase(pose: StandingPose, f: number, poseStart: number, ctx: Ct
       stance: p.stance ?? 0.4,
       nP: tgN ?? held,
       fP: tgF ?? h.fP,
-      nD: unit({ x: 0.92, y: 0.4 }),
-      fD: h.fD,
+      nD: p.handDirs?.near ? unit(p.handDirs.near) : unit({ x: 0.92, y: 0.4 }),
+      fD: p.handDirs?.far ? unit(p.handDirs.far) : h.fD,
       nTurn: lerp(-2.7, -0.25, pu),
       fTurn: h.fTurn,
       nCurl: 0.22,
@@ -1452,6 +1466,8 @@ interface Geom {
   legF: Leg;
   armN: Arm;
   armF: Arm;
+  /** bodyLean twist of the chest (radians; 0 = none). */
+  twist?: number;
   neckBase: V;
   neckTop: V;
   head: V;
@@ -1587,9 +1603,34 @@ const thetaFor = (v: PoseVals, yaw: number): number => {
   return reachTheta(nW, fW, yaw, 0.55);
 };
 
+/** Opt-in body lean (bodyLean): the torso pitches toward the reaching hand (forward reaches, offers, pointing; less for
+ *  a raised arm) and the weight goes onto the near foot. Targets are palm centres in figure units. */
+const withBodyLean = (v: PoseVals, k: number): PoseVals => {
+  const yS = HIP_Y - TORSO;
+  const reachOf = (p: V): { fwd: number; up: number } =>
+    Number.isNaN(p.x) ? { fwd: 0, up: 0 } : { fwd: clamp((p.x - 30) / 110, 0, 1) * (1 - 0.5 * smooth((yS - 40 - p.y) / 120)), up: smooth((yS - p.y) / 120) };
+  const a = reachOf(v.nP);
+  const b = reachOf(v.fP);
+  const fwd = Math.max(a.fwd, 0.8 * b.fwd);
+  const up = Math.max(a.up, b.up);
+  const lean = k * (0.13 * fwd + 0.05 * up);
+  return { ...v, theta: v.theta + lean, shiftX: v.shiftX - 5 * k * Math.max(fwd, 0.6 * up) };
+};
+
+/** bodyLean's twist (radians): the shoulder of the reaching hand comes forward; both hands forward = none. */
+const bodyTwistOf = (v: PoseVals, k: number): number => {
+  const yS = HIP_Y - TORSO;
+  const f = (p: V) => (Number.isNaN(p.x) ? 0 : clamp((p.x - 30) / 110, 0, 1) * (1 - 0.4 * smooth((yS - 40 - p.y) / 120)));
+  return 0.2 * k * (f(v.nP) - f(v.fP));
+};
+
 const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   const yaw = clamp(yawOf(props, sf), 0, 1);
-  const v = valsAt(props, sf, L, yaw);
+  const v0 = valsAt(props, sf, L, yaw);
+  // opt-in body lean (round 4): from where the hands are going, relative to the shoulder line
+  const leanK = props.bodyLean === undefined ? 0 : props.bodyLean === "auto" ? 1 : clamp(props.bodyLean, 0, 1.5);
+  const v = leanK > 0 ? withBodyLean(v0, leanK) : v0;
+  const twist = leanK > 0 ? bodyTwistOf(v0, leanK * clamp(props.bodyTwist ?? 1, 0, 2)) : 0;
   const ld = props.legDrive;
   const theta = ld ? v.theta + (ld.lean ?? 0) : v.theta;
   const drop = ld ? bendDrop(theta) + v.drop + (ld.pelvisDrop ?? 0) : bendDrop(theta) + v.drop;
@@ -1650,8 +1691,8 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
 
   // shoulders, with breath
   const Sc3: V3 = { x: P3.x, y: P3.y + ax3.y * TORSO, z: P3.z + ax3.z * TORSO };
-  const shN = add(proj({ ...Sc3, x: Sc3.x - SH_HALF }, yaw), { x: 0, y: -rise });
-  const shF = add(proj({ ...Sc3, x: Sc3.x + SH_HALF }, yaw), { x: 0, y: -rise });
+  const shN = add(proj({ ...Sc3, x: Sc3.x - SH_HALF * Math.cos(twist), z: Sc3.z + SH_HALF * Math.sin(twist) }, yaw), { x: 0, y: -rise });
+  const shF = add(proj({ ...Sc3, x: Sc3.x + SH_HALF * Math.cos(twist), z: Sc3.z - SH_HALF * Math.sin(twist) }, yaw), { x: 0, y: -rise });
   const Sc = add(ScRaw, { x: 0, y: -rise * 0.8 });
 
   // neck and head. Upright the head sits on the neck. In the bend the neck continues the spine's line with a slight
@@ -1773,6 +1814,18 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
       dirLag = c.d;
     }
     const W = wristOf(palm, dir);
+    // BAL-26f (ref2): the shoulder rises and comes forward with the arm (never a fixed pivot): a reach past about 80%
+    // of the arm's length draws the shoulder toward the hand (the elbow keeps a soft bend), a raised hand lifts it
+    const shA = REF2
+      ? (() => {
+          const d = sub(W, sh);
+          const dist = len(d);
+          const R = UPPER + FORE;
+          const pull = clamp(dist - 0.8 * R, 0, 0.1 * R);
+          const raise = smooth((sh.y - W.y) / (0.7 * R));
+          return add(add(sh, mul(unit(d), pull)), { x: 0, y: -0.08 * UPPER * raise });
+        })()
+      : sh;
     const WLag = lerpV(W, wristOf(palmLag, dirLag), lagW);
     // Episode 6: the far hand to the face keeps the elbow on the bend's own side (continuous while the hand rises).
     // Healthy far arm: pick the IK elbow that sits more outboard of the chest so the forearm emerges from the
@@ -1788,7 +1841,7 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
             return score(e0.E) >= score(e1.E) ? e0 : e1;
           }
         : (S: V, T: V, a: number, b: number) => ik2(S, T, a, b, -1);
-    let { E } = ikArm(sh, W, UPPER, FORE);
+    let { E } = ikArm(shA, W, UPPER, FORE);
     // Episode 6 hurtBack: the hand at the small of the back. The upper arm hangs down and back (HURT_ELBOW_DEG from
     // vertical), the elbow bent behind the hip line; the forearm runs round the body to the back, so it is drawn
     // foreshortened (shorter than FORE) instead of the 2D IK lifting the elbow up into a wing.
@@ -1810,7 +1863,7 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
     let Wd = add(E, mul(fa, FORE));
     // in contact the wrist is exactly where the target puts it
     if (contact > 0.01) {
-      const ex = ikArm(sh, W, UPPER, FORE);
+      const ex = ikArm(shA, W, UPPER, FORE);
       Wd = lerpV(Wd, ex.H, contact);
     }
     // keep the hand within a natural wrist bend of the forearm
@@ -1831,7 +1884,7 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
     const curlLag = near ? vLag6.nCurl : vLag6.fCurl;
     const curlNow = near ? vv.nCurl : vv.fCurl;
     return {
-      sh,
+      sh: shA,
       E,
       W: Wd,
       P,
@@ -1857,6 +1910,7 @@ const buildGeom = (props: StandingChildProps, sf: number, L: number): Geom => {
   const armF = solveArm("f", vA, v3, v6);
 
   return {
+    twist,
     yaw,
     theta,
     P3,
@@ -2139,10 +2193,10 @@ const ArmEl: React.FC<{ a: Arm; id: string; lit: number; fore?: boolean; upperOn
       ? upFrom !== undefined
         ? [11.2, 10.6, 10, 9.6, wristR]
         : shaped
-          ? [8.4, 8.8, wristR]
+          ? [9.4, 9.9, wristR]
           : [9.8, 9.3, wristR]
       : shaped
-        ? [12.8, 11.8, 10.2, 9.0, 8.4, 8.6, 9.0, 8.9, 7.6, wristR]
+        ? [12.8, 11.8, 10.6, 9.8, 9.4, 9.7, 10.1, 9.9, 8.4, wristR]
         : [12.8, 11.8, 10.6, 10.2, 10, 9.8, 9.6, 9.4, 9, wristR];
   // BAL-26c healthy: thicker arms (rk), tapering into the wrist so the wrist reads
   const R = rk === 1 ? R0 : R0.map((r, i) => (i === R0.length - 1 && !upperOnly ? r : r * rk * (fore || upperOnly ? 1 : 1 - 0.12 * (i / (R0.length - 1)))));
@@ -2331,6 +2385,13 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
     const P3 = g.P3;
     const ax3 = g.ax3;
     const fw3 = { x: 0, y: Math.sin(g.theta), z: Math.cos(g.theta) }; // body forward, pitched
+    if (g.twist) {
+      // bodyLean twist: the chest turns with the shoulders (nothing at the waist, all of it at the shoulder line)
+      const tw = g.twist * clamp(v / TORSO, 0, 1.05);
+      const u2 = u * Math.cos(tw) + dz * Math.sin(tw);
+      const dz2 = -u * Math.sin(tw) + dz * Math.cos(tw);
+      return proj({ x: P3.x + u2, y: P3.y + ax3.y * v + fw3.y * dz2, z: P3.z + ax3.z * v + fw3.z * dz2 }, yaw);
+    }
     return proj({ x: P3.x + u, y: P3.y + ax3.y * v + fw3.y * dz, z: P3.z + ax3.z * v + fw3.z * dz }, yaw);
   };
   const hwOf = (w: number) => (HB ? 1.08 * Math.hypot(w * ca, 0.82 * w * sa) * TORSO_W : 1.08 * Math.hypot(w * ca, 0.82 * w * sa));
@@ -2675,7 +2736,13 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
 
   /* ---------- BAL-26f (ref2): the chadar of the new plate ---------- */
   let r2TorsoEl: React.ReactElement | null = null;
-  let r2Drape: ((a: Arm, lit: boolean) => React.ReactElement) | null = null;
+  let r2Drape: ((a: Arm, lit: boolean, trail?: V) => React.ReactElement) | null = null;
+  /** ref2: how the elbow moved over the last 4 frames, reversed and damped (the shawl's hanging edge lags it). */
+  const r2Trail = (now: Arm, before: Arm): V => {
+    const d = mul(sub(before.E, now.E), 0.55);
+    const l = len(d);
+    return l > 10 ? mul(d, 10 / l) : d;
+  };
   if (REF2) {
     const sideW = (v: number, w: number, sgn: number) => add(Tp(v), mul(pa, sgn * (hwOf(w) + (v > 80 ? bR : 0))));
     const body: V[] = [
@@ -2746,52 +2813,76 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
         </g>
       </>
     );
-    /** The shawl falling over one upper arm: broad and loose, from over the shoulder (on the body cloth, so no gap at
-     *  the shoulder or the armpit) down to about the elbow, widening into a soft triangle with an irregular hem (no cuff,
-     *  no sleeve tube). It lies on the upper/outer side of the arm and hangs away from it with gravity when the arm lifts. */
+    /** The shawl over one shoulder and upper arm (BAL-26f): one cloth with the body's, draped from the shoulder and the
+     *  root of the upper arm and hanging by gravity to about the elbow line. It follows the arm only near the shoulder:
+     *  a raised arm comes out of it while the cloth falls below the shoulder like a curtain. The hanging edge lags the
+     *  arm's motion (`trail`, the elbow's move over the last 4 frames, damped) and sways a little on the life clock;
+     *  folds gather from the shoulder toward the hem. No cuff, no tube; it covers the shoulder and the armpit. */
     const torsoMid = Tp(80);
     const nk = Tp(TORSO + 6, 0, 6);
-    r2Drape = (a: Arm, lit: boolean): React.ReactElement => {
-      const ua = unit(sub(a.E, a.sh));
-      const L0 = len(sub(a.E, a.sh)) * lerp(1, 0.75, gb);
-      const out = unit(sub(a.sh, torsoMid));
-      const nA = perpL(ua);
-      const sc = (n: V) => -n.y + 0.7 * (n.x * out.x + n.y * out.y);
-      const nT = sc(nA) >= sc(mul(nA, -1)) ? nA : mul(nA, -1);
-      const h = clamp(1 - Math.abs(ua.y), 0, 1);
+    r2Drape = (a: Arm, lit: boolean, trail: V = { x: 0, y: 0 }): React.ReactElement => {
+      // BAL-26f round 4: ONE broad shawl. From the neck the cloth goes over the shoulder and falls; its outer edge runs
+      // from the shoulder in a soft diagonal down past the upper arm (no inner edge round the arm: no sleeve), its hem
+      // crosses over the arm and the chest to the front edge of the V (lower at the back, irregular), and its inner
+      // part is one with the front panel. A hanging arm stays under it to about the elbow; a lifted arm comes out of it
+      // while the cloth keeps hanging from the shoulder. The hem lags the arm (`trail`) and sways on the life clock.
+      const S = a.sh;
+      const ua = unit(sub(a.E, S));
+      const ou = unit({ x: S.x - torsoMid.x, y: 0.25 * (S.y - torsoMid.y) });
       const r = 10.4 * ARM_R;
-      const A = (t: number): V => add(a.sh, mul(ua, t * L0));
-      const top = (t: number, w: number): V => add(A(t), mul(nT, w));
-      const bot = (t: number, w: number, drop: number): V => add(add(A(t), mul(nT, -w)), { x: 0.3 * wind, y: drop });
-      const dEnd = 4 + 0.6 * L0 * h;
-      const dMid = 3 + 0.36 * L0 * h;
-      const c = top(1.1, r * 1.8);
-      const b = bot(0.94, r * 1.3, dEnd);
-      const hm = (k: number, sag: number): V => add(add(lerpV(c, b, k), mul(ua, 4)), { x: 0.5 * wind, y: sag });
-      const pts: V[] = [
-        add(lerpV(a.sh, nk, 0.62), { x: 0, y: -2 }),
-        add(lerpV(a.sh, nk, 0.3), { x: 0, y: -0.45 * r }),
-        top(-0.1, r * 1.2),
-        top(0.35, r * 1.3),
-        top(0.72, r * 1.5),
-        c,
-        hm(0.3, 9 + 4 * h),
-        hm(0.55, 4 + 2 * h),
-        hm(0.8, 7 + 3 * h),
-        b,
-        bot(0.6, r * 1.3, dMid),
-        bot(0.28, r * 1.3, 0.4 * dMid),
-        add(lerpV(a.sh, nk, 0.5), { x: 0, y: 0.7 * r }),
+      const sg = a.side;
+      const kF = smooth((ua.y - 0.05) / 0.6);
+      const sway = { x: 1.6 * wob(L, 4.7 + (lit ? 0 : 2.3), 0.35), y: 0.6 * wob(L, 7.1, 0.3) };
+      const tr = (k: number): V => add(mul(trail, k), mul(sway, k));
+      const P0 = Tp(TORSO + 6, sg * 9, 8);
+      const P1 = add(add(S, { x: 0, y: -1.3 * r }), mul(ou, 0.5 * r));
+      const Q0 = add(add(S, mul(ou, 1.7 * r)), { x: 0, y: 0.3 * r });
+      // a lifted or crossing arm keeps the cloth over its shoulder and the outer upper arm (to about 60%, less as the
+      // arm goes up past level, where the cloth slides back) and the cloth hangs from there: never a band of bare skin
+      const L0 = len(sub(a.E, S));
+      const nA = perpL(ua);
+      const scN = (n: V) => -n.y + 0.7 * (n.x * ou.x + n.y * ou.y);
+      const nT = scN(nA) >= scN(mul(nA, -1)) ? nA : mul(nA, -1);
+      const cover = 0.62 * (1 - 0.75 * smooth((-ua.y - 0.25) / 0.6));
+      const A3 = add(add(S, mul(ua, 0.5 * cover * L0)), mul(nT, 1.4 * r));
+      const A6 = add(add(S, mul(ua, cover * L0)), mul(nT, 1.4 * r));
+      const Q = Q0;
+      // the cloth lying over the upper arm (one with the main shape): round at the shoulder, its lower side sagging
+      const hz = clamp(1 - Math.abs(ua.y), 0, 1);
+      const B = (t: number, sagK: number): V => add(add(add(S, mul(ua, t * cover * L0)), mul(nT, -1.35 * r)), { x: 0, y: sagK * 0.9 * r * hz });
+      const armCover: V[] = [
+        add(S, mul(ua, -1.2 * r)),
+        add(add(S, mul(ua, -0.7 * r)), mul(nT, 1.25 * r)),
+        A3,
+        A6,
+        add(add(S, mul(ua, cover * L0 + 0.45 * r)), tr(0.5)),
+        add(B(1, 1), tr(0.8)),
+        add(B(0.5, 0.6), tr(0.4)),
+        add(add(S, mul(ua, -0.7 * r)), mul(nT, -1.3 * r)),
       ];
+      // the outer hem corner: just outside and below the elbow while the arm hangs; hanging from the shoulder once it lifts
+      const Ch = add(add(a.E, mul(ou, 1.45 * r)), { x: 0, y: 0.5 * r });
+      const Cc = add(add(S, mul(ou, 1.75 * r)), { x: 0, y: 0.95 * UPPER * lerp(1, 0.7, gb) });
+      const C = add(lerpV(Cc, Ch, kF), tr(1));
+      const F = Tp(lerp(86, 100, gb), sg * 10, 19);
+      const H1 = add(add(lerpV(C, F, 0.3), { x: 0, y: 4 }), tr(0.75));
+      const H2 = add(add(lerpV(C, F, 0.6), { x: 0, y: -2.5 }), tr(0.45));
+      const H3 = add(add(lerpV(C, F, 0.84), { x: 0, y: 2.5 }), tr(0.2));
+      const Fv = Tp(TORSO - 12, sg * 10.5, 14);
+      const pts: V[] = [P0, P1, Q, C, H1, H2, H3, F, Fv];
       return (
         <g>
-          {/* one cloth with the body's: no edge where it lies on the chest, a soft shade line only on the outer edge and hem */}
           <path d={smoothClosed(pts)} fill={lit ? PAL.cloth : PAL.clothMid} />
-          <path d={smoothOpen([top(0.2, r * 1.26), top(0.72, r * 1.5), c, hm(0.3, 9 + 4 * h), hm(0.55, 4 + 2 * h), hm(0.8, 7 + 3 * h), b])} fill="none" stroke={PAL.clothShade} strokeWidth={1.4} strokeLinecap="round" opacity={0.5} />
-          <path d={smoothOpen([top(0.05, r * 0.9), top(0.55, r), lerpV(c, hm(0.3, 6 + 4 * h), 0.6)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.3} strokeLinecap="round" opacity={0.5} />
-          <path d={smoothOpen([A(0.12), lerpV(A(0.6), hm(0.55, 0), 0.5), hm(0.62, 2 + 2 * h)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.2} strokeLinecap="round" opacity={0.42} />
-          <path d={smoothOpen([bot(0.2, r * 0.4, 0.3 * dMid), bot(0.6, r * 0.4, 0.8 * dMid), lerpV(b, hm(0.8, 0), 0.5)])} fill="none" stroke={PAL.clothShade} strokeWidth={5} strokeLinecap="round" opacity={0.18} />
-          <path d={smoothOpen([top(-0.05, r * 1.1), top(0.35, r * 1.2), top(0.7, r * 1.35)])} fill="none" stroke={PAL.clothLit} strokeWidth={1.8} strokeLinecap="round" opacity={lit ? 0.7 : 0.35} />
+          {/* a soft shade line along the falling outer edge and the hem only */}
+          <path d={smoothClosed(armCover)} fill={lit ? PAL.cloth : PAL.clothMid} />
+          <path d={smoothOpen([armCover[3], armCover[4], armCover[5], armCover[6]])} fill="none" stroke={PAL.clothShade} strokeWidth={1.3} strokeLinecap="round" opacity={0.45 * (1 - kF)} />
+          <path d={smoothOpen([P1, Q, C, H1, H2, H3, F])} fill="none" stroke={PAL.clothShade} strokeWidth={1.4} strokeLinecap="round" opacity={0.48} />
+          {/* the mass hangs from the shoulder: folds gathered there, opening toward the hem; warm cream shade above the hem */}
+          <path d={smoothOpen([lerpV(P1, Q, 0.4), lerpV(Q, C, 0.45), lerpV(C, H1, 0.5)])} fill="none" stroke={PAL.clothFold} strokeWidth={1.3} strokeLinecap="round" opacity={0.5} />
+          <path d={smoothOpen([P1, lerpV(P1, H2, 0.5), add(H2, { x: 0, y: -4 })])} fill="none" stroke={PAL.clothFold} strokeWidth={1.2} strokeLinecap="round" opacity={0.42} />
+          <path d={smoothOpen([lerpV(P0, P1, 0.5), lerpV(lerpV(P0, P1, 0.5), H3, 0.55), add(H3, { x: 0, y: -4 })])} fill="none" stroke={PAL.clothFold} strokeWidth={1.1} strokeLinecap="round" opacity={0.34} />
+          <path d={smoothOpen([add(H1, { x: 0, y: -6 }), add(H2, { x: 0, y: -7 }), add(H3, { x: 0, y: -6 })])} fill="none" stroke={PAL.clothShade} strokeWidth={6} strokeLinecap="round" opacity={0.13} />
+          <path d={smoothOpen([P0, P1, lerpV(P1, Q, 0.7)])} fill="none" stroke={PAL.clothLit} strokeWidth={1.8} strokeLinecap="round" opacity={lit ? 0.7 : 0.35} />
         </g>
       );
     };
@@ -2809,7 +2900,7 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
   const farArmBehind = REF2 && r2Drape ? (
     <>
       <ArmEl a={g.armF} id={`${uid}-af`} lit={0.6} upperOnly={farUpperLate} shaped pal={PAL} hl={HAND_L} rk={ARM_R} />
-      {r2Drape(g.armF, false)}
+      {r2Drape(g.armF, false, r2Trail(g.armF, gPrev.armF))}
     </>
   ) : HB ? (
     <>
@@ -2830,7 +2921,7 @@ export const StandingChild: React.FC<StandingChildProps> = (props) => {
     <>
       {/* ref2: upper arm, the chadar over it, then the forearm and hand coming out of it */}
       <ArmEl a={g.armN} id={`${uid}-an`} lit={1} upperOnly shaped pal={PAL} hl={HAND_L} rk={ARM_R} />
-      {r2Drape(g.armN, true)}
+      {r2Drape(g.armN, true, r2Trail(g.armN, gPrev.armN))}
       <ArmEl a={g.armN} id={`${uid}-anf`} lit={1} fore edgeK={0} shaped pal={PAL} hl={HAND_L} rk={ARM_R} />
     </>
   ) : HB ? (

@@ -42,6 +42,10 @@ import { GhibliLifeKitQA } from "./ghibli_pipeline/core/GhibliLifeKitQA";
 import { EP04G_TOTAL_FRAMES } from "./ghibli_pipeline/episode04/timing";
 import { Episode05 } from "./episode05/Episode05";
 import { Episode05Ghibli } from "./ghibli_pipeline/episode05/Episode05Ghibli";
+import { Episode05Rewrite } from "./ghibli_pipeline/episode05_rewrite/Episode05Rewrite";
+import { EP05R_TOTAL_FRAMES } from "./ghibli_pipeline/episode05_rewrite/timing";
+import { Ep05RewriteCastQA } from "./ghibli_pipeline/episode05_rewrite/Ep05RewriteCastQA";
+import { BalakRef2PoseQA } from "./ghibli_pipeline/core/BalakRef2PoseQA";
 import { Episode06Ghibli } from "./ghibli_pipeline/episode06/Episode06Ghibli";
 import { EP05_TOTAL_FRAMES } from "./episode05/timing";
 import { Episode06 } from "./episode06/Episode06";
@@ -78,6 +82,9 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="Episode05GhibliFull" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode05Ghibli" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode05GhibliTest" component={Episode05Ghibli} durationInFrames={EP05_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Episode05GhibliRewrite" component={Episode05Rewrite} durationInFrames={EP05R_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
+      <Composition id="Ep05RewriteCastQA" component={Ep05RewriteCastQA} durationInFrames={240} fps={24} width={1920} height={1080} />
+      <Composition id="BalakRef2PoseQA" component={BalakRef2PoseQA} durationInFrames={480} fps={24} width={1920} height={1080} />
       <Composition id="Episode06" component={Episode06} durationInFrames={EP06_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode06GhibliTest" component={Episode06Ghibli} durationInFrames={EP06_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
       <Composition id="Episode03" component={Episode03} durationInFrames={EP03_TOTAL_FRAMES} fps={24} width={1920} height={1080} />
