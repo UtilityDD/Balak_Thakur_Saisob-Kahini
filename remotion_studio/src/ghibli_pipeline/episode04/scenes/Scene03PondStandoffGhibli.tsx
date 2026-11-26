@@ -14,7 +14,8 @@ import {
   standingLocal,
 } from "../../../episode05/rig/StandingChild";
 import { GhibliCharFilterDefs, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
-import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { EP04_BALAK_INK, Ep04BalakDivine, Ep04BalakGroundGlow, Ep04BalakInkDefs } from "../Ep04BalakDivine";
+import { EP04_BALAK_LOOK } from "../ep04BalakLook";
 import { GhibliFootstepDust } from "../../core/GhibliAtmosphere";
 import { GhibliGroundCover } from "../../core/GhibliLifeKit";
 import { safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
@@ -24,6 +25,8 @@ import {
   EP04G_POND_LIGHT,
   GhibliEp04ForegroundFinish,
   GhibliPondBackdrop,
+  GHAT_LAYOUT,
+  ghatSpot,
   mouthFromRms,
   poseOf,
 } from "../Ep04GhibliShared";
@@ -67,13 +70,15 @@ const PRELOAD = [
 type V = { x: number; y: number };
 
 const K = 0.94; // adult Puppet scale on the front bank
-// Balak stands right on the bank lip (the water's edge, bankEdgeY ~ 837 here), the pond behind and beside him (Shot 12).
+// Balak stands right on the bank lip (the water's edge, y ~ 837 here), the pond behind and beside him (Shot 12).
 const BAL = { x: 1180, y: 858, s: 0.5, headScale: 1.45 };
 const GOB_S = 0.78; // drawing scale of the brass Gobinda in his hands
 const GOB_GRIP_Y = 6.9; // grip line below the object's origin (object units)
 const GOB_BOTTOM = 32.8; // origin to the base (object units)
 const DOLL_S = 1.0; // the wooden doll reads clearly (director audit: was tiny)
 const DOLL_GRIP_Y = 2.4;
+/** Biru holds the doll lower, round its body (world px below DOLL_GRIP_Y), so his fingers never cover its face. */
+const BAL_DOLL_GRIP = 14;
 
 const smooth = (t: number) => EASE.inOut(clamp(t));
 const C: Record<string, CastMember> = EP04G_CAST;
@@ -111,18 +116,24 @@ const MARK = {
   // medium (its left edge ~ 965), never covered by the cousins (speaker medium Shot 13).
   sundar0: { x: 838, y: 978 },
   sundar1: { x: 872, y: 974 },
-  sundar2: { x: 1012, y: 916 },
-  // Charu far upstage on the ghat landing (smaller via persp)
-  charu0: { x: 290, y: 866 },
-  charu1: { x: 660, y: 862 },
+  // the hand-over mark: up the bank close to Biru's own ground line (his two steps stay level, feet locked)
+  sundar2: { x: 986, y: 890 },
+  // Charu upstage on the ghat's flat landing (smaller via persp). Taken from the ghat geometry (ghatSpot: step 0 =
+  // the landing, at bank level), so she stays on the stones if the ghat is redrawn (it was shortened 2026-11-25)
+  charu0: { x: ghatSpot(0.15, 0, 0.8).x, y: ghatSpot(0.15, 0, 0.8).y },
+  // then (AG5) down off the landing's front and onto the grass right of the ghat, downstage of its right gate post, so
+  // she is wholly inside the Shot 16 two-shot for her sigh (on the landing she was cut by the frame edge by the wall)
+  charu1: { x: 700, y: 930 },
   // Elder cousin mid-depth, left of the runner, so the group reads in three depths (Charu / cousins / Sundar)
   cous0: { x: 420, y: 900 },
   cous1: { x: 470, y: 898 },
   cous2: { x: 360, y: 902 },
   // Runner mid-depth (taller read); kept off Sundar's medium; aside upstage for hand-over
-  run0: { x: 600, y: 918 },
-  run1: { x: 680, y: 914 },
-  run2: { x: 70, y: 922 },
+  // on the grass right of the ghat, downstage of its right gate post (2026-11-25: the shortened ghat's post stood on
+  // his feet at the old marks)
+  run0: { x: 700, y: 940 },
+  run1: { x: 748, y: 932 },
+  run2: { x: 70, y: 942 },
   run3: { x: 1068, y: 880 },
   run4: { x: 1290, y: 852 },
 } as const;
@@ -135,7 +146,15 @@ const MARK = {
 const persp = (y: number) => (y - 500) / 430;
 
 /** Is world point (x, y) on the grass (right of the ghat's right parapet)? */
-const onGrass = (x: number, y: number) => x > 960 - 0.766 * (y - 500) + 24;
+const onGrass = (x: number, y: number) => {
+  // ghat edges on the ground are straight lines through the vanishing point (960, 500): x = 960 + k (y - 500)
+  const [rw] = GHAT_LAYOUT.rightWallFoot;
+  const [ll] = GHAT_LAYOUT.landing;
+  const kR = (rw[0] - 960) / (rw[1] - 500);
+  const kL = ((ll[0] - 960) / (ll[1] - 500)) * 1.045; // outer face of the left wall
+  return x > 960 + kR * (y - 500) + 10 || x < 960 + kL * (y - 500) - 10;
+};
+
 
 /**
  * Soft, grounded contact shadow (outside the ink filter, so it never takes an ink contour): a wide feathered pool cast
@@ -173,73 +192,6 @@ const BankPadCover: React.FC = () => (
     <ellipse cx={1300} cy={848} rx={180} ry={30} fill="#b3bc80" opacity={0.4} filter="url(#s03-padhide)" />
   </g>
 );
-
-/** The bank's water edge (same curve as GhibliPondBank's bankEdgeY in Ep04GhibliShared). */
-const bankEdgeY = (x: number) =>
-  836 + 7 * Math.sin(x * 0.0041 + 1.3) + 3.2 * Math.sin(x * 0.0127 + 0.4) + 1.4 * Math.sin(x * 0.043 + 2.1);
-
-const NW_X0 = 770;
-const NW_X1 = 1700;
-const NW_H = 150;
-
-/**
- * The near water just beyond the bank lip, behind Balak (Shot 12/14). The pond plate sits on a far parallax plane
- * (depth 0.58), so in the tight medium shots it slides up out of frame and the lip shows haze instead of water; this
- * world-locked strip puts emerald water right at his heels. It fades in with the zoom (the wide shots show the plate's
- * own water) and is feathered at the top and the ends. Drawn in the backdrop's under-the-tree slot, so the mandar trunk
- * and the banana stand in front of it; it starts right of the ghat.
- */
-const NearWater: React.FC<{ f: number; cam: Cam; ripple?: { x: number; t: number } }> = ({ f, cam, ripple }) => {
-  const op = clamp((cam.zoom - 1.3) / 0.4);
-  if (op <= 0.01) return null;
-  const pts: string[] = [];
-  for (let x = NW_X0 - 40; x <= NW_X1 + 40; x += 10) pts.push(`${x} ${(bankEdgeY(x) + 3).toFixed(1)}`);
-  const top = 836 - NW_H;
-  const d = `M ${NW_X0 - 40} ${top} L ${NW_X1 + 40} ${top} L ${pts.slice().reverse().join(" L ")} Z`;
-  return (
-    // the slot layer drifts (parallaxDrift -0.028) against the ground-locked bank: cancel it so the lip lines up
-    <g pointerEvents="none" opacity={op} transform={`translate(${(-0.028 * cam.x).toFixed(2)} ${(-0.0126 * cam.y).toFixed(2)})`}>
-      <defs>
-        <linearGradient id="s03-nw-fill" gradientUnits="userSpaceOnUse" x1={0} y1={top} x2={0} y2={842}>
-          <stop offset="0%" stopColor="#a9c4b4" stopOpacity={0} />
-          <stop offset="28%" stopColor="#8fb3a2" stopOpacity={0.8} />
-          <stop offset="62%" stopColor="#6c9c89" stopOpacity={0.96} />
-          <stop offset="100%" stopColor="#4f8072" stopOpacity={1} />
-        </linearGradient>
-        <linearGradient id="s03-nw-ends" gradientUnits="userSpaceOnUse" x1={NW_X0 - 40} y1={0} x2={NW_X1 + 40} y2={0}>
-          <stop offset="0%" stopColor="#fff" stopOpacity={0} />
-          <stop offset="14%" stopColor="#fff" stopOpacity={1} />
-          <stop offset="88%" stopColor="#fff" stopOpacity={1} />
-          <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-        </linearGradient>
-        <mask id="s03-nw-mask" maskUnits="userSpaceOnUse" x={NW_X0 - 60} y={top - 20} width={NW_X1 - NW_X0 + 120} height={NW_H + 60}>
-          <rect x={NW_X0 - 40} y={top - 20} width={NW_X1 - NW_X0 + 80} height={NW_H + 60} fill="url(#s03-nw-ends)" />
-        </mask>
-        <filter id="s03-nw-soft" x="-5%" y="-30%" width="110%" height="160%">
-          <feGaussianBlur stdDeviation={1.4} />
-        </filter>
-      </defs>
-      <g mask="url(#s03-nw-mask)">
-        <path d={d} fill="url(#s03-nw-fill)" />
-        {/* the bank's green reflection in the shallows and slow horizontal glints */}
-        <path d={`M ${NW_X0 - 40} ${bankEdgeY(NW_X0) - 6} ${pts.map((p) => `L ${p}`).join(" ")}`} fill="none" stroke="#6f8a52" strokeWidth={10} opacity={0.35} filter="url(#s03-nw-soft)" transform="translate(0 -8)" />
-        {Array.from({ length: 14 }, (_, i) => {
-          const gx = NW_X0 + ((i * 97 + f * (0.25 + (i % 3) * 0.1)) % (NW_X1 - NW_X0));
-          const gy = 836 - 12 - ((i * 37) % 70);
-          const a = 0.25 + 0.25 * Math.sin(f * 0.07 + i * 1.9);
-          return <ellipse key={i} cx={gx} cy={gy} rx={10 + (i % 4) * 5} ry={1.1} fill="#eef7ee" opacity={a * (1 - (836 - gy) / 110)} />;
-        })}
-        {ripple && ripple.t > 0 &&
-          [0, 1, 2].map((k) => {
-            const ph = ((ripple.t + k * 18) % 54) / 54;
-            return (
-              <ellipse key={k} cx={ripple.x} cy={826} rx={6 + 34 * ph} ry={1.6 + 5 * ph} fill="none" stroke="#e8f3ea" strokeWidth={1.3} opacity={(1 - ph) * 0.7} />
-            );
-          })}
-      </g>
-    </g>
-  );
-};
 
 /**
  * The rigs draw a faint ambient-occlusion oval under the feet; through the ink filter its low-alpha pixels take the
@@ -365,12 +317,13 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
   const runnerY =
     f < OUT0
       ? f < WAVE + 16
-        ? lerp(942, MARK.run0.y, smooth((f - 10) / 96))
+        ? lerp(948, MARK.run0.y, smooth((f - 10) / 96))
         : lerp(MARK.run1.y, MARK.run2.y, smooth((f - (WAVE + 16)) / 64))
       : f < BACK0
-        ? lerp(MARK.run2.y, 934, smooth((f - OUT0) / 14))
+        ? lerp(MARK.run2.y, 946, smooth((f - OUT0) / 14))
         : f < ASIDE
-          ? lerp(934, MARK.run3.y, smooth((f - BACK0) / (BACK1 - BACK0 + 8)))
+          ? // back along the front of the ghat (downstage of the posts), then up the bank to Biru once past them
+            lerp(946, MARK.run3.y, smooth((runnerX - 690) / (MARK.run3.x - 690)))
           : lerp(MARK.run3.y, MARK.run4.y, smooth((f - ASIDE) / 40));
   const runnerZip = (f >= OUT0 && f < OUT1 + 4) || (f >= BACK0 && f < BACK1 - 4);
   const runnerHasDoll = f >= BACK0 && f < TAKE;
@@ -387,7 +340,14 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
   const cw = f < 182 ? walker(cousLeg, cEnter) : f < WAVE + 10 ? walker(cousLeg, cCreep) : walker(cousLeg, cBack);
   const cousX = cw.x;
   // stay on the ghat landing (upstage of Sundar) — never share his downstage grass line
-  const cousY = f < WAVE + 10 ? lerp(MARK.cous0.y, MARK.cous1.y, smooth((f - 182) / 184)) : MARK.cous2.y;
+  // in along the grass in front of the ghat, then diagonally up onto the landing (clear of the left wall and post)
+  const enterY = (x: number, x0: number, x1: number, y1: number) => lerp(974, y1, smooth((x - x0) / (x1 - x0)));
+  const cousY =
+    f < 182
+      ? enterY(cousX, 140, MARK.cous0.x, MARK.cous0.y)
+      : f < WAVE + 10
+        ? lerp(MARK.cous0.y, MARK.cous1.y, smooth((f - 182) / 184))
+        : MARK.cous2.y;
 
   /* ---------------- Sundar ---------------- */
   const sundar = C.sundar;
@@ -396,7 +356,10 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
   // he waits at his mark (out of the runner's two-shot) and comes up to Biru as Biru says he will give it to him
   const APPROACH = WALK0 - 10;
   const sApproach: WalkOpts = { start: APPROACH, dur: 50, fromX: MARK.sundar1.x, toX: MARK.sundar2.x, scale: K, height: sundar.height, seed: sundar.seed, kind: "hurry", startIn: 8, stopIn: 14, bodyTurn: safeBodyTurn(0.34) };
-  const sw = f < STEP ? walker(f, sEnter) : f < APPROACH ? walker(f, sStep) : walker(f, sApproach);
+  // functions of the scene frame, so the Puppet can sample Sundar's acting at neighbouring frames (eased poses,
+  // overlap and eye-lead for adults, MOT-10/11)
+  const sundarWalkAt = (s: number) => (s < STEP ? walker(s, sEnter) : s < APPROACH ? walker(s, sStep) : walker(s, sApproach));
+  const sw = sundarWalkAt(f);
   const sundarX = sw.x;
   const apT = smooth((f - APPROACH) / 50);
   const sundarY = f < APPROACH ? lerp(MARK.sundar0.y, MARK.sundar1.y, smooth((f - STEP) / 44)) : lerp(MARK.sundar1.y, MARK.sundar2.y, apT);
@@ -407,32 +370,92 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
   const charu = C.charu;
   const chEnter: WalkOpts = { start: 10, dur: 140, fromX: -20, toX: MARK.charu0.x, scale: K, height: charu.height, seed: charu.seed, kind: "hurry", startIn: 8, stopIn: 18, bodyTurn: safeBodyTurn(0.28) };
   const chUp: WalkOpts = { start: OUT0 + 20, dur: 80, fromX: MARK.charu0.x, toX: MARK.charu1.x, scale: K, height: charu.height, seed: charu.seed, startIn: 12, stopIn: 18, bodyTurn: safeBodyTurn(0.3) };
-  const chw = f < OUT0 + 20 ? walker(f, chEnter) : walker(f, chUp);
+  const charuWalkAt = (s: number) => (s < OUT0 + 20 ? walker(s, chEnter) : walker(s, chUp));
+  const chw = charuWalkAt(f);
   const charuX = chw.x;
-  const charuY = lerp(MARK.charu0.y, MARK.charu1.y, smooth((f - (OUT0 + 20)) / 80));
+  // down to the front of the landing first, past the right gate post (feet downstage of it), then up onto the grass
+  const charuY =
+    f < OUT0 + 20
+      ? enterY(charuX, 120, MARK.charu0.x, MARK.charu0.y)
+      : charuX < 610
+        ? lerp(MARK.charu0.y, 944, smooth((charuX - MARK.charu0.x) / (610 - MARK.charu0.x)))
+        : lerp(944, MARK.charu1.y, smooth((charuX - 610) / (MARK.charu1.x - 610)));
   const charuK = K * persp(charuY);
 
   /* ---------------- Balak ---------------- */
+  // Shot 14's "এখানে" (here): the far hand pats down at the ground in front of him while the near hand keeps the
+  // Gobinda at his chest
+  const PAT0 = HERE - 16;
   const standKeys: StandKey[] = [
     { at: -60, pose: "holdOut" },
     // upright standoff (handInHands = upright, both hands on scene targets); reachGrab is a bend pose (hard lean)
     { at: STOP, pose: "handInHands", blend: 16 },
     { at: LOWER, pose: "holdOut", blend: 26 },
-    { at: TAKE - 22, pose: "handInHands", blend: 18 },
+    { at: PAT0, pose: "handInHands", blend: 16 },
   ];
   const st = standAt(f, standKeys);
-  // walking two steps (diagonally toward the camera a touch) to Sundar
-  const walkT = smooth((f - WALK0) / (WALK1 - WALK0));
-  const stepPh = clamp((f - WALK0) / (WALK1 - WALK0)) * 2; // two steps
-  const balX = BAL.x - 78 * walkT;
-  const balY = BAL.y + 36 * walkT - (f > WALK0 && f < WALK1 ? 3.2 * Math.abs(Math.sin(Math.PI * stepPh)) : 0);
+
+  // Two steps to Sundar ("সুন্দর জ্যেঠাকে দেব!"), feet locked (legDrive, MOT-06): the body travels level along the
+  // bank (a pure screen-x move, so the planted feet can be held exactly), near foot, far foot, near foot closes.
+  const WALK_D = 156; // figure units (78 world px at s 0.5)
+  const walkU = (fr: number) => smooth((fr - WALK0) / (WALK1 - WALK0));
+  const STEPS: Array<{ near: boolean; t0: number; t1: number; from: number; to: number }> = [
+    { near: true, t0: WALK0 + 1, t1: WALK0 + 10, from: 0, to: 0.55 * WALK_D },
+    { near: false, t0: WALK0 + 11, t1: WALK0 + 21, from: 0, to: WALK_D },
+    { near: true, t0: WALK0 + 23, t1: WALK0 + 32, from: 0.55 * WALK_D, to: WALK_D },
+  ];
+  const footAt = (fr: number, near: boolean): { d: number; lift: number; pitch: number } => {
+    let d = 0;
+    for (const sp of STEPS) {
+      if (sp.near !== near) continue;
+      if (fr < sp.t0) break;
+      if (fr < sp.t1) {
+        const u = (fr - sp.t0) / (sp.t1 - sp.t0);
+        const e = u * u * (3 - 2 * u);
+        const pitch = u < 0.5 ? 0.24 * (1 - u / 0.5) : -0.18 * Math.sin(((u - 0.5) / 0.5) * (Math.PI / 2));
+        return { d: lerp(sp.from, sp.to, e), lift: 9 * Math.sin(Math.PI * u), pitch };
+      }
+      d = sp.to;
+    }
+    return { d, lift: 0, pitch: 0 };
+  };
+  const YAW_WALK = 0.85; // his yaw during the walk (0.6 + 0.25 after LOWER)
+  const WCA = Math.cos(((55 * Math.PI) / 180) * YAW_WALK);
+  const WSA = Math.sin(((55 * Math.PI) / 180) * YAW_WALK);
+  const walking = f >= WALK0 && f <= WALK1 + 2;
+  const walkD = WALK_D * walkU(f);
+  const balX = BAL.x - BAL.s * walkD;
+  const balY = BAL.y;
   const loc = (P: V): V => standingLocal(P, balX, balY, BAL.s, true);
 
+  // The playful lean during the threat (Shot 12): back toward the water, with a teasing sway (figure pitch, radians)
+  const leanW = smooth((f - (STOP - 6)) / 18) * (1 - smooth((f - LOWER) / 20));
+  const threatLean = leanW * (-0.11 - 0.04 * smooth((f - THREAT) / 10) + 0.035 * Math.sin((f - STOP) * 0.11));
+  let legDrive: StandingChildProps["legDrive"] = undefined;
+  if (walking) {
+    const n = footAt(f, true);
+    const fs = footAt(f, false);
+    const live = 1 - clamp((f - (WALK1 - 3)) / 5);
+    const swing = STEPS.find((sp) => f >= sp.t0 && f < sp.t1);
+    const su = swing ? (f - swing.t0) / (swing.t1 - swing.t0) : 0;
+    const stanceNear = swing ? !swing.near : true;
+    const weight = swing ? Math.sin(Math.PI * su) : 0.15;
+    legDrive = {
+      near: { x: (n.d - walkD) * WCA, z: (n.d - walkD) * WSA, lift: n.lift, pitch: n.pitch },
+      far: { x: (fs.d - walkD) * WCA, z: (fs.d - walkD) * WSA, lift: fs.lift, pitch: fs.pitch },
+      pelvisDrop: live * (swing ? 1.2 + 1.8 * Math.sin(Math.PI * su) : 0.8),
+      lean: 0.06 * live,
+      shiftX: live * (stanceNear ? -2 : 2) * weight,
+      hipTilt: live * (stanceNear ? 1.4 : -1.4) * weight,
+    };
+  } else if (leanW > 0.001) {
+    legDrive = { lean: threatLean };
+  }
+
   // hand targets in figure units (facing +x before the flip = toward the family)
-  // The standoff (Shot 12): the Gobinda held out at arm's length BEHIND him, over the water (screen right, away from
-  // the family), the other palm up toward them ("stop"). Both hands clear of the head, the body upright. On the threat
-  // it goes further out and a little up, then teeters; idle life (a slow sway, little pats of the stop hand) keeps the
-  // long hold alive (MOT-13).
+  // The standoff (Shot 12): the Gobinda held up at arm's length BEHIND him, over the water (screen right, away from
+  // the family), the other palm up toward them ("stop"). On the threat it goes further out and a little up, then
+  // teeters; idle life (the sway, little pats of the stop hand) keeps the long hold alive (MOT-13).
   const OUT_SIDE: V = { x: -98, y: -402 };
   const OUT_HIGH: V = { x: -116, y: -438 };
   const STOP_PALM: V = { x: 128, y: -368 };
@@ -441,32 +464,54 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
     x: lerp(OUT_SIDE.x, OUT_HIGH.x, thr) + 4 * Math.sin(f * 0.043) + thr * 3 * Math.sin(f * 0.31),
     y: lerp(OUT_SIDE.y, OUT_HIGH.y, thr) + 5 * Math.sin(f * 0.061 + 1.2) + thr * 2 * Math.sin(f * 0.23),
   };
-  // the stop hand: little pats toward the family on "এসো না বলছি!", then a resting palm that drifts
-  const pat = f >= STOP && f < STOP + 40 ? Math.sin(((f - STOP) / 40) * Math.PI * 3) * (1 - (f - STOP) / 40) : 0;
+  // the stop hand: little pats toward the family on "এসো না বলছি!", a second push on "আর এক পা এলেই...", then a
+  // resting palm that drifts and sinks as Sundar starts to talk
+  const patA = f >= STOP && f < STOP + 40 ? Math.sin(((f - STOP) / 40) * Math.PI * 3) * (1 - (f - STOP) / 40) : 0;
+  const patB = f >= THREAT - 60 && f < THREAT - 20 ? Math.sin(((f - (THREAT - 60)) / 40) * Math.PI * 2) * (1 - (f - (THREAT - 60)) / 40) : 0;
   const stopNow: V = {
-    x: STOP_PALM.x + 8 * pat + 3 * Math.sin(f * 0.037 + 0.5),
+    x: STOP_PALM.x + 8 * patA + 10 * patB + 3 * Math.sin(f * 0.037 + 0.5),
     y: STOP_PALM.y + 4 * Math.sin(f * 0.052 + 2.1) + 20 * smooth((f - (s3c.from + 30)) / 40),
   };
 
-  // the doll in the runner's hand (world): where he thrusts it
-  const dollThrustAt: V = { x: BAL.x - 54, y: BAL.y - 142 };
-  // the Gobinda's world grip point while Balak hands it over, and Sundar's cupped palms
-  const giveAt: V = { x: balX - 50, y: balY - 150 };
+  // the doll in the runner's hands (world): where he holds it out
+  // held out at Biru's chest height, so his far hand comes straight forward to take it
+  const dollThrustAt: V = { x: BAL.x - 54, y: BAL.y - 158 };
+  // the Gobinda's world grip point while Balak hands it over (Sundar's cupped palms come under its base)
+  const giveAt: V = { x: BAL.x - BAL.s * WALK_D - 50, y: BAL.y - 150 };
+  const gobBaseDrop = (GOB_BOTTOM - GOB_GRIP_Y) * GOB_S; // grip line to the base, world px
 
   let handTargets: StandingChildProps["handTargets"] = undefined;
-  let reachAt: V | undefined = undefined;
   let heldAt: V | undefined = undefined;
   if (f >= STOP && f < LOWER) {
     handTargets = { near: sideNow, far: stopNow };
   } else if (st.pose === "handInHands") {
-    // Shot 15/16: far hand to the doll (then holds it to his chest), near hand keeps the Gobinda (pulled away, then given)
+    // Shot 14: "এখানে": the far hand pats down twice at the ground in front of him, then rests
+    // Shot 15: far hand to the doll (then holds it to his chest), near hand keeps the Gobinda (pulled away)
+    // Shot 16: the doll stays tucked under his far arm, against his chest; BOTH hands go to the Gobinda (near hand at
+    // its waist, far hand under its base) and put it into Sundar's cupped palms; they let go only once his palms are
+    // under it (MOT-07)
+    const farRest: V = { x: 34, y: -262 };
+    const patY = (fr: number) => {
+      const u = (fr - (HERE - 4)) / 30;
+      return u <= 0 || u >= 1 ? 0 : 14 * Math.abs(Math.sin(u * Math.PI * 2));
+    };
+    const farPat: V = { x: 96, y: -232 + 1.6 * patY(f) };
+    const tPat = smooth((f - PAT0) / 14) * (1 - smooth((f - (HERE + 30)) / 16));
     const tDoll = smooth((f - (TAKE - 22)) / 20);
-    const farDoll = loc({ x: dollThrustAt.x, y: dollThrustAt.y + DOLL_GRIP_Y * DOLL_S });
+    const farDoll = loc({ x: dollThrustAt.x, y: dollThrustAt.y + DOLL_GRIP_Y * DOLL_S + 2 + BAL_DOLL_GRIP });
     const farHug: V = { x: 30, y: -284 };
-    const far: V = f < TAKE + 6 ? { x: lerp(40, farDoll.x, tDoll), y: lerp(-300, farDoll.y, tDoll) } : { x: lerp(farDoll.x, farHug.x, smooth((f - (TAKE + 6)) / 16)), y: lerp(farDoll.y, farHug.y, smooth((f - (TAKE + 6)) / 16)) };
+    const nearGive = loc(giveAt);
+    const farGive = loc({ x: giveAt.x + 3, y: giveAt.y + gobBaseDrop + 2 });
+    let far: V;
+    if (f < TAKE - 22) far = { x: lerp(farRest.x, farPat.x, tPat), y: lerp(farRest.y, farPat.y, tPat) };
+    else if (f < TAKE + 6) far = { x: lerp(farRest.x, farDoll.x, tDoll), y: lerp(farRest.y, farDoll.y, tDoll) };
+    else if (f < WALK0) far = { x: lerp(farDoll.x, farHug.x, smooth((f - (TAKE + 6)) / 16)), y: lerp(farDoll.y, farHug.y, smooth((f - (TAKE + 6)) / 16)) };
+    else if (f < RELEASE) {
+      const t = smooth((f - WALK0) / (GIVE - 6 - WALK0));
+      far = { x: lerp(farHug.x, farGive.x, t), y: lerp(farHug.y, farGive.y, t) };
+    } else far = { x: lerp(farGive.x, farHug.x, smooth((f - RELEASE) / 14)), y: lerp(farGive.y, farHug.y + 8, smooth((f - RELEASE) / 14)) };
     const nearChest: V = { x: 40, y: -300 };
     const nearAway: V = { x: -46, y: -296 };
-    const nearGive = loc(giveAt);
     const nearRest: V = { x: 10, y: -236 };
     let near: V;
     if (f < PULL) near = nearChest;
@@ -481,6 +526,10 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
     f >= NO + 8 && f < NO + 40 ? Math.sin(clamp((f - (NO + 8)) / 32) * Math.PI) * 0.9 : f >= REFUSE + 2 && f < REFUSE + 34 ? Math.sin(clamp((f - (REFUSE + 2)) / 32) * Math.PI) * 0.9 : 0;
   const expression: StandingChildProps["expression"] =
     f < LOWER ? "playful" : f < TAKE ? "thoughtful" : f < WALK0 ? "playful" : "joyful";
+  // Shot 14 face: "দিতে পারি—" a sly sideways look, "যদি তোমরা আমায় কিছু না বলো।" eyes back on them, "এখানে" eyes
+  // down to the spot; Shot 15 on the doll as he takes it; Shot 16 up at Sundar
+  const lookDown = smooth((f - (HERE - 8)) / 6) * (1 - smooth((f - (HERE + 26)) / 8)) + smooth((f - (TAKE - 18)) / 6) * (1 - smooth((f - (TAKE + 10)) / 8));
+  const sly = smooth((f - s3d.from) / 8) * (1 - smooth((f - (s3d.from + 30)) / 10));
   const balakProps: StandingChildProps = {
     x: balX,
     y: balY,
@@ -500,17 +549,18 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
     blendFrames: st.blendFrames,
     stance: 0.42,
     handTargets,
-    reachAt,
     heldAt,
-    palmUp: 0.3,
+    palmUp: f >= PAT0 && f < TAKE - 22 ? 0.05 : 0.3,
     noteAt: { x: 46, y: -300 },
-    noteW: 2 * 9.8 * GOB_S / BAL.s,
+    noteW: (2 * 9.8 * GOB_S) / BAL.s,
     noteAngle: -2,
     expression,
     mouth: balakRms,
     talk: balakRms > 0.06 ? 1 : 0,
     headShake,
-    face: { lookX: f >= HERE && f < HERE + 24 ? 0.2 : 0.55, eyesDown: f >= HERE && f < HERE + 24 ? 0.6 : 0 },
+    face: { lookX: 0.55 - 0.35 * lookDown + 0.25 * sly, eyesDown: 0.6 * lookDown, smile: 0.35 + 0.25 * sly },
+    legDrive,
+    ...EP04_BALAK_LOOK,
   };
   const bj = standingChildJoints(balakProps);
 
@@ -562,10 +612,14 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
       bodyTurn: safeBodyTurn(runnerWalk.bodyTurn ?? 0.32),
       headHands: 0.62 * frozenUp,
       jab: -0.9 * jab,
-      reach: thrust > 0.01 ? -thrust : grab > 0.01 ? grab : 0,
-      reachUp: thrust > 0.01 ? 0.6 : 0.3,
+      // "এই নে তোর কাঠের পুতুল!": the doll held out in BOTH hands (hold -> holdAt), a panting lean in
+      hold: thrust,
+      lean: (runnerWalk.lean ?? p.lean) + 6 * thrust + 4 * grab,
+      // "দে, এবার গোবিন্দ দে!": one open palm out, asking for the Gobinda
+      reach: grab > 0.01 ? grab : 0,
+      reachUp: 0.85,
       lHand: thrust > 0.01 || carry ? "relaxed" : p.lHand,
-      rHand: grab > 0.01 ? "open" : p.rHand,
+      rHand: grab > 0.01 || thrust > 0.01 ? "open" : p.rHand,
     } as Pose;
     // the doll arm a little forward while he runs back with it
     if (carry) out.lE = (out.lE ?? 0) - 25;
@@ -593,49 +647,64 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
     } as Pose;
   };
 
-  // Sundar
+  // Sundar (frame-functional: the Puppet samples it at neighbouring frames for eased poses and overlap)
   const sundarBase = makeActing<Pose>(poseOf({ smile: 0.2 }), [
     MK({ f: 0, brow: 0.5, smile: 0 }),
-    MK({ f: FREEZE, in: 6, brow: 0.85, gasp: 0.2 }),
-    MK({ f: WAVE, in: 6, gasp: 0, brow: 0.4 }),
+    // arriving: he takes in the scene, then calms the cousins (palms down) as they start to creep
+    MK({ f: 128, in: 12, brow: 0.6, lean: 3, headTilt: -2 }),
+    MK({ f: FREEZE, in: 6, brow: 0.85, gasp: 0.2, lean: -3 }),
+    MK({ f: WAVE, in: 6, gasp: 0, brow: 0.4, lean: 2 }),
     MK({ f: STEP + 10, in: 16, smile: 0.5, brow: 0.3, lean: 6, headTilt: 5 }),
-    MK({ f: PALMS, in: 12, lean: 8, headTilt: 7, smile: 0.55 }),
-    MK({ f: MELA, in: 12, lean: 6, headTilt: 3 }),
-    MK({ f: KEMON, in: 8, headTilt: 10, smile: 0.65 }),
-    MK({ f: KEMON + 30, in: 12, headTilt: 4, lean: 3, smile: 0.45 }),
+    MK({ f: PALMS, in: 12, lean: 9, headTilt: 7, smile: 0.55, headNod: 3 }),
+    MK({ f: MELA, in: 12, lean: 4, headTilt: 3, headTurn: -0.12 }),
+    MK({ f: MELA + 34, in: 10, headTurn: 0.05, lean: 6 }),
+    MK({ f: KEMON, in: 8, headTilt: 10, smile: 0.65, headNod: 2 }),
+    MK({ f: KEMON + 30, in: 12, headTilt: 4, lean: 3, smile: 0.45, headNod: 0 }),
     MK({ f: NOD, in: 6, headNod: 9, headTurn: 0.15 }),
     MK({ f: NOD + 10, in: 6, headNod: 0, headTurn: 0 }),
-    MK({ f: CUPPED, in: 10, lean: 10, smile: 0.5, headTilt: 6 }),
-    MK({ f: CHEST + 20, in: 18, lean: 2, smile: 0.8, headTilt: 9, brow: 0.1 }),
+    MK({ f: CUPPED, in: 10, lean: 10, smile: 0.5, headTilt: 6, eyeY: 0.5 }),
+    MK({ f: CHEST + 20, in: 18, lean: 2, smile: 0.8, headTilt: 9, brow: 0.1, eyeY: 0.3 }),
   ]);
-  const sundarActing = (): Pose => {
-    const p = sundarBase(f);
-    // waving the cousins back: palm-down pats, then the open hands
-    const waveW = f >= WAVE - 4 && f < STEP ? smooth((f - (WAVE - 4)) / 6) * (1 - smooth((f - (STEP - 12)) / 12)) : 0;
-    const pat = Math.sin((f - WAVE) * 0.55);
-    const palmsW = f >= PALMS - 6 && f < MELA + 4 ? smooth((f - (PALMS - 6)) / 10) * (1 - smooth((f - MELA) / 10)) : 0;
-    // (the coaxing hand is lowered by the cut to Shot 14, so it never pokes into Biru's medium shot)
-    const coaxW = f >= MELA && f < KEMON + 34 ? smooth((f - MELA) / 10) * (1 - smooth((f - (KEMON + 20)) / 12)) : 0;
-    // Shot 16: his two hands come out cupped and WAIT as Balak walks up, then take the Gobinda's weight
-    const receiveW = f >= WALK0 + 10 ? smooth((f - (WALK0 + 10)) / 16) : 0;
-    const cup = Math.max(palmsW, receiveW);
+  /** Sundar's gesture weights (scene frame). */
+  const sunGest = (s: number) => {
+    // calming palms on arrival (03a's "এক্ষুনি আয় বলছি!" and the cousins' creep) and again on "আরে থামো সবাই"
+    const calmA = s >= 132 && s < 210 ? smooth((s - 132) / 10) * (1 - smooth((s - 196) / 14)) : 0;
+    const calmB = s >= WAVE - 4 && s < STEP ? smooth((s - (WAVE - 4)) / 8) * (1 - smooth((s - (STEP - 12)) / 12)) : 0;
+    // "গোবিন্দটা আমায় দিয়ে দাও—": one open palm held out to Biru
+    const palm = s >= PALMS - 8 && s < MELA + 6 ? smooth((s - (PALMS - 8)) / 10) * (1 - smooth((s - (MELA - 2)) / 8)) : 0;
+    // "তোমায় মেলা থেকে আরও একটা...": a point back over his shoulder, toward the house and the fair road
+    const point = s >= MELA - 2 && s < KEMON + 4 ? smooth((s - (MELA - 2)) / 8) * (1 - smooth((s - (MELA + 40)) / 10)) : 0;
+    // "...নতুন পুতুল কিনে দেব, কেমন?": the open palm again, coaxing, lowered before the cut to Biru (Shot 14)
+    const coax = s >= MELA + 40 && s < KEMON + 34 ? smooth((s - (MELA + 40)) / 10) * (1 - smooth((s - (KEMON + 20)) / 12)) : 0;
+    // Shot 16: his two hands come out cupped and WAIT as Biru walks up, then take the Gobinda's weight
+    const receive = s >= WALK0 + 10 ? smooth((s - (WALK0 + 10)) / 16) : 0;
+    return { calm: Math.max(calmA, calmB), palm: Math.max(palm, coax), point, receive };
+  };
+  const sundarActing = (s: number): Pose => {
+    const p = sundarBase(s);
+    const w = sundarWalkAt(s).pose;
+    const g = sunGest(s);
+    // the calming pat: palm down, a slow up-and-down the rig's easing keeps
+    const pat = Math.sin((s - 132) * 0.3);
     return {
       ...p,
-      ...sw.pose,
-      bodyTurn: safeBodyTurn(sw.pose.bodyTurn ?? 0.3),
-      reach: waveW > 0.01 ? waveW : coaxW > 0.01 ? coaxW : 0,
-      reachUp: waveW > 0.01 ? 0 : 0.85,
-      cupHands: cup,
+      ...w,
+      bodyTurn: safeBodyTurn(w.bodyTurn ?? 0.3),
+      lean: (w.lean ?? 0) + p.lean,
+      reach: g.calm > 0.01 ? g.calm : g.palm > 0.01 ? g.palm : 0,
+      reachUp: g.calm > 0.01 ? 0 : 0.95,
+      jab: -g.point,
+      cupHands: g.receive,
       rHand: "open",
-      lHand: cup > 0.3 ? "open" : p.lHand,
-      bodyY: (sw.pose.bodyY ?? 0) + (waveW > 0 ? 0 : 0),
-      // the pat: a little up and down of the waving hand
-      rE: (sw.pose.rE ?? p.rE) + waveW * 14 * pat,
+      lHand: g.receive > 0.3 ? "open" : p.lHand,
+      rE: (w.rE ?? p.rE) + g.calm * 10 * pat,
     } as Pose;
   };
   const sundarReachAt = (): V => {
-    if (f < STEP) return { x: sundarX + 120, y: sundarY - 250 + 18 * Math.sin((f - WAVE) * 0.55) };
-    if (f < WALK0 + 10) return { x: sundarX + 95, y: sundarY - 240 };
+    // the calming pat (palm down, at his waist, out toward the cousins)
+    if (f < 220 || (f >= WAVE - 4 && f < STEP)) return { x: sundarX + 110, y: sundarY - 200 + 14 * Math.sin((f - 132) * 0.3) };
+    // the open palm held out toward Biru, at his chest height
+    if (f < WALK0 + 10) return { x: sundarX + 118, y: sundarY - 236 + 3 * Math.sin(f * 0.07) };
     // the waiting cup, low in front of him, then under the Gobinda's base as Balak brings it
     const wait: V = { x: sundarX + 78, y: sundarY - 176 + 2 * Math.sin(f * 0.09) };
     const k = smooth((f - (GIVE - 16)) / 14);
@@ -645,14 +714,19 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
   // Charu
   const charuBase = makeActing<Pose>(poseOf({}), [
     MK({ f: 0, brow: 0.6, browTilt: 0.4 }),
+    // hurrying in, she sees him at the water's edge: a hand to her mouth, then lowered a little as she stops
+    MK({ f: 50, in: 12, mouthHand: -0.85, brow: 0.8, gasp: 0.15 }),
+    MK({ f: 140, in: 14, mouthHand: -0.45, gasp: 0 }),
     MK({ f: 160, in: 10, mouthHand: -0.35 }),
     MK({ f: FREEZE, in: 5, ease: "out", mouthHand: -1, brow: 1, gasp: 0.3, lean: -4 }),
     MK({ f: UNFREEZE + 30, in: 14, mouthHand: -0.4, gasp: 0, brow: 0.6, lean: 0 }),
     MK({ f: TAKE, in: 14, mouthHand: 0, brow: 0.4 }),
     MK({ f: CHEST + 4, in: 16, brow: 0.1, browTilt: 0, smile: 0.6, headTilt: 6 }),
   ]);
-  const charuActing = (): Pose =>
-    ({ ...charuBase(f), ...chw.pose, bodyTurn: safeBodyTurn(chw.pose.bodyTurn ?? 0.28) } as Pose);
+  const charuActing = (fr: number): Pose => {
+    const w = charuWalkAt(fr).pose;
+    return { ...charuBase(fr), ...w, bodyTurn: safeBodyTurn(w.bodyTurn ?? 0.28) } as Pose;
+  };
   const charuSigh = (fr: number) => (fr < SIGH ? 0 : fr < SIGH + 18 ? smooth((fr - SIGH) / 18) : 1 - smooth((fr - SIGH - 18) / 28));
 
   /* ---------------- camera ---------------- */
@@ -711,7 +785,13 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
   /* ---------------- objects ---------------- */
   const gobinda = (at: V) => <HeldObjectArt kind="gobinda" x={at.x} y={at.y} s={GOB_S} lifeF={f} />;
   const dollInBalak = f >= TAKE;
-  const balakFarLayer = dollInBalak ? <HeldObjectArt kind="doll" x={bj.handFar.x} y={bj.handFar.y - DOLL_GRIP_Y * DOLL_S} s={DOLL_S} lifeF={f} /> : null;
+  // the doll in his far hand; from the walk on it stays tucked under his far arm against his chest (the far forearm
+  // drawn over it) while both hands carry the Gobinda
+  const dollPark: V = { x: balX - 30 * BAL.s, y: balY - 284 * BAL.s };
+  // (back into his far hand once the Gobinda is given and the hand comes home)
+  const dollHandK = smooth((f - WALK0) / 6) * (1 - smooth((f - (RELEASE + 10)) / 8));
+  const dollAt: V = { x: lerp(bj.handFar.x, dollPark.x, dollHandK), y: lerp(bj.handFar.y, dollPark.y, dollHandK) };
+  const balakFarLayer = dollInBalak ? <HeldObjectArt kind="doll" x={dollAt.x} y={dollAt.y - DOLL_GRIP_Y * DOLL_S - 2 - BAL_DOLL_GRIP} s={DOLL_S} rot={-8 * dollHandK} lifeF={f} /> : null;
   const balakMidLayer = !gobWithSundar ? gobinda(gobInBalak) : null;
 
   const glow = bj.glowAnchor;
@@ -722,7 +802,8 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
     <g key={key}>
       <SoftGroundShadow id={`s03-${key}-sh`} x={x + 4} y={y} rx={rx} />
       {underFigure}
-      <g filter="url(#ghibli-char-ink)">
+      {/* Balak (key "bal") takes his own fine ink; everyone else the shared character ink */}
+      <g filter={key === "bal" ? `url(#${EP04_BALAK_INK})` : "url(#ghibli-char-ink)"}>
         <g filter="url(#s03-solid)">{figure}</g>
         {extra}
       </g>
@@ -737,15 +818,15 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
           {/* Balak (at the water's edge) */}
           {/* the restrained resting aura (BAL-05..09): a soft halo behind the head and a warm pool at his feet, laid
               over the contact shadow so the multiply does not swallow it - never the big glow beat */}
-          <GhibliBalakAura cx={glow.x} cy={glow.y} r={64 * bj.headScale} glow={0.78} f={f} />
+          <Ep04BalakDivine cx={glow.x} cy={glow.y} r={64 * bj.headScale} glow={0.78} f={f} />
           {grounded(
             "bal",
             balX,
             balY,
             46,
-            <StandingChild {...balakProps} layerFar={balakFarLayer} layerMid={balakMidLayer} />,
+            <StandingChild {...balakProps} inkZoom={cam.zoom} layerFar={balakFarLayer} layerMid={balakMidLayer} />,
             undefined,
-            <GhibliBalakGroundGlow x={balX} y={balY + 3} rx={96} ry={17} level={0.72} />,
+            <Ep04BalakGroundGlow x={balX} y={balY + 3} rx={96} ry={17} level={0.72} />,
           )}
         </g>
       ),
@@ -767,7 +848,8 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
           light={EP04G_POND_LIGHT}
           mouth={() => mouthFromRms(sundarRms(f), f)}
           talk={() => sundarRms(f)}
-          acting={() => sundarActing()}
+          acting={(fr) => sundarActing(fr)}
+          pointAt={() => ({ x: sundarX - 420, y: sundarY - 360 })}
           reachAt={() => sundarReachAt()}
           sigh={(fr) => (fr < CHEST ? 0 : fr < CHEST + 16 ? smooth((fr - CHEST) / 16) : 1 - smooth((fr - CHEST - 16) / 30))}
         />,
@@ -790,7 +872,7 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
           lifeF={f}
           light={EP04G_POND_LIGHT}
           mouth={() => MOUTH_REST}
-          acting={() => charuActing()}
+          acting={(fr) => charuActing(fr)}
           breathRate={f >= FREEZE && f < LOWER ? 1.5 : 1}
           sigh={charuSigh}
         />,
@@ -839,6 +921,7 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
               acting={() => runnerActing()}
               pointAt={() => ({ x: BAL.x, y: BAL.y - 160 })}
               reachAt={() => runnerReachAt()}
+              holdAt={() => ({ x: dollThrustAt.x, y: dollThrustAt.y + DOLL_GRIP_Y * DOLL_S })}
               breathRate={f >= BACK1 - 4 && f < REFUSE ? 2.3 : f >= FREEZE && f < LOWER ? 1.7 : 1.1}
               anchors={(a) => {
                 runnerAnchors.a = a;
@@ -848,8 +931,11 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
               render={() => {
                 const a = runnerAnchors.a;
                 if (!a || !runnerHasDoll) return null;
-                // the doll in his near (left) hand; at the thrust the hand is at reachAt
-                return <HeldObjectArt kind="doll" x={a.lWrist.x + 4} y={a.lWrist.y + 6} s={DOLL_S} lifeF={f} />;
+                // the doll in his near (left) hand; held out it sits between both hands (the two wrists)
+                const k = smooth((f - (THRUST - 10)) / 12);
+                const mx = lerp(a.lWrist.x + 4, (a.lWrist.x + a.rWrist.x) / 2, k);
+                const my = lerp(a.lWrist.y + 6, (a.lWrist.y + a.rWrist.y) / 2 + 2, k);
+                return <HeldObjectArt kind="doll" x={mx} y={my} s={DOLL_S} lifeF={f} />;
               }}
             />,
           )}
@@ -866,10 +952,12 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
       {/* the pad cover sits UNDER the mandar (it used to wash over the trunk's lower half: see-through trunk) */}
       <GhibliPondBackdrop
         f={f}
+        lifeF={f}
+        // the kingfisher's one dive lands inside the wordless AG5 wide shot (scene 900 = episode 4718), before the cut
+        kingfisherDiveAt={900}
         upstageBehindTree={
           <>
             <BankPadCover />
-            <NearWater f={f} cam={cam} ripple={f >= STOP && f < LOWER ? { x: gobInBalak.x, t: f - STOP } : undefined} />
           </>
         }
         dragonfly={false}
@@ -877,6 +965,8 @@ export const Scene03PondStandoffGhibli: React.FC = () => {
 
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} />
+        {/* Balak's own fine ink (constant screen width at any zoom, no whole-body outline: BAL-26f) */}
+        <Ep04BalakInkDefs zoom={cam.zoom} rim={0.5} />
         <SolidFigureDefs id="s03-solid" />
         {figures.map((fg) => fg.node)}
       </GhibliLayer>

@@ -6,7 +6,8 @@ import { type CastMember, type Pose, type PuppetAnchors, Puppet, walkPose, walkT
 import { type SeatedChildProps, type SeatedPose, SeatedChild, seatedChildHands } from "../../../episode03/rig/SeatedChild";
 import { GhibliCharFilterDefs, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
 import { balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
-import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { EP04_BALAK_INK, Ep04BalakDivine, Ep04BalakGroundGlow, Ep04BalakInkDefs } from "../Ep04BalakDivine";
+import { EP04_BALAK_LOOK } from "../ep04BalakLook";
 import { GhibliFootstepDust } from "../../core/GhibliAtmosphere";
 import { GhibliDappledLight, GhibliGroundCover } from "../../core/GhibliLifeKit";
 import { safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
@@ -228,14 +229,14 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   const BLINK = s2c.to + 8; // P4: Balak's amused blink
 
   /* ---------------- Mangla ---------------- */
-  const hopT = smooth((f - JUMP) / 9);
-  const hopX = -42 * hopT;
-  const hopY = f >= JUMP && f < JUMP + 9 ? -24 * Math.sin(Math.PI * ((f - JUMP) / 9)) : 0;
-  // a little shuffle further back while he protests
-  const backX = -16 * smooth((f - (WAVE_A + 20)) / 30);
-  const standX = MANG.x + hopX + backX;
-  const running = f >= RUN0;
-  const runClock = running ? RUN0 + (f - RUN0) * RUN_RATE : f;
+  // Every Mangla quantity is a function of the scene frame `s`, so the Puppet can sample his acting at neighbouring
+  // frames: adults get the rig's eased pose blending, overlap (head after body, eyes before head) and cloth lag
+  // (MOT-10, MOT-11). The Puppet's own clock is the run clock (faster legs in the sprint): sceneOfClock maps back.
+  const runClockAt = (s: number) => (s >= RUN0 ? RUN0 + (s - RUN0) * RUN_RATE : s);
+  const sceneOfClock = (c: number) => (c >= RUN0 ? RUN0 + (c - RUN0) / RUN_RATE : c);
+  const hopYAt = (s: number) => (s >= JUMP && s < JUMP + 9 ? -24 * Math.sin(Math.PI * ((s - JUMP) / 9)) : 0);
+  // the hop back, then a little shuffle further back while he protests
+  const standXAt = (s: number) => MANG.x - 42 * smooth((s - JUMP) / 9) - 16 * smooth((s - (WAVE_A + 20)) / 30);
   const runOpts = {
     start: RUN0,
     dur: 150,
@@ -248,9 +249,13 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     startIn: 7,
     stopIn: 8,
     bodyTurn: safeBodyTurn(-0.34),
+    // the fist with the gamchha pumps a little less than the free arm
+    carrySide: 1 as const,
   };
-  const runX = running ? walkTravel(runClock, runOpts).bodyX : 0;
-  const manglaX = standX + runX;
+  const manglaXAt = (s: number) => standXAt(s) + (s >= RUN0 ? walkTravel(runClockAt(s), runOpts).bodyX : 0);
+  const running = f >= RUN0;
+  const runClock = runClockAt(f);
+  const manglaX = manglaXAt(f);
   // upstage a little as he passes behind the trunk (x 1470 -> 1300)
   const upT = smooth((1540 - manglaX) / 200);
   const manglaY = MANG.y - 22 * upT;
@@ -273,70 +278,103 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     hold: 1,
     hunch: 0.08,
   };
+  const HOUSE = -0.46; // headTurn of a look over his shoulder, across the pond to the house
   const manglaBase = makeActing<Pose>(poseOf(SQUAT), [
     MK({ f: 0, ...SQUAT }),
-    // AG3 / start of 02a: idly turning to the boy, weight shifting on the heels
-    MK({ f: a0 - 10, in: 18, ease: "inOut", headTurn: 0.14, headTilt: 4, lean: 10, crouch: 0.16 }),
-    // Shot 8: his eyes grow wider and wider
-    MK({ f: a0 + 70, in: 24, ease: "inOut", brow: 0.28, smile: 0.08, headTilt: -2, crouch: 0.14 }),
-    MK({ f: RAISE + 12, in: 16, ease: "inOut", brow: 0.5, smile: 0, lean: 2, headTilt: -4, hunch: 0.18, hold: 0.55, crouch: 0.18 }),
-    // "...পিতলের পুতুলটা নিয়ে খেলব,": the boy plays with the Thakur's own Gobinda - Mangla shrinks back, a nervous
-    // sideways look as if someone might see
-    MK({ f: BATH + 10, in: 16, ease: "inOut", brow: 0.62, gasp: 0.12, lean: -6, hunch: 0.4, headTurn: 0.28, hold: 1, crouch: 0.2 }),
-    MK({ f: BATH + 40, in: 10, ease: "inOut", headTurn: -0.18, headTilt: -3 }),
-    MK({ f: BATH + 56, in: 10, ease: "inOut", headTurn: 0.3, headTilt: -6 }),
-    MK({ f: FEED + 8, in: 12, ease: "inOut", brow: 0.72, gasp: 0.2, lean: -8, hunch: 0.5, headTilt: -4, crouch: 0.22 }),
+    // AG3: his eyes follow the mandar blossom down to the grass, then come back to the boy
+    MK({ f: 6, in: 12, ease: "inOut", headTurn: 0.2, eyeY: 0.6, headTilt: 3 }),
+    MK({ f: 30, in: 12, ease: "inOut", headTurn: 0.1, eyeY: 0.3, headTilt: 0 }),
+    // start of 02a: turning to the boy, weight shifting on the heels
+    MK({ f: a0 - 10, in: 18, ease: "inOut", headTurn: 0.14, headTilt: 4, lean: 10, crouch: 0.16, smile: 0.32 }),
+    // Shot 8: listening; his eyes grow wider as the boy talks of the brass doll
+    MK({ f: a0 + 70, in: 24, ease: "inOut", brow: 0.28, smile: 0.08, headTilt: -2, crouch: 0.14, lean: 6 }),
+    // "এখন বড় হয়েছি—": the Gobinda goes up - he sits back, both hands drawn up off his knees toward his chest
+    MK({ f: RAISE + 6, in: 16, ease: "inOut", brow: 0.5, smile: 0, lean: 0, headTilt: -4, hunch: 0.22, crouch: 0.18 }),
+    // "...পিতলের পুতুলটা নিয়ে খেলব,": the boy plays with the Thakur's own Gobinda - Mangla shrinks back ...
+    MK({ f: BATH + 8, in: 16, ease: "inOut", brow: 0.62, gasp: 0.12, lean: -6, hunch: 0.4, headTurn: 0.26, crouch: 0.2 }),
+    // ... and looks over his shoulder to the house across the pond (what if someone sees?), then back to the boy
+    MK({ f: BATH + 28, in: 12, ease: "inOut", headTurn: HOUSE, headTilt: -3, eyeY: 0.1 }),
+    MK({ f: BATH + 52, in: 12, ease: "inOut", headTurn: 0.3, headTilt: -6, eyeY: 0.3 }),
+    MK({ f: FEED + 8, in: 12, ease: "inOut", brow: 0.72, gasp: 0.2, lean: -9, hunch: 0.5, headTilt: -4, crouch: 0.22 }),
     // "আর কাল পাথরের গোপালটাকে নিয়ে আসব!": a gasp, the hand flies to his mouth, jaw dropping, eyes wide
-    MK({ f: STONE + 14, in: 12, ease: "backOut", brow: 1, gasp: 0.5, lean: -10, mouthHand: -0.9, hunch: 0.62, hold: 0, headTilt: -6, crouch: 0.24 }),
-    MK({ f: HUG + 20, in: 18, ease: "inOut", brow: 0.95, gasp: 0.3, mouthHand: -0.35, hunch: 0.55, lean: -8, hold: 0.5, crouch: 0.18 }),
-    // AG4: the shouts from the house - he looks over his shoulder
-    MK({ f: PERK + 6, in: 8, ease: "inOut", headTurn: -0.32, brow: 0.7, hunch: 0.32, crouch: 0.16 }),
-    MK({ f: LEAN + 8, in: 10, ease: "inOut", headTurn: 0.28, brow: 0.8, crouch: 0.14 }),
-    // Shot 9: the Gobinda held out at him - he shrinks back
-    MK({ f: OFFER + 6, in: 12, ease: "inOut", lean: -7, hunch: 0.8, brow: 1, headTurn: 0.22, headTilt: -8, crouch: 0.28 }),
-    // Shot 10: jumps back, clutching his head
-    MK({ f: JUMP + 4, in: 4, ease: "out", kneel: 0, hold: 0, mouthHand: 0, crouch: 0.12, bodyTurn: safeBodyTurn(0.3), lean: -12, hunch: 0.4, headHands: 1, brow: 1, gasp: 0.15, rS: 6, rE: -8, lS: 6, lE: -8 }),
-    MK({ f: WAVE_A, in: 6, ease: "inOut", headHands: 0, crouch: 0.1, lean: -6 }),
+    MK({ f: STONE + 14, in: 12, ease: "backOut", brow: 1, gasp: 0.5, lean: -12, mouthHand: -0.9, hunch: 0.62, headTilt: -6, crouch: 0.24 }),
+    MK({ f: HUG + 20, in: 18, ease: "inOut", brow: 0.95, gasp: 0.3, mouthHand: -0.35, hunch: 0.55, lean: -9, crouch: 0.18 }),
+    // AG4: the shouts from the house - he whips round to look over his shoulder
+    MK({ f: PERK + 4, in: 8, ease: "inOut", headTurn: HOUSE - 0.04, mouthHand: 0, brow: 0.7, hunch: 0.32, crouch: 0.16, eyeY: 0 }),
+    MK({ f: LEAN + 8, in: 10, ease: "inOut", headTurn: 0.28, brow: 0.8, crouch: 0.14, eyeY: 0.3 }),
+    // "এই মংলা, বাড়িতে খোঁজ পড়েছে!": another anxious look at the house
+    MK({ f: s2b.from + 26, in: 10, ease: "inOut", headTurn: HOUSE + 0.08, brow: 0.85, hunch: 0.42 }),
+    MK({ f: s2b.from + 48, in: 10, ease: "inOut", headTurn: 0.26, brow: 0.8 }),
+    // Shot 9: the Gobinda held out at him - he leans right back, both palms up between them ("না না!")
+    MK({ f: OFFER + 4, in: 12, ease: "inOut", lean: -15, hunch: 0.7, brow: 1, gasp: 0.22, headTurn: 0.2, headTilt: -8, crouch: 0.3, smile: 0 }),
+    // "...নিয়ে আয় তো!": even further back, half up off his heels, ready to bolt
+    MK({ f: s2b.to - 30, in: 14, ease: "inOut", lean: -18, crouch: 0.12, gasp: 0.3, headTilt: -10 }),
+    // Shot 10, "ওরে বাবা!": jumps up and back, clutching his head
+    MK({ f: JUMP + 4, in: 4, ease: "out", kneel: 0, hold: 0, crouch: 0.12, bodyTurn: safeBodyTurn(0.3), lean: -12, hunch: 0.4, headHands: 1, brow: 1, gasp: 0.15, rS: 6, rE: -8, lS: 6, lE: -8 }),
+    MK({ f: WAVE_A, in: 6, ease: "inOut", headHands: 0, crouch: 0.1, lean: -8 }),
+    // "...আমার হাত খসে পড়বে যে!": he stares at his own hands as he shakes them
+    MK({ f: WAVE_A + 36, in: 10, ease: "inOut", eyeY: 0.6, headNod: 7, headTilt: -4 }),
+    MK({ f: WAVE_B - 10, in: 8, ease: "inOut", eyeY: 0.2, headNod: 0 }),
     MK({ f: GRAB - 4, in: 6, ease: "inOut", crouch: 0.1, rS: 6, rE: -8, lS: 6, lE: -8 }),
-    MK({ f: GRAB + 6, in: 8, ease: "inOut", crouch: 0.5, lean: 10, headTurn: 0.1, headTilt: 6 }),
-    MK({ f: GRIP + 2, in: 6, ease: "inOut", crouch: 0.14, lean: 0, headTilt: 0 }),
+    MK({ f: GRAB + 6, in: 8, ease: "inOut", crouch: 0.5, lean: 10, headTurn: 0.1, headTilt: 6, eyeY: 0.6 }),
+    MK({ f: GRIP + 2, in: 6, ease: "inOut", crouch: 0.14, lean: 0, headTilt: 0, eyeY: 0.2 }),
   ]);
-  const manglaActing = (): Pose => {
-    const p = manglaBase(f);
-    // flapping both hands, as if the brass had burnt them
-    const flapW = clamp((f - WAVE_A) / 4) * (1 - clamp((f - (WAVE_B - 6)) / 6));
-    const flap = flapW > 0 ? Math.sin((f - WAVE_A) * 0.95) : 0;
-    const reachW = f < GRAB ? 0 : f < GRAB + 8 ? smooth((f - GRAB) / 8) : f < TURN ? 1 : 1 - smooth((f - TURN) / 6);
-    // life while he squats: heel rock, shoulder breath, idle finger fidget — not a frozen cutout
-    const squatting = f < JUMP ? 1 : 0;
-    const rock = squatting * Math.sin(f * 0.048 + 0.6);
-    const bob = squatting * Math.sin(f * 0.078 + 1.9);
-    const breath = squatting * Math.sin(f * 0.095 + 0.4);
-    const weight = squatting * Math.sin(f * 0.027 + 2.4);
+  /**
+   * Weights (scene frame) of Mangla's hand acting: the warding hands drawn up to his chest, palms out (Shot 9); the
+   * hands flapping beside his head (Shot 10, "ঠাকুরের গোবিন্দ ছুঁলে"); then both palms cupped in front of him and
+   * stared at ("আমার হাত খসে পড়বে যে!").
+   */
+  const CUP0 = WAVE_A + 26;
+  const wardW = (s: number) => smooth((s - (OFFER - 2)) / 12) * (1 - smooth((s - (JUMP - 2)) / 5));
+  const flapW = (s: number) => smooth((s - WAVE_A) / 6) * (1 - smooth((s - CUP0) / 8));
+  const cupW = (s: number) => smooth((s - CUP0) / 10) * (1 - smooth((s - (GRAB - 8)) / 8));
+  const manglaActing = (s: number): Pose => {
+    const p = manglaBase(s);
+    const reachW = s < GRAB ? 0 : s < GRAB + 8 ? smooth((s - GRAB) / 8) : s < TURN ? 1 : 1 - smooth((s - TURN) / 6);
+    // life while he squats: heel rock, shoulder breath, idle finger fidget - not a frozen cutout
+    const squatting = s < JUMP ? 1 : 0;
+    const rock = squatting * Math.sin(s * 0.048 + 0.6);
+    const bob = squatting * Math.sin(s * 0.078 + 1.9);
+    const breath = squatting * Math.sin(s * 0.095 + 0.4);
+    const weight = squatting * Math.sin(s * 0.027 + 2.4);
     // superstitious terror growing through Shot 8: a small nervous tremble that builds from the stone-Gopal line on
-    const terror = squatting * smooth((f - STONE) / 140);
-    const shiver = terror * (Math.sin(f * 1.9) + 0.6 * Math.sin(f * 2.7 + 1.1));
+    const terror = squatting * smooth((s - STONE) / 140);
+    const shiver = terror * (Math.sin(s * 1.9) + 0.6 * Math.sin(s * 2.7 + 1.1));
+    // his hands: clasped over the knees, drawn up toward his chest from "এখন বড় হয়েছি" (holdAt), released for the
+    // hand to the mouth and for the warding palms
+    const ward = wardW(s);
+    const flap = flapW(s);
+    const cup = cupW(s);
+    // "না না": the head and the warding hands shake, slow enough to read (the rig eases adults over 9 frames)
+    const no = Math.sin((s - OFFER) * 0.36);
+    // the hands shaken beside his head as if the brass had burnt them, slow enough that the easing does not swallow it
+    const shake = Math.sin((s - WAVE_A) * 0.42);
     let out: Pose = {
       ...p,
-      bodyTurn: safeBodyTurn(p.bodyTurn + squatting * 0.055 * Math.sin(f * 0.031) + 0.03 * weight),
-      lean: p.lean + 4.2 * rock + 1.6 * weight,
+      bodyTurn: safeBodyTurn(p.bodyTurn + squatting * 0.055 * Math.sin(s * 0.031) + 0.03 * weight),
+      lean: p.lean + 4.2 * rock * (1 - 0.6 * ward) + 1.6 * weight,
       headTilt: p.headTilt + 3.8 * bob + 1.1 * shiver,
-      headNod: p.headNod + 2.4 * Math.sin(f * 0.056) + 1.5 * breath,
-      headTurn: p.headTurn + squatting * 0.05 * Math.sin(f * 0.022 + 1.3),
+      headNod: p.headNod + 2.4 * Math.sin(s * 0.056) + 1.5 * breath,
+      headTurn: p.headTurn + squatting * 0.05 * Math.sin(s * 0.022 + 1.3) + 0.1 * ward * no,
       hunch: p.hunch + squatting * 0.08 * breath + 0.02 * shiver,
-      crouch: p.crouch + squatting * 0.05 * Math.sin(f * 0.041 + 1.1),
-      rE: p.rE + squatting * 11 * Math.sin(f * 0.039 + 2.2),
-      lE: p.lE + squatting * 8 * Math.sin(f * 0.033 + 0.7),
-      throwUp: flapW * 0.95 * flap,
-      bodyY: p.bodyY + hopY + squatting * 1.8 * breath,
-      reach: reachW,
+      crouch: p.crouch + squatting * 0.05 * Math.sin(s * 0.041 + 1.1),
+      // both hands drawn up to his chest, palms out, shaking "no" (Shot 9)
+      rS: lerp(p.rS, -6 + 4 * no, ward),
+      lS: lerp(p.lS, -2 - 4 * no, ward),
+      rE: lerp(p.rE + squatting * 11 * Math.sin(s * 0.039 + 2.2), -104 + 10 * no, ward),
+      lE: lerp(p.lE + squatting * 8 * Math.sin(s * 0.033 + 0.7), -100 - 10 * no, ward),
+      bodyY: p.bodyY + hopYAt(s) + squatting * 1.8 * breath,
+      hold: p.hold * (1 - ward) * (1 - Math.abs(p.mouthHand)),
+      headHands: Math.max(p.headHands, flap * (0.52 + 0.3 * shake)),
+      cupHands: cup * (0.88 + 0.12 * Math.sin((s - CUP0) * 0.45)),
+      // the far (right, +1) hand down to the gamchha
+      reach: reachW > 0.01 ? reachW : 0,
       reachUp: 0,
-      rHand: reachW > 0.5 ? "relaxed" : flapW > 0.2 ? "open" : p.rHand,
-      lHand: flapW > 0.2 ? "open" : p.lHand,
+      rHand: reachW > 0.5 ? "relaxed" : ward > 0.2 || flap > 0.2 ? "open" : p.rHand,
+      lHand: ward > 0.2 || flap > 0.2 ? "open" : p.lHand,
     };
-    // fright breathing in the shoulders while he listens
-    if (f >= TURN) {
-      const tT = smooth((f - TURN) / 8);
+    if (s >= TURN) {
+      const tT = smooth((s - TURN) / 8);
       out = {
         ...out,
         bodyTurn: safeBodyTurn(lerp(out.bodyTurn, -0.34, tT)),
@@ -344,8 +382,10 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
         hunch: lerp(out.hunch, 0.22, tT),
       };
     }
-    if (running) {
-      const w = walkPose(runClock, runOpts);
+    if (s >= RUN0) {
+      const w = walkPose(runClockAt(s), runOpts);
+      // one frightened look back over his shoulder at the boy and the Gobinda as he flees
+      const back = smooth((s - (RUN0 + 8)) / 6) * (1 - smooth((s - (RUN0 + 24)) / 8));
       out = {
         ...out,
         ...w,
@@ -354,12 +394,15 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
         hunch: 0.22,
         brow: 1,
         reach: 0,
-        throwUp: 0,
+        cupHands: 0,
         headHands: 0,
-        // the fist with the gamchha pumps a little less
-        rE: (w.rE ?? 0) - 30,
-        rHand: "relaxed",
-        lHand: "relaxed",
+        headTurn: -0.28 + 0.62 * back,
+        eyeX: 0.6 * back,
+        // pumping arms: bent elbows, the free arm driving harder than the fist with the gamchha
+        lE: (w.lE ?? 0) - 18,
+        rE: (w.rE ?? 0) - 34,
+        rHand: "fist",
+        lHand: "fist",
       };
     }
     return out;
@@ -403,12 +446,17 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
         breathRate={f >= JUMP ? 1.9 : f >= LEAN ? 1.55 : f >= STONE ? 1.4 : 1.15}
         mouth={() => mouthFromRms(manglaRms(f), f)}
         talk={() => manglaRms(f)}
-        acting={() => manglaActing()}
-        reachAt={() => ({ x: gamchhaAt.x + 6, y: gamchhaAt.y - 8 })}
-        holdAt={() => {
-          // clasped over the knees; drawn up to the chest as he shrinks from the offered Gobinda (Shot 9)
-          const up = smooth((f - (OFFER + 2)) / 14);
-          return { x: manglaX + lerp(40, 26, up) * manglaS, y: manglaY - lerp(34, 110, up) * manglaS }; // lap height for the cross-legged seat
+        acting={(c) => manglaActing(sceneOfClock(c))}
+        reachAt={(c) => {
+          const s = sceneOfClock(c);
+          // the cupped palms in front of his chest (he stares at them), then the gamchha on the grass
+          return s < GRAB - 8 ? { x: manglaXAt(s) + 50 * MANG.s, y: MANG.y - 205 * MANG.s } : { x: gamchhaAt.x + 6, y: gamchhaAt.y - 8 };
+        }}
+        holdAt={(c) => {
+          // clasped over the knees; drawn up toward his chest from "এখন বড় হয়েছি" as his fear grows
+          const s = sceneOfClock(c);
+          const up = smooth((s - (RAISE + 4)) / 18);
+          return { x: manglaXAt(s) + lerp(40, 30, up) * MANG.s, y: MANG.y - lerp(34, 96, up) * MANG.s };
         }}
         anchors={(a) => {
           manglaAnchors.a = a;
@@ -425,6 +473,10 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   /* ---------------- Balak ---------------- */
   const seatKeys: SeatKey[] = [
     { at: -40, pose: "holdInLap" },
+    // "জানিস মংলা, এতদিন ছোট ছিলাম": he turns and shows it to Mangla in both hands, low across the gap ...
+    { at: a0 + 10, pose: "offerUp" },
+    // "...বলে কাঠের পুতুল নিয়ে খেলতাম।": back to his lap (the old wooden doll days)
+    { at: a0 + 96, pose: "holdInLap" },
     { at: RAISE, pose: "offerUp" },
     { at: STONE + 6, pose: "holdInLap" },
     { at: HUG, pose: "holdToChest" },
@@ -436,14 +488,17 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
   // where the Gobinda is held out: up and proud (RAISE), then out toward Mangla (OFFER)
   // RAISE: lifted proudly in front of him, clear of his face; BATH / FEED: the mime with the Gobinda in both hands (tipped
   // and turned as if pouring water over it, then brought up to his mouth level "feeding" it); OFFER: out to Mangla
+  // (kept within the rig's reach, about the offerUp default { x: 80, y: -122 }, so BOTH hands stay on the Gobinda)
   const reachAt: V =
-    f < BATH
-      ? { x: 86, y: -150 + 3 * Math.sin(f * 0.05) }
-      : f < FEED
-        ? { x: 74 + 8 * Math.cos((f - BATH) * 0.22), y: -118 + 6 * Math.sin((f - BATH) * 0.22) }
-        : f < OFFER - 20
-          ? { x: 80 + 3 * Math.sin((f - FEED) * 0.5), y: -134 + 2 * Math.sin((f - FEED) * 0.35) }
-          : { x: 98, y: -128 };
+    f < a0 + 120
+      ? { x: 70 + 4 * Math.sin((f - a0) * 0.06), y: -108 + 3 * Math.sin((f - a0) * 0.045) }
+      : f < BATH
+        ? { x: 76, y: -130 + 3 * Math.sin(f * 0.05) }
+        : f < FEED
+          ? { x: 70 + 6 * Math.cos((f - BATH) * 0.22), y: -116 + 5 * Math.sin((f - BATH) * 0.22) }
+          : f < OFFER - 20
+            ? { x: 74 + 3 * Math.sin((f - FEED) * 0.5), y: -124 + 2 * Math.sin((f - FEED) * 0.35) }
+            : { x: 84, y: -120 };
   // the mime: a cupped hand pours water over it in small circles, then fingers to its mouth
   const lapTop: V = { x: 52, y: -92 };
   const pointAt: V =
@@ -492,6 +547,8 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     mouth: balakRms,
     talk: balakRms > 0.06 ? 1 : 0,
     blinkAt: BLINK,
+    // BAL-26f: the refined Ghibli Episode 4 look, in the same props the hands and glow anchor are computed from
+    ...EP04_BALAK_LOOK,
   };
   const hands = seatedChildHands(balakProps);
   // whispering in Shot 9: he leans in a little more
@@ -554,7 +611,7 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
     const settle = f < sceneEnd - 40 ? 0 : smooth((f - (sceneEnd - 40)) / 28);
     // the pan follows his sprint only as far as the bank before the ghat (world x >= 1200 keeps the ghat's diagonal
     // parapet out of the foreground); he runs on out of frame left
-    const cx = lerp(Math.max(1200, lerp(standX + 30, manglaX + 80, runT)), BAL.x - 30, settle);
+    const cx = lerp(Math.max(1200, lerp(standXAt(f) + 30, manglaX + 80, runT)), BAL.x - 30, settle);
     cam = framePair(cx, lerp(792, 804, settle), lerp(1.95, 2.15, settle));
   }
   cam.focus = 1;
@@ -578,6 +635,8 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
       <GhibliLayer depth={1.0}>
         {/* the grove's warm dappled light: sun-gold rim, leaf shade and moving flecks on the figures (STO-22c) */}
         <GhibliCharFilterDefs f={f} dapple shadeFactor={0.14} sunColor="#ffd98a" bounceColor="#86a070" />
+        {/* Balak's own fine ink (constant screen width at any zoom, no whole-body outline: BAL-26f) */}
+        <Ep04BalakInkDefs zoom={cam.zoom} rim={0.5} />
         <SolidFigureDefs id="s02-solid" />
         <GhibliGroundCover x={1680} y={948} w={520} lifeF={f} preset="pond" part="back" />
         {!behindTree && manglaNode}
@@ -587,12 +646,12 @@ export const Scene02GobindaManglaGhibli: React.FC = () => {
         <g transform={balakLivingBodyTransform({ x: BAL.x, y: BAL.y, f, facing: -1, speechRms: balakRms + whisperLean * 0.4 })}>
           {/* the restrained resting aura (BAL-05..09), visible but never the big glow beat: a soft halo behind the head
               and a warm pool on the grass laid OVER the contact shadow (under it, the multiply swallowed it) */}
-          <GhibliBalakAura cx={hands.glowAnchor.cx} cy={hands.glowAnchor.cy} r={hands.glowAnchor.r * 0.7} glow={0.78} f={f} />
+          <Ep04BalakDivine cx={hands.glowAnchor.cx} cy={hands.glowAnchor.cy} r={hands.glowAnchor.r * 0.7} glow={0.78} f={f} />
           <SoftGroundShadow id="s02-bal-sh" x={BAL.x + 4} y={BAL.y + 2} rx={70} />
-          <GhibliBalakGroundGlow x={BAL.x} y={BAL.y + 4} rx={120} ry={20} level={0.7} />
-          <g filter="url(#ghibli-char-ink)">
+          <Ep04BalakGroundGlow x={BAL.x} y={BAL.y + 4} rx={120} ry={20} level={0.7} />
+          <g filter={`url(#${EP04_BALAK_INK})`}>
             <g filter="url(#s02-solid)">
-              <SeatedChild {...balakProps} />
+              <SeatedChild {...balakProps} inkZoom={cam.zoom} />
             </g>
             <GhibliBalakLapDetails x={BAL.x} y={BAL.y} s={BAL.s} flip f={f} />
           </g>

@@ -91,6 +91,38 @@ export const PLATE_COLORS_HEALTHY: PlateColors = {
   clothShade: "#c6b193",
   clothInner: "#a99273",
 };
+/**
+ * BAL-26e/f (2026-11-24/25), opt-in with `plateLook="ref2"` (Ghibli Episode 4): the director's new plate
+ * (Thakur_Reference_Plates/new_ref_thakur.png): light golden skin (cheek about #f4d1a7) with warm shade, the same dark
+ * hair and eyes, white cotton with warm cream shades in the folds. Every rig passes it with the ref2 look.
+ */
+export const PLATE_COLORS_REF2: PlateColors = {
+  ...PLATE_COLORS,
+  skin: "#f2cba0",
+  skinLit: "#f8d8b2",
+  skinFar: "#e2b68a",
+  skinShade: "#cc9a72",
+  skinDeep: "#8f6848",
+  skinUnder: "#6a4c34",
+  rim: "#ffe4c6",
+  soleNear: "#d8a880",
+  soleFar: "#c09068",
+  blush: "#f2a494",
+  iris: "#2a160e",
+  irisRing: "#8a5a32",
+  clothLit: "#fffaf1",
+  cloth: "#f6efe2",
+  clothMid: "#ece2d0",
+  clothFold: "#dccab0",
+  clothShade: "#c6b193",
+  clothInner: "#a99273",
+};
+/** The opt-in looks of the plate rigs: "ref2" = BAL-26e/f (Ghibli Episode 4). Absent = the delivered look. */
+export type PlateLook = "ref2";
+/** Warm sepia ink of the ref2 look's fine line work (face, ears, jaw). */
+export const PLATE_INK = "#3a2618";
+/** ref2 face contour: a lighter, warmer sepia (the plates' fine 1-2 px lines). */
+export const PLATE_INK_FACE = "#8a6044";
 
 /* ------------------------------------------------------------------ */
 /* Geometry helpers for the rigs                                        */
@@ -356,6 +388,25 @@ const smoothOpen = (pts: V[]): string => {
   }
   return d;
 };
+/** Points along the closed curve smoothClosed(pts) draws, from knot `a` to knot `b` (fractional; b may pass n). */
+const curveSpan = (pts: V[], a: number, b: number, step = 0.125): V[] => {
+  const n = pts.length;
+  const out: V[] = [];
+  for (let u = a; u <= b + 1e-6; u += step) {
+    const i = Math.floor(u);
+    const t = u - i;
+    const p0 = pts[(((i - 1) % n) + n) % n];
+    const p1 = pts[((i % n) + n) % n];
+    const p2 = pts[(((i + 1) % n) + n) % n];
+    const p3 = pts[(((i + 2) % n) + n) % n];
+    const t2 = t * t;
+    const t3 = t2 * t;
+    const f = (a0: number, a1: number, a2: number, a3: number) => 0.5 * (2 * a1 + (-a0 + a2) * t + (2 * a0 - 5 * a1 + 4 * a2 - a3) * t2 + (-a0 + 3 * a1 - 3 * a2 + a3) * t3);
+    out.push({ x: f(p0.x, p1.x, p2.x, p3.x), y: f(p0.y, p1.y, p2.y, p3.y) });
+  }
+  return out;
+};
+const polyD = (pts: V[]): string => pts.map((q, i) => `${i ? "L" : "M"}${pt(q)}`).join(" ");
 const mixHex = (a: string, b: string, t: number): string => {
   const pa = parseInt(a.slice(1), 16);
   const pb = parseInt(b.slice(1), 16);
@@ -411,12 +462,29 @@ export interface ThakurHeadPlateProps {
    * warmth. The face design and proportions stay BAL-26.
    */
   vivid?: boolean;
+  /**
+   * BAL-26e/f opt-in (absent = unchanged): "ref2" = the director's new plate, refined for Ghibli Episode 4: light golden
+   * skin (PLATE_COLORS_REF2 unless `colors` is given), eyes about 13% smaller than the vivid eyes (still large, dark,
+   * almond, one clear catchlight), soft brows, a fine warm sepia ink line round the face, ears and jaw (slightly broken
+   * on the lit side), a hint of nose line and nostril shade, a soft cheek blush wash, faint shade under the hair and the
+   * jaw, a little more sheen and strand detail in the hair. Geometry, anchors and the face state are unchanged.
+   */
+  plateLook?: PlateLook;
+  /**
+   * ref2 only: the camera zoom of the layer the head is drawn in (default 1). The face contour and the nose line are
+   * drawn in screen pixels (non-scaling strokes, so the rig and head scale do not thicken them) divided by this, so
+   * they stay about 1 px on screen in medium shots and close-ups alike.
+   */
+  inkZoom?: number;
 }
 
 /** Balak's head in the BAL-26 plate design. See the file header. */
-export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0, scale = 1, state: S, age = 5, colors = PLATE_COLORS, vivid = false }) => {
+export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0, scale = 1, state: S, age = 5, colors, vivid = false, plateLook, inkZoom = 1 }) => {
   const uid = safe(useId());
-  const C = colors;
+  const R2 = plateLook === "ref2";
+  /** ref2: stroke width for `px` screen pixels (non-scaling strokes; the CSS camera zoom is divided out). */
+  const inkW = (px: number) => px / Math.max(0.3, inkZoom);
+  const C = colors ?? (R2 ? PLATE_COLORS_REF2 : PLATE_COLORS);
   const ageY = plateAgeY(age);
   // Turn: |turn| <= 1 slides the features (three-quarter); beyond 1 (to 1.8, near profile) `pu` goes 0..1: the
   // features slide on toward the silhouette, the eye on that side foreshortens and hides behind the nose bridge, the
@@ -446,8 +514,16 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
   const sh = (pts: Array<[number, number]>, dx: number): V[] => pts.map(([px, py]) => ({ x: px + dx, y: py }));
 
   // A child-rounded oval: widest at the cheeks, a soft rounded chin (rounder than the age 12 plate).
+  // ref2 (BAL-26f): a slightly narrower oval with a softly pointed chin and a gentle cheek line (drawing only: the
+  // chin, mouth and eye anchors are computed separately and do not move)
+  const R2_FACE: Array<[number, number]> = [
+    [0.98, 0], [0.97, 0], [0.955, 0], [0.935, 0.2], [0.89, 0.6], [0.84, 1.1], [0.78, 1.7], [1, 2.0], [0.78, 1.7], [0.84, 1.1],
+    [0.89, 0.6], [0.935, 0.2], [0.955, 0], [0.97, 0], [0.98, 0], [1, 0], [1, 0], [1, 0],
+  ];
+  const r2Face = (pts: Array<[number, number]>): Array<[number, number]> =>
+    R2 ? pts.map(([px, py], i) => [3 + (px - 3) * R2_FACE[i][0], py + R2_FACE[i][1]]) : pts;
   const faceOutline = sh(
-    [
+    r2Face([
       [-28.4, -22],
       [-30, -9],
       [-31 * jc, 3],
@@ -466,7 +542,7 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
       [24, -32],
       [3, -36],
       [-17, -33],
-    ],
+    ]),
     oX,
   );
   // Hair (plate 01): a full rounded mass with volume on top and at the sides, soft over the tops of the ears, a short
@@ -531,11 +607,12 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
 
   // Eyes: large, rounded dark-brown almonds, wide open, white showing on both sides of the iris (plate 01); mirrored
   // per side (inner corner toward the nose). Cubic lids: `cU` is the upper lid's control height, `cL` the lower one's.
-  const EW = 9.2 * eyeK;
+  // ref2 (BAL-26f): about 13% smaller than the vivid eyes, still large.
+  const EW = (R2 ? 8.8 : 9.2) * eyeK;
   const EIN = 0.7 * eyeK;
   const EOUT = -0.3 * eyeK;
-  const CU_OPEN = -11.4 * eyeK; // fully open upper lid (apex about 0.75 of it)
-  const CL = 7.2 * eyeK;
+  const CU_OPEN = (R2 ? -10.4 : -11.4) * eyeK; // fully open upper lid (apex about 0.75 of it)
+  const CL = (R2 ? 6.6 : 7.2) * eyeK;
   const lidD = (cU: number) => `M${-EW} ${EIN} C${(-EW * 0.62).toFixed(2)} ${cU.toFixed(2)} ${(EW * 0.55).toFixed(2)} ${cU.toFixed(2)} ${EW} ${EOUT}`;
   const lowD = (cL: number) => `C${(EW * 0.6).toFixed(2)} ${cL.toFixed(2)} ${(-EW * 0.6).toFixed(2)} ${cL.toFixed(2)} ${-EW} ${EIN}`;
   const almond = `${lidD(CU_OPEN)} ${lowD(CL)}Z`;
@@ -553,7 +630,7 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
     const apex = 0.75 * cU + 0.125 * (EIN + EOUT);
     const below = `${lidD(cU)} ${lowD(Math.max(cLow, cU + 0.8))}Z`;
     const lowMid = 0.75 * cLow + 0.125 * (EIN + EOUT);
-    const irisR = 6.3 * eyeK;
+    const irisR = (R2 ? 5.9 : 6.3) * eyeK;
     const hlY = Math.max(gy - 2.6, apex + 1.5);
     const eId = `${uid}-e${idx}`;
     const lId = `${uid}-l${idx}`;
@@ -576,9 +653,9 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
               <ellipse cx={0} cy={(apex + 0.6).toFixed(2)} rx={EW} ry={1.5} fill={C.eyeShade} opacity={0.4} />
               <circle cx={gx.toFixed(2)} cy={gy.toFixed(2)} r={irisR.toFixed(2)} fill={C.iris} />
               <circle cx={gx.toFixed(2)} cy={(gy + 1.7).toFixed(2)} r={(irisR * 0.6).toFixed(2)} fill={C.irisRing} opacity={0.32} />
-              <circle cx={gx.toFixed(2)} cy={gy.toFixed(2)} r={(2.2 * eyeK).toFixed(2)} fill={C.pupil} />
-              <circle cx={(-sgn * 2 + gx).toFixed(2)} cy={hlY.toFixed(2)} r={((vivid ? 1.75 : 1.45) * eyeK).toFixed(2)} fill="#ffffff" />
-              {vivid && <circle cx={(sgn * 1.9 + gx).toFixed(2)} cy={(gy + 2.4).toFixed(2)} r={(0.7 * eyeK).toFixed(2)} fill="#ffffff" opacity={0.7} />}
+              <circle cx={gx.toFixed(2)} cy={gy.toFixed(2)} r={((R2 ? 2.05 : 2.2) * eyeK).toFixed(2)} fill={C.pupil} />
+              <circle cx={(-sgn * 2 + gx).toFixed(2)} cy={hlY.toFixed(2)} r={((R2 ? 1.85 : vivid ? 1.75 : 1.45) * eyeK).toFixed(2)} fill="#ffffff" />
+              {(vivid || R2) && <circle cx={(sgn * 1.9 + gx).toFixed(2)} cy={(gy + 2.4).toFixed(2)} r={((R2 ? 0.6 : 0.7) * eyeK).toFixed(2)} fill="#ffffff" opacity={0.7} />}
               {tear > 0.001 && (
                 <>
                   {/* Teary (Ep 6): a second small catchlight and the bright water line of tears along the lower lid
@@ -614,8 +691,8 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
           </>
         )}
         {/* Firm upper lash line, a touch heavier on its outer half (no cat-eye flick) */}
-        <path d={lidD(cU)} fill="none" stroke={C.lash} strokeWidth={k > 0.9 ? 1.8 : 2.7} strokeLinecap="round" />
-        {k < 0.9 && <path d={lidD(cU)} clipPath={`url(#${oId})`} fill="none" stroke={C.lash} strokeWidth={3.7} strokeLinecap="round" opacity={(1 - k).toFixed(3)} />}
+        <path d={lidD(cU)} fill="none" stroke={C.lash} strokeWidth={k > 0.9 ? 1.8 : R2 ? 2.3 : 2.7} strokeLinecap="round" />
+        {k < 0.9 && <path d={lidD(cU)} clipPath={`url(#${oId})`} fill="none" stroke={C.lash} strokeWidth={R2 ? 3.1 : 3.7} strokeLinecap="round" opacity={(1 - k).toFixed(3)} />}
         {k < 0.9 && <path d={`M${(EW - 0.6).toFixed(2)} ${(EOUT - 0.1).toFixed(2)} Q${(EW + 0.6).toFixed(2)} ${(EOUT - 0.3).toFixed(2)} ${(EW + 1.2).toFixed(2)} ${(EOUT - 0.8).toFixed(2)}`} fill="none" stroke={C.lash} strokeWidth={1.4} strokeLinecap="round" opacity={(1 - k).toFixed(3)} />}
         {/* A very faint lid fold above, fading as the lid lowers */}
         <path d={`M${(-EW * 0.6).toFixed(2)} ${(apex - 2.2).toFixed(2)} Q0.4 ${(apex - 3.6).toFixed(2)} ${(EW * 0.7).toFixed(2)} ${(apex - 2).toFixed(2)}`} fill="none" stroke={C.skinShade} strokeWidth={0.7} strokeLinecap="round" opacity={(0.16 * (1 - k)).toFixed(3)} />
@@ -640,14 +717,15 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
     const yi = browY - S.browInner - 0.5 * S.browLift;
     const ym = browY - 0.5 - S.browLift;
     const yo = browY + 0.6 - 0.3 * S.browLift;
+    const th = R2 ? 0.8 : 1;
     return smoothClosed([
-      { x: xi, y: yi - 1.55 },
-      { x: xm, y: ym - 1.45 },
-      { x: xo, y: yo - 0.65 },
+      { x: xi, y: yi - 1.55 * th },
+      { x: xm, y: ym - 1.45 * th },
+      { x: xo, y: yo - 0.65 * th },
       { x: xo + dir * 1, y: yo + 0.2 },
-      { x: xo, y: yo + 0.7 },
-      { x: xm, y: ym + 1.05 },
-      { x: xi, y: yi + 1.5 },
+      { x: xo, y: yo + 0.7 * th },
+      { x: xm, y: ym + 1.05 * th },
+      { x: xi, y: yi + 1.5 * th },
     ]);
   };
   const farK = clamp(0.93 - 0.02 * tY, 0.82, 1) * (1 - 0.7 * (turnD < 0 ? pu : 0));
@@ -690,6 +768,8 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
           <path d={smoothClosed(capPts)} />
         </clipPath>
       </defs>
+      {/* ref2: a faint soft shade under the jaw, on the neck (the face covers its top) */}
+      {R2 && <ellipse cx={(m - 1 + 0.5 * oX).toFixed(2)} cy={(chinY + 0.5).toFixed(2)} rx={17} ry={6.4} fill={C.skinShade} opacity={0.34} />}
       {/* Hair mass behind the head */}
       <path d={smoothClosed(backHair)} fill={C.hair} />
 
@@ -717,7 +797,32 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
         <ellipse cx={(m - 4).toFixed(2)} cy={(browY - 4).toFixed(2)} rx={13} ry={4.5} fill={C.skinLit} opacity={0.24} />
         <ellipse cx={(m - 17).toFixed(2)} cy={(eyeY + 11).toFixed(2)} rx={7} ry={5} fill={C.skinLit} opacity={0.2} />
         <path d={smoothOpen(faceOutline.slice(7, 11).map((q) => ({ x: q.x - 1.5, y: q.y - 1.4 })))} fill="none" stroke={C.skinShade} strokeWidth={2.2} strokeLinecap="round" opacity={0.18} />
+        {R2 && (
+          <>
+            {/* ref2: a soft wash of shade under the hairline and along the shadow-side jaw and the chin */}
+            <path d={smoothClosed(capPts.map((q) => ({ x: q.x + 0.6, y: q.y + 5.2 })))} fill={C.skinShade} opacity={0.16} />
+            <path d={polyD(curveSpan(faceOutline, 8.6, 12.4))} fill="none" stroke={C.skinShade} strokeWidth={6} strokeLinecap="round" opacity={0.16} />
+            <path d={polyD(curveSpan(faceOutline, 4.4, 7.6))} fill="none" stroke={C.skinShade} strokeWidth={4} strokeLinecap="round" opacity={0.12} />
+          </>
+        )}
       </g>
+      {R2 && (
+        <g fill="none" stroke={PLATE_INK_FACE} strokeLinecap="round" strokeLinejoin="round" opacity={0.56}>
+          {/* ref2: ONE continuous, smooth warm-brown line along the jaw and chin, about 1 px on screen at any zoom, tapering
+              by width (thinner at the chin, on the lit side and at both ends). The short pieces are opaque inside one
+              group with the opacity, so they join seamlessly (no darker dots at the joins, no gaps). The cheeks, ears
+              and hair get their one contour from the figure's ink filter (no double line). */}
+          {Array.from({ length: 16 }, (_, k) => {
+            const a = 4.2 + (6.7 * k) / 16;
+            const b = 4.2 + (6.7 * (k + 1)) / 16;
+            const um = 0.5 * (a + b);
+            const t = (um - 4.2) / 6.7;
+            const end = 0.4 + 0.6 * smooth(Math.min(t, 1 - t) / 0.16);
+            const prof = um < 5.6 ? 0.9 : um < 6.4 ? lerp(0.9, 0.82, (um - 5.6) / 0.8) : um < 7.8 ? 0.82 : um < 8.6 ? lerp(0.82, 1.15, (um - 7.8) / 0.8) : 1.15;
+            return <path key={k} d={polyD(curveSpan(faceOutline, a, b + 0.02, 0.06))} strokeWidth={inkW(prof * end)} vectorEffect="non-scaling-stroke" />;
+          })}
+        </g>
+      )}
 
       {/* Near profile: the ear away from the turn comes onto the side of the head, toward its centre */}
       {pu > 0.3 && (
@@ -762,11 +867,18 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
       {/* Very faint child blush, lifting with a smile */}
       <ellipse cx={(m - 17).toFixed(2)} cy={(eyeY + 11 - S.cheekUp).toFixed(2)} rx={6.2 * (1 + 0.12 * ex.joy)} ry={4} fill={`url(#${uid}-blush)`} opacity={0.35 + 0.3 * happy + (vivid ? 0.2 : 0)} />
       <ellipse cx={(m + 17).toFixed(2)} cy={(eyeY + 11 - S.cheekUp).toFixed(2)} rx={6.4 * (1 + 0.12 * ex.joy)} ry={4.1} fill={`url(#${uid}-blush)`} opacity={0.35 + 0.3 * happy + (vivid ? 0.2 : 0)} />
+      {R2 && (
+        <>
+          {/* ref2: a wider, softer cheek blush wash */}
+          <ellipse cx={(m - 18).toFixed(2)} cy={(eyeY + 12.5 - S.cheekUp).toFixed(2)} rx={9.6} ry={6} fill={`url(#${uid}-blush)`} opacity={0.42 + 0.2 * happy} />
+          <ellipse cx={(m + 18).toFixed(2)} cy={(eyeY + 12.5 - S.cheekUp).toFixed(2)} rx={9.6} ry={6} fill={`url(#${uid}-blush)`} opacity={0.4 + 0.2 * happy} />
+        </>
+      )}
 
       <g opacity={(1 - smooth((hideF - 0.45) / 0.4)).toFixed(3)}>{eye(eyeFarX, eyeY, 0, farK * eyeK, true)}</g>
       <g opacity={(1 - smooth((hideN - 0.45) / 0.4)).toFixed(3)}>{eye(eyeNearX, eyeY, 1, nearK * eyeK, false)}</g>
 
-      <path d={`${brow(-1, farK)} ${brow(1, nearK)}`} fill={C.brow} opacity={0.93} />
+      <path d={`${brow(-1, farK)} ${brow(1, nearK)}`} fill={R2 ? mixHex(C.brow, C.hairHi, 0.35) : C.brow} opacity={R2 ? 0.78 : 0.93} />
 
       {/* Small straight nose: a soft bridge line from between the brows down its shadow side, a small tip and nostril
           shadow, a lit tip */}
@@ -776,6 +888,14 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
       <ellipse cx={(m + 2.1).toFixed(2)} cy={(noseY + 0.9).toFixed(2)} rx={0.75} ry={0.5} fill={C.skinDeep} opacity={0.45} />
       <ellipse cx={(m + 0.6).toFixed(2)} cy={(noseY + 3).toFixed(2)} rx={2.8} ry={0.8} fill={C.skinShade} opacity={0.15} />
       <circle cx={(m - 0.6).toFixed(2)} cy={(noseY - 1.3).toFixed(2)} r={1.1} fill={C.skinLit} opacity={0.6} />
+      {R2 && (
+        <>
+          {/* ref2: a hint of the nose in ink on its shade side, and a soft nostril shade under the tip */}
+          <path d={`M${(m + 3.1).toFixed(2)} ${(noseY - 5.4).toFixed(2)} Q${(m + 3.9).toFixed(2)} ${(noseY - 2).toFixed(2)} ${(m + 3.3).toFixed(2)} ${(noseY + 0.2).toFixed(2)}`} fill="none" stroke={PLATE_INK_FACE} strokeWidth={inkW(0.9)} vectorEffect="non-scaling-stroke" strokeLinecap="round" opacity={0.42} />
+          <path d={`M${(m - 1.6).toFixed(2)} ${(noseY + 1.5).toFixed(2)} Q${(m + 0.6).toFixed(2)} ${(noseY + 2.5).toFixed(2)} ${(m + 2.6).toFixed(2)} ${(noseY + 1.2).toFixed(2)}`} fill="none" stroke={PLATE_INK_FACE} strokeWidth={inkW(1)} vectorEffect="non-scaling-stroke" strokeLinecap="round" opacity={0.48} />
+          <ellipse cx={(m + 0.5).toFixed(2)} cy={(noseY + 2.4).toFixed(2)} rx={3.6} ry={1.3} fill={C.skinShade} opacity={0.22} />
+        </>
+      )}
 
       {/* Mouth: closed, a calm half smile (pressed in thought); the open shapes crossfade in for speech or a laugh */}
       <g opacity={(1 - openShow).toFixed(3)}>
@@ -827,6 +947,15 @@ export const ThakurHeadPlate: React.FC<ThakurHeadPlateProps> = ({ x, y, rot = 0,
         <path d={hd([[-16 + hX, -36], [-25, -31], [-31, -18]])} fill="none" stroke={C.hairHi} strokeWidth={0.8} strokeLinecap="round" opacity={0.45} />
         {/* The side part: a fine lighter line from the hairline back over the crown */}
         <path d={hd([[-12.6 + hX, -33.4], [-14.8 + hX, -40.5], [-18 + 0.6 * hX, -48]])} fill="none" stroke={C.hairHi} strokeWidth={0.6} strokeLinecap="round" opacity={0.45} />
+        {R2 && (
+          <>
+            {/* ref2: a soft sheen band across the crown and a few more fine strands following the comb */}
+            <path d={hd([[-30, -30], [-20, -42], [-4, -47.5], [14, -46], [26, -40]])} fill="none" stroke={C.hairSheen} strokeWidth={4.2} strokeLinecap="round" opacity={0.14} />
+            <path d={hd([[-14 + hX, -41], [2, -48], [20, -46.5], [33, -37]])} fill="none" stroke={C.hairHi} strokeWidth={0.7} strokeLinecap="round" opacity={0.5} />
+            <path d={hd([[-7 + hX, -32.6], [8, -33.8], [22, -29.6], [30, -22]])} fill="none" stroke={C.hairHi} strokeWidth={0.65} strokeLinecap="round" opacity={0.42} />
+            <path d={hd([[-19 + hX, -40], [-28, -33], [-33, -22]])} fill="none" stroke={C.hairHi} strokeWidth={0.65} strokeLinecap="round" opacity={0.4} />
+          </>
+        )}
       </g>
       {/* Warm rim light along the top of the hair (upper left) */}
       <path d={hd([[-36.4, -22], [-35, -34.5], [-28.2, -45], [-16, -51.8]])} fill="none" stroke={C.rim} strokeWidth={1.1} strokeLinecap="round" opacity={0.26} />

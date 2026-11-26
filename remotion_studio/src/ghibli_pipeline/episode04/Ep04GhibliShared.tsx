@@ -18,8 +18,28 @@ import {
 import { GHIBLI_ANCHORS } from "./plateAnchors";
 import { GentleCow, solveGentleCow, type GentleCowProps } from "../../cinematic/animals/GentleCow";
 import { SeatedChild, seatedChildHands, type SeatedChildProps } from "../../episode03/rig/SeatedChild";
-import { GhibliBirdFlock } from "../core/GhibliLifeKit";
-import { GhibliBalakAura } from "../core/GhibliBalakAura";
+import { GhibliBirdFlock, GhibliWaterLight } from "../core/GhibliLifeKit";
+import {
+  POND_BANDS,
+  PondBankGroundCover,
+  PondButterflies,
+  PondDragonflies,
+  PondDucks,
+  PondEdgePlants,
+  PondFishRings,
+  PondFloatingPetals,
+  PondKingfisher,
+  PondLilies,
+  PondWaterStriders,
+  PondWaterSurface,
+  pondLilyCluster,
+  type PondCoverPatch,
+  type PondDuckPath,
+  type PondEdgeClump,
+  type PondWaterOptions,
+} from "./Ep04PondLife";
+import { Ep04BalakDivine, Ep04BalakInkDefs } from "./Ep04BalakDivine";
+import { EP04_BALAK_LOOK } from "./ep04BalakLook";
 
 /** Episode 4 Ghibli cast (reusing shared CAST + servant Mangla variant). */
 export const EP04G_CAST: Record<string, CastMember> = {
@@ -567,14 +587,12 @@ const EDGE_FRINGE = buildGrass(
 
 /** Small tufts that overlap the bases of the steps, the mandar trunk and the banana clump. */
 const BASE_TUFTS = buildGrass(
-  150,
+  110,
   57,
   (h1, h2) => {
-    const zone = h1 < 0.36 ? 0 : h1 < 0.7 ? 1 : 2;
-    const u = (h1 % 0.34) / 0.34;
-    // zone 0: along the ghat's near (landing) edge, where the grass meets the bricks
-    if (zone === 0) return [40 + u * 560, 991 + h2 * 9];
-    if (zone === 1) return [1270 + u * 190, 943 + h2 * 13];
+    // the ghat's own edges are tufted in GhibliPondGhat (same layer as the bricks); here: the trunk and the banana
+    const u = (h1 % 0.5) / 0.5;
+    if (h1 < 0.5) return [1270 + u * 190, 943 + h2 * 13];
     return [1580 + u * 420, 938 + h2 * 12];
   },
   0.9,
@@ -689,7 +707,33 @@ const GhibliPondBank: React.FC<{ f: number }> = ({ f }) => {
 
       {/* the bank's green reflection in the shallows, then a glint of water light at the lip */}
       <path d={bankEdgeD(-7)} fill="none" stroke="#7f915a" strokeWidth={12} opacity={0.3} filter="url(#ep4pb-soft2)" />
-      <path d={bankEdgeD(-2)} fill="none" stroke="#eef4e6" strokeWidth={2.2} opacity={0.45} filter="url(#ep4pb-soft2)" />
+      <path
+        d={bankEdgeD(-2)}
+        fill="none"
+        stroke="#eef4e6"
+        strokeWidth={2.2}
+        opacity={0.38 + 0.12 * Math.sin(f * 0.06)}
+        transform={`translate(0 ${(Math.sin(f * 0.07) * 0.8).toFixed(2)})`}
+        filter="url(#ep4pb-soft2)"
+      />
+      {/* small wavelets lapping at the lip, each rising and fading */}
+      {Array.from({ length: 34 }, (_, i) => {
+        const x = BANK_X0 + 60 + ((i * 89.7) % (BANK_X1 - BANK_X0 - 120));
+        const ph = (((f * 0.012 + hash(i * 3.7)) % 1) + 1) % 1;
+        const y = bankEdgeY(x) - 3 - ph * 7;
+        const l = 10 + hash(i * 1.3) * 16;
+        return (
+          <path
+            key={`lap${i}`}
+            d={`M ${(x - l / 2).toFixed(1)} ${y.toFixed(1)} Q ${x.toFixed(1)} ${(y - 1.2).toFixed(1)} ${(x + l / 2).toFixed(1)} ${y.toFixed(1)}`}
+            fill="none"
+            stroke="#f2f8f0"
+            strokeWidth={1}
+            opacity={(Math.sin(ph * Math.PI) * 0.55).toFixed(2)}
+            strokeLinecap="round"
+          />
+        );
+      })}
 
       <g mask="url(#ep4pb-mask)">
         <path d={BANK_SHAPE_D} fill="url(#ep4pb-base)" />
@@ -804,11 +848,15 @@ const GhibliPondBank: React.FC<{ f: number }> = ({ f }) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Brick bathing ghat descending from the bank into the pond           */
-/* A small perspective model (metres) projected onto the ground-locked */
-/* plane: eye 5.5 m above the bank, horizon y = 500, vanishing x = 960.*/
-/* Bank level h = 0 (the landing, where feet stand at y = 935), water  */
-/* surface h = -0.75; treads step DOWN and AWAY towards the water.     */
+/* The bathing ghat: a short flight of old brick steps going DOWN from */
+/* the bank into the pond (redesigned 2026-11-25, the director: "pond  */
+/* ghat"). A small perspective model (metres) projected onto the       */
+/* ground-locked plane: eye 5.5 m above the bank, horizon y = 500,     */
+/* vanishing x = 960. Bank level h = 0; the top step (the landing) is  */
+/* flush with the grass on the figures' ground line (y 892-964); five  */
+/* treads drop 0.22 m each towards the water (h = -0.75), the lowest   */
+/* two under water. Low side walls (lime-plaster tops) end in square   */
+/* posts with plaster caps a little way out in the pond.               */
 /* ------------------------------------------------------------------ */
 
 const GH_F = 553;
@@ -816,19 +864,26 @@ const GH_E = 5.5;
 /** Project a ghat point (X across, h height above the bank, z depth) to stage coordinates. */
 export const ghatProject = (X: number, h: number, z: number): [number, number] => [960 + (GH_F * X) / z, 500 + (GH_F * (GH_E - h)) / z];
 
-const GH_XL = -9.87; // inner face of the left parapet
-const GH_XR = -4.71; // inner face of the right parapet
-const GH_WALL = 0.5; // parapet thickness
-const GH_WALL_H = 0.35; // parapet top above the bank
+const GH_XL = -9.87; // inner face of the left wall
+const GH_XR = -4.71; // inner face of the right wall
+const GH_WALL = 0.42; // side-wall thickness
+const GH_WALL_H = 0.2; // side-wall top above the bank (low)
+const GH_POST_H = 0.62; // water-end posts' top above the bank
+const GH_GATE_H = 0.5; // landward posts' top
 const GH_WATER = -0.75;
-const GH_Z0 = 6.2; // near edge of the landing (flush with the grass)
-const GH_Z1 = 7.3; // landing's far edge: first step down
-const GH_TREAD = 0.75;
-const GH_RISER = 0.2;
-const GH_STEPS = 6;
-const GH_ZEND = GH_Z1 + GH_TREAD * GH_STEPS + 0.2; // parapets run a little past the last tread
+const GH_Z0 = 6.55; // near edge of the landing (flush with the grass, y ~ 964)
+const GH_Z1 = 7.75; // landing's far edge: first step down (y ~ 892)
+const GH_TREAD = 0.48;
+const GH_RISER = 0.22;
+const GH_STEPS = 5;
+const GH_ZLAST = GH_Z1 + GH_TREAD * GH_STEPS; // far edge of the last (drowned) tread
+const GH_WALL_Z0 = 7.15; // the side walls start beside the landing
+const GH_ZEND = GH_ZLAST + 0.45; // far faces of the water-end posts
+const GH_LIP_Z = (GH_F * GH_E) / 336; // the bank lip (y 836) at bank level
+const GH_ZWL = GH_Z1 + GH_TREAD * 3; // the waterline: riser between tread 3 (dry) and tread 4 (drowned)
+const GH_ZLW = (GH_F * (GH_E - GH_WATER)) / 336; // the water surface seen right at the bank lip
 
-/** Surfaces of the ghat floor: index 0 = landing (bank level), 1..6 = treads going down. */
+/** Surfaces of the ghat floor: index 0 = landing (bank level), 1..5 = treads going down (4 and 5 under water). */
 const GH_TREADS = Array.from({ length: GH_STEPS + 1 }, (_, i) => ({
   i,
   h: -GH_RISER * i,
@@ -837,9 +892,10 @@ const GH_TREADS = Array.from({ length: GH_STEPS + 1 }, (_, i) => ({
 }));
 
 /**
- * Ghat layout for scenes (e.g. Scene 03 Shot 11, walking down the steps):
- * `ghatSpot(u, step)` gives the stage foot point and a scale factor relative to a figure standing at y = 935
- * on the landing; u = 0 at the left parapet, 1 at the right; step 0 = landing, 1..6 = treads (4+ are under water).
+ * Ghat layout for scenes (e.g. walking down the steps):
+ * `ghatSpot(u, step, along)` gives the stage foot point and a scale factor relative to a figure standing at y = 935
+ * on the bank; u = 0 at the left wall's inner face, 1 at the right wall's; step 0 = the landing (bank level, y 892-964),
+ * 1..5 = treads going down (4 and 5 are under water); along = 0 near edge .. 1 far edge of that step.
  */
 export const ghatSpot = (u: number, step: number, along = 0.5) => {
   const t = GH_TREADS[clamp(Math.round(step), 0, GH_STEPS)];
@@ -848,24 +904,40 @@ export const ghatSpot = (u: number, step: number, along = 0.5) => {
   return { x, y, scale: 6.99 / z, underwater: t.h < GH_WATER };
 };
 
+/** Key stage points of the ghat for staging (all world/stage px of the ground-locked plane). */
+export const GHAT_LAYOUT = {
+  steps: GH_STEPS,
+  /** First tread under water. */
+  firstDrownedStep: 4,
+  /** The landing quad (bank level): near-left, near-right, far-right, far-left. */
+  landing: [ghatProject(GH_XL, 0, GH_Z0), ghatProject(GH_XR, 0, GH_Z0), ghatProject(GH_XR, 0, GH_Z1), ghatProject(GH_XL, 0, GH_Z1)],
+  /** The right wall's outer foot on the grass, near end -> bank lip (grass is right of this line). */
+  rightWallFoot: [ghatProject(GH_XR + GH_WALL, 0, GH_WALL_Z0), ghatProject(GH_XR + GH_WALL, 0, GH_LIP_Z)],
+  /** The left wall's outer top edge, near end -> water-end post. */
+  leftWallEdge: [ghatProject(GH_XL - GH_WALL, GH_WALL_H, GH_WALL_Z0), ghatProject(GH_XL - GH_WALL, GH_WALL_H, GH_ZEND)],
+} as const;
+
 const ptsD = (pts: Array<[number, number]>) =>
   `${pts.map(([x, y], i) => `${i ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`).join(" ")} Z`;
 const segD = (a: [number, number], b: [number, number]) => `M ${a[0].toFixed(1)} ${a[1].toFixed(1)} L ${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+const quadAt = (xa: number, xb: number, h: number, za: number, zb: number) =>
+  ptsD([ghatProject(xa, h, za), ghatProject(xb, h, za), ghatProject(xb, h, zb), ghatProject(xa, h, zb)]);
 
-/** Brick courses for a horizontal tread: joints parallel to the step edge + staggered cross joints. */
+/** Brick courses for a horizontal tread: a joint parallel to the step edge + staggered cross joints, slightly wavy. */
 const treadBrickD = (h: number, z0: number, z1: number, rows: number, seed: number) => {
   const out: string[] = [];
   for (let r = 1; r < rows; r++) {
     const z = z0 + ((z1 - z0) * r) / rows;
-    out.push(segD(ghatProject(GH_XL, h, z), ghatProject(GH_XR, h, z)));
+    out.push(segD(ghatProject(GH_XL + 0.05, h, z), ghatProject(GH_XR - 0.05, h, z + (hash(seed + r) - 0.5) * 0.03)));
   }
-  const brick = 0.32;
+  const brick = 0.36;
   for (let r = 0; r < rows; r++) {
-    const za = z0 + ((z1 - z0) * r) / rows;
-    const zb = z0 + ((z1 - z0) * (r + 1)) / rows;
+    const za = z0 + ((z1 - z0) * r) / rows + 0.02;
+    const zb = z0 + ((z1 - z0) * (r + 1)) / rows - 0.02;
     const off = (r % 2) * brick * 0.5 + hash(seed + r) * 0.05;
-    for (let X = GH_XL + off + brick; X < GH_XR - 0.05; X += brick) {
-      out.push(segD(ghatProject(X, h, za), ghatProject(X, h, zb)));
+    for (let X = GH_XL + off + brick; X < GH_XR - 0.08; X += brick) {
+      if (hash(seed * 3 + X * 7 + r) < 0.22) continue; // worn joints vanish
+      out.push(segD(ghatProject(X, h, za), ghatProject(X + 0.01, h, zb)));
     }
   }
   return out.join(" ");
@@ -874,7 +946,7 @@ const treadBrickD = (h: number, z0: number, z1: number, rows: number, seed: numb
 /** Per-brick watercolour mottling on a tread (a few lighter / darker bricks). */
 const treadMottle = (h: number, z0: number, z1: number, rows: number, seed: number) => {
   const cells: Array<{ d: string; dark: boolean; o: number }> = [];
-  const brick = 0.32;
+  const brick = 0.36;
   for (let r = 0; r < rows; r++) {
     const za = z0 + ((z1 - z0) * r) / rows;
     const zb = z0 + ((z1 - z0) * (r + 1)) / rows;
@@ -882,217 +954,393 @@ const treadMottle = (h: number, z0: number, z1: number, rows: number, seed: numb
     let k = 0;
     for (let X = GH_XL + off; X < GH_XR - 0.05; X += brick, k++) {
       const hv = hash(seed * 3.1 + r * 17.3 + k * 1.37);
-      if (hv > 0.62 || hv < 0.16) {
-        const X2 = Math.min(GH_XR, X + brick);
-        const Xa = Math.max(GH_XL, X);
-        cells.push({
-          d: ptsD([ghatProject(Xa, h, za), ghatProject(X2, h, za), ghatProject(X2, h, zb), ghatProject(Xa, h, zb)]),
-          dark: hv < 0.16,
-          o: 0.12 + hash(seed + k * 7.7 + r) * 0.16,
-        });
+      if (hv > 0.64 || hv < 0.17) {
+        cells.push({ d: quadAt(Math.max(GH_XL, X), Math.min(GH_XR, X + brick), h, za, zb), dark: hv < 0.17, o: 0.12 + hash(seed + k * 7.7 + r) * 0.16 });
       }
     }
   }
   return cells;
 };
 
-/** Bottom of the left parapet's inner face (stair profile, or the water surface over submerged treads). */
+/** An irregular patch (chipped plaster, moss, a wet stain) on a horizontal surface, in ghat metres. */
+const patchD = (cx: number, cz: number, rx: number, rz: number, h: number, seed: number, n = 10) => {
+  const pts: Array<[number, number]> = [];
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2;
+    const j = 0.62 + hash(seed * 1.3 + k * 2.7) * 0.55;
+    pts.push(ghatProject(cx + Math.cos(a) * rx * j, h, cz + Math.sin(a) * rz * j));
+  }
+  return ptsD(pts);
+};
+
+/** Bottom of the left wall's inner face: the stair profile, or the water surface over the drowned treads. */
 const ghatInnerProfile = (): Array<[number, number]> => {
   const pts: Array<[number, number]> = [];
   const push = (h: number, z: number) => pts.push(ghatProject(GH_XL, Math.max(h, GH_WATER), z));
   GH_TREADS.forEach((t) => {
-    push(t.h, t.z0);
+    const za = Math.max(t.z0, GH_WALL_Z0);
+    if (t.z1 <= GH_WALL_Z0) return;
+    push(t.h, za);
     push(t.h, t.z1);
   });
-  push(GH_TREADS[GH_STEPS].h, GH_ZEND);
+  push(GH_WATER, GH_ZEND);
   return pts;
 };
 
-const GH_BRICK = "#c98161";
-const GH_BRICK_FACE = "#b06a4c";
-const GH_INK = "#4a3020";
+const GH_BRICK = "#c47d5c";
+const GH_BRICK_FACE = "#ad6849";
+const GH_PLASTER = "#e7d8bb";
+const GH_INK = "#3A2618";
 
-export const GhibliPondGhat: React.FC<{ f: number }> = ({ f }) => {
+/** Grass along the landing's near edge and the walls' feet, drawn over the brick edges (same layer as the ghat). */
+const GHAT_TUFTS = buildGrass(
+  190,
+  73,
+  (h1, h2) => {
+    const zone = h1 < 0.4 ? 0 : h1 < 0.72 ? 1 : 2;
+    const u = (h1 % 0.32) / 0.32;
+    if (zone === 0) {
+      // the landing's near edge, where the grass meets the bricks
+      const [x, y] = ghatProject(GH_XL - GH_WALL - 0.2 + u * (GH_XR - GH_XL + 2 * GH_WALL + 0.4), 0, GH_Z0 - 0.02 - h2 * 0.08);
+      return [x, y];
+    }
+    if (zone === 1) {
+      // the right wall's outer foot (grass side), bank level
+      const [x, y] = ghatProject(GH_XR + GH_WALL + 0.03 + h2 * 0.12, 0, GH_WALL_Z0 + u * (GH_LIP_Z - GH_WALL_Z0 - 0.15));
+      return [x, y];
+    }
+    // the left wall's outer top edge (the grass meets it here)
+    const [x, y] = ghatProject(GH_XL - GH_WALL - 0.04 - h2 * 0.1, 0, GH_WALL_Z0 + u * (GH_LIP_Z - GH_WALL_Z0 - 0.1));
+    return [x, y];
+  },
+  0.85,
+);
+
+/**
+ * The redesigned bathing ghat (worn old brick steps into the water, lime plaster, moss, a drowned tread or two seen
+ * through the water, lapping at the waterline). `lifeF` defaults to `f`. `dressing` (default true) leaves a brass lota
+ * on the first step and a folded gamchha on the left wall.
+ */
+export const GhibliPondGhat: React.FC<{ f: number; lifeF?: number; dressing?: boolean }> = ({ f, lifeF, dressing = true }) => {
+  const lf = lifeF ?? f;
   const P = ghatProject;
-  const lipY = 836; // the bank's water edge: parts of the right parapet below bank level hide behind it
   const lw = GH_XL - GH_WALL;
   const rw = GH_XR + GH_WALL;
-  // treads, far (under water) to near (landing)
   const treads = [...GH_TREADS].reverse();
-  // left parapet inner face
-  const innerFace = ptsD([P(GH_XL, GH_WALL_H, GH_Z0), P(GH_XL, GH_WALL_H, GH_ZEND), ...ghatInnerProfile().reverse()]);
-  // right parapet outer face (faces the camera side): above the bank all along, below it only beyond the lip
-  const zLipWater = 10.3;
+  const profile = ghatInnerProfile();
+  const innerFace = ptsD([P(GH_XL, GH_WALL_H, GH_WALL_Z0), P(GH_XL, GH_WALL_H, GH_ZEND), ...[...profile].reverse()]);
+  // right wall outer face (camera side): above the grass to the bank lip, then down to the water out in the pond
   const outerFace = ptsD([
-    P(rw, GH_WALL_H, GH_Z0),
+    P(rw, GH_WALL_H, GH_WALL_Z0),
     P(rw, GH_WALL_H, GH_ZEND),
     P(rw, GH_WATER, GH_ZEND),
-    P(rw, GH_WATER, zLipWater),
-    [P(rw, 0, 9.05)[0], lipY],
-    P(rw, 0, 9.05),
-    P(rw, 0, GH_Z0),
+    P(rw, GH_WATER, GH_ZLW),
+    P(rw, 0, GH_LIP_Z),
+    P(rw, 0, GH_WALL_Z0),
   ]);
-  const wallTopL = ptsD([P(lw, GH_WALL_H, GH_Z0), P(GH_XL, GH_WALL_H, GH_Z0), P(GH_XL, GH_WALL_H, GH_ZEND), P(lw, GH_WALL_H, GH_ZEND)]);
-  const wallTopR = ptsD([P(GH_XR, GH_WALL_H, GH_Z0), P(rw, GH_WALL_H, GH_Z0), P(rw, GH_WALL_H, GH_ZEND), P(GH_XR, GH_WALL_H, GH_ZEND)]);
-  const endL = ptsD([P(lw, GH_WALL_H, GH_Z0), P(GH_XL, GH_WALL_H, GH_Z0), P(GH_XL, 0, GH_Z0), P(lw, 0, GH_Z0)]);
-  const endR = ptsD([P(GH_XR, GH_WALL_H, GH_Z0), P(rw, GH_WALL_H, GH_Z0), P(rw, 0, GH_Z0), P(GH_XR, 0, GH_Z0)]);
-  // square posts capping the parapets at the water end
-  const post = (x0: number, x1: number, sideFace: boolean) => {
-    const za = GH_ZEND - 0.45;
-    const zb = GH_ZEND;
-    const top = GH_WALL_H + 0.6;
+  const wallTopL = quadAt(lw, GH_XL, GH_WALL_H, GH_WALL_Z0, GH_ZEND);
+  const wallTopR = quadAt(GH_XR, rw, GH_WALL_H, GH_WALL_Z0, GH_ZEND);
+  const endL = ptsD([P(lw, GH_WALL_H, GH_WALL_Z0), P(GH_XL, GH_WALL_H, GH_WALL_Z0), P(GH_XL, 0, GH_WALL_Z0), P(lw, 0, GH_WALL_Z0)]);
+  const endR = ptsD([P(GH_XR, GH_WALL_H, GH_WALL_Z0), P(rw, GH_WALL_H, GH_WALL_Z0), P(rw, 0, GH_WALL_Z0), P(GH_XR, 0, GH_WALL_Z0)]);
+
+  /** A square post with a lime-plaster cap: near face, +X side face, cap. `bottomH` is where its near face shows from. */
+  const post = (x0: number, x1: number, za: number, zb: number, top: number, bottomH: (z: number) => number, k: number) => {
+    const cap = 0.07;
+    const o = 0.05;
+    const nearFace = ptsD([P(x0, top, za), P(x1, top, za), P(x1, bottomH(za), za), P(x0, bottomH(za), za)]);
+    const side = ptsD([P(x1, top, za), P(x1, top, zb), P(x1, bottomH(zb), zb), P(x1, bottomH(za), za)]);
+    const wet = bottomH(za) < 0;
     return (
-      <g>
-        {sideFace && (
-          <path d={ptsD([P(x1, top, za), P(x1, top, zb), P(x1, GH_WALL_H, zb), P(x1, GH_WALL_H, za)])} fill={GH_BRICK_FACE} stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.5} />
+      <g key={k}>
+        <path d={side} fill="#9a5a3f" />
+        <path d={nearFace} fill={GH_BRICK} />
+        {/* brick courses and a chipped plaster coat */}
+        {Array.from({ length: Math.floor((top - bottomH(za)) / 0.12) }, (_, c) => {
+          const h = top - cap - (c + 1) * 0.12;
+          return <path key={c} d={segD(P(x0, h, za), P(x1, h, za))} stroke="#ecd9bf" strokeWidth={0.7} opacity={0.45} />;
+        })}
+        <path d={ptsD([P(x0, top - cap, za), P(x1, top - cap, za), P(x1, top - 0.22 - hash(k) * 0.1, za), P((x0 + x1) / 2, top - 0.3, za), P(x0, top - 0.18, za)])} fill={GH_PLASTER} opacity={0.75} />
+        {wet && (
+          <path d={ptsD([P(x0, GH_WATER + 0.3, za), P(x1, GH_WATER + 0.26, za), P(x1, GH_WATER, za), P(x0, GH_WATER, za)])} fill="#3f3f2c" opacity={0.45} />
         )}
-        <path d={ptsD([P(x0, top, za), P(x1, top, za), P(x1, top, zb), P(x0, top, zb)])} fill="#ead9bd" stroke={GH_INK} strokeWidth={0.8} strokeOpacity={0.45} />
-        <path d={ptsD([P(x0, top, za), P(x1, top, za), P(x1, GH_WALL_H, za), P(x0, GH_WALL_H, za)])} fill={GH_BRICK} stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.55} />
-        <path d={segD(P(x0, top - 0.12, za), P(x1, top - 0.12, za))} stroke="#f1e4cb" strokeWidth={1.2} opacity={0.7} />
+        {wet && <path d={ptsD([P(x0, GH_WATER + 0.12, za), P(x1, GH_WATER + 0.16, za), P(x1, GH_WATER, za), P(x0, GH_WATER, za)])} fill="#6f8a44" opacity={0.6} />}
+        <path d={nearFace} fill="none" stroke={GH_INK} strokeWidth={0.9} opacity={0.6} strokeDasharray="30 4 18 3 50 5" />
+        <path d={side} fill="none" stroke={GH_INK} strokeWidth={0.8} opacity={0.45} strokeDasharray="22 5 40 4" />
+        {/* the cap: a slab a touch wider than the post */}
+        <path d={quadAt(x0 - o, x1 + o, top, za - o, zb + o)} fill="#efe3c9" stroke={GH_INK} strokeWidth={0.8} strokeOpacity={0.55} />
+        <path d={ptsD([P(x0 - o, top, za - o), P(x1 + o, top, za - o), P(x1 + o, top - cap, za - o), P(x0 - o, top - cap, za - o)])} fill="#d9c9aa" stroke={GH_INK} strokeWidth={0.7} strokeOpacity={0.5} />
+        <path d={patchD((x0 + x1) / 2 + 0.06, (za + zb) / 2, 0.12, 0.1, top, k * 5 + 1, 7)} fill="#c98a68" opacity={0.55} />
       </g>
     );
   };
-  // water inside the ghat (between the parapets), from the waterline on step 4 out to the parapet ends
-  const zWl = GH_Z1 + GH_TREAD * 3; // riser between tread 3 (dry) and tread 4 (under water)
-  const waterD = ptsD([P(GH_XL, GH_WATER, zWl), P(GH_XR, GH_WATER, zWl), P(GH_XR, GH_WATER, GH_ZEND + 0.6), P(GH_XL, GH_WATER, GH_ZEND + 0.6)]);
-  const waterTop = P(GH_XL, GH_WATER, GH_ZEND + 0.6)[1];
-  const waterBottom = P(GH_XL, GH_TREADS[3].h, zWl)[1];
-  // whole-ghat silhouette for the paper grain
-  const silhouette = [innerFace, outerFace, wallTopL, wallTopR, endL, endR, ...GH_TREADS.map((t) => ptsD([P(GH_XL, t.h, t.z0), P(GH_XR, t.h, t.z0), P(GH_XR, t.h, t.z1), P(GH_XL, t.h, t.z1)]))].join(" ");
+
+  // water inside the ghat over the drowned treads, fading out where it meets the open pond
+  const zFar = GH_ZEND + 0.55;
+  const waterD = quadAt(GH_XL, GH_XR, GH_WATER, GH_ZWL, zFar);
+  const waterBottom = P(GH_XL, GH_WATER, GH_ZWL)[1];
+  const waterTop = P(GH_XL, GH_WATER, zFar)[1];
+  const wl = GH_ZWL + 0.025 * Math.sin(lf * 0.07) + 0.012 * Math.sin(lf * 0.19 + 1);
+  const silhouette = [
+    innerFace,
+    outerFace,
+    wallTopL,
+    wallTopR,
+    endL,
+    endR,
+    ...GH_TREADS.map((t) => quadAt(GH_XL, GH_XR, t.h, t.z0, t.z1)),
+  ].join(" ");
+  const cutClip = ptsD([
+    [-1200, 1300],
+    [-1200, 560],
+    P(rw, GH_WATER, zFar + 4),
+    P(rw, GH_WATER, GH_ZLW),
+    P(rw, 0, GH_LIP_Z),
+    P(rw, 0, GH_Z0 - 0.6),
+    [P(rw, 0, GH_Z0 - 0.6)[0], 1300],
+  ]);
+  const lota = ghatSpot(0.1, 1, 0.45);
+  const gam = P(lw + 0.2, GH_WALL_H, 8.35);
+  const gamS = 6.99 / 8.35;
+
   return (
     <g pointerEvents="none">
       <defs>
         <linearGradient id="ep4gh-water" gradientUnits="userSpaceOnUse" x1={0} y1={waterBottom} x2={0} y2={waterTop}>
-          <stop offset="0%" stopColor="#4f7d70" stopOpacity={0.92} />
-          <stop offset="55%" stopColor="#7fa596" stopOpacity={0.9} />
-          <stop offset="100%" stopColor="#a9c4b4" stopOpacity={0} />
+          <stop offset="0%" stopColor="#5e8f7b" stopOpacity={0.42} />
+          <stop offset="30%" stopColor="#5f927e" stopOpacity={0.72} />
+          <stop offset="62%" stopColor="#6a9c88" stopOpacity={0.92} />
+          <stop offset="100%" stopColor="#77a592" stopOpacity={0} />
         </linearGradient>
         <filter id="ep4gh-soft" x="-10%" y="-30%" width="120%" height="160%">
-          <feGaussianBlur stdDeviation={2.5} />
+          <feGaussianBlur stdDeviation={2.2} />
         </filter>
-        <filter id="ep4gh-soft6" x="-10%" y="-60%" width="120%" height="220%">
-          <feGaussianBlur stdDeviation={6} />
-        </filter>
-        <filter id="ep4gh-mottle" filterUnits="userSpaceOnUse" x={-200} y={700} width={1200} height={340} colorInterpolationFilters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.03" numOctaves={3} seed={17} />
-          <feColorMatrix type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.25  0 0 0 0 0.17  4.2 0 0 0 -1.9" />
+        <filter id="ep4gh-mottle" filterUnits="userSpaceOnUse" x={40} y={760} width={760} height={230} colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.014 0.035" numOctaves={3} seed={17} />
+          <feColorMatrix type="matrix" values="0 0 0 0 0.40  0 0 0 0 0.24  0 0 0 0 0.16  4.2 0 0 0 -1.9" />
         </filter>
         <clipPath id="ep4gh-clip">
           <path d={silhouette} />
         </clipPath>
+        <clipPath id="ep4gh-wclip">
+          <path d={waterD} />
+        </clipPath>
+        {/* the deep treads near the right wall hide behind the wall and the earth it holds back: nothing of the cut
+            may show right of the wall's outer foot */}
+        <clipPath id="ep4gh-cut">
+          <path d={cutClip} />
+        </clipPath>
       </defs>
 
-      {/* treads from the drowned far steps up to the landing at bank level */}
+      <g clipPath="url(#ep4gh-cut)">
+      {/* treads, from the drowned ones up to the landing at bank level */}
       {treads.map((t) => {
-        const wet = clamp(t.i / 3, 0, 1); // 0 dry landing .. 1 wet bottom dry step
+        const wet = clamp(t.i / 3, 0, 1);
         const sub = t.h < GH_WATER;
-        const d = ptsD([P(GH_XL, t.h, t.z0), P(GH_XR, t.h, t.z0), P(GH_XR, t.h, t.z1), P(GH_XL, t.h, t.z1)]);
-        const rows = t.i === 0 ? 4 : 2;
+        const d = quadAt(GH_XL, GH_XR, t.h, t.z0, t.z1);
+        const rows = t.i === 0 ? 3 : 1;
         return (
-          <g key={t.i} opacity={sub ? Math.max(0.25, 0.8 - (t.i - 4) * 0.28) : 1}>
-            <path d={d} fill={sub ? "#6f6250" : GH_BRICK} />
-            {/* damp darkening towards the water */}
-            <path d={d} fill="#5b4334" opacity={0.04 + wet * 0.4} />
-            {/* the shaded strip just beyond the step above (the drop), hiding the riser */}
-            {t.i > 0 && (() => {
-              // first depth of this tread visible over the edge of the step above
-              const zv = (t.z0 * (GH_E - t.h)) / (GH_E - (t.h + GH_RISER));
-              return (
-                <path
-                  d={ptsD([P(GH_XL, t.h, zv), P(GH_XR, t.h, zv), P(GH_XR, t.h, zv + 0.2), P(GH_XL, t.h, zv + 0.2)])}
-                  fill="#3a2418"
-                  opacity={0.5}
-                  filter="url(#ep4gh-soft)"
-                />
-              );
-            })()}
+          <g key={t.i}>
+            <path d={d} fill={sub ? "#7d6a4e" : GH_BRICK} />
+            <path d={d} fill="#4c3628" opacity={sub ? 0.25 : 0.03 + wet * 0.36} />
+            {/* the drop: the shaded first strip seen over the step above */}
+            {t.i > 0 &&
+              (() => {
+                const zv = (t.z0 * (GH_E - t.h)) / (GH_E - (t.h + GH_RISER));
+                return (
+                  <>
+                    <path d={quadAt(GH_XL, GH_XR, t.h, zv, zv + 0.2)} fill="#2a180c" opacity={sub ? 0.22 : 0.4} filter="url(#ep4gh-soft)" />
+                    <path d={quadAt(GH_XL, GH_XR, t.h, zv, zv + 0.06)} fill="#2a180c" opacity={sub ? 0.25 : 0.55} />
+                  </>
+                );
+              })()}
             {treadMottle(t.h, t.z0, t.z1, rows, 13 + t.i * 7).map((c, k) => (
-              <path key={k} d={c.d} fill={c.dark ? "#8a5038" : "#e3ad8a"} opacity={c.o * 0.8} />
+              <path key={k} d={c.d} fill={c.dark ? "#83492f" : "#e2aa86"} opacity={c.o * (sub ? 0.4 : 0.85)} />
             ))}
-            <path d={treadBrickD(t.h, t.z0, t.z1, rows, 5 + t.i)} fill="none" stroke="#efe0c8" strokeWidth={0.9} opacity={0.55} />
-            <path d={treadBrickD(t.h, t.z0, t.z1, rows, 5 + t.i)} fill="none" stroke={GH_INK} strokeWidth={0.5} opacity={0.22} />
-            {/* the step edge (nosing) where the next tread drops away: sunlit lip under a sepia ink line */}
+            <path d={treadBrickD(t.h, t.z0, t.z1, rows, 5 + t.i)} fill="none" stroke="#efe0c8" strokeWidth={0.8} opacity={sub ? 0.2 : 0.5} />
+            <path d={treadBrickD(t.h, t.z0, t.z1, rows, 5 + t.i)} fill="none" stroke={GH_INK} strokeWidth={0.5} opacity={0.2} />
+            {/* chipped lime plaster left on the dry steps, more on the landing */}
+            {!sub &&
+              Array.from({ length: t.i === 0 ? 5 : 2 }, (_, k) => {
+                const hx = hash(t.i * 17 + k * 5.3);
+                const hz = hash(t.i * 29 + k * 3.1);
+                // remnants of the old lime coat cling along the step edge and the wall corners
+                const atEdge = k % 2 === 0;
+                const cx = atEdge ? GH_XL + 0.5 + hx * (GH_XR - GH_XL - 1) : hx > 0.5 ? GH_XR - 0.18 : GH_XL + 0.18;
+                const cz = atEdge ? t.z1 - 0.07 : t.z0 + 0.15 + hz * (t.z1 - t.z0 - 0.3);
+                const pd = patchD(cx, cz, atEdge ? 0.2 + hx * 0.25 : 0.12, atEdge ? 0.045 : 0.1 + hz * 0.1, t.h, t.i * 7 + k);
+                return (
+                  <g key={k}>
+                    <path d={pd} fill="#dccab0" opacity={0.6 - wet * 0.25} />
+                    <path d={pd} fill="none" stroke={GH_INK} strokeWidth={0.5} opacity={0.35} strokeDasharray="8 5 14 4" />
+                  </g>
+                );
+              })}
+            {/* the step's worn, rounded nosing: a soft lit band, then a broken ink edge */}
             {t.i < GH_STEPS && (
               <>
-                <path d={segD(P(GH_XL, t.h, t.z1 - 0.06), P(GH_XR, t.h, t.z1 - 0.06))} stroke="#f6e2c4" strokeWidth={2} opacity={0.8} />
-                <path d={segD(P(GH_XL, t.h, t.z1), P(GH_XR, t.h, t.z1))} stroke={GH_INK} strokeWidth={1.1} opacity={0.6} strokeDasharray="90 6 40 5 130 8" />
+                <path d={quadAt(GH_XL, GH_XR, t.h, t.z1 - 0.09, t.z1)} fill="#f4dcbc" opacity={sub ? 0.2 : 0.55} />
+                <path d={segD(P(GH_XL, t.h, t.z1 - 0.035), P(GH_XR, t.h, t.z1 - 0.035))} stroke="#f8e6cc" strokeWidth={1.6} opacity={sub ? 0.25 : 0.7} strokeDasharray="60 9 26 6 90 12 40 7" />
+                <path d={segD(P(GH_XL, t.h, t.z1), P(GH_XR, t.h, t.z1))} stroke={GH_INK} strokeWidth={1.3} opacity={sub ? 0.22 : 0.62} strokeDasharray="80 7 34 5 120 9 22 6" />
               </>
             )}
-            {/* the right parapet's shade across the near end of each tread (sun from the right) */}
-            <path
-              d={ptsD([P(GH_XR - 0.7, t.h, t.z0), P(GH_XR, t.h, t.z0), P(GH_XR, t.h, t.z1), P(GH_XR - 0.7, t.h, t.z1)])}
-              fill="#3f2a1e"
-              opacity={0.22}
-              filter="url(#ep4gh-soft)"
-            />
+            {/* the right wall's shade along each tread (sun from the right) */}
+            <path d={quadAt(GH_XR - 0.6, GH_XR, t.h, t.z0, t.z1)} fill="#3f2a1e" opacity={0.2} filter="url(#ep4gh-soft)" />
+            {/* the wet sheen on the last dry step */}
+            {t.i === 3 &&
+              [0.3, 0.55, 0.75].map((zz, k) => (
+                <path
+                  key={k}
+                  d={segD(P(GH_XL + 0.5 + k * 0.9, t.h, t.z0 + zz * GH_TREAD), P(GH_XL + 1.4 + k * 1.1, t.h, t.z0 + zz * GH_TREAD))}
+                  stroke="#f4efe2"
+                  strokeWidth={1.1}
+                  opacity={0.35 + 0.15 * Math.sin(lf * 0.05 + k * 2)}
+                  strokeLinecap="round"
+                />
+              ))}
           </g>
         );
       })}
 
-      {/* the pond water filling the bottom of the ghat, a soft waterline on tread 4 and slow ripples */}
-      <path d={waterD} fill="url(#ep4gh-water)" />
-      <path d={segD(P(GH_XL, GH_TREADS[3].h, zWl), P(GH_XR, GH_TREADS[3].h, zWl))} stroke="#e9f2ea" strokeWidth={2} opacity={0.5 + 0.12 * Math.sin(f * 0.07)} filter="url(#ep4gh-soft)" />
-      {[0, 1, 2].map((i) => {
-        const p = ((f * 0.011 + i * 0.37) % 1 + 1) % 1;
-        const z = zWl + 0.35 + p * 1.6;
-        const a = P(GH_XL + 0.6 + i * 1.3, GH_WATER, z);
-        const b = P(GH_XL + 2.2 + i * 1.3, GH_WATER, z);
-        return <path key={i} d={segD(a, b)} stroke="#eef6f0" strokeWidth={1.3} opacity={(1 - p) * 0.45} strokeLinecap="round" />;
-      })}
-
-      {/* left parapet: inner face (lit, growing taller as the steps drop), damp band and moss by the water */}
-      <path d={innerFace} fill={GH_BRICK_FACE} />
-      {Array.from({ length: 4 }, (_, k) => {
-        const h = GH_WALL_H - (k + 1) * 0.22;
-        return <path key={k} d={segD(P(GH_XL, h, GH_Z0), P(GH_XL, h, GH_ZEND))} stroke="#ecdcc3" strokeWidth={0.8} opacity={0.5} />;
-      })}
-      <path d={ptsD([P(GH_XL, GH_WATER + 0.28, 9.4), P(GH_XL, GH_WATER + 0.28, GH_ZEND), P(GH_XL, GH_WATER, GH_ZEND), P(GH_XL, GH_WATER, 9.4)])} fill="#3d3a2a" opacity={0.42} filter="url(#ep4gh-soft)" />
-      <path d={ptsD([P(GH_XL, GH_WATER + 0.18, 9.8), P(GH_XL, GH_WATER + 0.18, GH_ZEND - 0.3), P(GH_XL, GH_WATER, GH_ZEND - 0.3), P(GH_XL, GH_WATER, 9.8)])} fill="#6f8442" opacity={0.55} filter="url(#ep4gh-soft)" />
-      <path d={innerFace} fill="none" stroke={GH_INK} strokeWidth={1} opacity={0.5} />
-      <path
-        d={ghatInnerProfile().map(([x, y], i) => `${i ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`).join(" ")}
-        fill="none"
-        stroke="#2e1c12"
-        strokeWidth={1.8}
-        opacity={0.6}
-      />
-
-      {/* right parapet: outer face (camera side), damp and mossy where it stands in the pond */}
-      <path d={outerFace} fill={GH_BRICK_FACE} />
-      {Array.from({ length: 3 }, (_, k) => {
-        const h = GH_WALL_H - (k + 1) * 0.12;
-        return <path key={k} d={segD(P(rw, h, GH_Z0), P(rw, h, GH_ZEND))} stroke="#ecdcc3" strokeWidth={0.7} opacity={0.45} />;
-      })}
-      <path d={ptsD([P(rw, -0.35, zLipWater), P(rw, -0.35, GH_ZEND), P(rw, GH_WATER, GH_ZEND), P(rw, GH_WATER, zLipWater)])} fill="#4a4030" opacity={0.45} filter="url(#ep4gh-soft)" />
-      <path d={segD(P(rw, GH_WATER, zLipWater), P(rw, GH_WATER, GH_ZEND))} stroke="#e9f2ea" strokeWidth={1.6} opacity={0.5} />
-      <path d={outerFace} fill="none" stroke={GH_INK} strokeWidth={1} opacity={0.5} />
-
-      {/* parapet tops with chipped lime plaster, and their near end faces at the grass */}
-      <path d={wallTopL} fill="#e8d6b8" stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.5} />
-      <path d={wallTopR} fill="#efdfc3" stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.5} />
-      <path d={endL} fill={GH_BRICK} stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.55} />
-      <path d={endR} fill={GH_BRICK} stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.55} />
-      {post(lw, GH_XL, true)}
-      {post(GH_XR, rw, true)}
-
-      {/* moss creeping along the tread corners and the parapet foot */}
+      {/* moss and damp darkening near the water (one soft pass) */}
       <g filter="url(#ep4gh-soft)">
-        {GH_TREADS.slice(1, 4).map((t) => {
-          const [x0, y0] = P(GH_XL + 0.25, t.h, t.z0 + 0.3);
-          const [x1, y1] = P(GH_XR - 0.4, t.h, t.z0 + 0.25);
+        {GH_TREADS.slice(2, 4).map((t) => {
           const s = 6.99 / t.z0;
+          const [x0, y0] = P(GH_XL + 0.25, t.h, t.z0 + 0.25);
+          const [x1, y1] = P(GH_XR - 0.5, t.h, t.z1 - 0.12);
           return (
             <g key={t.i}>
-              <ellipse cx={x0} cy={y0} rx={22 * s} ry={4 * s} fill="#748a45" opacity={0.45 + t.i * 0.08} />
-              <ellipse cx={x1} cy={y1} rx={16 * s} ry={3 * s} fill="#6c8040" opacity={0.35 + t.i * 0.08} />
+              <ellipse cx={x0} cy={y0} rx={24 * s} ry={4 * s} fill="#6c8640" opacity={0.42 + t.i * 0.08} />
+              <ellipse cx={x1} cy={y1} rx={18 * s} ry={3 * s} fill="#647c3c" opacity={0.3 + t.i * 0.08} />
             </g>
           );
         })}
+        <path d={quadAt(GH_XL, GH_XR, GH_TREADS[3].h, GH_ZWL - 0.18, GH_ZWL)} fill="#3e3424" opacity={0.35} />
       </g>
 
-      {/* contact of the landing with the grass, and paper tooth over the bricks */}
-      <path d={segD(P(lw, 0, GH_Z0), P(rw, 0, GH_Z0))} stroke="#3d3020" strokeWidth={3} opacity={0.35} filter="url(#ep4gh-soft)" />
-      <rect x={-200} y={700} width={1200} height={340} clipPath="url(#ep4gh-clip)" filter="url(#ep4gh-mottle)" opacity={0.36} />
+      {/* the pond inside the ghat: the drowned treads seen through it, light rippling over them, a lapping waterline */}
+      <path d={waterD} fill="url(#ep4gh-water)" />
+      <GhibliWaterLight
+        region={{ x: P(GH_XL, GH_WATER, GH_ZWL)[0], y: waterTop, w: P(GH_XR, GH_WATER, GH_ZWL)[0] - P(GH_XL, GH_WATER, GH_ZWL)[0], h: waterBottom - waterTop }}
+        shape={waterD}
+        lifeF={lf}
+        intensity={0.32}
+        scale={0.55}
+        fade="top"
+        speed={0.7}
+        seed={4}
+      />
+      <g clipPath="url(#ep4gh-wclip)">
+        {[0, 1, 2, 3].map((i) => {
+          const p = (((lf * 0.009 + i * 0.25) % 1) + 1) % 1;
+          const z = GH_ZWL + 0.06 + p * 1.5;
+          const xa = GH_XL + 0.3 + hash(i * 3.7) * 1.4;
+          return (
+            <path
+              key={i}
+              d={`M ${P(xa, GH_WATER, z)[0].toFixed(1)} ${P(xa, GH_WATER, z)[1].toFixed(1)} Q ${P(xa + 1.2, GH_WATER, z + 0.06)[0].toFixed(1)} ${P(xa + 1.2, GH_WATER, z + 0.06)[1].toFixed(1)} ${P(xa + 2.6, GH_WATER, z)[0].toFixed(1)} ${P(xa + 2.6, GH_WATER, z)[1].toFixed(1)}`}
+              fill="none"
+              stroke="#eef6f0"
+              strokeWidth={1.1}
+              opacity={(1 - p) * 0.5}
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </g>
+      <path d={segD(P(GH_XL, GH_WATER, wl), P(GH_XR, GH_WATER, wl))} stroke="#eef5ee" strokeWidth={2.4} opacity={0.6} filter="url(#ep4gh-soft)" />
+      <path
+        d={Array.from({ length: 13 }, (_, k) => {
+          const X = GH_XL + (k / 12) * (GH_XR - GH_XL);
+          const [x, y] = P(X, GH_WATER, wl + 0.02 + 0.015 * Math.sin(k * 1.9 + lf * 0.12));
+          return `${k ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+        }).join(" ")}
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth={1}
+        opacity={0.55}
+        strokeDasharray="12 6 20 5"
+      />
+      </g>
+
+      {/* left wall: inner face (lit, taller as the steps drop), courses, damp band, moss and water light by the water */}
+      <path d={innerFace} fill={GH_BRICK_FACE} />
+      {Array.from({ length: 6 }, (_, k) => {
+        const h = GH_WALL_H - (k + 1) * 0.13;
+        return <path key={k} d={segD(P(GH_XL, h, GH_WALL_Z0 + 0.05), P(GH_XL, h, GH_ZEND))} stroke="#ecdcc3" strokeWidth={0.7} opacity={0.42} strokeDasharray="40 6 70 9" />;
+      })}
+      <path d={ptsD([P(GH_XL, GH_WATER + 0.32, 8.7), P(GH_XL, GH_WATER + 0.32, GH_ZEND), P(GH_XL, GH_WATER, GH_ZEND), P(GH_XL, GH_WATER, 8.7)])} fill="#3a3626" opacity={0.42} filter="url(#ep4gh-soft)" />
+      <path d={ptsD([P(GH_XL, GH_WATER + 0.16, 8.95), P(GH_XL, GH_WATER + 0.2, GH_ZEND - 0.2), P(GH_XL, GH_WATER, GH_ZEND - 0.2), P(GH_XL, GH_WATER, 8.95)])} fill="#6b8742" opacity={0.6} filter="url(#ep4gh-soft)" />
+      <GhibliWaterLight
+        region={{ x: P(GH_XL, 0, 8.7)[0], y: P(GH_XL, 0.1, 8.7)[1], w: P(GH_XL, 0, GH_ZEND)[0] - P(GH_XL, 0, 8.7)[0], h: P(GH_XL, GH_WATER, 8.7)[1] - P(GH_XL, 0.1, 8.7)[1] }}
+        shape={innerFace}
+        lifeF={lf}
+        intensity={0.3}
+        scale={0.45}
+        speed={0.8}
+        seed={7}
+      />
+      <path d={innerFace} fill="none" stroke={GH_INK} strokeWidth={1} opacity={0.5} strokeDasharray="50 5 30 4 90 7" />
+      <path d={profile.map(([x, y], i) => `${i ? "L" : "M"} ${x.toFixed(1)} ${y.toFixed(1)}`).join(" ")} fill="none" stroke="#2e1c12" strokeWidth={1.5} opacity={0.5} />
+
+      {/* right wall: outer face (camera side), damp and mossy where it stands in the pond */}
+      <path d={outerFace} fill={GH_BRICK_FACE} />
+      {[0.08, 0.16].map((dh, k) => (
+        <path key={k} d={segD(P(rw, GH_WALL_H - dh, GH_WALL_Z0), P(rw, GH_WALL_H - dh, GH_ZEND))} stroke="#ecdcc3" strokeWidth={0.7} opacity={0.42} strokeDasharray="36 6 60 8" />
+      ))}
+      <path d={ptsD([P(rw, -0.3, GH_ZLW), P(rw, -0.3, GH_ZEND), P(rw, GH_WATER, GH_ZEND), P(rw, GH_WATER, GH_ZLW)])} fill="#463c2c" opacity={0.45} filter="url(#ep4gh-soft)" />
+      <path d={ptsD([P(rw, GH_WATER + 0.12, GH_ZLW), P(rw, GH_WATER + 0.12, GH_ZEND), P(rw, GH_WATER, GH_ZEND), P(rw, GH_WATER, GH_ZLW)])} fill="#6b8742" opacity={0.55} />
+      <path d={segD(P(rw, GH_WATER, GH_ZLW), P(rw, GH_WATER, GH_ZEND))} stroke="#e9f2ea" strokeWidth={1.5} opacity={0.45 + 0.15 * Math.sin(lf * 0.08)} />
+      <path d={outerFace} fill="none" stroke={GH_INK} strokeWidth={1} opacity={0.5} strokeDasharray="44 5 26 4 70 6" />
+
+      {/* wall tops: lime plaster, chipped to the brick in places; their near end faces */}
+      <path d={wallTopL} fill={GH_PLASTER} />
+      <path d={wallTopR} fill="#ede0c4" />
+      {[0, 1, 2, 3, 4, 5].map((k) => {
+        const left = k % 2 === 0;
+        const z = GH_WALL_Z0 + 0.4 + hash(k * 7.3) * (GH_ZEND - GH_WALL_Z0 - 0.9);
+        const cx = left ? (lw + GH_XL) / 2 : (GH_XR + rw) / 2;
+        return <path key={k} d={patchD(cx + (hash(k) - 0.5) * 0.1, z, 0.12 + hash(k * 2) * 0.06, 0.16 + hash(k * 3) * 0.2, GH_WALL_H, k * 3 + 2, 8)} fill="#c58566" opacity={0.75} />;
+      })}
+      <path d={wallTopL} fill="none" stroke={GH_INK} strokeWidth={0.9} opacity={0.5} strokeDasharray="40 6 22 4 60 5" />
+      <path d={wallTopR} fill="none" stroke={GH_INK} strokeWidth={0.9} opacity={0.5} strokeDasharray="36 5 28 6 50 4" />
+      <path d={endL} fill={GH_BRICK} stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.55} />
+      <path d={endR} fill={GH_BRICK} stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.55} />
+
+      {/* square posts: low ones at the landing, taller ones out in the water */}
+      {post(lw - 0.03, GH_XL + 0.03, GH_WALL_Z0, GH_WALL_Z0 + 0.42, GH_GATE_H, () => 0, 1)}
+      {post(GH_XR - 0.03, rw + 0.03, GH_WALL_Z0, GH_WALL_Z0 + 0.42, GH_GATE_H, () => 0, 2)}
+      {post(lw - 0.04, GH_XL + 0.04, GH_ZLAST - 0.05, GH_ZEND, GH_POST_H, () => GH_WATER, 3)}
+      {post(GH_XR - 0.04, rw + 0.04, GH_ZLAST - 0.05, GH_ZEND, GH_POST_H, (z) => Math.max(GH_WATER, GH_E - (336 * z) / GH_F), 4)}
+      {/* the water lapping round the water-end posts */}
+      {[lw - 0.04, GH_XR - 0.04].map((x0, k) => {
+        const a = P(x0 - 0.1, GH_WATER, GH_ZLAST - 0.08);
+        const b = P(x0 + GH_WALL + 0.18, GH_WATER, GH_ZLAST - 0.08);
+        const bob = Math.sin(lf * 0.09 + k * 2) * 0.8;
+        return <path key={k} d={`M ${a[0].toFixed(1)} ${(a[1] + bob).toFixed(1)} Q ${((a[0] + b[0]) / 2).toFixed(1)} ${(a[1] + 3 + bob).toFixed(1)} ${b[0].toFixed(1)} ${(b[1] + bob).toFixed(1)}`} fill="none" stroke="#f0f7f0" strokeWidth={1.4} opacity={0.6} />;
+      })}
+
+      {/* left on the steps: a brass lota on the first step, a folded red-check gamchha on the left wall */}
+      {dressing && (
+        <g>
+          <g transform={`translate(${lota.x.toFixed(1)} ${lota.y.toFixed(1)}) scale(${(lota.scale * 0.95).toFixed(3)})`}>
+            <ellipse cx={2} cy={1} rx={15} ry={3.4} fill="#3a2414" opacity={0.3} />
+            <path d="M -11 -12 C -14 -4 -9 1 0 1 C 9 1 14 -4 11 -12 C 9 -18 5 -20 4 -22 L -4 -22 C -5 -20 -9 -18 -11 -12 Z" fill="#c8963a" stroke={GH_INK} strokeWidth={0.9} strokeOpacity={0.7} />
+            <path d="M -5 -22 C -7 -25 -7 -27 -8 -28 L 8 -28 C 7 -27 7 -25 5 -22 Z" fill="#b68330" stroke={GH_INK} strokeWidth={0.8} strokeOpacity={0.7} />
+            <ellipse cx={0} cy={-28} rx={8} ry={1.8} fill="#e2b75a" stroke={GH_INK} strokeWidth={0.7} strokeOpacity={0.6} />
+            <path d="M 4 -16 C 7 -14 8 -9 6 -5" fill="none" stroke="#f6dd8e" strokeWidth={2.2} opacity={0.8} strokeLinecap="round" />
+            <path d="M -9 -8 C -8 -4 -4 -1 1 -1" fill="none" stroke="#7a5320" strokeWidth={1.6} opacity={0.5} />
+          </g>
+          <g transform={`translate(${gam[0].toFixed(1)} ${gam[1].toFixed(1)}) scale(${gamS.toFixed(3)})`}>
+            <path d="M -16 -3 L 14 -5 L 18 2 L -12 4 Z" fill="#c9443a" stroke={GH_INK} strokeWidth={0.8} strokeOpacity={0.6} />
+            <path d="M -16 -3 L -12 4 L -12 7 L -16 0 Z" fill="#9e3029" />
+            <path d="M -10 -3.4 L -6 3.4 M -2 -4 L 2 3 M 6 -4.4 L 10 2.6 M -14 0 L 16 -1.6" stroke="#f3ebdc" strokeWidth={1} opacity={0.85} />
+          </g>
+        </g>
+      )}
+
+      {/* where the landing meets the grass, mottling and paper tooth over the bricks */}
+      <path d={segD(P(GH_XL - GH_WALL, 0, GH_Z0), P(GH_XR + GH_WALL, 0, GH_Z0))} stroke="#3d3020" strokeWidth={3} opacity={0.3} filter="url(#ep4gh-soft)" />
+      <rect x={40} y={760} width={760} height={230} clipPath="url(#ep4gh-clip)" filter="url(#ep4gh-mottle)" opacity={0.34} />
       <image
         href={staticFile("images/ghibli_ep04/watercolor_paper_grain.png")}
         x={-200}
@@ -1104,6 +1352,12 @@ export const GhibliPondGhat: React.FC<{ f: number }> = ({ f }) => {
         clipPath="url(#ep4gh-clip)"
         style={{ mixBlendMode: "multiply" }}
       />
+      {/* grass over the brick edges */}
+      {GHAT_TUFTS.fills.map((d, i) => (
+        <path key={i} d={d} fill={GRASS_FILLS[i]} opacity={0.9} />
+      ))}
+      <path d={GHAT_TUFTS.ink[0]} fill="none" stroke="#4d3724" strokeWidth={0.8} opacity={0.4} />
+      <path d={GHAT_TUFTS.ink[1]} fill="none" stroke="#4d3724" strokeWidth={1} opacity={0.4} />
     </g>
   );
 };
@@ -1136,13 +1390,82 @@ const GhibliPondBaseTufts: React.FC = () => (
   </g>
 );
 
-/** Reusable 10-Plane Daytime Pond Backdrop (Scenes 02 & 03) with upstage occlusion slot! */
+/** Which parts of the living pond the backdrop draws (every one defaults to on). */
+export interface GhibliPondLifeOptions extends PondWaterOptions {
+  /** The animated water surface (false falls back to the old static emerald plate). */
+  water?: boolean;
+  lilies?: boolean;
+  fishRings?: boolean;
+  ducks?: boolean;
+  /** The new skimming dragonflies (the old single teal one is the `dragonfly` prop). */
+  dragonflies?: boolean;
+  striders?: boolean;
+  kingfisher?: boolean;
+  edgePlants?: boolean;
+  groundCover?: boolean;
+  butterflies?: boolean;
+  floatingPetals?: boolean;
+  /** The brass lota and folded gamchha left on the ghat. */
+  ghatDressing?: boolean;
+}
+
+/**
+ * The ducks' default crossing (life-layer px, depth 0.72): right to left across the open water, ~1 min. It starts left of
+ * the banana clump so the tight Scene 02 two-shots (camera on the banana, faces just above the waterline) stay clear.
+ */
+export const EP04_POND_DUCK_PATH: PondDuckPath = { from: { x: 1380, y: 728 }, to: { x: 240, y: 738 }, start: 0, frames: 1500 };
+
+/** Lily clusters in the life layer (depth 0.72): small far ones on y ~ 672, bigger near ones on y ~ 738. */
+const POND_LILIES = [
+  ...pondLilyCluster(-150, 672, 280, 8, 3, 10, 0.4),
+  ...pondLilyCluster(420, 670, 200, 5, 11, 9.5, 0.3),
+  ...pondLilyCluster(1530, 676, 240, 8, 19, 10, 0.45),
+  ...pondLilyCluster(2060, 670, 300, 8, 27, 10, 0.35),
+  ...pondLilyCluster(170, 736, 220, 5, 31, 14, 0.4),
+  ...pondLilyCluster(1600, 740, 240, 6, 37, 14, 0.5),
+].sort((a, b) => a.y - b.y);
+
+const POND_EDGE_CLUMPS: PondEdgeClump[] = [
+  { x: -330, y: bankEdgeY(-330) - 2, kind: "hyacinth", s: 0.72, seed: 3 },
+  { x: -180, y: bankEdgeY(-180) - 1, kind: "hyacinth", s: 0.55, seed: 9 },
+  { x: -40, y: bankEdgeY(-40) + 6, kind: "kalmi", s: 0.7, dir: 1, seed: 5 },
+  { x: 905, y: bankEdgeY(905) - 1, kind: "hyacinth", s: 0.5, seed: 15 },
+  { x: 1600, y: bankEdgeY(1600) - 2, kind: "hyacinth", s: 0.6, seed: 21 },
+  { x: 1680, y: bankEdgeY(1680) - 1, kind: "hyacinth", s: 0.48, seed: 27 },
+  { x: 1990, y: bankEdgeY(1990) + 6, kind: "kalmi", s: 0.7, dir: -1, seed: 31 },
+  { x: 2160, y: bankEdgeY(2160) - 2, kind: "hyacinth", s: 0.7, seed: 35 },
+  { x: 2330, y: bankEdgeY(2330) - 1, kind: "hyacinth", s: 0.6, seed: 41 },
+];
+
+const POND_COVER: PondCoverPatch[] = [
+  { x: 1800, y: 944, w: 330, s: 1, ferns: 3, flowers: 4, seed: 7 },
+  { x: 1365, y: 948, w: 180, s: 1, ferns: 1, flowers: 2, seed: 13 },
+  { x: 1560, y: 938, w: 120, s: 0.9, ferns: 1, flowers: 3, seed: 19 },
+  { x: 2120, y: 950, w: 200, s: 1, ferns: 2, flowers: 3, seed: 23 },
+];
+
+/** Reusable daytime pond backdrop (Scenes 02 & 03) with the living pond, the ghat and an upstage occlusion slot. */
 export const GhibliPondBackdrop: React.FC<{
   f: number;
   upstageBehindTree?: React.ReactNode;
-  /** The skimming dragonfly (default on). At medium zooms it reads as a stray teal dash; Scenes 02/03 turn it off. */
+  /** The old skimming dragonfly (default on). At medium zooms it reads as a stray teal dash; Scenes 02/03 turn it off. */
   dragonfly?: boolean;
-}> = ({ f, upstageBehindTree, dragonfly = true }) => {
+  /** Real (life) frame for the pond's motion; defaults to `f`. */
+  lifeF?: number;
+  /** Turn parts of the living pond off (all on by default), e.g. `pondLife={{ ducks: false, mist: 0 }}`. */
+  pondLife?: GhibliPondLifeOptions;
+  /** Move the ducks: life-layer px (depth 0.72, keep y 715-742), life-clock start and length. */
+  duckPath?: PondDuckPath;
+  /** Story frame at which the kingfisher on the right ghat post dives once (put it in a wordless moment). */
+  kingfisherDiveAt?: number;
+}> = ({ f, upstageBehindTree, dragonfly = true, lifeF, pondLife = {}, duckPath = EP04_POND_DUCK_PATH, kingfisherDiveAt }) => {
+  const lf = lifeF ?? f;
+  const on = (k: keyof GhibliPondLifeOptions) => pondLife[k] !== false;
+  const water = on("water");
+  const kfPerch = ghatProject(GH_XR + GH_WALL / 2, GH_POST_H, GH_ZLAST + 0.2);
+  const kfTarget = ghatProject(-6.3, GH_WATER, GH_ZEND + 0.35);
+  const sA = ghatProject(GH_XL + 0.7, GH_WATER, 9.32);
+  const sB = ghatProject(GH_XR - 0.9, GH_WATER, 9.9);
   return (
     <>
       <GhibliLayer depth={0.08} parallaxDrift={0.004}>
@@ -1151,19 +1474,54 @@ export const GhibliPondBackdrop: React.FC<{
       <GhibliLayer depth={0.45} extraBlur={0.8}>
         <image href={staticFile("images/ghibli_ep04/pond_far_bank_baidik_sketch.png")} x={-640} y={320} width={3200} height={360} />
       </GhibliLayer>
+      {water && (
+        <GhibliLayer depth={0.45} extraBlur={0.2}>
+          <PondWaterSurface
+            lifeF={lf}
+            farReflection={pondLife.farReflection}
+            skyReflections={pondLife.skyReflections}
+            ripples={pondLife.ripples}
+            glints={pondLife.glints}
+            cloudShadows={pondLife.cloudShadows}
+            catsPaws={pondLife.catsPaws}
+            mist={pondLife.mist}
+          />
+        </GhibliLayer>
+      )}
       <GhibliLayer depth={0.58}>
-        <image href={staticFile("images/ghibli_ep04/pond_water_emerald_sketch.png")} x={-1760} y={560} width={5440} height={1200} />
-        <GhibliMandarPetals f={f} count={8} seed={71} withRipples />
+        {!water && <image href={staticFile("images/ghibli_ep04/pond_water_emerald_sketch.png")} x={-1760} y={560} width={5440} height={1200} />}
+        <GhibliMandarPetals f={f} count={8} seed={71} withRipples={!water} />
       </GhibliLayer>
       <GhibliLayer depth={0.68}>
         <GhibliVolumetricBeam f={f} color="#fff7d6" opacity={0.14} fromRight />
         <GhibliAtmosphericHaze f={f} />
       </GhibliLayer>
+      {water && (
+        <GhibliLayer depth={POND_BANDS.life.depth}>
+          {on("lilies") && <PondLilies lilies={POND_LILIES} lifeF={lf} s={1} />}
+          {on("floatingPetals") && <PondFloatingPetals region={{ x: 1180, y: 726, w: 380, h: 16 }} lifeF={lf} s={0.85} />}
+          {on("fishRings") && <PondFishRings region={{ x: 300, y: 668, w: 1500, h: 66 }} lifeF={lf} slots={4} s={0.85} seed={5} />}
+          {on("ducks") && <PondDucks lifeF={lf} path={duckPath} s={0.85} />}
+          {on("dragonflies") && (
+            <PondDragonflies
+              zones={[
+                { x: 820, y: 684, w: 420, h: 30 },
+                { x: 1450, y: 680, w: 380, h: 30 },
+              ]}
+              lifeF={lf}
+              s={0.8}
+            />
+          )}
+        </GhibliLayer>
+      )}
       {/* painted grassy bank, locked to the cast's ground plane (feet at y = 935-940) */}
       <GhibliLayer depth={0.92} groundLocked>
-        <GhibliPondBank f={f} />
-        {/* the brick ghat descends from the bank into the water (replaces brick_ghat_steps_sketch.png) */}
-        <GhibliPondGhat f={f} />
+        <GhibliPondBank f={lf} />
+        {on("edgePlants") && <PondEdgePlants clumps={POND_EDGE_CLUMPS} lifeF={lf} />}
+        {/* the brick ghat steps down from the bank into the water */}
+        <GhibliPondGhat f={f} lifeF={lf} dressing={on("ghatDressing")} />
+        {on("striders") && <PondWaterStriders region={{ x: sA[0], y: sB[1], w: sB[0] - sA[0], h: sA[1] - sB[1] }} lifeF={lf} s={0.8} />}
+        {on("kingfisher") && <PondKingfisher f={f} lifeF={lf} perch={{ x: kfPerch[0], y: kfPerch[1] }} target={{ x: kfTarget[0], y: kfTarget[1] }} diveAt={kingfisherDiveAt} s={0.72} />}
       </GhibliLayer>
       <GhibliLayer depth={0.78} groundLocked parallaxDrift={-0.028}>
         <GhibliPondBaseShadows />
@@ -1183,6 +1541,18 @@ export const GhibliPondBackdrop: React.FC<{
           targetHeight={760}
         />
         <GhibliPondBaseTufts />
+        {on("groundCover") && <PondBankGroundCover patches={POND_COVER} lifeF={lf} />}
+        {on("butterflies") && (
+          <PondButterflies
+            flowers={[
+              { x: 1545, y: 930 },
+              { x: 2070, y: 940 },
+              { x: 1985, y: 936 },
+            ]}
+            lifeF={lf}
+            s={0.9}
+          />
+        )}
         {dragonfly && <GhibliDragonfly f={f} />}
       </GhibliLayer>
     </>
@@ -1427,21 +1797,23 @@ const glBalakProps = (lf: number): SeatedChildProps => {
 
 const Ep05GroveGlimpse: React.FC<{ lf: number }> = ({ lf }) => {
   const bp = glBalakProps(lf);
-  const g = seatedChildHands(bp).glowAnchor;
+  const g = seatedChildHands({ ...bp, ...EP04_BALAK_LOOK }).glowAnchor;
   return (
     <svg viewBox="0 0 1920 1080" width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
       <image href={staticFile("images/ghibli_ep04/glimpse_ep05_cow_grove_sketch.png")} x={GL_IMG.x} y={GL_IMG.y} width={GL_IMG.w} height={GL_IMG.h} />
       {/* warm late light over the grove, so the figures sit in the painting */}
       <rect x={0} y={0} width={1920} height={1080} fill="#ffd9a0" opacity={0.12} />
       <GhibliCharFilterDefs f={lf} dapple shadeFactor={0.12} bounceColor="#7c9c78" sunColor="#ffe7aa" />
+      {/* Balak's own ink (fine contour at any scale; the glimpse is drawn at about VIG_SCALE of full size) */}
+      <Ep04BalakInkDefs zoom={VIG_SCALE} rim={0.5} />
       <ellipse cx={GL_COW.x} cy={GL_COW.y + 6} rx={250} ry={26} fill="#5a4426" opacity={0.28} />
       <g filter="url(#ghibli-char-ink)">
         <GentleCow {...glCowProps(lf)} />
       </g>
       <ellipse cx={GL_BALAK.x} cy={GL_BALAK.y + 4} rx={150} ry={26} fill="#fff0c8" opacity={0.22} />
-      <GhibliBalakAura cx={g.cx} cy={g.cy} r={g.r} glow={0.6} f={lf} />
-      <g filter="url(#ghibli-balak-ink)">
-        <SeatedChild {...bp} />
+      <Ep04BalakDivine cx={g.cx} cy={g.cy} r={g.r} glow={0.6} f={lf} />
+      <g filter="url(#ep04-balak-ink)">
+        <SeatedChild {...bp} {...EP04_BALAK_LOOK} inkZoom={VIG_SCALE} />
       </g>
     </svg>
   );

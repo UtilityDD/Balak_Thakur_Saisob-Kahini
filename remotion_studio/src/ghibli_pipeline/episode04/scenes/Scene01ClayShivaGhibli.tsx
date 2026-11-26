@@ -6,6 +6,7 @@ import { Flame } from "../../../cinematic/fx/Fx";
 import { MOUTH_REST, visemeFromEnvelope, type MouthState } from "../../../cinematic/rig/lipsync";
 import {
   GESTURES,
+  headNods,
   headShake,
   headShakeTilt,
   kneelingPranam,
@@ -20,7 +21,8 @@ import { HELD_OBJECT_BOTTOM, HeldObjectArt, SeatedChild, seatedEp6Anchors, sighC
 import { StandingChild, standingChildJoints, standingLocal, type StandingChildProps } from "../../../episode05/rig/StandingChild";
 import { ContactShadow, GhibliCharFilterDefs, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
 import { GhibliBalakLapDetails } from "../../core/ghibliBalak";
-import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { Ep04BalakDivine, Ep04BalakGroundGlow, Ep04BalakInkDefs } from "../Ep04BalakDivine";
+import { EP04_BALAK_LOOK } from "../ep04BalakLook";
 import { withGhibliActing } from "../../core/ghibliActing";
 import { GhibliDappledLight, GhibliSunRays } from "../../core/GhibliLifeKit";
 import { ghibliStrideOf, ghibliWalkSpot, safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
@@ -110,21 +112,25 @@ const PRANAM_AT = 200;
  * Shiva, stands the doll on the plate (the clink: Episode04Ghibli plays it at scene + 324), then (wide shot) leans
  * forward with a hand on his knee and stands up, glances back over his shoulder at Ma, and walks off out of the frame
  * with the Shiva held to his chest. Only then does Charu rise into "অ্যাঁ!" (S1B, unchanged).
+ *
+ * 2026-11-24, director: the doll goes down to the brass in the near hand and is let go only when it is touching;
+ * the far hand closes on the Shiva where it sits, then lifts it to the chest. One object in a hand at a time.
+ * He rises from the kneel he is already in (feet on the floor, one hand on the near knee) over about two-thirds
+ * of a second, then a real stride carries him off. Ma's pranam stays a bow, with her face above the floor.
  */
 const RISE = 292;
 const FAR_GRIP = RISE + 18;
-const SHIVA_UP = RISE + 26;
 /** The doll touches the brass (Episode04Ghibli's plate clink at scene + 324). */
 const CLINK = RISE + 32;
 const DOLL_RELEASE = CLINK + 4;
 const SWAP_CUT = RISE - 6; // cut to the plate-and-hands shot
 /** Never in this cut: he no longer rolls the clay on screen. */
 const BOTH_ON_CLAY = SCENE_FRAMES + 100;
-/** The wide shot: lean + hand on the near knee (~0.5 s rise), REQUIRED look back at Ma, then the walk off. */
-const STAND = { from: CLINK + 8, lean: CLINK + 12, to: CLINK + 24 };
-/** Hold the over-shoulder look long enough to read (eyes lead, then the head; clears as the first step lands). */
-const LOOK = { from: STAND.to, to: STAND.to + 16 };
-const WALK = { from: LOOK.to, to: 434 };
+/** Wide shot: a settled kneel, then the rise (~16 f, two-thirds of a second), a short look back, then the walk. */
+const STAND = { from: CLINK + 8, lean: CLINK + 12, to: CLINK + 28 };
+/** Eyes lead, then the head; the look clears as the first step lands. */
+const LOOK = { from: STAND.to, to: STAND.to + 10 };
+const WALK = { from: LOOK.to, to: LOOK.to + 36 };
 /** Director, 2026-11-24: the clay Shiva stays a Shiva, clearly visible in his hands, through the whole swap shot;
  * he rolls it into a ball only off-screen (Shot 3 brings him back with the ball). */
 const ROLL_SQUEEZE = { from: SCENE_FRAMES + 100, to: SCENE_FRAMES + 130 };
@@ -137,10 +143,13 @@ const INSERT = { from: S1B.from + 97, to: S1B.from + 174 };
 /**
  * Director, 2026-11-24: Charu stays down in the pranam (head down, eyes closed, still) through the whole swap and does
  * NOT come up at the clink; the cut to her (CU_CHARU) finds her still bowed beside his empty place, and only then
- * does she rise, quickly, into "অ্যাঁ!". STARTLE is the end of the pranam hold (after Biru has walked out).
+ * does she rise, quickly, into "অ্যাঁ!". STARTLE stays just before her close-up, so the cut still finds her bowed
+ * after he has walked off (the walk itself is shorter than this hold).
  */
-const STARTLE = WALK.to + 7;
+const STARTLE = CU_CHARU - 4;
 const PR_UP = 11;
+/** Depth of Ma's kneeling bow (0..1 of the Puppet's forehead-to-floor bow). */
+const PRANAM_BOW = 0.4;
 const PR_RELEASE = 10;
 /** Shot 3: the brother walks Biru in by the wrist (seen in a held medium-wide), arriving just before his line. */
 const BRO_WALK = { from: S1C.from - 54, to: S1C.from - 6 };
@@ -298,24 +307,22 @@ const swapTargets = (fr: number, bx: number): { near: V; far: V } => {
   const shivaPalm = toFig({ x: SHIVA_ON_PLATE.x, y: SHIVA_ON_PLATE.y + SHIVA_GY * OBJ_S }, bx);
   const LAP_N: V = { x: 40, y: -82 };
   const LAP_F: V = { x: 47, y: -88 };
-  // the doll stays low, at the thighs, while he kneels up (it must never hide his face)
-  const CHEST_N: V = { x: 46, y: -100 };
-  const ASIDE_N: V = { x: 52, y: -104 };
   const roll = rollPalms(fr, BALL_AT);
+  // near hand carries the doll down onto the brass and stays there until the clink; then the empty hand lifts
   const near = path(fr, [
     [RISE, LAP_N],
-    [RISE + 12, CHEST_N],
-    [FAR_GRIP, ASIDE_N],
-    [CLINK, dollPalm],
+    [RISE + 10, dollPalm],
     [DOLL_RELEASE, dollPalm],
-    [DOLL_RELEASE + 6, CHEST_N],
+    [STAND.from, { x: 28, y: -74 }],
   ]);
+  // far hand closes on the Shiva where it sits, holds through the clink, then lifts it to the chest
+  const CHEST_F: V = { x: 34, y: -112 };
   const far = path(fr, [
-    [RISE + 4, LAP_F],
-    [FAR_GRIP - 8, { x: shivaPalm.x - 6, y: shivaPalm.y - 30 }],
+    [RISE, LAP_F],
+    [FAR_GRIP - 8, { x: shivaPalm.x, y: shivaPalm.y - 18 }],
     [FAR_GRIP, shivaPalm],
-    [FAR_GRIP + 3, shivaPalm],
-    [SHIVA_UP + 4, { x: 50, y: -112 }],
+    [CLINK, shivaPalm],
+    [STAND.from - 2, CHEST_F],
     [BOTH_ON_CLAY, { x: BALL_AT.x, y: BALL_AT.y + 8 }],
   ]);
   if (fr <= BOTH_ON_CLAY) return { near, far };
@@ -373,9 +380,9 @@ const cameraAt = (fr: number): Cam => {
     return frameAt(lerp(905, 925, t), PLATE.y, lerp(740, 730, t), lerp(2.62, 2.92, t));
   }
   if (fr < CU_CHARU) {
-    // wide: Ma bowed at the left, Biru rises, looks back at her, and walks off to the right (a small drift with him)
+    // wide: Ma bowed at the left, Biru rises, looks back at her, and walks off to the right
     const t = EASE.inOut(clamp((fr - STAND.from) / (CU_CHARU - STAND.from)));
-    return frameAt(lerp(930, 950, t), CHARU.y, 800, 2.35);
+    return frameAt(lerp(900, 1080, t), CHARU.y, 800, 2.35);
   }
   if (fr >= INSERT.from && fr < INSERT.to) {
     // Insert on the doll on the brass plate; rack focus to the empty courtyard and back
@@ -434,8 +441,9 @@ const BellArt: React.FC<{ s?: number }> = ({ s = 1 }) => (
     <path d="M -6 8 Q -5 -2 -1 -4" stroke="#ffe7a8" strokeWidth={1.4} fill="none" opacity={0.7} />
   </g>
 );
-const BellProp: PropRenderer = ({ scale }) => (
-  <g transform={`scale(${scale}) translate(0, 20)`}>
+const BellProp: PropRenderer = ({ scale, worldRot }) => (
+  // A ghonta is held by the handle, mouth down. Undo the arm's turn so it stays vertical while she rings it.
+  <g transform={`rotate(${(-worldRot).toFixed(2)}) scale(${scale}) translate(0, 16)`}>
     <BellArt s={0.9} />
   </g>
 );
@@ -466,10 +474,19 @@ const charuBase = (fr: number): Partial<Pose> => {
       [LEAF.toss + 12, 0, "inOut"],
     ]);
     const rest = 1 - Math.max(toHead, out);
-    const bellUp = track(fr, [
-      [0, 1],
-      [S1A.from - 8, 1],
-      [S1A.from + 4, 0, "inOut"],
+    // She lowers the ghonta and sets it on the floor beside her, on the plate side. The hand
+    // arrives, lets go, then comes back; the bell stays where she put it.
+    const put = track(fr, [
+      [S1A.from - 2, 0],
+      [S1A.from + 16, 1, "inOut"],
+      [S1A.from + 20, 1],
+      [S1A.from + 34, 0, "inOut"],
+    ]);
+    const bellHeld = fr < S1A.from + 16;
+    // After she lets go, this arm folds back to her lap. It does not stay out.
+    const armDown = track(fr, [
+      [S1A.from + 18, 0],
+      [S1A.from + 34, 1, "inOut"],
     ]);
     const ring = ringBell(fr, BELL_RING, 26, 9);
     const leafIn = fr >= S1A.from && fr < LEAF.toss;
@@ -479,14 +496,14 @@ const charuBase = (fr: number): Partial<Pose> => {
       // Left arm, she faces the plate (+x). A negative shoulder swings that hand toward the plate; reach keeps the elbow bent.
       lS: -8 * rest - 96 * toHead - 40 * out + 6 * flick,
       lE: -36 * rest - 118 * toHead + 64 * out - 10 * flick,
-      reach: -out,
-      reachUp: 0.2 * out,
+      reach: put > 0.02 ? put : -out,
+      reachUp: put > 0.02 ? 0 : 0.2 * out,
       lHand: leafIn ? "hold" : out > 0.5 ? "open" : "relaxed",
       lProp: leafIn ? "bel" : "",
-      rS: lerp(14, 34, bellUp),
-      rE: lerp(-50, 78, bellUp) + ring,
-      rHand: bellUp > 0.5 ? "hold" : "relaxed",
-      rProp: bellUp > 0.5 ? "bell" : "",
+      rS: lerp(34, 14, armDown),
+      rE: lerp(72, -50, armDown) + ring,
+      rHand: bellHeld ? "hold" : "relaxed",
+      rProp: bellHeld ? "bell" : "",
       headTilt: 6 + 6 * toHead + 3 * out,
       lid: 0.2 + 0.6 * toHead,
       eyeY: 0.25 - 0.1 * toHead,
@@ -584,9 +601,27 @@ const charuBase = (fr: number): Partial<Pose> => {
     [S1G.from + 4, 0],
     [S1G.from + 40, 1, "inOut"],
   ]);
+  // leans in a little as she starts the story, fully on "শুনলে অবাক হবে!"
   const lean = track(fr, [
     [S1G.from + 60, 0],
-    [S1G.from + 100, 1, "inOut"],
+    [S1G.from + 100, 0.5, "inOut"],
+    [S1G.from + 262, 0.5],
+    [S1G.from + 292, 1, "inOut"],
+  ]);
+  // Shot 6, listening to Jyethi: two small resigned nods after "বড্ড ঠেটা!" and "একটুও ভয় নেই!"
+  const resigned = headNods(fr, S1F.from + 96, 1, 16, 3) + headNods(fr, S1F.from + 282, 2, 14, 3);
+  // Shot 7: her near (right) hand talks with the words (CHARU_TALK_AT gives where it goes; see there)
+  const shrug = 0.8 * track(fr, [
+    [S1G.from + 6, 0],
+    [S1G.from + 20, 1, "inOut"],
+    [S1G.from + 42, 1],
+    [S1G.from + 56, 0, "inOut"],
+  ]);
+  const talkHand = track(fr, [
+    [S1G.from + 50, 0],
+    [S1G.from + 64, 0.85, "inOut"],
+    [S1G.from + 262, 0.85],
+    [S1G.from + 282, 0, "inOut"],
   ]);
   const handsDown = fr > PRANAM_AT + 14 + 30 + Math.max(10, STARTLE - (PRANAM_AT + 44)) + PR_UP + PR_RELEASE;
 
@@ -608,7 +643,10 @@ const charuBase = (fr: number): Partial<Pose> => {
     ...base,
     ...pr,
     bodyTurn,
-    bow: Math.max(0, (pr.bow ?? 0) - 0.12 * jolt),
+    // Ma's pranam is a gentle bow (director 2026-11-24/25): the whole eased curve is scaled (a clamp stopped it
+    // hard), so she folds softly, her joined hands stay at her chest (the Puppet only sends them to the floor above
+    // bow 0.42) and her bowed head stops well above the plate.
+    bow: Math.max(0, PRANAM_BOW * (pr.bow ?? 0) - 0.12 * jolt),
     lS,
     lE,
     lHand,
@@ -619,9 +657,12 @@ const charuBase = (fr: number): Partial<Pose> => {
     // swung the arm back over her shoulder, aimed away from him.
     // 0.9 (not full): the elbow stays a little soft, never locked straight
     jab: handsDown ? 0.9 * wag : 0,
+    // Shot 7: a small helpless lift of the open hand on "কী আর বলব দিদি!", then the hand talks (reach to CHARU_TALK_AT)
+    reach: handsDown ? Math.max(shrug, talkHand) : 0,
+    reachUp: CHARU_TALK_AT(fr).up,
     rS: handsDown ? 4 : pr.rS,
     rE: handsDown ? -40 : pr.rE,
-    rHand: handsDown ? "relaxed" : pr.rHand,
+    rHand: handsDown ? (shrug > 0.3 || talkHand > 0.3 ? "open" : "relaxed") : pr.rHand,
     mouthHand: -toMouth,
     hips: handsDown ? hips : 0,
     headTurn:
@@ -632,7 +673,8 @@ const charuBase = (fr: number): Partial<Pose> => {
       0.22 * (turnFront > 1 ? turnFront - 1 : 0) +
       headShake(fr, S1D.from + 40, 44, 0.12, 2),
     headTilt: (pr.headTilt ?? 0) + 3 - 2 * startled + 4 * awe,
-    headNod: -2 * startled + 3 * lean,
+    // in the bow the head dips a little further than the back (a soft, rounded pranam, eyes closed)
+    headNod: -2 * startled + 3 * lean + 5 * (pr.bow ?? 0) + resigned,
     lean: 4 + 6 * toBalak * (1 - toJyethi) + 7 * lean - 4 * palm,
     eyeY: 0.3 * startled + 0.08 * stern - 0.1 * dart,
     eyeX: 0.15 * dart + look.eyeX,
@@ -649,6 +691,39 @@ const CHARU_POINT_AT = (fr: number): V => ({
   x: BST.x - 6,
   y: BST.y - 215 + 8 * wobble(fr, S1D.from + 8, 88, 1, 13),
 });
+/**
+ * Shot 7 (01g), where her talking near hand goes (world; she kneels facing Jyethi at the left) and how far the palm is
+ * turned up. Phrase onsets from the clip's silences: "কী আর বলব দিদি!" 7, "সেদিন তুমি ছিলে না—" 58, "আমার পাঁচ
+ * বছরের ছেলে" 94, "কী বুকের পাটা নিয়ে" 163, "ঠাকুরঘর থেকে … নিয়ে পালাল," 214, "শুনলে অবাক হবে!" 276.
+ *   open palm held out to Jyethi ("সেদিন তুমি ছিলে না"), palm down at a small child's height ("পাঁচ বছরের ছেলে"),
+ *   the palm to her own chest ("বুকের পাটা"), a flick out the way he ran ("পালাল"); back to her lap after.
+ */
+const TALK_KEYS: Array<[number, V]> = [
+  // "কী আর বলব দিদি!": the open palm turned up in front of her chest (helpless), then out toward Jyethi
+  [S1G.from + 6, { x: 738, y: 708 }],
+  [S1G.from + 44, { x: 736, y: 710 }],
+  [S1G.from + 60, { x: 712, y: 706 }],
+  [S1G.from + 90, { x: 712, y: 706 }],
+  [S1G.from + 106, { x: 720, y: 736 }],
+  [S1G.from + 152, { x: 722, y: 738 }],
+  [S1G.from + 170, { x: 758, y: 694 }],
+  [S1G.from + 208, { x: 756, y: 696 }],
+  [S1G.from + 236, { x: 716, y: 700 }],
+  [S1G.from + 248, { x: 692, y: 694 }],
+  [S1G.from + 262, { x: 700, y: 712 }],
+];
+const CHARU_TALK_AT = (fr: number): V & { up: number } => {
+  const p = path(fr, TALK_KEYS);
+  const up = track(fr, [
+    [S1G.from + 6, 0.95],
+    [S1G.from + 60, 0.85],
+    [S1G.from + 92, 0.85],
+    [S1G.from + 104, 0, "inOut"],
+    [S1G.from + 236, 0],
+    [S1G.from + 248, 0.5, "inOut"],
+  ]);
+  return { x: p.x, y: p.y, up };
+};
 const charuActing = withGhibliActing(charuBase, { personality: "mother", seed: 31, speechRms: charuTalk, speechActAmp: 0.6 });
 const charuBreath = (fr: number) => track(fr, [
   [STARTLE - 1, 1],
@@ -783,38 +858,86 @@ const broBreath = (fr: number) => track(fr, [
 /* Jyethi                                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Jyethi's speaking gestures, keyed to her phrases (01f onsets from the clip's silences: "চারু," 4, "তোর ছেলেটা তো
+ * বড্ড ঠেটা!" 34, "বাড়ির আর সবার দেব-দেবীতে কত ভক্তি—" 103, "আর তোর বীরুর একটুও ভয় নেই!" 212), all on her near
+ * (left) arm so nothing crosses her body: a hand to her cheek on "বড্ড ঠেটা", the open palm turned up and swept out on
+ * "কত ভক্তি", a gentle index-finger wag toward Charu on "একটুও ভয় নেই!". Then (01g) she listens: nods, and her
+ * fingertips go to her lips at "…নিয়ে পালাল," and stay through P3.
+ */
 const jyethiBase = (fr: number): Partial<Pose> => {
   const cheek = track(fr, [
-    [S1F.from - 4, 0],
-    [S1F.from + 10, 1, "inOut"],
+    [S1F.from + 22, 0],
+    [S1F.from + 38, 1, "inOut"],
     [S1F.from + 92, 1],
-    [S1F.from + 108, 0, "inOut"],
+    [S1F.from + 106, 0, "inOut"],
   ]);
   const open = track(fr, [
     [S1F.from + 100, 0],
     [S1F.from + 116, 1, "inOut"],
-    [S1F.from + 200, 1],
-    [S1F.from + 216, 0, "inOut"],
+    [S1F.from + 192, 1],
+    [S1F.from + 208, 0, "inOut"],
+  ]);
+  const wag = track(fr, [
+    [S1F.from + 206, 0],
+    [S1F.from + 220, 1, "inOut"],
+    [S1F.from + 276, 1],
+    [S1F.from + 292, 0, "inOut"],
   ]);
   const listen = track(fr, [
     [S1G.from - 10, 0],
     [S1G.from + 20, 1, "inOut"],
   ]);
+  const lips = track(fr, [
+    [S1G.from + 250, 0],
+    [S1G.from + 266, 0.85, "inOut"],
+  ]);
+  const amazed = track(fr, [
+    [S1G.from + 248, 0],
+    [S1G.from + 270, 1, "inOut"],
+  ]);
+  const nods = headNods(fr, S1G.from + 52, 1, 16, 3) + headNods(fr, S1G.from + 208, 2, 14, 3);
+  const palmUp = open * (1 - wag);
   return {
     bodyTurn: safeBodyTurn(0.3),
-    headTurn: 0.34 + headShake(fr, S1F.from + 6, 70, 0.2, 3) + headShake(fr, S1F.from + 210, 56, 0.14, 2),
-    headTilt: headShakeTilt(fr, S1F.from + 6, 70, 2.5, 3) - 4 * listen,
-    brow: 0.55 * Math.max(cheek, open) + 0.25 * listen,
-    browTilt: 0.35 * cheek,
+    headTurn: 0.34 + headShake(fr, S1F.from + 30, 64, 0.2, 3) + headShake(fr, S1F.from + 214, 56, 0.14, 2),
+    headTilt: headShakeTilt(fr, S1F.from + 30, 64, 2.5, 3) - 4 * listen + 3 * cheek,
+    headNod: nods + 2 * wag,
+    brow: 0.55 * Math.max(cheek, open) + 0.25 * listen + 0.35 * wag + 0.4 * amazed,
+    browTilt: 0.35 * cheek - 0.25 * wag + 0.2 * amazed,
     eyeY: 0.1,
-    smile: 0.12 + 0.2 * listen,
-    mouthHand: -cheek,
-    rS: lerp(6, -30, open),
-    rE: lerp(-30, -40, open),
-    rHand: open > 0.5 ? "open" : "relaxed",
-    lean: 2 + 3 * listen,
+    smile: 0.12 + 0.2 * listen * (1 - amazed),
+    gasp: 0.18 * amazed,
+    mouthHand: -Math.max(cheek, lips),
+    // near (left) arm: palm up and out on "কত ভক্তি", then the wagging index toward Charu (jab toward JYETHI_POINT_AT)
+    // the open palm rises in front of her, turned up, toward Charu (reach to JYETHI_PALM_AT; palms-up angles opened
+    // the arm backward, away from Charu)
+    reach: -palmUp,
+    reachUp: 0.9,
+    lS: -4,
+    lE: -30,
+    lHand: wag > 0.35 ? "point" : palmUp > 0.3 ? "open" : "relaxed",
+    jab: -0.75 * wag,
+    // the far hand rests at her waist
+    rS: 6,
+    rE: -30,
+    rHand: "relaxed",
+    lean: 2 + 3 * listen + 2 * wag,
   };
 };
+/** Her open palm on "কত ভক্তি": in front of her waist, toward Charu, drifting a little outward with the sweep. */
+const JYETHI_PALM_AT = (fr: number): V => {
+  const sweep = track(fr, [
+    [S1F.from + 112, 0],
+    [S1F.from + 170, 1, "inOut"],
+  ]);
+  return { x: JYETHI.x + 62 + 14 * sweep, y: JYETHI.y - 205 - 6 * sweep };
+};
+/** Where her wagging finger points: toward Charu, a little below her own shoulder; the wag is small (never a jab). */
+const JYETHI_POINT_AT = (fr: number): V => ({
+  x: JYETHI.x + 150 + 10 * wobble(fr, S1F.from + 220, 58, 1, 12, 6),
+  y: JYETHI.y - 200,
+});
 const jyethiActing = withGhibliActing(jyethiBase, { personality: "mother", seed: 77, speechRms: jyethiTalk, speechActAmp: 0.6 });
 
 /* ------------------------------------------------------------------ */
@@ -870,7 +993,15 @@ const standingHands = (fr: number): { near: V; far: V; ball: BallIn } => {
   const farHold: V = { x: c.x + 2, y: c.y + 8 };
   const farUp: V = { x: 118, y: -302 };
   const nearSide: V = { x: 6, y: -196 };
-  const backAt: V = { x: -118, y: -318 };
+  // a relaxed toss of the open hand back past his hip (thumb toward "behind the house"), shoulders down; it used to
+  // cock the arm out at shoulder height, elbow out, which read as a broken akimbo
+  const toss = track(fr, [
+    [e + 140, 0],
+    [e + 150, 1, "out"],
+    [e + 164, 0, "inOut"],
+  ]);
+  // low and back, the arm nearly straight (a target near the hip bent the elbow out into an akimbo)
+  const backAt: V = { x: -50 - 14 * toss, y: -210 - 6 * toss };
   if (held > 0) {
     const farCarry: V = { x: c.x + 4, y: c.y + 10 };
     return {
@@ -912,9 +1043,9 @@ const EXIT_SA = Math.sin((55 * Math.PI) / 180);
  * A five-year-old's walk, phase-locked: body advances only during the swing window; planted feet hold
  * fixed world ground units so soles do not skate. Longer double-support than the old continuous WALK_V.
  */
-const STEP_T = 11;
-const SWING_FR = 6;
-const STRIDE = 7.6;
+const STEP_T = 7;
+const SWING_FR = 4;
+const STRIDE = 90;
 const HEEL_OFF = 2;
 const HEEL_STRIKE = 2;
 /** Body travel (figure ground units) since WALK.from — holds during plant, eases during swing. */
@@ -927,9 +1058,7 @@ const walkDist = (fr: number): number => {
   if (loc >= SWING_FR) return done + STRIDE;
   const u = loc / SWING_FR;
   const e = u * u * (3 - 2 * u);
-  // softer first push-off so the rise→walk handoff does not lurch
-  const first = i === 0 ? e * e * (3 - 2 * e) : e;
-  return done + first * STRIDE;
+  return done + e * STRIDE;
 };
 /** Fixed land position for swing step k (near: 0,2,4… / far: 1,3,5…). */
 const landAt = (k: number): number => (k + 1) * STRIDE;
@@ -967,7 +1096,7 @@ const footState = (fr: number, near: boolean): { d: number; lift: number; pitch:
 type ExitPhase = { props: StandingChildProps; groundX: number };
 
 /** Kneel-to-stand drive, u 0..1 (from STAND.from): lean, hand on the near knee, the near foot forward, rise. */
-const KNEEL_DROP = 104; // pelvis lowered so the knees rest on the floor (healthy build: hip height about 220)
+const KNEEL_DROP = 128; // pelvis lowered so both knees rest on the floor (healthy build: hip height about 220)
 const exitBase = (
   fr: number,
   x: number,
@@ -985,6 +1114,7 @@ const exitBase = (
   build: "healthy",
   sturdy: true,
   age: 5,
+  ...EP04_BALAK_LOOK,
   f: fr,
   lifeF: fr,
   pose: "standIdle",
@@ -1021,20 +1151,16 @@ const exitBase = (
 
 /** Hand targets that land where we want them: the rig adds the shoulder's drive offset, so subtract it (probe). */
 const exitProps = (fr: number): ExitPhase => {
-  const u = clamp((fr - STAND.from) / (STAND.to - STAND.from));
-  // lean FORWARD onto the near knee (~0.5 s), hold the push, then straighten as the pelvis rises
+  // lean onto the near knee, then straighten as the hips come up
   const lean = track(fr, [
-    [STAND.from, 0.22],
-    [STAND.lean, 0.68, "inOut"],
-    [STAND.lean + 6, 0.6],
-    [STAND.to, 0.08, "inOut"],
-    [LOOK.from + 4, 0.1, "inOut"],
+    [STAND.from, 0.42],
+    [STAND.lean, 0.55, "inOut"],
+    [STAND.to - 4, 0.18, "inOut"],
+    [STAND.to, 0.06, "inOut"],
     [WALK.from, 0.04],
-    [WALK.from + 5, 0.12, "inOut"],
-    [WALK.from + 18, 0.06, "inOut"],
   ]);
-  // rise AFTER the hand is planted: stay knelt through the lean peak, then push up in the last ~8 f
-  const riseStart = STAND.lean + 4;
+  // hold the kneel he is already in, then rise over ~16 frames with the feet staying on the floor
+  const riseStart = STAND.from + 4;
   const rise = EASE.inOut(clamp((fr - riseStart) / Math.max(1, STAND.to - riseStart)));
   const walking = fr >= WALK.from;
   const D = walkDist(fr);
@@ -1046,13 +1172,10 @@ const exitProps = (fr: number): ExitPhase => {
   let shiftX = 0;
   let hipTilt = 0;
   if (!walking) {
-    // kneeling up, toes tucked; the near foot plants forward, hand pushes on that knee, then the rise
-    const nStep = EASE.inOut(clamp((fr - STAND.from) / (STAND.lean + 2 - STAND.from)));
-    const fStep = EASE.inOut(clamp((u - 0.5) / 0.5));
-    const nz = lerp(-92, 32, nStep) * (1 - rise) + 0 * rise;
-    const fz = lerp(-92, 0, fStep);
-    near = { x: 0, z: nz, lift: lerp(10, 0, nStep) + 6 * Math.sin(Math.PI * nStep), pitch: lerp(1.05, 0, nStep) };
-    far = { x: 0, z: fz, lift: lerp(10, 0, fStep) + 7 * Math.sin(Math.PI * fStep), pitch: lerp(1.05, 0, fStep) };
+    // both knees down, feet on the floor (no lift — the old lift floated him). Feet slide under him as the hips rise.
+    const plant = rise;
+    near = { x: lerp(2, 16, plant), z: lerp(-50, 14, plant), lift: 0, pitch: lerp(0.2, 0.04, plant) };
+    far = { x: lerp(-2, -2, plant), z: lerp(-48, 2, plant), lift: 0, pitch: lerp(0.2, 0.04, plant) };
     drop = KNEEL_DROP * (1 - rise);
   } else {
     const n = footState(fr, true);
@@ -1088,23 +1211,24 @@ const exitProps = (fr: number): ExitPhase => {
     [LOOK.to + 1, 0, "inOut"],
   ]);
   const yaw = 1 - 0.55 * look;
-  // near hand: flat on the near knee for the push (~0.5 s), then hangs and swings with the near leg
+  // near hand already on the near knee when the standing kneel appears, then it lets go as he is up
   const onKnee = track(fr, [
-    [STAND.from, 0],
-    [STAND.lean - 1, 1, "inOut"],
-    [STAND.lean + 8, 1],
-    [STAND.to + 2, 0, "inOut"],
+    [STAND.from, 0.85],
+    [STAND.from + 4, 1, "inOut"],
+    [riseStart + 10, 1],
+    [STAND.to, 0, "inOut"],
   ]);
   const palmUp = lerp(0.35, 0.04, onKnee); // palm down onto the knee while pushing
   // probe: the shoulders and knee as driven, with known targets
-  const probeT = { near: { x: 0, y: -250 }, far: { x: 30, y: -250 } };
+  // Probe low, at the waist: a target above the kneeling reach makes the error include the clamp and lifts the hand to the face.
+  const probeT = { near: { x: 10, y: -36 }, far: { x: 24, y: -28 } };
   const pj = standingChildJoints(exitBase(fr, x, drive, probeT, yaw, palmUp));
   const L = (P: V) => standingLocal(P, x, EXIT0.y, BST.s, false);
   const dS = { x: L(pj.handNear).x - probeT.near.x, y: L(pj.handNear).y - probeT.near.y };
   const shN = L(pj.shoulderNear);
   const chest = L(pj.chest);
-  // far hand: clay Shiva hugged to the chest (readable through the whole exit)
-  const farT = { x: chest.x + 22 - dS.x, y: chest.y + 18 - dS.y };
+  // far hand: clay Shiva held in against the chest, not out in front
+  const farT = { x: chest.x + 4 - dS.x, y: chest.y + 12 - dS.y };
   const knee = L(pj.kneeNear);
   const swing = walking ? clamp(((near.z - far.z) / EXIT_SA) / 120, -1, 1) : 0;
   const hang = { x: shN.x + 2 - 30 * swing, y: shN.y + 118 - 5 * Math.abs(swing) };
@@ -1327,30 +1451,6 @@ const FloorFlowerCover: React.FC = () => (
   </GhibliLayer>
 );
 
-/** BAL-08: a warm golden rim on his hair, shoulders and back (sun from the upper right, behind him). */
-const BalakRimDefs: React.FC = () => (
-  <defs>
-    <filter id="ep4s1-balak-rim" x="-10%" y="-10%" width="120%" height="120%" colorInterpolationFilters="sRGB">
-      {/* the lit edge: the figure minus itself shifted away from the sun, softened, golden, kept inside the figure */}
-      <feOffset in="SourceAlpha" dx={-3.2} dy={2.6} result="sh" />
-      <feComposite in="SourceAlpha" in2="sh" operator="out" result="edge" />
-      <feGaussianBlur in="edge" stdDeviation={1.3} result="edgeB" />
-      <feFlood floodColor="#ffd27a" floodOpacity={0.9} />
-      <feComposite in2="edgeB" operator="in" result="rim" />
-      <feComposite in="rim" in2="SourceAlpha" operator="in" result="rimIn" />
-      <feGaussianBlur in="SourceAlpha" stdDeviation={3} result="halo" />
-      <feOffset in="halo" dx={1.6} dy={-1.6} result="haloO" />
-      <feFlood floodColor="#ffe2a0" floodOpacity={0.28} />
-      <feComposite in2="haloO" operator="in" result="glowOut" />
-      <feMerge>
-        <feMergeNode in="glowOut" />
-        <feMergeNode in="SourceGraphic" />
-        <feMergeNode in="rimIn" />
-      </feMerge>
-    </filter>
-  </defs>
-);
-
 /* ------------------------------------------------------------------ */
 /* Scene                                                                */
 /* ------------------------------------------------------------------ */
@@ -1373,6 +1473,7 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
     design: "plate",
     build: "healthy",
     age: 5,
+    ...EP04_BALAK_LOOK,
     f,
     lifeF: f,
     kneel,
@@ -1382,7 +1483,13 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
           pose: "handsTo" as const,
           poseStart: SWAP_CUT - 30,
           handTargets: swapTargets(f, bx),
-          handShapes: f < BOTH_ON_CLAY ? { near: "grip" as const, far: "grip" as const } : { near: "cup" as const, far: "cup" as const },
+          handShapes:
+            f < BOTH_ON_CLAY
+              ? {
+                  near: f < DOLL_RELEASE ? ("grip" as const) : ("open" as const),
+                  far: f < FAR_GRIP ? ("open" as const) : ("grip" as const),
+                }
+              : { near: "cup" as const, far: "cup" as const },
           expression: "playful" as const,
         }
       : {
@@ -1419,10 +1526,10 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
     if (f < CLINK) {
       // the doll in the near hand (and both hands, in the lap, at the start)
       const p = anchors.nearPalm;
-      const dollRot = -6 * track(f, [
-        [RISE + 10, 0],
-        [FAR_GRIP, 1, "inOut"],
-        [CLINK - 6, 0, "inOut"],
+      const dollRot = -4 * track(f, [
+        [RISE + 8, 0],
+        [CLINK - 4, 0.25, "inOut"],
+        [CLINK, 0, "inOut"],
       ]);
       nodes.push(<HeldObjectArt key="doll" kind="doll" x={p.x} y={p.y - DOLL_GY * OBJ_S} s={OBJ_S} rot={dollRot} lifeF={f} />);
     }
@@ -1447,7 +1554,7 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
 
   /* ---- Biru's exit (wide shot): up from kneeling, a look back at Ma, the walk off with the Shiva ---- */
   let exit: { props: StandingChildProps; joints: ReturnType<typeof standingChildJoints>; shadowN: number; shadowF: number } | null = null;
-  if (f >= STAND.from && f < WALK.to + 2) {
+  if (f >= STAND.from && f < CU_CHARU) {
     const ep = exitProps(f);
     const pj0 = standingChildJoints(ep.props);
     const shivaAt = { x: pj0.handFar.x, y: pj0.handFar.y - SHIVA_GY * OBJ_S * 0.55 };
@@ -1478,6 +1585,7 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
     build: "healthy",
     sturdy: true,
     age: 5,
+    ...EP04_BALAK_LOOK,
     f,
     lifeF: f,
     pose: "handInHands",
@@ -1552,7 +1660,7 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
   const showJyethi = f >= SHOT6;
   const showBroNow = showBro && f < BRO_EXIT.to + 2;
   const leafOffered = f >= LEAF.land;
-  const bellOnFloor = f >= S1A.from;
+  const bellOnFloor = f >= S1A.from + 16;
 
   return (
     <GhibliStage cam={cam}>
@@ -1562,6 +1670,7 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
 
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} />
+        <Ep04BalakInkDefs zoom={cam.zoom} rim={0.5} />
 
         {/* the brass taat, the clay Shiva on it until he lifts it, the doll from the clink on */}
         <BrassPlate f={f} leafOffered={leafOffered} />
@@ -1577,11 +1686,6 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
           />
         )}
         <FlyingLeaf f={f} />
-        {bellOnFloor && (
-          <g transform={`translate(${CHARU.x - 64} ${CHARU.y - 12})`}>
-            <BellArt s={0.85} />
-          </g>
-        )}
 
         {showJyethi && (
           <g filter="url(#ghibli-char-ink)">
@@ -1595,6 +1699,8 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
               lifeF={f}
               light={S01_MORNING_LIGHT}
               acting={jyethiActing}
+              pointAt={JYETHI_POINT_AT}
+              reachAt={JYETHI_PALM_AT}
               mouth={jyethiMouth}
               talk={jyethiTalk}
             />
@@ -1621,46 +1727,40 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
           </g>
         )}
 
-        <BalakRimDefs />
         {seated && (
           <>
-            <GhibliBalakGroundGlow x={bx} y={BS.y + 4} rx={110} ry={20} level={0.4} />
-            {seatedGlow && <GhibliBalakAura cx={seatedGlow.cx} cy={seatedGlow.cy} r={seatedGlow.r * 0.8} glow={0.55} f={f} />}
-            <g filter="url(#ghibli-char-ink)">
+            <Ep04BalakGroundGlow x={bx} y={BS.y + 4} rx={110} ry={20} level={0.4} />
+            {seatedGlow && <Ep04BalakDivine cx={seatedGlow.cx} cy={seatedGlow.cy} r={seatedGlow.r * 0.8} glow={0.55} f={f} />}
+            <g filter="url(#ep04-balak-ink)">
               <ContactShadow x={bx} y={BS.y} rx={f < FEEL_FRAMES ? 58 : 52} ry={f < FEEL_FRAMES ? 11 : 10} opacity={0.48} castStretch={1.25} />
-              <g filter="url(#ep4s1-balak-rim)">
-                <SeatedChild {...seatedProps} />
-                {kneel < 0.05 && <GhibliBalakLapDetails x={bx} y={BS.y} s={BS.s} flip f={f} />}
-              </g>
+              {/* BAL-26f: no whole-body rim/glow filter on him; the divine look is the head halo (Ep04BalakDivine) */}
+              <SeatedChild {...seatedProps} inkZoom={cam.zoom} />
+              {kneel < 0.05 && <GhibliBalakLapDetails x={bx} y={BS.y} s={BS.s} flip f={f} />}
             </g>
           </>
         )}
 
         {exit && (
           <>
-            <GhibliBalakGroundGlow x={exit.joints.pelvis.x} y={EXIT0.y + 2} rx={80} ry={16} level={0.4} />
-            <GhibliBalakAura cx={exit.joints.glowAnchor.x} cy={exit.joints.glowAnchor.y} r={78} glow={0.55} f={f} />
-            <g filter="url(#ghibli-char-ink)">
+            <Ep04BalakGroundGlow x={exit.joints.pelvis.x} y={EXIT0.y + 2} rx={80} ry={16} level={0.4} />
+            <Ep04BalakDivine cx={exit.joints.glowAnchor.x} cy={exit.joints.glowAnchor.y} r={78} glow={0.55} f={f} />
+            <g filter="url(#ep04-balak-ink)">
               {/* a contact shadow under each foot (fainter as it lifts) and a soft one under the body */}
               <ContactShadow x={exit.joints.pelvis.x} y={EXIT0.y} rx={28} ry={6} opacity={0.3} castStretch={1.2} />
               <ellipse cx={exit.joints.footNear.x} cy={EXIT0.y + 1} rx={11} ry={3} fill="#3a2414" opacity={0.55 * exit.shadowN} />
               <ellipse cx={exit.joints.footFar.x} cy={EXIT0.y} rx={10} ry={2.6} fill="#3a2414" opacity={0.48 * exit.shadowF} />
-              <g filter="url(#ep4s1-balak-rim)">
-                <StandingChild {...exit.props} />
-              </g>
+              <StandingChild {...exit.props} inkZoom={cam.zoom} />
             </g>
           </>
         )}
 
         {standing && sj && (
           <>
-            <GhibliBalakGroundGlow x={standX} y={standY + 2} rx={80} ry={16} level={0.4} />
-            <GhibliBalakAura cx={sj.glowAnchor.x} cy={sj.glowAnchor.y} r={78} glow={0.55} f={f} />
-            <g filter="url(#ghibli-char-ink)">
+            <Ep04BalakGroundGlow x={standX} y={standY + 2} rx={80} ry={16} level={0.4} />
+            <Ep04BalakDivine cx={sj.glowAnchor.x} cy={sj.glowAnchor.y} r={78} glow={0.55} f={f} />
+            <g filter="url(#ep04-balak-ink)">
               <ContactShadow x={standX} y={standY} rx={34} ry={8} opacity={0.52} castStretch={1.3} />
-              <g filter="url(#ep4s1-balak-rim)">
-                <StandingChild {...standingProps} />
-              </g>
+              <StandingChild {...standingProps} inkZoom={cam.zoom} />
             </g>
           </>
         )}
@@ -1683,11 +1783,22 @@ export const Scene01ClayShivaGhibli: React.FC = () => {
             mouth={charuMouth}
             talk={charuTalk}
             props={CHARU_PROPS}
-            reachAt={() => ({ x: PLATE.x - 36, y: PLATE.y - 64 })}
+            reachAt={(fr) =>
+              fr < S1A.from + 40
+                ? { x: CHARU.x + 96, y: CHARU.y - 22 }
+                : fr >= SHOT7 - 10
+                  ? CHARU_TALK_AT(fr)
+                  : { x: PLATE.x - 36, y: PLATE.y - 64 }
+            }
             pointAt={CHARU_POINT_AT}
             breathRate={charuBreath(f)}
             sigh={charuSigh}
           />
+          {bellOnFloor && (
+            <g transform={`translate(${CHARU.x + 96} ${CHARU.y - 10})`}>
+              <BellArt s={0.85} />
+            </g>
+          )}
         </g>
         <FloorLitter f={f} />
         <FeelMorning f={f} />

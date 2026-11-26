@@ -22,3 +22,15 @@ Hard limits:
   (`NODE_OPTIONS=--max-old-space-size=4096 node node_modules/typescript/bin/tsc --noEmit`; ignore `param_bismoy` and
   `src/cinematic/thakur/qa/*` errors). No git commits.
 - Report: what you changed, frames/clips to look at, anything you could not do.
+
+## Pass 2 (2026-11-25): new Balak look, gestures, pond (BAL-26f)
+- The director: "keep the new look of balak thakur, making his divine different look, make him better with detailed work; keep other
+  characters as usual; work on gesture improvements, pond ghat, animate pond water, use ducks and more detail. Do not touch other
+  episodes now." Read BAL-26e and BAL-26f in DIRECTOR_DECISIONS.md and the reference `01_Series_Bible/Thakur_Reference_Plates/new_ref_thakur.png`.
+- OTHER EPISODES MUST NOT CHANGE. Shared rigs (`ThakurHeadPlate.tsx`, `episode05/rig/StandingChild.tsx`, `episode03/rig/SeatedChild.tsx`)
+  are edited only by the Balak rig agent, and only behind opt-in props. Do not edit `core/` files (GhibliBalakAura, GhibliLifeKit,
+  GhibliStage) or anything outside `src/ghibli_pipeline/episode04/`; create new Episode 4 files instead.
+- Every Balak rig in Episode 4 gets `{...EP04_BALAK_LOOK}` (from `./ep04BalakLook` / `../ep04BalakLook`), and every Balak glow uses
+  `Ep04BalakDivine` / `Ep04BalakGroundGlow` from `Ep04BalakDivine.tsx` (same props as GhibliBalakAura). No whole-body glow/outline.
+- Other characters: design unchanged; gestures may be improved (posing, hand targets, timing) in the scene files.
+- The director's uncommitted edits in `Scene01ClayShivaGhibli.tsx` and the three rig files are the starting point: keep them.

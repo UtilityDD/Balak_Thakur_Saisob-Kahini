@@ -148,6 +148,9 @@ interface Bed {
 
 const BED_TAIL = 8;
 
+/** The shared Ghibli life kit (STO-22b): `public/audio/sfx/ghibli_life/` (lengths, levels and credits in its README). */
+const LIFE = "sfx/ghibli_life";
+
 const BEDS: readonly Bed[] = [
   {
     name: "01-courtyard-morning",
@@ -155,9 +158,12 @@ const BEDS: readonly Bed[] = [
     to: sceneStart(S02) + 12,
     fadeIn: 24,
     fadeOut: 24,
+    // STO-22b world layer: the Birbhum dawn chorus leads, the older village birds and wind sit lower under it
     layers: [
-      { file: "sfx/ep02/birds_village.wav", open: 0.2, under: 0.07 },
-      { file: "sfx/ep02/wind_soft.wav", open: 0.11, under: 0.05 },
+      { file: "sfx/ep02/birds_village.wav", open: 0.12, under: 0.05 },
+      { file: "sfx/ep02/wind_soft.wav", open: 0.07, under: 0.04 },
+      { file: `${LIFE}/dawn_birds_loop.wav`, open: 0.15, under: 0.06 },
+      { file: `${LIFE}/wind_leaves.wav`, open: 0.09, under: 0.05 },
     ],
   },
   {
@@ -166,10 +172,14 @@ const BEDS: readonly Bed[] = [
     to: sceneStart(S04) + 12,
     fadeIn: 24,
     fadeOut: 24,
+    // STO-22b: the ghat's lapping water and the ducks' paddling lead; river water, birds and wind lowered under them
     layers: [
-      { file: "sfx/ep02/birds_village.wav", open: 0.18, under: 0.07 },
-      { file: "sfx/ep02/wind_soft.wav", open: 0.12, under: 0.06 },
-      { file: "sfx/river_water.wav", open: 0.18, under: 0.07 },
+      { file: "sfx/ep02/birds_village.wav", open: 0.1, under: 0.05 },
+      { file: "sfx/ep02/wind_soft.wav", open: 0.08, under: 0.04 },
+      { file: "sfx/river_water.wav", open: 0.08, under: 0.04 },
+      { file: `${LIFE}/pond_lapping_loop.wav`, open: 0.16, under: 0.07 },
+      { file: `${LIFE}/water_glide.wav`, open: 0.12, under: 0.06 },
+      { file: `${LIFE}/dawn_birds_loop.wav`, open: 0.08, under: 0.04 },
     ],
   },
   {
@@ -180,7 +190,8 @@ const BEDS: readonly Bed[] = [
     fadeOut: 22,
     layers: [
       { file: "sfx/ep02/birds_village.wav", open: 0.16, under: 0.06 },
-      { file: "sfx/ep02/wind_soft.wav", open: 0.1, under: 0.05 },
+      { file: "sfx/ep02/wind_soft.wav", open: 0.06, under: 0.04 },
+      { file: `${LIFE}/wind_leaves.wav`, open: 0.08, under: 0.05 },
     ],
   },
   {
@@ -189,9 +200,11 @@ const BEDS: readonly Bed[] = [
     to: sceneStart(OUTRO) + BED_TAIL,
     fadeIn: 28,
     fadeOut: 24,
+    // STO-22b: the Indian village night insects lead; the older cricket bed is lowered under them
     layers: [
-      { file: "ambient/bengal_night_crickets.wav", open: 0.14, under: 0.06 },
+      { file: "ambient/bengal_night_crickets.wav", open: 0.07, under: 0.03 },
       { file: "sfx/ep02/lantern_hiss.wav", open: 0.05, under: 0.03 },
+      { file: `${LIFE}/night_crickets_loop.wav`, open: 0.15, under: 0.06 },
     ],
   },
   {
@@ -212,8 +225,23 @@ const bedLayerVolume = (bed: Bed, layer: BedLayer) => (f: number) => {
 };
 
 /* ------------------------------------------------------------------ */
-/* Indian Classical Score Cues (AUD-07)                                */
+/* Indian Classical Score Cues (AUD-07, AUD-09: the recorded music/ep05 library only)                         */
 /* ------------------------------------------------------------------ */
+
+/**
+ * AUD-09 (2026-11-25): the score is the recorded Indian instrument library in `public/audio/music/ep05/` (tanpura
+ * drones, bansuri phrases, tabla, swarmandal plucks; README there). The synthesised Theme_Intro_Bansuri,
+ * Village_Peace_Loop, Warm_Family_Flute and Divine_Motif are no longer used in this episode.
+ *
+ * TV-show balance: each cue gives its layer's target loudness in the mix (LUFS) `open` (wordless moments: intro
+ * gaps, AG1-AG7, pauses, the chapter break, the outro tail) and `under` (while someone speaks). The layers of a
+ * wordless stretch sum to about -22 LUFS; under the voices (-16 LUFS) the music sits about 12-18 dB lower. Music
+ * ducks on its own speech map (`MUSIC_SPEECH`: gaps under 30 frames stay ducked, a 14-frame ramp) so it does not
+ * pump in the short breaths between sentences.
+ *
+ * Key: the library is in C (Sa = C). `tanpura_drone_cs` is in C# (it was made for the C# Divine_Motif), so it is not
+ * used under the C bansuri phrases.
+ */
 
 interface MusicFile {
   lufs: number;
@@ -222,27 +250,26 @@ interface MusicFile {
 }
 
 const MUSIC_LIB: Record<string, MusicFile> = {
-  "music/Theme_Intro_Bansuri": { lufs: -11.5, seconds: 28.0, loop: true },
-  "music/Village_Peace_Loop": { lufs: -8.5, seconds: 15.2, loop: true },
-  "music/Warm_Family_Flute": { lufs: -8.1, seconds: 13.2, loop: true },
-  "music/Divine_Motif": { lufs: -15.0, seconds: 36.0, loop: false },
   "music/ep05/tanpura_drone": { lufs: -24.0, seconds: 33.714, loop: true },
-  "music/ep05/tanpura_drone_low": { lufs: -28.0, seconds: 33.714, loop: true },
-  "music/ep05/tanpura_drone_cs": { lufs: -24.0, seconds: 31.825, loop: true },
+  // the low drone 7 dB hotter (same loop), so it can reach the wordless level without gain above unity
+  "music/ep05/tanpura_drone_low_hot": { lufs: -21.0, seconds: 33.714, loop: true },
   "music/ep05/play_plucks": { lufs: -24.0, seconds: 8.211, loop: true },
-  "music/ep05/cheeky_plucks": { lufs: -22.0, seconds: 8.0, loop: true },
+  "music/ep05/cheeky_plucks": { lufs: -19.8, seconds: 14.0, loop: true },
   "music/ep05/tabla_soft": { lufs: -24.0, seconds: 9.87, loop: true },
+  "music/ep05/drum_pulse": { lufs: -24.0, seconds: 6.0, loop: true },
+  "music/ep05/drum_pulse_fast": { lufs: -24.0, seconds: 4.0, loop: true },
   "music/ep05/tabla_run": { lufs: -20.1, seconds: 2.694, loop: false },
   "music/ep05/cheeky_pluck_1": { lufs: -20.0, seconds: 2.511, loop: false },
   "music/ep05/cheeky_pluck_2": { lufs: -20.0, seconds: 2.405, loop: false },
   "music/ep05/cheeky_pluck_3": { lufs: -20.0, seconds: 1.382, loop: false },
   "music/ep05/tension_rise": { lufs: -20.0, seconds: 1.3, loop: false },
   "music/ep05/drum_hit_low": { lufs: -20.0, seconds: 2.6, loop: false },
+  "music/ep05/bansuri_relief": { lufs: -20.0, seconds: 12.311, loop: false },
   "music/ep05/bansuri_compassion": { lufs: -20.0, seconds: 9.529, loop: false },
 };
 
-const MUSIC_LOOP_MAX = 0.22;
-const MUSIC_HIT_MAX = 0.42;
+/** Gain ceiling for any music layer (never above unity; the library files are -20 to -28 LUFS). */
+const MUSIC_VOL_MAX = 1.0;
 
 interface MusicCue {
   beat: string;
@@ -251,13 +278,44 @@ interface MusicCue {
   to: number;
   fadeIn: number;
   fadeOut: number;
+  /** Target loudness of this layer while someone speaks (LUFS in the mix). */
   under: number;
+  /** Target loudness of this layer in wordless moments (LUFS in the mix). */
   open: number;
-  directVol?: { open: number; under: number };
+  /** A one-shot figure (pluck, roll, hit): never looped. */
   hit?: boolean;
 }
 
-const lufsToVol = (target: number, file: string) => Math.pow(10, (target - (MUSIC_LIB[file]?.lufs ?? -14)) / 20);
+const lufsToVol = (target: number, file: string) =>
+  Math.min(MUSIC_VOL_MAX, Math.pow(10, (target - (MUSIC_LIB[file]?.lufs ?? -20)) / 20));
+
+/* Music's own speech map: the voice spans, gaps under MUSIC_MERGE frames bridged (no swell in a breath). */
+const MUSIC_RAMP = 14;
+const MUSIC_MERGE = 30;
+const MUSIC_SPEECH: [number, number][] = (() => {
+  const spans = EP04G_AUDIO.map((a) => [a.startFrame, a.startFrame + a.frames] as [number, number]).sort(
+    (x, y) => x[0] - y[0],
+  );
+  const merged: [number, number][] = [];
+  for (const s of spans) {
+    const last = merged[merged.length - 1];
+    if (last && s[0] - last[1] < MUSIC_MERGE) last[1] = Math.max(last[1], s[1]);
+    else merged.push([s[0], s[1]]);
+  }
+  return merged;
+})();
+const musicSpeech = (frame: number): number => {
+  let amt = 0;
+  for (const [a, b] of MUSIC_SPEECH) {
+    if (frame < a - MUSIC_RAMP) break;
+    let t = 0;
+    if (frame >= a && frame <= b) t = 1;
+    else if (frame < a) t = (frame - (a - MUSIC_RAMP)) / MUSIC_RAMP;
+    else if (frame <= b + MUSIC_RAMP) t = 1 - (frame - b) / MUSIC_RAMP;
+    amt = Math.max(amt, ease(t));
+  }
+  return amt;
+};
 
 // Absolute story anchors from EP04G_SPANS
 const s01Ag2 = spanAbs(S01, "AG2_swap_clay");
@@ -279,314 +337,152 @@ const s06Explode = spanAbs(S06, "06b_Bhagabati_Explode.wav");
 const s06Ants = spanAbs(S06, "06c_Balak_AntsLogic.wav");
 const s06Defense = spanAbs(S06, "06e_Balak_LegalDefense.wav");
 
-const DRONE = { under: -44, open: -37 };
+const DRONE = { under: -36, open: -24.5 };
+const PLUCKS = { under: -37, open: -23 };
+const HIT = { under: -31, open: -22.5 };
+const BANSURI_RELIEF_FRAMES = Math.floor(MUSIC_LIB["music/ep05/bansuri_relief"].seconds * 24);
 const BANSURI_COMPASSION_FRAMES = Math.floor(MUSIC_LIB["music/ep05/bansuri_compassion"].seconds * 24);
 const TENSION_RISE_FRAMES = Math.round(MUSIC_LIB["music/ep05/tension_rise"].seconds * 24);
 const HEIST_GULP_ABS = s05Heist.from + 52;
+/** Scene crossfade overlap: the outgoing scene's music runs this far past the cut, the next one starts this early. */
+const XF = 12;
 
 const MUSIC_CUES: readonly MusicCue[] = [
-  /* Intro & Source Card: series bansuri theme */
+  /* Intro & source card: tanpura, a bansuri phrase over the title, soft tabla entering with the source card, and the
+     tender phrase carrying over the cut into Scene 01's dawn (AG1) */
+  { beat: "M0-IntroDrone", file: "music/ep05/tanpura_drone", from: 0, to: sceneStart(S01) + 30, fadeIn: 6, fadeOut: 30, under: -35, open: -24.5 },
+  { beat: "M0-IntroBansuri", file: "music/ep05/bansuri_relief", from: 0, to: BANSURI_RELIEF_FRAMES, fadeIn: 2, fadeOut: 12, under: -32, open: -20.5, hit: true },
+  { beat: "M0-SourceTabla", file: "music/ep05/tabla_soft", from: sceneStart(SOURCE) - 18, to: sceneStart(S01) + 12, fadeIn: 30, fadeOut: 24, under: -38, open: -24.5 },
   {
-    beat: "M0-Intro",
-    file: "music/Theme_Intro_Bansuri",
-    from: 0,
-    to: sceneStart(S01) + 24,
-    fadeIn: 4,
-    fadeOut: 24,
-    under: -32,
-    open: -26,
-    directVol: { open: 0.14, under: 0.07 },
-  },
-
-  /* Scene 01: Morning puja, clay Shiva swap & innocent clay logic */
-  {
-    beat: "M1-MorningPeace",
-    file: "music/Village_Peace_Loop",
-    from: sceneStart(S01),
-    to: s01Ag2.from + 12,
-    fadeIn: 24,
-    fadeOut: 24,
-    under: -37,
-    open: -31,
-  },
-  {
-    beat: "M1-Drone",
-    file: "music/ep05/tanpura_drone",
-    from: sceneStart(S01),
-    to: sceneEnd(S01),
-    fadeIn: 30,
-    fadeOut: 24,
-    ...DRONE,
-  },
-  {
-    beat: "M2-SwapPluck",
-    file: "music/ep05/cheeky_pluck_3",
-    from: s01Ag2.from - 2,
-    to: s01Ag2.from + 34,
-    fadeIn: 1,
-    fadeOut: 8,
-    under: -38,
-    open: -38,
-    hit: true,
-  },
-  {
-    beat: "M2-SwapTabla",
-    file: "music/ep05/tabla_soft",
-    from: s01Ag2.from,
-    to: s01Ag2.from + 48,
-    fadeIn: 10,
-    fadeOut: 8,
-    under: -40,
-    open: -38,
-  },
-  {
-    beat: "M2-CharuShockPluck",
-    file: "music/ep05/cheeky_pluck_1",
-    from: s01Shock.from - 2,
-    to: s01Shock.from + 58,
-    fadeIn: 1,
-    fadeOut: 10,
-    under: -36,
-    open: -36,
-    hit: true,
-  },
-  {
-    beat: "M3-ClayLogicPlucks",
-    file: "music/ep05/play_plucks",
-    from: s01Logic.from - 8,
-    to: sceneEnd(S01),
-    fadeIn: 24,
-    fadeOut: 24,
-    under: -41,
-    open: -37,
-  },
-
-  /* Scene 02: Gobinda by the pond & Mangla's comic panic */
-  {
-    beat: "M4-PondDrone",
-    file: "music/ep05/tanpura_drone",
-    from: sceneStart(S02),
-    to: sceneEnd(S03),
-    fadeIn: 24,
-    fadeOut: 24,
-    ...DRONE,
-  },
-  {
-    beat: "M4-PondPlucks",
-    file: "music/ep05/play_plucks",
-    from: sceneStart(S02),
-    to: s02Panic.from - 4,
-    fadeIn: 24,
-    fadeOut: 16,
-    under: -41,
-    open: -37,
-  },
-  {
-    beat: "M4b-DealPluck",
-    file: "music/ep05/cheeky_pluck_3",
-    from: s02Deal.from - 2,
-    to: s02Deal.from + 34,
-    fadeIn: 1,
-    fadeOut: 8,
-    under: -38,
-    open: -38,
-    hit: true,
-  },
-  {
-    beat: "M4c-ManglaPanicPluck",
-    file: "music/ep05/cheeky_pluck_2",
-    from: s02Panic.from - 2,
-    to: s02Panic.from + 56,
-    fadeIn: 1,
-    fadeOut: 10,
-    under: -36,
-    open: -36,
-    hit: true,
-  },
-  {
-    beat: "M4c-ManglaSprintTabla",
-    file: "music/ep05/tabla_run",
-    from: s02Panic.from + 14,
-    to: s02Panic.from + 78,
+    beat: "M0-CarryBansuri",
+    file: "music/ep05/bansuri_compassion",
+    from: sceneStart(S01) - 96,
+    to: sceneStart(S01) - 96 + BANSURI_COMPASSION_FRAMES,
     fadeIn: 2,
-    fadeOut: 10,
-    under: -36,
-    open: -35,
-    hit: true,
-  },
-  {
-    beat: "M4c-ManglaTailTabla",
-    file: "music/ep05/tabla_soft",
-    from: s02Panic.from + 60,
-    to: sceneStart(S03) + 400,
-    fadeIn: 16,
-    fadeOut: 24,
-    under: -42,
-    open: -38,
-  },
-
-  /* Scene 03: Sundar Jyetha's warm coaxing & rescue of Gobinda */
-  {
-    beat: "M5-SundarFlute",
-    file: "music/Warm_Family_Flute",
-    from: s03Sundar.from - 10,
-    to: sceneEnd(S03) + 8,
-    fadeIn: 28,
-    fadeOut: 28,
-    under: -38,
-    open: -31,
-  },
-
-  /* Scene 04: Harendra's grumble -> Thakurma's Kailashpati prophecy (Divine_Motif on 04b + P8) */
-  {
-    beat: "M6a-GrumbleLowDrone",
-    file: "music/ep05/tanpura_drone_low",
-    from: sceneStart(S04),
-    to: s04Prophecy.from - 8,
-    fadeIn: 20,
-    fadeOut: 20,
-    under: -44,
-    open: -40,
-  },
-  {
-    beat: "M6a-GrumbleDrum",
-    file: "music/ep05/drum_hit_low",
-    from: s04Grumble.from - 2,
-    to: s04Grumble.from + 56,
-    fadeIn: 1,
     fadeOut: 12,
-    under: -40,
-    open: -40,
+    under: -34,
+    open: -21,
     hit: true,
-  },
-  {
-    beat: "M6b-ProphecyDivineMotif",
-    file: "music/Divine_Motif",
-    from: s04Prophecy.from - 6,
-    to: sceneStart(CB1) + BED_TAIL,
-    fadeIn: 30,
-    fadeOut: 22,
-    under: -36,
-    open: -30,
-  },
-  {
-    beat: "M6b-ProphecyDroneCs",
-    file: "music/ep05/tanpura_drone_cs",
-    from: s04Prophecy.from - 6,
-    to: sceneStart(CB1) + BED_TAIL,
-    fadeIn: 30,
-    fadeOut: 22,
-    ...DRONE,
   },
 
-  /* Scene 05: Evening Purnima abhishek & cheeky coconut water heist */
+  /* Scene 01: morning puja (tanpura + play_plucks), the clay Shiva swap and the innocent clay logic */
+  { beat: "M1-Drone", file: "music/ep05/tanpura_drone", from: sceneStart(S01), to: sceneEnd(S01) + XF, fadeIn: 30, fadeOut: 24, ...DRONE },
+  { beat: "M1-MorningPlucks", file: "music/ep05/play_plucks", from: sceneStart(S01) + 12, to: s01Ag2.from + 30, fadeIn: 30, fadeOut: 24, ...PLUCKS },
+  { beat: "M2-SwapPluck", file: "music/ep05/cheeky_pluck_3", from: s01Ag2.from - 2, to: s01Ag2.from + 34, fadeIn: 1, fadeOut: 8, ...HIT, hit: true },
+  { beat: "M2-SwapTabla", file: "music/ep05/tabla_soft", from: s01Ag2.from, to: s01Ag2.to + 6, fadeIn: 10, fadeOut: 14, under: -38, open: -23.5 },
+  { beat: "M2-CharuShockPluck", file: "music/ep05/cheeky_pluck_1", from: s01Shock.from - 2, to: s01Shock.from + 58, fadeIn: 1, fadeOut: 10, ...HIT, hit: true },
+  { beat: "M3-ClayLogicPlucks", file: "music/ep05/play_plucks", from: s01Logic.from - 8, to: sceneEnd(S01) + XF, fadeIn: 24, fadeOut: 24, ...PLUCKS },
+
+  /* Scenes 02-03: Gobinda by the pond, Mangla's comic panic, Sundar's warm coaxing (tanpura_drone_low + bansuri) */
+  { beat: "M4-PondDrone", file: "music/ep05/tanpura_drone", from: sceneStart(S02) - XF, to: s03Sundar.from + 14, fadeIn: 24, fadeOut: 28, ...DRONE },
+  { beat: "M4-PondPlucks", file: "music/ep05/play_plucks", from: sceneStart(S02) - XF, to: s02Panic.from - 4, fadeIn: 24, fadeOut: 16, ...PLUCKS },
+  { beat: "M4b-DealPluck", file: "music/ep05/cheeky_pluck_3", from: s02Deal.from - 2, to: s02Deal.from + 34, fadeIn: 1, fadeOut: 8, ...HIT, hit: true },
+  { beat: "M4c-ManglaPanicPluck", file: "music/ep05/cheeky_pluck_2", from: s02Panic.from - 2, to: s02Panic.from + 56, fadeIn: 1, fadeOut: 10, ...HIT, hit: true },
+  { beat: "M4c-ManglaSprintTabla", file: "music/ep05/tabla_run", from: s02Panic.from + 14, to: s02Panic.from + 78, fadeIn: 2, fadeOut: 10, under: -31, open: -23.5, hit: true },
+  { beat: "M4c-ManglaTailTabla", file: "music/ep05/tabla_soft", from: s02Panic.from + 60, to: sceneStart(S03) + 400, fadeIn: 16, fadeOut: 24, under: -38, open: -24.5 },
+  { beat: "M5-SundarDroneLow", file: "music/ep05/tanpura_drone_low_hot", from: s03Sundar.from - 10, to: sceneEnd(S03) + XF, fadeIn: 28, fadeOut: 24, under: -36, open: -23.5 },
   {
-    beat: "M7-ShrineDrone",
-    file: "music/ep05/tanpura_drone",
-    from: sceneStart(S05),
-    to: sceneEnd(S06) + BED_TAIL,
-    fadeIn: 28,
-    fadeOut: 24,
-    ...DRONE,
-  },
-  {
-    beat: "M8-AskSitPluck",
-    file: "music/ep05/cheeky_pluck_3",
-    from: s05AskSit.from - 2,
-    to: s05AskSit.from + 34,
-    fadeIn: 1,
-    fadeOut: 8,
-    under: -38,
-    open: -38,
-    hit: true,
-  },
-  {
-    beat: "M9-HeistTabla",
-    file: "music/ep05/tabla_soft",
-    from: s05Heist.from,
-    to: s05Heist.to,
-    fadeIn: 12,
-    fadeOut: 14,
-    under: -40,
-    open: -37,
-  },
-  {
-    beat: "M9-HeistCheekyPlucks",
-    file: "music/ep05/cheeky_plucks",
-    from: s05Heist.from + 4,
-    to: s05Heist.to,
-    fadeIn: 10,
-    fadeOut: 16,
-    under: -41,
-    open: -37,
-  },
-  {
-    beat: "M9-HeistRise",
-    file: "music/ep05/tension_rise",
-    from: HEIST_GULP_ABS - TENSION_RISE_FRAMES,
-    to: HEIST_GULP_ABS + 2,
+    // the warm phrase rises under Balak's handover lines and blooms in P6 as Sundar draws Gobinda to his chest
+    beat: "M5-SundarBansuri",
+    file: "music/ep05/bansuri_relief",
+    from: sceneEnd(S03) - BANSURI_RELIEF_FRAMES,
+    to: sceneEnd(S03),
     fadeIn: 2,
-    fadeOut: 3,
-    under: -37,
-    open: -37,
-    hit: true,
-  },
-  {
-    beat: "M9-HeistGulpPluck",
-    file: "music/ep05/cheeky_pluck_2",
-    from: HEIST_GULP_ABS,
-    to: HEIST_GULP_ABS + 56,
-    fadeIn: 1,
     fadeOut: 10,
-    under: -36,
-    open: -36,
+    under: -34,
+    open: -21,
     hit: true,
   },
 
-  /* Scene 06: Priest uproar, ants wisdom & compassionate bansuri afterglow */
+  /* Scene 04: Harendra's grumble (tanpura_drone_low + a warm bansuri under it) -> Thakurma's Kailashpati prophecy
+     (Shot 19 glow beat + P8: the brighter tanpura and the tender bansuri settling on Sa, gently) */
+  { beat: "M6a-GrumbleLowDrone", file: "music/ep05/tanpura_drone_low_hot", from: sceneStart(S04) - XF, to: s04Prophecy.from + 10, fadeIn: 20, fadeOut: 28, under: -36, open: -23.5 },
+  { beat: "M6a-GrumbleDrum", file: "music/ep05/drum_hit_low", from: s04Grumble.from - 2, to: s04Grumble.from + 56, fadeIn: 1, fadeOut: 12, under: -32, open: -24.5, hit: true },
   {
-    beat: "M10a-PriestShockPluck",
-    file: "music/ep05/cheeky_pluck_1",
-    from: s06Explode.from - 2,
-    to: s06Explode.from + 56,
-    fadeIn: 1,
-    fadeOut: 10,
+    beat: "M6a-FamilyBansuri",
+    file: "music/ep05/bansuri_relief",
+    from: s04Grumble.from + 10,
+    to: s04Grumble.from + 10 + BANSURI_RELIEF_FRAMES,
+    fadeIn: 2,
+    fadeOut: 12,
     under: -36,
-    open: -36,
+    open: -22.5,
     hit: true,
   },
+  { beat: "M6b-ProphecyDrone", file: "music/ep05/tanpura_drone", from: s04Prophecy.from - 6, to: sceneStart(S05) + 30, fadeIn: 30, fadeOut: 30, under: -35, open: -24 },
   {
-    beat: "M10b-AntsLogicPlucks",
-    file: "music/ep05/play_plucks",
-    from: s06Ants.from - 6,
-    to: s06Ants.to + 10,
-    fadeIn: 22,
-    fadeOut: 20,
-    under: -41,
-    open: -37,
+    beat: "M6b-ProphecyBansuri",
+    file: "music/ep05/bansuri_compassion",
+    from: sceneStart(CB1) - BANSURI_COMPASSION_FRAMES + 6,
+    to: sceneStart(CB1) + 6,
+    fadeIn: 2,
+    fadeOut: 8,
+    under: -33,
+    open: -20.5,
+    hit: true,
   },
+
+  /* Scene 05: evening Purnima abhishek (tanpura, the warm phrase over the shrine opening AG6) & the coconut heist
+     (tabla + cheeky plucks + a sneaky low heartbeat, the rise into the gulp) */
+  { beat: "M7-ShrineDrone", file: "music/ep05/tanpura_drone", from: sceneStart(S05), to: sceneEnd(S06) + 8, fadeIn: 30, fadeOut: 24, ...DRONE },
   {
+    beat: "M7-ShrineBansuri",
+    file: "music/ep05/bansuri_relief",
+    from: sceneStart(S05) - 6,
+    to: sceneStart(S05) - 6 + BANSURI_RELIEF_FRAMES,
+    fadeIn: 2,
+    fadeOut: 12,
+    under: -35,
+    open: -21.5,
+    hit: true,
+  },
+  { beat: "M8-AskSitPluck", file: "music/ep05/cheeky_pluck_3", from: s05AskSit.from - 2, to: s05AskSit.from + 34, fadeIn: 1, fadeOut: 8, ...HIT, hit: true },
+  { beat: "M9-HeistTabla", file: "music/ep05/tabla_soft", from: s05Heist.from - 14, to: s05Heist.to, fadeIn: 14, fadeOut: 14, under: -38, open: -26.5 },
+  { beat: "M9-HeistCheekyPlucks", file: "music/ep05/cheeky_plucks", from: s05Heist.from + 4, to: s05Heist.to, fadeIn: 10, fadeOut: 16, under: -38, open: -25.5 },
+  { beat: "M9-HeistPulse", file: "music/ep05/drum_pulse", from: s05Heist.from, to: HEIST_GULP_ABS + 6, fadeIn: 16, fadeOut: 6, under: -38, open: -29.5 },
+  { beat: "M9-HeistRise", file: "music/ep05/tension_rise", from: HEIST_GULP_ABS - TENSION_RISE_FRAMES, to: HEIST_GULP_ABS + 2, fadeIn: 2, fadeOut: 3, under: -30, open: -26, hit: true },
+  { beat: "M9-HeistGulpPluck", file: "music/ep05/cheeky_pluck_2", from: HEIST_GULP_ABS, to: HEIST_GULP_ABS + 56, fadeIn: 1, fadeOut: 10, under: -30, open: -24.5, hit: true },
+
+  /* Scene 06: priest uproar (a quick worried pulse under his outburst), the ants' wisdom, compassionate afterglow */
+  { beat: "M10a-PriestShockPluck", file: "music/ep05/cheeky_pluck_1", from: s06Explode.from - 2, to: s06Explode.from + 56, fadeIn: 1, fadeOut: 10, ...HIT, hit: true },
+  { beat: "M10a-UproarPulse", file: "music/ep05/drum_pulse_fast", from: s06Explode.from + 20, to: s06Explode.to + 6, fadeIn: 20, fadeOut: 18, under: -39, open: -27.5 },
+  { beat: "M10b-AntsLogicPlucks", file: "music/ep05/play_plucks", from: s06Ants.from - 6, to: s06Ants.to + 10, fadeIn: 22, fadeOut: 20, ...PLUCKS },
+  {
+    // its body falls in P11 (Bhagabati speechless), settling on Sa as the outro's first words begin (ducked)
     beat: "M10c-AfterglowBansuri",
     file: "music/ep05/bansuri_compassion",
-    from: Math.max(s06Defense.from + 12, sceneEnd(S06) - BANSURI_COMPASSION_FRAMES),
-    to: sceneEnd(S06),
-    fadeIn: 28,
-    fadeOut: 20,
-    under: -39,
-    open: -33,
+    from: s06Defense.to - 110,
+    to: s06Defense.to - 110 + BANSURI_COMPASSION_FRAMES,
+    fadeIn: 2,
+    fadeOut: 10,
+    under: -34,
+    open: -24,
+    hit: true,
   },
 
-  /* Outro: series bansuri theme */
+  /* Outro: tanpura and the warm bansuri phrase (carrying on from the afterglow), the tender phrase settling at the end */
+  { beat: "M11-OutroDrone", file: "music/ep05/tanpura_drone", from: sceneStart(OUTRO) - XF, to: EP04G_TOTAL_FRAMES, fadeIn: 24, fadeOut: 36, under: -35, open: -23.5 },
   {
     beat: "M11-OutroBansuri",
-    file: "music/Theme_Intro_Bansuri",
-    from: sceneStart(OUTRO),
+    file: "music/ep05/bansuri_relief",
+    from: sceneStart(OUTRO) + 56,
+    to: sceneStart(OUTRO) + 56 + BANSURI_RELIEF_FRAMES,
+    fadeIn: 2,
+    fadeOut: 12,
+    under: -34,
+    open: -21,
+    hit: true,
+  },
+  {
+    beat: "M11-OutroEndBansuri",
+    file: "music/ep05/bansuri_compassion",
+    from: EP04G_TOTAL_FRAMES - BANSURI_COMPASSION_FRAMES,
     to: EP04G_TOTAL_FRAMES,
-    fadeIn: 24,
+    fadeIn: 2,
     fadeOut: 36,
-    under: -32,
-    open: -26,
-    directVol: { open: 0.14, under: 0.07 },
+    under: -34,
+    open: -21.5,
+    hit: true,
   },
 ];
 
@@ -600,18 +496,12 @@ const cueFrames = (c: MusicCue): number => {
 
 const musicVolume = (c: MusicCue) => {
   const len = cueFrames(c);
+  const open = lufsToVol(c.open, c.file);
+  const under = Math.min(open, lufsToVol(c.under, c.file));
   return (f: number) => {
     const abs = c.from + f;
     const edge = ease(Math.min(f / Math.max(1, c.fadeIn), (len - f) / Math.max(1, c.fadeOut)));
-    if (c.directVol) {
-      return ducked(c.directVol.open, c.directVol.under, abs, MUSIC_LOOP_MAX) * edge;
-    }
-    if (c.hit) {
-      return Math.min(MUSIC_HIT_MAX, lufsToVol(c.open, c.file)) * edge;
-    }
-    const open = Math.min(MUSIC_LOOP_MAX, lufsToVol(c.open, c.file));
-    const under = Math.min(open, lufsToVol(c.under, c.file));
-    return ducked(open, under, abs, MUSIC_LOOP_MAX) * edge;
+    return (open + (under - open) * musicSpeech(abs)) * edge;
   };
 };
 
@@ -632,6 +522,19 @@ const SFX_SECONDS: Record<string, number> = {
   "sfx/ep04/drink_gulp.wav": 2.2,
   "sfx/ep02/clay_thud.wav": 1.5,
   "sfx/soft_magical_shimmer.wav": 2.5,
+  "sfx/ep03/water_pour.wav": 2.98,
+  // the Ghibli life kit one-shots (STO-22b)
+  [`${LIFE}/rooster_crow.wav`]: 2.4,
+  [`${LIFE}/pigeons_coo.wav`]: 2.1,
+  [`${LIFE}/squirrel_chirp.wav`]: 2.2,
+  [`${LIFE}/ducks_quack.wav`]: 2.0,
+  [`${LIFE}/frog_croak.wav`]: 1.9,
+  [`${LIFE}/fish_plop.wav`]: 0.52,
+  [`${LIFE}/kingfisher_call.wav`]: 1.65,
+  [`${LIFE}/small_splash.wav`]: 0.93,
+  [`${LIFE}/cow_bell_distant.wav`]: 2.4,
+  [`${LIFE}/moth_flutter.wav`]: 2.5,
+  [`${LIFE}/gecko_tiktiki.wav`]: 2.6,
 };
 
 interface PlacedSfx {
@@ -651,12 +554,40 @@ const s03Give = spanAbs(S03, "03f_Balak_ToSundar.wav");
 const s05Open = spanAbs(S05, "AG6_shrine_open");
 const s05Huhu1 = spanAbs(S05, "05d_Bhagabati_Huhu1.wav");
 
+const s01Flash = spanAbs(S01, "01g_Charu_FlashbackIntro.wav");
+const s02Ag4 = spanAbs(S02, "AG4_distant_shouts");
+const s03Negotiate = spanAbs(S03, "03d_Balak_Negotiate.wav");
+const s05Dhoop = spanAbs(S05, "05b_Bhagabati_Dhoop.wav");
+const s06Confess = spanAbs(S06, "06a_Balak_CoconutConfess.wav");
+const s06Scold = spanAbs(S06, "06d_Family_ScoldShrine.wav");
+
+/**
+ * The kingfisher (Scene 03 `kingfisherDiveAt={900}` = episode 4718, Ep04PondLife `PondKingfisher`): crouches 4718-4725,
+ * dives 4725-4734, enters the water at 4734 (splash droplets and rings from 4734-4736, checked on the rendered clip),
+ * back up on the post by ~4752. `small_splash` has its "plip" at 0.06 s, so cued at the entry frame it lands at ~4735.
+ * Keyed to AG5 (4714) + 20: keep in step with Scene03 / Ep04PondLife if the dive moves.
+ */
+const KF_SPLASH_ABS = s03Sprint.from + 20;
+
+/**
+ * Fish rings at the pond (`PondFishRings` in GhibliPondBackdrop: 4 slots, period 120, seed 5, on Scene 03's local
+ * frame) open at Scene 03 local 410, 1082 and 1251, all in wordless gaps (P5, after 03e, P6). `fish_plop`'s onset is
+ * at 0.08 s, so each plop starts 2 frames before its ring.
+ */
+const S03_FISH_RINGS = [410, 1082, 1251] as const;
+
 // Sc04 prophecy glow beat: right as Thakurma proclaims "দেখিস, এই কালাপাহাড়ই একদিন কৈলাসপতি হয়ে উঠবে!"
 const SC04_GLOW_BEAT_ABS = s04Prophecy.from + 79;
 
 const PLACED_SFX: readonly PlacedSfx[] = [
   /* Intro chime */
   { file: "sfx/chime_pop.wav", from: 0, volume: 0.36 },
+
+  /* Scene 01 world layer (STO-22b): the village rooster over the opening (AG1, before the narration), a pigeon pair
+     cooing in P2 after Balak's clay logic, a squirrel's alarm in P3 as Charu leans in to tell the story */
+  { file: `${LIFE}/rooster_crow.wav`, from: sceneStart(S01) + 6, volume: 0.22 },
+  { file: `${LIFE}/pigeons_coo.wav`, from: s01Logic.to - 8, volume: 0.2 },
+  { file: `${LIFE}/squirrel_chirp.wav`, from: s01Flash.to - 6, volume: 0.18 },
 
   /* Scene 01: morning puja bell, pranam rustle, wooden doll swap plate clink, clay rolling, elder brother steps */
   { file: "sfx/temple_bell_drop.wav", from: sceneStart(S01) + 22, volume: 0.18 },
@@ -680,6 +611,22 @@ const PLACED_SFX: readonly PlacedSfx[] = [
     fadeOut: 14,
   },
 
+  /* Scenes 02-03 pond life (STO-22b), every call in a wordless gap: ducks at the pond reveal (AG3), startled by the
+     distant shouts (AG4) and settling in P6; a frog after Mangla's sprint (P4); fish plops on the fish rings; the
+     kingfisher's trill just before its dive and the small splash on its splash rings (AG5) */
+  { file: `${LIFE}/ducks_quack.wav`, from: sceneStart(S02) + 6, volume: 0.22 },
+  { file: `${LIFE}/ducks_quack.wav`, from: s02Ag4.from - 13, volume: 0.24 },
+  { file: `${LIFE}/frog_croak.wav`, from: s02Panic.to + 2, volume: 0.2 },
+  ...S03_FISH_RINGS.map((local, i) => ({
+    file: `${LIFE}/fish_plop.wav`,
+    from: sceneStart(S03) + local - 2,
+    volume: i === 0 ? 0.24 : 0.22,
+  })),
+  // only its first trill (0.13-0.65 s), just before it crouches at 4718, so the dive itself is silent until the splash
+  { file: `${LIFE}/kingfisher_call.wav`, from: s03Negotiate.to - 8, volume: 0.22, frames: 18, fadeIn: 1, fadeOut: 3 },
+  { file: `${LIFE}/small_splash.wav`, from: KF_SPLASH_ABS, volume: 0.32 },
+  { file: `${LIFE}/ducks_quack.wav`, from: s03Give.to - 6, volume: 0.22 },
+
   /* Scene 03: family arrival steps, runner sprint out & back with wooden doll, handover rustle */
   { file: "sfx/ep02/footsteps_mud.wav", from: sceneStart(S03) + 4, volume: 0.16, frames: s03Shout.frames, fadeIn: 6, fadeOut: 14 },
   { file: "sfx/ep02/footsteps_mud.wav", from: s03Sprint.from, volume: 0.22, frames: s03Sprint.frames, fadeIn: 4, fadeOut: 10 },
@@ -688,20 +635,42 @@ const PLACED_SFX: readonly PlacedSfx[] = [
   /* Scene 04: Thakurma's Kailashpati prophecy glow shimmer (0.15) */
   { file: "sfx/soft_magical_shimmer.wav", from: SC04_GLOW_BEAT_ABS, volume: 0.15 },
 
+  /* Scene 04: a far cattle bell in P7, after Harendra's grumble (STO-22b) */
+  { file: `${LIFE}/cow_bell_distant.wav`, from: s04Grumble.to - 4, volume: 0.22 },
+
   /* Chapter Break CB1: soft temple bell drop */
   { file: "sfx/temple_bell_drop.wav", from: sceneStart(CB1) + 4, volume: 0.18 },
 
   /* Scene 05: evening shrine puja bells, dhoop-dani brass tap, bare feet entering, coconut water gulp & bowl set-down */
   { file: "sfx/temple_bell_drop.wav", from: s05Open.from + 14, volume: 0.16 },
   { file: "sfx/temple_bell_drop.wav", from: s05Open.from + 36, volume: 0.15 },
-  { file: "sfx/ep04/brass_tap.wav", from: s05Huhu1.to + 4, volume: 0.18 },
-  { file: "sfx/ep02/footsteps_floor.wav", from: s05AskSit.to + 8, volume: 0.14, frames: 18, fadeIn: 3, fadeOut: 8 },
+  // soft knee-steps while he carries the dhoop-dani in (Scene05 S05.lift / walk), then its set-down (local 644)
+  { file: "sfx/ep02/footsteps_floor.wav", from: s05Huhu1.from + 32, volume: 0.15, frames: 36, fadeIn: 4, fadeOut: 10 },
+  { file: "sfx/ep04/brass_tap.wav", from: s05Huhu1.to + 30, volume: 0.18 },
+  // a quiet trickle while the water is poured (Scene 05 local 632-718), under 05e
+  { file: "sfx/ep03/water_pour.wav", from: sceneStart(S05) + 632, volume: 0.15, frames: 86, fadeIn: 8, fadeOut: 16, rate: 0.85 },
+  // he shuffles back to the khat (S05.backFrom-backTo)
+  { file: "sfx/ep02/footsteps_floor.wav", from: s05AskSit.to + 26, volume: 0.14, frames: 36, fadeIn: 4, fadeOut: 10 },
   { file: "sfx/temple_bell_drop.wav", from: s05Heist.from + 18, volume: 0.15 },
+  // the priest shakes the bell again (seen silent before)
+  { file: "sfx/temple_bell_drop.wav", from: s05Heist.from + 48, volume: 0.15 },
   { file: "sfx/ep04/drink_gulp.wav", from: HEIST_GULP_ABS - 4, volume: 0.28 },
   { file: "sfx/ep02/clay_thud.wav", from: s05Heist.from + 92, volume: 0.16, rate: 1.25 },
 
+  /* Scene 05 night life (STO-22b): a moth's soft flutter over the lamp-flame insert of P9 (nobody comes) */
+  { file: `${LIFE}/moth_flutter.wav`, from: s05Dhoop.to - 7, volume: 0.18, frames: 44, fadeIn: 4, fadeOut: 12 },
+
+  /* Scene 06 night life (STO-22b): the tiktiki's "tik-tik" (folk "thik thik", it is true) in P10 after Balak's
+     confession (cut short before the priest's outburst) and in P11 after his defence */
+  { file: `${LIFE}/gecko_tiktiki.wav`, from: s06Confess.to - 6, volume: 0.2, frames: 32, fadeIn: 1, fadeOut: 5 },
+  { file: `${LIFE}/gecko_tiktiki.wav`, from: s06Defense.to - 4, volume: 0.18 },
+
   /* Scene 06: priest bell drop on uproar */
   { file: "sfx/temple_bell_drop.wav", from: s06Explode.from + 4, volume: 0.16 },
+  // the stone bowl set back down during the ants logic (absolute 7324)
+  { file: "sfx/ep02/clay_thud.wav", from: s06Ants.from + 165, volume: 0.16, rate: 1.25 },
+  // the family rushes in for their scold
+  { file: "sfx/ep02/footsteps_floor.wav", from: s06Scold.from - 18, volume: 0.22, frames: 48, fadeIn: 4, fadeOut: 12 },
 
   /* Outro: soft magical shimmer (0.12) */
   { file: "sfx/soft_magical_shimmer.wav", from: sceneStart(OUTRO), volume: 0.12 },

@@ -6,6 +6,8 @@ import { Puppet, shoutMouth } from "../../../cinematic/rig/Puppet";
 import {
   HELD_OBJECT_BOTTOM,
   HeldObjectArt,
+  KNEEL_REACH_T,
+  type HeldObject,
   SeatedChild,
   type SeatedChildProps,
   seatedChildHands,
@@ -14,7 +16,8 @@ import {
 } from "../../../episode03/rig/SeatedChild";
 import { ContactShadow, GhibliCharFilterDefs, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
 import { balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
-import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { Ep04BalakDivine, Ep04BalakGroundGlow, Ep04BalakInkDefs } from "../Ep04BalakDivine";
+import { EP04_BALAK_LOOK } from "../ep04BalakLook";
 import { ghibliStrideOf, ghibliWalkSpot, safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
 import { ep04gSpan, ep04gSpeakRms } from "../timing";
 import {
@@ -30,7 +33,10 @@ import {
   blinkAt,
   BOWL_FLOOR,
   BOWL_FLOOR_S,
+  BOWL_REACH,
   DHOOP_SET,
+  OFFERED_FLOWERS,
+  OfferedFlower,
   PRIEST_CAST,
   ramp,
   SHRINE,
@@ -244,7 +250,11 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
 
   // Line beats inside the clips (local frames, from the subtitle cues)
   const B = {
+    thakur: s6a.from + 22, // "আপনার ঠাকুর"
+    mukh: s6a.from + 53, // "তো মুখ দিয়ে খায় না—"
     confess2: s6a.from + 96, // "তাই আমি নারকেলের জলটা খেয়ে…"
+    fopra: s6a.from + 160, // "ফোপড়াটা ওর জন্য রেখে দিয়েছি!"
+    ento: s6b.from + 190, // "এঁটো ফোপড়াটা ঠাকুরের জন্য রেখে দিয়েছে!"
     ae: s6b.from, // "অ্যাঁ?"
     excl: s6b.from + 18, // "!"
     sarbonash: s6b.from + 36, // "সর্বনাশ!"
@@ -315,7 +325,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
   const priestActing = (fr: number) => {
     const rms = priestRms(fr);
     const turnBack = ramp(fr, s6a.from - 2, s6a.from + 16); // Balak's "ঠাকুরমশায়" turns him round
-    const reachBowl = ramp(fr, B.confess2 + 20, B.confess2 + 44) * (1 - ramp(fr, p10.from - 10, p10.from + 4));
+    const reachBowl = ramp(fr, B.fopra + 8, B.fopra + 34) * (1 - ramp(fr, p10.from - 6, p10.from + 8));
     const stare = fr >= p10.from - 14 && fr < s6b.from;
     const inB = fr >= s6b.from && fr < s6c.from;
     const jerk = inB ? ramp(fr, B.ae, B.ae + 6) * (1 - ramp(fr, B.excl, B.excl + 10)) : 0;
@@ -326,9 +336,12 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     const fling = inB ? ramp(fr, B.ae - 2, B.ae + 8) * (1 - ramp(fr, B.sarbonash + 6, B.ore)) : 0;
     const up = inB ? Math.max(fling * 0.85, ramp(fr, B.sarbonash - 2, B.sarbonash + 8) * (1 - ramp(fr, B.ore + 4, B.ore + 16))) : 0;
     const shout = inB && fr >= B.ore && fr < B.babur + 4;
-    const point = inB && fr >= B.babur + 4 && fr < s6b.to + 6;
+    const point = inB && fr >= B.babur + 4 && fr < B.ento;
+    const pointBowl = inB && fr >= B.ento ? ramp(fr, B.ento, B.ento + 8) * (1 - ramp(fr, s6b.to, s6b.to + 12)) : 0;
     const listenC = fr >= s6c.from && fr < s6d.from;
-    const hips = listenC ? ramp(fr, s6c.from + 20, s6c.from + 44) * (1 - ramp(fr, s6d.from - 30, s6d.from - 10)) : 0;
+    // "ফোপড়াটা আপনিই খান…": the boy holds the bowl out to him: he leans back from it, a palm up to refuse, face turned
+    const refuse = ramp(fr, OFFER.up + 6, OFFER.up + 18) * (1 - ramp(fr, OFFER.down + 8, OFFER.down + 26));
+    const hips = (listenC ? ramp(fr, s6c.from + 20, s6c.from + 44) * (1 - ramp(fr, s6d.from - 30, s6d.from - 10)) : 0) * (1 - refuse);
     const offended = fr >= B.khan + 40 && fr < B.khan + 90;
     const atFamily = fr >= s6d.from - 4 && fr < s6e.from;
     const realize = fr >= B.jigges + 30;
@@ -371,15 +384,17 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
                   ? 2.5
                   : point
                     ? 2
-                    : hips > 0
-                      ? -1
-                      : 0.3 * Math.sin(fr * 0.05),
+                    : refuse > 0.05
+                      ? -7 * refuse
+                      : hips > 0
+                        ? -1
+                        : 0.3 * Math.sin(fr * 0.05),
       bodyY: -6 * up + 5 * shock,
       bodyTurn: safeBodyTurn(lerp(0.3, -0.32, turnBack)),
-      headTurn: lerp(0.42, shout ? -0.7 : atFamily ? -0.62 : -0.44, turnBack),
+      headTurn: lerp(0.42, shout ? -0.7 : atFamily ? -0.62 : lerp(-0.44, -0.12, refuse), turnBack),
       headNod: stare ? 9 : reachBowl > 0 ? 5 : shock > 0.4 ? -10 * shock : jerk > 0 ? -6 * jerk : inP11 ? 2 : 0,
       hunch: 0.88 * shock,
-      headTilt: shock > 0.3 ? -5 * shock : inP11 ? -3 : 0,
+      headTilt: shock > 0.3 ? -5 * shock : inP11 ? -3 : -4 * refuse,
       eyeX: inP11 ? 0.12 * Math.sin((fr - p11.from) * 0.3) : shock > 0.3 ? -0.1 * shock : 0,
       lid: shock > 0.2 ? 0 : Math.max(blink, turnBack < 0.5 ? 0.66 : 0),
       eyeY: shock > 0.2 ? -0.16 : stare ? 0.55 : reachBowl > 0 ? 0.4 : inB ? 0.04 : 0.12,
@@ -392,13 +407,14 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
       throwUp: shout ? -0.85 : fling > 0.2 ? 0.7 * fling : 0,
       hips: 0.9 * hips,
       scratch: 0.85 * scratch,
-      reach: reachBowl,
+      reach: reachBowl > 0 ? reachBowl : -0.92 * pointBowl,
+      reachUp: 0,
       // "বাবুর ছেলেটা…": the accusing finger jabs at the boy (toward his face, not off into the room)
       jab: point ? -(0.9 + 0.08 * Math.sin(fr * 0.42)) : 0,
-      rHand: reachBowl > 0.1 ? "open" : inB || atFamily || fling > 0.2 ? "open" : "relaxed",
-      lHand: point ? "point" : inB || atFamily || fling > 0.2 ? "open" : "relaxed",
-      rS: point ? 20 : atFamily ? 40 : lerp(16, 148, up) + wave * 0.5,
-      rE: point ? -30 : atFamily ? -40 : lerp(-32, -18, up),
+      rHand: refuse > 0.3 ? "abhaya" : reachBowl > 0.1 ? "open" : inB || atFamily || fling > 0.2 ? "open" : "relaxed",
+      lHand: point || pointBowl > 0.2 ? "point" : inB || atFamily || fling > 0.2 ? "open" : "relaxed",
+      rS: point ? 20 : atFamily ? 40 : lerp(lerp(16, 148, up) + wave * 0.5, 38, refuse),
+      rE: point ? -30 : atFamily ? -40 : lerp(lerp(-32, -18, up), 105, refuse),
       lS: lerp(14, 142, up) - wave * 0.5,
       lE: lerp(-28, -20, up),
     });
@@ -416,6 +432,8 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
   let pose: SeatedPose = "sitCross";
   let prevPose: SeatedPose | undefined;
   let poseStart = 0;
+  // the fopra offered (Pass 2): kneelReach to the bowl, held out in both hands, set back in its place
+  const OFFER = { reach: B.khan - 14, up: B.khan + 14, down: B.khan + 50, sit: B.khan + 50 + KNEEL_REACH_T.grip + 2 } as const;
   let pointAt: { x: number; y: number } | undefined;
   let handTargets: SeatedChildProps["handTargets"];
   let kneel = 0;
@@ -423,43 +441,114 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
   let face: SeatedChildProps["face"] = { lookX: 0.36, smile: 0.7 };
   let headShake: number | undefined;
 
-  if (f < B.confess2 + 6) {
+  let holding: HeldObject | undefined;
+  let reachFor: HeldObject | undefined;
+  let reachAt: { x: number; y: number } | undefined;
+  let prevPoseStart: number | undefined;
+  let blinkAtF: number | undefined;
+  let watchHeld: number | undefined;
+  let prevReachAt: { x: number; y: number } | undefined;
+  let prevHolding: HeldObject | undefined;
+
+  if (f < B.thakur) {
     expr = "joyful";
     face = { lookX: 0.38, smile: 0.78 };
-  } else if (f < p10.from - 8) {
-    // points casually at the empty bowl with the lonely fopra
+  } else if (f < B.mukh + 4) {
+    // "আপনার ঠাকুর": a small open hand up toward the brass Gobinda on the khat
     pose = "pointIn";
     prevPose = "sitCross";
-    poseStart = B.confess2 + 6;
-    pointAt = { x: 86, y: -40 };
+    poseStart = B.thakur;
+    pointAt = { x: 200, y: -280 };
     expr = "joyful";
-    face = { lookX: 0.4, smile: 0.8 };
+    face = { lookX: 0.46, smile: 0.78 };
+  } else if (f < B.confess2) {
+    // "তো মুখ দিয়ে খায় না—": hand back to the lap, a small wise head shake
+    pose = "sitCross";
+    prevPose = "pointIn";
+    poseStart = B.mukh + 4;
+    expr = "playful";
+    face = { lookX: 0.4, smile: 0.72 };
+    headShake = B.mukh + 8;
+  } else if (f < B.fopra) {
+    // "তাই আমি নারকেলের জলটা খেয়ে": his own palm to his chest ("আমি")
+    pose = "handsTo";
+    prevPose = "sitCross";
+    poseStart = B.confess2;
+    handTargets = { near: { x: 20, y: -122 } };
+    expr = "joyful";
+    face = { lookX: 0.4, smile: 0.82 };
+  } else if (f < p10.from - 4) {
+    // "ফোপড়াটা ওর জন্য রেখে দিয়েছি!": points casually at the empty bowl with the lonely fopra
+    pose = "pointIn";
+    prevPose = "handsTo";
+    poseStart = B.fopra;
+    pointAt = { x: 96, y: -40 };
+    expr = "joyful";
+    face = { lookX: 0.4, eyesDown: f < B.fopra + 24 ? 0.5 : 0, smile: 0.84 };
   } else if (f < B.chechacchen + 6) {
     pose = "sitCross";
     prevPose = "pointIn";
-    poseStart = p10.from - 8;
+    poseStart = p10.from - 4;
     expr = f >= s6b.from ? "surprised" : "joyful";
     face = { lookX: 0.44, smile: f >= s6b.from ? 0.4 : 0.72 };
-  } else if (f < B.khan - 4) {
-    // "ও ঠাকুরমশায়, আপনি চেঁচাচ্ছেন কেন?": a calming palm
+    if (f >= s6b.from) blinkAtF = s6b.from + 3; // the "অ্যাঁ?!" makes him blink
+  } else if (f < OFFER.reach) {
+    // "ও ঠাকুরমশায়, আপনি চেঁচাচ্ছেন কেন?": a calming open palm
     pose = "palmRaise";
     prevPose = "sitCross";
     poseStart = B.chechacchen + 6;
     expr = "compassionate";
     face = { lookX: 0.44, smile: 0.55 };
-  } else if (f < B.putul + 6) {
-    // "ফোপড়াটা আপনিই খান…": leans forward earnestly, offering the fopra in the bowl
-    pose = "pointIn";
+  } else if (f < OFFER.up) {
+    // "ফোপড়াটা আপনিই খান…": up on his knees, both hands to the stone bowl
+    pose = "kneelReach";
     prevPose = "palmRaise";
-    poseStart = B.khan - 4;
-    pointAt = { x: 90, y: -46 };
-    kneel = 0.9 * ramp(f, B.khan - 4, B.khan + 12) * (1 - ramp(f, B.putul - 12, B.putul + 6));
+    prevPoseStart = B.chechacchen + 6;
+    poseStart = OFFER.reach;
+    reachAt = BOWL_REACH;
+    if (f >= OFFER.reach + KNEEL_REACH_T.grip) holding = "stoneBowl";
+    else reachFor = "stoneBowl";
     expr = "playful";
-    face = { lookX: 0.42, smile: 0.7 };
-  } else if (f < shrugAt) {
+    face = { lookX: 0.44, smile: 0.7 };
+  } else if (f < OFFER.down) {
+    // offers it to the priest in both hands, the whole fopra in it; "কাউকে বলব না!" with a little conspiratorial smile
+    pose = "offerUp";
+    prevPose = "kneelReach";
+    prevPoseStart = OFFER.reach;
+    poseStart = OFFER.up;
+    holding = "stoneBowl";
+    reachAt = { x: 98, y: -112 };
+    prevReachAt = BOWL_REACH;
+    prevHolding = "stoneBowl";
+    watchHeld = 0;
+    expr = "playful";
+    face = { lookX: 0.46, smile: 0.8 };
+  } else if (f < OFFER.sit) {
+    // sets it back exactly where it stood
+    pose = "kneelReach";
+    prevPose = "offerUp";
+    prevPoseStart = OFFER.up;
+    poseStart = OFFER.down;
+    reachAt = BOWL_REACH;
+    prevReachAt = { x: 98, y: -112 };
+    prevHolding = "stoneBowl";
+    if (f < OFFER.down + KNEEL_REACH_T.grip) holding = "stoneBowl";
+    expr = "playful";
+  } else if (f < B.putul + 26) {
+    // sits back down cross-legged
     pose = "sitCross";
-    prevPose = "pointIn";
-    poseStart = B.putul + 6;
+    prevPose = "kneelReach";
+    prevPoseStart = OFFER.down;
+    poseStart = OFFER.sit;
+    prevReachAt = BOWL_REACH;
+    expr = "thoughtful";
+    face = { lookX: 0.36, smile: 0.56 };
+  } else if (f < shrugAt) {
+    // "…খাওয়াতে মুখে": a fingertip to his own mouth (the memory of the doll), then the cutaway
+    pose = f < cutawayStart + 4 ? "handsTo" : "sitCross";
+    prevPose = f < cutawayStart + 4 ? "sitCross" : "handsTo";
+    poseStart = f < cutawayStart + 4 ? B.putul + 26 : cutawayStart + 4;
+    if (f < cutawayStart + 4) handTargets = { near: { x: 24, y: -146 } };
     expr = "thoughtful";
     face = { lookX: 0.3, smile: 0.5 };
   } else if (f < familyIn) {
@@ -471,7 +560,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     expr = "playful";
     face = { lookX: 0.4, smile: 0.72 };
   } else if (f < B.dhoop) {
-    // the family at the doorway: he turns his head to them, calm; "আমি তো ইচ্ছে করে ঢুকিনি!"
+    // the family at the doorway: he turns his head to them, calm; "আমি তো ইচ্ছে করে ঢুকিনি!" with a small head shake
     pose = "sitCross";
     prevPose = "handsTo";
     poseStart = familyIn;
@@ -513,8 +602,17 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     pose,
     prevPose,
     poseStart,
+    prevPoseStart,
     pointAt,
     kneel,
+    holding,
+    reachFor,
+    reachAt,
+    heldFill: 0,
+    watchHeld,
+    blinkAt: blinkAtF,
+    prevReachAt,
+    prevHolding,
     handTargets,
     handShapes: handTargets ? { near: "open", far: "open" } : undefined,
     handTurns: handTargets ? { near: 0.2, far: -0.2 } : undefined,
@@ -523,8 +621,10 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
     headShake,
     mouth: balakRms,
     talk: balakRms > 0.08 ? 1 : 0,
+    ...EP04_BALAK_LOOK,
   };
   const glowAnchor = seatedChildHands(balakProps).glowAnchor;
+  const bowlInHands = holding === "stoneBowl";
 
   /* ---------------- Family rushing to the doorway (on the veranda, in front of the arch) ---------------- */
   const showFamily = f >= familyIn - 2;
@@ -548,10 +648,16 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
 
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} rimDir={-1} sunColor="#ffcf82" bounceColor="#8c9ab8" />
+        {/* BAL-26f: Balak's own fine ink line (no thick whole-body outline from the shared char-ink filter) */}
+        <Ep04BalakInkDefs zoom={cam.zoom} rim={0.5} f={f} />
 
         {/* the empty stone bowl with the whole fopra, exactly where he set it back in Scene 05 */}
-        <ContactShadow x={BOWL_FLOOR.x} y={SHRINE.floorY} rx={36 * (BOWL_FLOOR_S / 0.94)} ry={8.5} opacity={0.32} sunDir={-1} />
-        <HeldObjectArt kind="stoneBowl" x={BOWL_FLOOR.x} y={BOWL_FLOOR.y} s={BOWL_FLOOR_S} fill={0} />
+        {!bowlInHands && <ContactShadow x={BOWL_FLOOR.x} y={SHRINE.floorY} rx={36 * (BOWL_FLOOR_S / 0.94)} ry={8.5} opacity={0.32} sunDir={-1} />}
+        {!bowlInHands && <HeldObjectArt kind="stoneBowl" x={BOWL_FLOOR.x} y={BOWL_FLOOR.y} s={BOWL_FLOOR_S} fill={0} />}
+
+        {/* the two marigolds the priest offered in Scene 05, lying before the khat */}
+        <OfferedFlower f={99} start={0} from={OFFERED_FLOWERS[0]} to={OFFERED_FLOWERS[0]} />
+        <OfferedFlower f={99} start={0} from={OFFERED_FLOWERS[1]} to={OFFERED_FLOWERS[1]} />
 
         {/* the dhoop-dani where he set it down beside the priest, still smoking */}
         <ContactShadow x={DHOOP_SET.x} y={DHOOP_SET.y + HELD_OBJECT_BOTTOM.incense * SHRINE.balakS} rx={17} ry={4.5} opacity={0.34} sunDir={-1} />
@@ -586,12 +692,15 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
             talk={(fr) => clamp(priestRms(fr) * 1.2, 0, 1)}
             acting={priestActing}
             reachAt={() => ({ x: BOWL_FLOOR.x + 70, y: BOWL_FLOOR.y - 40 })}
-            pointAt={() => ({ x: SHRINE.seatX + 10, y: SHRINE.floorY - 150 * SHRINE.balakS })}
+            pointAt={(fr) =>
+              // "বাবুর ছেলেটা…" at the boy; "এঁটো ফোপড়াটা…" down at the bowl with the lonely fopra
+              fr < B.ento ? { x: SHRINE.seatX + 10, y: SHRINE.floorY - 150 * SHRINE.balakS } : { x: BOWL_FLOOR.x + 6, y: BOWL_FLOOR.y - 14 }
+            }
           />
         </g>
 
         {/* Balak before the khat; steady soft light, no glow beat in this scene (BAL-05) */}
-        <GhibliBalakGroundGlow x={SHRINE.seatX} y={SHRINE.floorY + 5} rx={120 * (SHRINE.balakS / 0.94)} ry={22 * (SHRINE.balakS / 0.94)} level={0.42} />
+        <Ep04BalakGroundGlow x={SHRINE.seatX} y={SHRINE.floorY + 5} rx={120 * (SHRINE.balakS / 0.94)} ry={22 * (SHRINE.balakS / 0.94)} level={0.42} />
         <g
           transform={balakLivingBodyTransform({
             x: SHRINE.seatX,
@@ -603,10 +712,10 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
           })}
         >
           {/* the steady resting halo behind his head (BAL-06/11), same restrained level as Scene 05 inside */}
-          <GhibliBalakAura cx={glowAnchor.cx} cy={glowAnchor.cy} r={glowAnchor.r * 0.5} glow={0.5} f={f} />
-          <g filter="url(#ghibli-char-ink)">
+          <Ep04BalakDivine cx={glowAnchor.cx} cy={glowAnchor.cy} r={glowAnchor.r * 0.5} glow={0.5} f={f} />
+          <g filter="url(#ep04-balak-ink)">
             <ContactShadow x={SHRINE.seatX} y={SHRINE.floorY} rx={52 * (SHRINE.balakS / 0.94)} ry={10 * (SHRINE.balakS / 0.94)} opacity={0.34} sunDir={-1} />
-            <SeatedChild {...balakProps} />
+            <SeatedChild {...balakProps} inkZoom={cam.zoom} />
             {kneel < 0.35 && <GhibliBalakLapDetails x={SHRINE.seatX} y={SHRINE.floorY} s={SHRINE.balakS} f={f} />}
           </g>
         </g>
@@ -643,7 +752,7 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
                   smile: hide ? 0.55 : lerp(0.3, 0.92, fond),
                   cheeks: lerp(0.12, 0.5, fond),
                   lid: chuckle * 0.5,
-                  mouthHand: hide ? 0.6 * ramp(fr, s6d.from + 30, s6d.from + 44) * (1 - ramp(fr, B.jigges + 20, B.jigges + 40)) : 0,
+                  mouthHand: hide ? -0.6 * ramp(fr, s6d.from + 30, s6d.from + 44) * (1 - ramp(fr, B.jigges + 20, B.jigges + 40)) : 0,
                   rS: 14,
                   rE: -24,
                   lS: 12,
@@ -663,21 +772,28 @@ export const Scene06PriestUproarGhibli: React.FC = () => {
               lifeF={f}
               light={EP04G_SHRINE_LIGHT}
               mouth={(fr) => mouthFromRms(jyethiRms(fr), fr)}
+              // a raised finger toward the boy, high enough to read above Charu's shoulder
+              pointAt={() => ({ x: SHRINE.seatX - 40, y: SHRINE.floorY - 430 })}
               talk={(fr) => clamp(jyethiRms(fr) * 1.2, 0, 1)}
               acting={(fr) => {
                 const speaking = fr >= s6d.from && fr < s6d.to;
                 const fond = fondAt(fr);
-                const wag = speaking ? Math.sin(fr * 0.62) * 9 : 0;
+                // the finger wags on the stressed words (louder = bigger), the head nods with them
+                const rms = jyethiRms(fr);
+                const wag = speaking ? Math.sin(fr * 0.62) * (5 + 9 * rms) : 0;
                 return poseOf({
                   stride: jyethiStrideFn(fr),
-                  lean: speaking ? 1.2 : 0.2,
+                  lean: speaking ? 1.2 + 1.5 * rms : 0.2,
                   bodyTurn: safeBodyTurn(0.32),
                   headTurn: 0.42,
+                  headNod: speaking ? 3 * rms * Math.sin(fr * 0.31) : 0,
                   brow: speaking ? -0.3 : lerp(-0.1, 0.18, fond),
                   smile: speaking ? -0.1 : lerp(0.15, 0.55, fond),
-                  rS: speaking ? 58 + wag : 16,
-                  rE: speaking ? -48 + wag * 0.5 : -24,
-                  rHand: speaking ? "point" : "relaxed",
+                  // the near (left) hand's index finger jabs and wags at the boy (her far arm hid behind Charu)
+                  jab: speaking ? -clamp(0.8 + 0.018 * wag, 0, 1) * ramp(fr, s6d.from - 2, s6d.from + 8) : 0,
+                  lHand: speaking ? "point" : "relaxed",
+                  rS: 14,
+                  rE: -22,
                 });
               }}
             />

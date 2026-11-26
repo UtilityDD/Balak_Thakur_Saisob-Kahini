@@ -17,6 +17,6 @@ trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM
 cmd="$1"; shift
 # a hung render must not block the queue: stills get 4 minutes, clips 12 minutes
 limit=240; [ "$cmd" = "render" ] && limit=720
-NODE_OPTIONS=--max-old-space-size=6144 timeout "$limit" node node_modules/@remotion/cli/remotion-cli.js "$cmd" src/index.ts "$@"
+NODE_OPTIONS=--max-old-space-size=6144 timeout "$limit" node node_modules/@remotion/cli/remotion-cli.js "$cmd" src/index.ts --gl=angle "$@"   # REN-GPU-01
 rc=$?; [ $rc -eq 124 ] && echo "render_locked: render timed out after ${limit}s (retry it)" >&2
 exit $rc

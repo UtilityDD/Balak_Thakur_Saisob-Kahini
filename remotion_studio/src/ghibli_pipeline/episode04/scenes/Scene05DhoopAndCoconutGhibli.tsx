@@ -2,7 +2,7 @@ import React from "react";
 import { staticFile, useCurrentFrame } from "remotion";
 import { clamp, EASE, lerp } from "../../../cinematic/core/anim";
 import { Cam } from "../../../cinematic/core/Stage";
-import { Puppet, type PropRenderer } from "../../../cinematic/rig/Puppet";
+import { Puppet, type PropRenderer, type PuppetAnchors } from "../../../cinematic/rig/Puppet";
 import {
   DRINK_BOWL_AT,
   DRINK_BOWL_T,
@@ -19,7 +19,8 @@ import {
 } from "../../../episode03/rig/SeatedChild";
 import { ContactShadow, GhibliCharFilterDefs, GhibliCutout, GhibliLayer, GhibliPreload, GhibliStage } from "../../GhibliStage";
 import { balakLivingBodyTransform, GhibliBalakLapDetails } from "../../core/ghibliBalak";
-import { GhibliBalakAura, GhibliBalakGroundGlow } from "../../core/GhibliBalakAura";
+import { Ep04BalakDivine, Ep04BalakGroundGlow, Ep04BalakInkDefs } from "../Ep04BalakDivine";
+import { EP04_BALAK_LOOK } from "../ep04BalakLook";
 import { ghibliStrideOf, ghibliWalkSpot, safeBodyTurn, zoomProportionalDof } from "../../core/ghibliMotion";
 import { GHIBLI_ANCHORS } from "../plateAnchors";
 import { ep04gSpan, ep04gSpeakRms } from "../timing";
@@ -80,9 +81,14 @@ export const VERANDA_OUT = { x: 428, y: 1128, s: 0.86 } as const;
 /** kneelReach target for the dhoop-dani on the floor (figure units). */
 /** (y +30 units: set down on the floor just in front of the khat's stepped base, not on its step) */
 export const DHOOP_REACH = { x: 92, y: -HELD_OBJECT_BOTTOM.incense + 30 } as const;
+/**
+ * Where the set-down dhoop-dani rests (world): exactly where the rig's hands put the held cup (measured on the hand-off
+ * frames: the kneeling hands stop a little short of `reachAt`, so the cup is drawn about 11 px left of and 15 px above
+ * reachAt). Pass 2: before, the cup jumped ~25 screen px down and right at the hand-off.
+ */
 export const DHOOP_SET = {
-  x: SHRINE.setX + DHOOP_REACH.x * SHRINE.balakS,
-  y: SHRINE.floorY + DHOOP_REACH.y * SHRINE.balakS,
+  x: SHRINE.setX + DHOOP_REACH.x * SHRINE.balakS - 11.5,
+  y: SHRINE.floorY + DHOOP_REACH.y * SHRINE.balakS - 14.8,
 } as const;
 /** drinkBowl reach target (figure units): a little further out than the rig default so his crossed knee never
  * hides the brimming bowl in the insert. */
@@ -97,6 +103,12 @@ export const BOWL_AT = {
 export const BOWL_FLOOR_S = SHRINE.balakS;
 /** One bowl, one place, one size: exactly where the drinkBowl pose picks it up and sets it back (no jumps). */
 export const BOWL_FLOOR = { x: BOWL_AT.x, y: BOWL_AT.y } as const;
+
+/** Where the priest's two offered marigolds land, on the floor before the khat (Scene 05 tosses them; Scene 06 keeps them). */
+export const OFFERED_FLOWERS = [
+  { x: 1090, y: SHRINE.floorY - 3 },
+  { x: 1118, y: SHRINE.floorY + 2 },
+] as const;
 
 /* Doorway arch (the shared plate), drawn here so its curtain never hides the priest. */
 const ARCH_H = 1150;
@@ -187,13 +199,13 @@ export const VerandaExterior: React.FC<{ id: string; f: number }> = ({ id, f }) 
           <stop offset="1" stopColor="#3a2a22" stopOpacity={0.32} />
         </linearGradient>
         <linearGradient id={`${id}-floor`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#7a4636" />
-          <stop offset="0.5" stopColor="#5e3529" />
-          <stop offset="1" stopColor="#3f251e" />
+          <stop offset="0" stopColor="#8e5440" />
+          <stop offset="0.5" stopColor="#744233" />
+          <stop offset="1" stopColor="#5a3428" />
         </linearGradient>
         <radialGradient id={`${id}-spill`} cx="50%" cy="0%" r="100%">
-          <stop offset="0" stopColor="#ffc27a" stopOpacity={0.55} />
-          <stop offset="0.6" stopColor="#ffae5c" stopOpacity={0.18} />
+          <stop offset="0" stopColor="#ffc27a" stopOpacity={0.68} />
+          <stop offset="0.6" stopColor="#ffae5c" stopOpacity={0.24} />
           <stop offset="1" stopColor="#ffae5c" stopOpacity={0} />
         </radialGradient>
         <radialGradient id={`${id}-wallspill`} cx="50%" cy="50%" r="50%">
@@ -210,8 +222,8 @@ export const VerandaExterior: React.FC<{ id: string; f: number }> = ({ id, f }) 
           r={1500}
         >
           <stop offset="0" stopColor="#ffffff" stopOpacity={0} />
-          <stop offset="0.35" stopColor="#c4cde4" stopOpacity={0.55} />
-          <stop offset="1" stopColor="#7e8db8" stopOpacity={0.85} />
+          <stop offset="0.4" stopColor="#d4dbeb" stopOpacity={0.4} />
+          <stop offset="1" stopColor="#97a3c6" stopOpacity={0.62} />
         </radialGradient>
         <linearGradient id={`${id}-beam`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#dfe9ff" stopOpacity={0.4} />
@@ -252,7 +264,7 @@ export const VerandaExterior: React.FC<{ id: string; f: number }> = ({ id, f }) 
           <path d="M 1520 300 q -16 36 2 70 q 14 28 -6 58" />
         </g>
         {/* lamplight from the doorway warming the wall beside it (fades to nothing at its edge) */}
-        <ellipse cx={ARCH_DX + 683 * ARCH_K} cy={ARCH_DY + 1000 * ARCH_K} rx={760} ry={520} fill={`url(#${id}-wallspill)`} opacity={0.6 * flick} style={{ mixBlendMode: "screen" }} />
+        <ellipse cx={ARCH_DX + 683 * ARCH_K} cy={ARCH_DY + 1000 * ARCH_K} rx={760} ry={520} fill={`url(#${id}-wallspill)`} opacity={0.78 * flick} style={{ mixBlendMode: "screen" }} />
       </g>
       {/* the veranda floor in front of the wall */}
       <rect x={-2400} y={ARCH_DY + (SILL_PY - 6) * ARCH_K} width={6400} height={1600} fill={`url(#${id}-floor)`} />
@@ -292,8 +304,9 @@ export const VerandaExterior: React.FC<{ id: string; f: number }> = ({ id, f }) 
 
 /**
  * What makes the veranda read as a veranda (Scene 05 doorway shots): the underside of the veranda roof (a dark beam
- * with rafter ends) across the top of the wide, and the nearest veranda pillar in soft focus at the left edge, cool
- * and moonlit on its courtyard side.
+ * with rafter ends) across the top of the wide, and the nearest veranda pillar in soft focus at the left edge: a
+ * lime-plastered pillar with a moulded capital and plinth, cool and moonlit on its courtyard side, warmed on the side
+ * that faces the lamplit doorway (Pass 2: it read as a dark unexplained post).
  */
 export const VerandaForeground: React.FC<{ id: string }> = ({ id }) => (
   <>
@@ -312,15 +325,39 @@ export const VerandaForeground: React.FC<{ id: string }> = ({ id }) => (
     </GhibliLayer>
     <GhibliLayer depth={1.12} extraBlur={2.2}>
       <defs>
+        {/* lime plaster: cool moonlit edge on the courtyard side (left), warm lamplit face toward the doorway (right) */}
         <linearGradient id={`${id}-pillar`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#aab4cc" />
-          <stop offset="0.28" stopColor="#8b8f9c" />
-          <stop offset="1" stopColor="#3e3a3c" />
+          <stop offset="0" stopColor="#9aa6c2" />
+          <stop offset="0.16" stopColor="#c9c6c4" />
+          <stop offset="0.5" stopColor="#d6c6aa" />
+          <stop offset="0.82" stopColor="#e9c48c" />
+          <stop offset="1" stopColor="#c99a62" />
+        </linearGradient>
+        <linearGradient id={`${id}-pillarV`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2a1d16" stopOpacity={0.45} />
+          <stop offset="0.3" stopColor="#2a1d16" stopOpacity={0} />
+          <stop offset="0.85" stopColor="#2a1d16" stopOpacity={0} />
+          <stop offset="1" stopColor="#2a1d16" stopOpacity={0.3} />
         </linearGradient>
       </defs>
-      <rect x={40} y={-1400} width={150} height={2900} fill={`url(#${id}-pillar)`} />
-      <rect x={14} y={1190} width={202} height={350} fill={`url(#${id}-pillar)`} />
-      <rect x={14} y={1190} width={202} height={8} fill="#cfd8ea" opacity={0.6} />
+      <g>
+        {/* shaft */}
+        <rect x={56} y={-1400} width={124} height={2620} fill={`url(#${id}-pillar)`} />
+        <rect x={56} y={-1400} width={124} height={2620} fill={`url(#${id}-pillarV)`} />
+        {/* moulded capital under the veranda beam */}
+        <rect x={36} y={548} width={164} height={22} rx={4} fill={`url(#${id}-pillar)`} />
+        <rect x={44} y={570} width={148} height={12} rx={3} fill={`url(#${id}-pillar)`} />
+        <rect x={36} y={568} width={164} height={3} fill="#5a4636" opacity={0.35} />
+        {/* plinth on the veranda floor */}
+        <rect x={30} y={1180} width={176} height={20} rx={3} fill={`url(#${id}-pillar)`} />
+        <rect x={20} y={1198} width={196} height={340} fill={`url(#${id}-pillar)`} />
+        <rect x={20} y={1198} width={196} height={4} fill="#5a4636" opacity={0.3} />
+        {/* a few soft sepia plaster marks */}
+        <g fill="none" stroke="#7d6a55" strokeWidth={1.6} strokeLinecap="round" opacity={0.4}>
+          <path d="M 96 760 q 8 30 -2 60 q -6 22 4 44" />
+          <path d="M 142 980 q -6 26 4 50" />
+        </g>
+      </g>
     </GhibliLayer>
   </>
 );
@@ -330,7 +367,7 @@ export const VerandaMoonOnPeople: React.FC<{ id: string }> = ({ id }) => (
   <GhibliLayer depth={1.0} blend="soft-light">
     <defs>
       <linearGradient id={`${id}-cool`} gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={ARCH_DX + 200 * ARCH_K} y2={0}>
-        <stop offset="0" stopColor="#5f74ad" stopOpacity={0.75} />
+        <stop offset="0" stopColor="#6f82b6" stopOpacity={0.5} />
         <stop offset="1" stopColor="#5f74ad" stopOpacity={0} />
       </linearGradient>
     </defs>
@@ -392,7 +429,69 @@ const FlowerProp: PropRenderer = ({ scale }) => (
     <circle cx={0} cy={0} r={4.2} fill="#e07b12" />
   </g>
 );
-export const PRIEST_PROPS: Record<string, PropRenderer> = { bell: BellProp, flower: FlowerProp };
+/** A small copper kushi (puja spoon) for pouring water, drawn in hand space (handle in the fist, bowl past the fingers). */
+const KushiProp: PropRenderer = ({ scale }) => (
+  <g transform={`scale(${(scale * 0.62).toFixed(3)})`}>
+    <rect x={-2} y={-14} width={4} height={30} rx={2} fill="#a8603a" />
+    <path d="M -9 16 Q -9 30 0 31 Q 9 30 9 16 Z" fill="#b86a3c" />
+    <ellipse cx={0} cy={16} rx={9} ry={2.6} fill="#d98c58" />
+    <path d="M -5 19 Q -5 25 -1 27" fill="none" stroke="#f2c08e" strokeWidth={1.4} strokeLinecap="round" opacity={0.8} />
+  </g>
+);
+export const PRIEST_PROPS: Record<string, PropRenderer> = { bell: BellProp, flower: FlowerProp, kushi: KushiProp };
+
+/** Piecewise eased keys for an arm (or any channel set): values hold before the first and after the last key. */
+export const keyed = (fr: number, keys: ReadonlyArray<{ f: number; v: ReadonlyArray<number> }>): number[] => {
+  if (fr <= keys[0].f) return [...keys[0].v];
+  for (let i = 1; i < keys.length; i++) {
+    if (fr <= keys[i].f) {
+      const a = keys[i - 1];
+      const b = keys[i];
+      const t = EASE.inOut(clamp((fr - a.f) / Math.max(1, b.f - a.f), 0, 1));
+      return a.v.map((x, k) => lerp(x, b.v[k], t));
+    }
+  }
+  return [...keys[keys.length - 1].v];
+};
+
+/** A thin run of water drops from the kushi's lip to the floor (lamplit), with a tiny splash ring where it lands. */
+const PourDrops: React.FC<{ f: number; x: number; y: number; floorY: number }> = ({ f, x, y, floorY }) => {
+  const h = Math.max(10, floorY - y);
+  return (
+    <g>
+      {Array.from({ length: 6 }, (_, i) => {
+        const u = ((f * 0.21 + i / 6) % 1 + 1) % 1;
+        return <ellipse key={i} cx={x + 1.5 * u} cy={y + h * u * u} rx={1.3} ry={2.4 + 2 * u} fill="#e8f2ff" opacity={0.75} />;
+      })}
+      <path d={`M ${x} ${y} Q ${x + 1} ${y + h * 0.5} ${x + 1.5} ${y + h}`} fill="none" stroke="#dfeeff" strokeWidth={1.1} opacity={0.35} />
+      <ellipse cx={x + 1.5} cy={floorY} rx={6 + 2 * Math.sin(f * 0.7)} ry={1.6} fill="none" stroke="#f4f8ff" strokeWidth={0.9} opacity={0.55} />
+    </g>
+  );
+};
+
+/** A marigold tossed in offering: flies on a small arc from the hand to the floor before the khat, then lies there. */
+export const OfferedFlower: React.FC<{ f: number; start: number; from: { x: number; y: number }; to: { x: number; y: number }; dur?: number }> = ({
+  f,
+  start,
+  from,
+  to,
+  dur = 16,
+}) => {
+  if (f < start) return null;
+  const t = clamp((f - start) / dur, 0, 1);
+  const x = lerp(from.x, to.x, t);
+  const y = lerp(from.y, to.y, t * t) - 34 * Math.sin(Math.PI * t);
+  const rot = t < 1 ? 260 * t : 30;
+  return (
+    <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${rot.toFixed(1)})`}>
+      {t >= 1 && <ellipse cx={0} cy={4} rx={7} ry={2} fill="#2a160c" opacity={0.3} />}
+      {[0, 60, 120, 180, 240, 300].map((a) => (
+        <ellipse key={a} cx={0} cy={-3.2} rx={2.4} ry={3.8} fill="#f09a1e" transform={`rotate(${a})`} />
+      ))}
+      <circle cx={0} cy={0} r={2.7} fill="#e07b12" />
+    </g>
+  );
+};
 
 /**
  * Bhagabati Thakur with his white mustache readable (the face table gives him a thin brow-coloured one that vanished
@@ -435,21 +534,25 @@ const PRELOAD = [
 const DHOOP_V = { x: VERANDA_OUT.x + 88 * VERANDA_OUT.s, y: VERANDA_OUT.y - HELD_OBJECT_BOTTOM.incense * VERANDA_OUT.s };
 
 /** Scene 05 story beats (local frames; line windows from timing.ts: 05a 60-339, 05b 351-454, P9 454-478, 05c 478-550,
- * 05d 558-614, 05e 638-728, 05f 736-809, AG7 821-941). */
+ * 05d 558-614, 05e 638-728, 05f 736-809, AG7 821-941). Pass 2 (gestures): folded hands to ask, the pick-up in the
+ * doorway shot on "হুঁ হুঁ, দে—" and the cut on the lift, two-hand carry, folded hands again for 05e. */
 export const S05 = {
   thkSettle: 26, // Thakurma's dhoop-dani touches the veranda floor
   thkLetGo: 32,
   thkRiseEnd: 58,
-  thkWalkFrom: 64,
+  thkStay: 46, // rising, she holds a gentle palm out over him: "stay here" (to 76)
+  thkWalkFrom: 74,
   thkWalkTo: 248,
   glanceSill: 140, // "ঠাকুরঘরে ঢোকা বারণ—": he looks down at the threshold
   sigh: 156,
-  reach: 474, // kneelReach to the dhoop-dani's handle (grip at +26)
-  lift: 560, // "হুঁ হুঁ, দে—": lifts it
-  walkFrom: 564,
-  walkTo: 614,
-  set: 606, // kneelReach set-down beside the priest; contact / release at set + 26
-  point: 648, // "...ঘরে বসব?": points to the floor
+  fold: 470, // rises onto his knees and folds his hands to ask ("ঠাকুরমশায়, আমি ধূপ দেব?" 478-550)
+  reach: 558, // "হুঁ হুঁ, দে—": both hands to the dhoop-dani (kneelReach, grip at +26)
+  lift: 586, // lifts it in both hands and carries it in, carefully ("তাড়াতাড়ি দে।")
+  walkFrom: 590,
+  walkTo: 626,
+  set: 618, // kneelReach set-down beside the priest; contact / release at set + 26 (644)
+  fold2: 646, // "ঠাকুরমশায়, …" (05e 638-728): folded hands again, up on his knees
+  point: 684, // "...ঘরে বসব?": a small open hand to the floor
   backFrom: 754, // "হুঁ হুঁ, বোস…": shuffles back to the seat before the khat
   backTo: 790,
   sitEnd: 804,
@@ -459,7 +562,10 @@ export const S05 = {
   wipe: 921, // back of the hand across the mouth
   wipeEnd: 940,
 } as const;
+/** The dhoop-dani touches the floor beside the priest (sound cue: brass tap). */
 export const S05_DHOOP_CONTACT = S05.set + KNEEL_REACH_T.grip;
+/** His hands let go of it (still round it until the folded hands for 05e): from here the scene draws it on the floor. */
+export const S05_DHOOP_RELEASE = S05_DHOOP_CONTACT;
 export const S05_BOWL_DOWN = S05.drink + DRINK_BOWL_T.lower;
 
 /**
@@ -518,7 +624,7 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   /* ---------------- Camera (cuts on lines, one move per sentence, faces above y = 820) ---------------- */
   const cutB = s5b.from - 6; // Shot 21: medium interior on the priest (holds through P9)
   const cutC = s5c.from - 6; // Shot 22: medium close on Balak at the doorway
-  const cutD = s5d.from - 6; // Shot 23: interior, Balak carries the dhoop-dani in
+  const cutD = S05.lift + 2; // Shot 23: interior, cut on the lift: Balak carries the dhoop-dani in
   const cutE = s5e.from - 6; // Shot 24a: medium on Balak (05e), up on his knees beside the priest, pointing to the floor
   const cutF = s5f.from - 4; // Shot 24b: two-shot (05f), the priest waves him in; he shuffles back and sits before the khat
   const gobFrom = p9.from - 4; // P9 insert: Gobinda on the khat, no dhoop burning before Him (nobody comes)
@@ -584,28 +690,37 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   const thkSpot = thkSpotFn(f);
   const thkStrideFn = ghibliStrideOf(thkSpotFn, EP04G_CAST.thakurma);
   // the dhoop-dani in her hand settles onto the floor over the first frames (her hand on its handle)
-  const dhoopVY = DHOOP_V.y - 22 * (1 - EASE.out(clamp((f - 8) / (S05.thkSettle - 8), 0, 1)));
+  const dhoopVYAt = (fr: number) => DHOOP_V.y - 22 * (1 - EASE.out(clamp((fr - 8) / (S05.thkSettle - 8), 0, 1)));
+  const dhoopVY = dhoopVYAt(f);
   const thakurmaActing = (fr: number) => {
     const down = 1 - ramp(fr, S05.thkLetGo, S05.thkRiseEnd);
     const hold = 1 - ramp(fr, S05.thkLetGo - 2, S05.thkLetGo + 8);
+    // "stay here, don't go in": as she straightens she looks down at him with a smile, a small nod, and holds a
+    // gentle palm out over his head (palm down), then turns away to walk off
+    const stay = ramp(fr, S05.thkStay, S05.thkStay + 10) * (1 - ramp(fr, S05.thkStay + 24, S05.thkStay + 34));
+    const nod = 5 * Math.sin(clamp((fr - (S05.thkStay + 8)) / 14, 0, 1) * Math.PI);
     return poseOf({
       kneel: down,
-      lean: 14 * down,
+      lean: 14 * down + 4 * stay,
       bow: 0.42 * down,
       bodyTurn: safeBodyTurn(-0.32),
       headTurn: lerp(-0.3, -0.42, 1 - down),
-      headNod: 10 * down,
-      eyeY: 0.4 * down,
+      headNod: 10 * down + 6 * stay + nod,
+      eyeY: 0.4 * down + 0.45 * stay,
       stride: thkStrideFn(fr),
-      smile: 0.45,
-      reach: hold,
-      rHand: "hold",
+      smile: 0.45 + 0.25 * stay,
+      reach: Math.max(hold, 0.85 * stay),
+      reachUp: 0,
+      rHand: stay > 0.3 ? "open" : "hold",
       rS: lerp(-14, 30, down),
       rE: lerp(-24, -20, down),
       lS: 10,
       lE: -18,
     });
   };
+  /** Her right hand: on the dhoop-dani's handle, then held out over Balak's head ("stay"). */
+  const thkReachAt = (fr: number) =>
+    fr < S05.thkLetGo + 8 ? { x: DHOOP_V.x + 2, y: dhoopVYAt(fr) - 9 } : { x: VERANDA_OUT.x + 40, y: VERANDA_OUT.y - 205 * VERANDA_OUT.s };
   const thkVisible = f < S05.thkWalkTo + 4 && f < cutB;
 
   /* ---------------- Priest (Bhagabati Thakur) ---------------- */
@@ -615,6 +730,89 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   const priestTalk = (fr: number) => clamp(priestRms(fr) * 1.2, 0, 1);
   const turnAway = (fr: number) => ramp(fr, cutInsert - 4, cutInsert + 12); // AG7: his back half-turned to Balak
   const ringAt = ag7.from + 18; // the bell (Episode04Ghibli plays temple_bell_drop here)
+  /**
+   * Busy puja hands (Pass 2). The near (right) hand works through the evening abhishek while the narrator speaks and
+   * between his lines: the bell (rung on the two AG6 bell sounds, s05Open + 14 and + 36), a marigold raised to the
+   * forehead and tossed to the khat, water poured from the copper kushi, a fresh flower. During Balak's asking he keeps
+   * offering the flower in small circles; on "এতে গন্ধে পুষ্পে…" the flower goes to his forehead and is tossed. Keys:
+   * [rS, rE] of the near arm (bodyTurn about -0.25: negative rS is forward, toward the khat).
+   */
+  const R_REST = [-46, -68];
+  const R_LAP = [-16, -42];
+  const R_BELL = [-60, -76];
+  const R_HEAD = [-100, -128];
+  const R_TOSS = [-86, -24];
+  const R_POUR = [-54, -34];
+  const PJ = {
+    bellDown: 50, // the bell goes down by his knee
+    flower1: 62, // picks a marigold
+    head1: 92, // to the forehead
+    toss1: 116, // offered: released at the top of the throw
+    flower2: 146, // a fresh flower, held through his call for dhoop and "হুঁ হুঁ, দে—"
+    flowerDown: 604, // "তাড়াতাড়ি দে।": the flower down, the kushi up
+    kushi: 612,
+    pourFrom: 626, // pouring water while Balak asks to sit (05e)
+    pourTo: 722,
+    kushiDown: 732,
+    flower3: 740,
+    head2: s5f.from + 40, // "এতে গন্ধে পুষ্পে…": to the forehead
+    toss2: s5f.from + 62, // and tossed
+  } as const;
+  const pujaKeys = [
+    { f: 0, v: R_BELL },
+    { f: 42, v: R_BELL },
+    { f: PJ.bellDown, v: R_LAP },
+    { f: PJ.flower1 + 4, v: R_LAP },
+    { f: PJ.flower1 + 16, v: R_REST },
+    { f: PJ.head1, v: R_HEAD },
+    { f: PJ.head1 + 12, v: R_HEAD },
+    { f: PJ.toss1, v: R_TOSS },
+    { f: PJ.toss1 + 10, v: R_TOSS },
+    { f: PJ.flower2 - 4, v: R_LAP },
+    { f: PJ.flower2 + 4, v: R_LAP },
+    { f: PJ.flower2 + 20, v: R_REST },
+  ] as const;
+  const offerKeys = [
+    { f: PJ.flowerDown - 10, v: R_REST },
+    { f: PJ.flowerDown, v: R_LAP },
+    { f: PJ.kushi + 2, v: R_LAP },
+    { f: PJ.pourFrom, v: R_POUR },
+    { f: PJ.pourTo, v: R_POUR },
+    { f: PJ.kushiDown, v: R_LAP },
+    { f: PJ.flower3 + 2, v: R_LAP },
+    { f: PJ.flower3 + 16, v: R_REST },
+    { f: PJ.head2 - 12, v: R_REST },
+    { f: PJ.head2, v: R_HEAD },
+    { f: PJ.head2 + 8, v: R_HEAD },
+    { f: PJ.toss2, v: R_TOSS },
+    { f: PJ.toss2 + 10, v: R_TOSS },
+    { f: PJ.toss2 + 22, v: R_REST },
+  ] as const;
+  const rPropAt = (fr: number): string => {
+    if (fr < PJ.bellDown + 3) return "bell";
+    if (fr < PJ.flower1) return "";
+    if (fr < PJ.toss1) return "flower";
+    if (fr < PJ.flower2) return "";
+    if (fr < PJ.flowerDown) return "flower";
+    if (fr < PJ.kushi) return "";
+    if (fr < PJ.kushiDown) return "kushi";
+    if (fr < PJ.flower3) return "";
+    if (fr < PJ.toss2) return "flower";
+    return "";
+  };
+  const pujaR = (fr: number): { rS: number; rE: number } => {
+    const k = fr < s5b.from - 4 ? keyed(fr, pujaKeys) : fr < PJ.flowerDown - 10 ? R_REST : keyed(fr, offerKeys);
+    let rS = k[0];
+    let rE = k[1];
+    // the bell rung on the AG6 bell sounds; small tips of the kushi while the water runs
+    const ringR = bellShake(fr, 14, 18, 7) + bellShake(fr, 36, 16, 6);
+    rS += ringR;
+    rE += 1.6 * ringR;
+    if (fr >= PJ.pourFrom && fr < PJ.pourTo) rE += 5 * Math.sin((fr - PJ.pourFrom) * 0.16) * ramp(fr, PJ.pourFrom, PJ.pourFrom + 8);
+    return { rS, rE };
+  };
+  /** Pouring: water runs from the kushi while it is tipped (drops drawn from the live wrist). */
+  const pouring = (fr: number) => fr >= PJ.pourFrom + 6 && fr < PJ.pourTo - 4;
   const priestActing = (fr: number) => {
     const in5b = fr >= s5b.from - 4 && fr < s5b.to;
     const inP9 = fr >= p9.from && fr < p9.to + 4;
@@ -622,45 +820,66 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     const lookDoor = (in5b && fr >= s5b.from + 18) || inP9; // "আরে, ধূপ কই? কেউ কি নেই নাকি?" / P9
     const wave1 = fr >= s5d.from - 2 && fr < s5d.to + 6;
     const wave2 = fr >= s5f.from - 2 && fr < s5f.from + 34;
-    const chant = fr >= s5f.from + 34 && fr < cutInsert;
     const away = turnAway(fr);
     const ring = bellShake(fr, ringAt, 18, 8) + bellShake(fr, ringAt + 30, 16, 6);
-    const dismiss = Math.sin(fr * 0.44) * 16;
-    const offer = Math.sin(fr * 0.085);
-    const blink = Math.max(blinkAt(fr, p9.from + 9), blinkAt(fr, s5b.from + 60));
+    // the absent-minded wave of the far hand: a loose flick on each "হুঁ"
+    const dismiss = Math.sin(fr * 0.44) * 16 * (0.6 + 0.4 * priestTalk(fr));
+    const blink = Math.max(blinkAt(fr, p9.from + 9), blinkAt(fr, s5b.from + 60), blinkAt(fr, 128), blinkAt(fr, 300));
     const eyeDart = inP9 ? 0.25 * Math.sin((fr - p9.from) * 0.35) : 0;
     const breath = 0.35 * Math.sin(fr * 0.06);
-    // Upright floor sit; lean only when offering / chanting (door look is head+eyes, not a body hunch).
+    const pujaPhase = fr < s5b.from - 4;
+    const atHead = pujaPhase
+      ? ramp(fr, PJ.head1 - 10, PJ.head1) * (1 - ramp(fr, PJ.head1 + 12, PJ.toss1))
+      : ramp(fr, PJ.head2 - 10, PJ.head2) * (1 - ramp(fr, PJ.head2 + 8, PJ.toss2));
+    const tossing = pujaPhase
+      ? ramp(fr, PJ.head1 + 12, PJ.toss1) * (1 - ramp(fr, PJ.toss1 + 10, PJ.kushi - 4))
+      : ramp(fr, PJ.head2 + 8, PJ.toss2) * (1 - ramp(fr, PJ.toss2 + 10, PJ.toss2 + 22));
+    const pour = ramp(fr, PJ.pourFrom - 8, PJ.pourFrom) * (1 - ramp(fr, PJ.pourTo, PJ.kushiDown));
+    // in his lines and while listening, the flower hand keeps a slow small offering circle (busy, absorbed)
+    const circle = !pujaPhase && !lookDoor && !lookRight && (fr < PJ.flowerDown - 10 || (fr >= PJ.flower3 + 16 && fr < PJ.head2 - 12)) ? 1 : 0;
+    const R = pujaR(fr);
+    const rCircleS = circle * 6 * Math.sin(fr * 0.12);
+    const rCircleE = circle * 6 * Math.cos(fr * 0.12);
+    // "কেউ কি নেই নাকি?": the flower hand gives impatient flicks on the stressed words
+    const flick = lookDoor && in5b ? 8 * priestRms(fr) * Math.sin(fr * 0.6) : 0;
+    const chantLean = 2.4 + 0.9 * Math.sin(fr * 0.07);
     const lean =
-      chant || (fr < cutC && !lookDoor && !lookRight && !wave1 && !wave2)
-        ? 2.4 + 0.9 * Math.sin(fr * 0.07) + (chant ? 0.6 : 0)
-        : breath;
+      lookDoor || lookRight
+        ? breath
+        : pujaPhase
+          ? chantLean + 4 * tossing + 3 * pour - 2 * atHead
+          : wave1 || wave2
+            ? 1 + breath + 3 * tossing
+            : chantLean + 3 * tossing + 3 * pour;
     const base = poseOf({
       kneel: 0,
       lean,
       bodyTurn: safeBodyTurn(lerp(lookRight ? 0.12 : lookDoor ? -0.32 : -0.24, 0.3, away)),
-      headTurn: lerp(lookRight ? 0.46 : lookDoor ? -0.56 : wave1 || wave2 || chant ? -0.06 : -0.16, 0.42, away),
-      headNod: lookRight ? 6 : lookDoor ? 2 : chant ? -5 + 2.2 * Math.sin(fr * 0.11) : lerp(-2, -4, away),
+      headTurn: lerp(lookRight ? 0.46 : lookDoor ? -0.56 : pour > 0.5 ? -0.3 : wave1 || wave2 ? -0.06 : -0.16, 0.42, away),
+      headNod: lookRight
+        ? 6
+        : lookDoor
+          ? 2
+          : 7 * atHead + 4 * pour + (pujaPhase ? -3 + 2.2 * Math.sin(fr * 0.11) : 0) + lerp(0, -4, away),
       eyeX: eyeDart,
-      eyeY: in5b || inP9 ? 0.06 : -0.2,
-      lid: Math.max(blink, away > 0.5 ? 0.72 : chant ? 0.56 : wave1 || wave2 ? 0.46 : 0.16),
+      eyeY: in5b || inP9 ? 0.06 : pour > 0.5 ? 0.45 : -0.2,
+      lid: Math.max(blink, away > 0.5 ? 0.72 : atHead > 0.5 ? 0.85 : pujaPhase ? 0.5 : wave1 || wave2 ? 0.46 : 0.3),
       brow: in5b || inP9 ? -0.32 : 0.05,
       browTilt: inP9 ? 0.2 : 0,
       smile: in5b || inP9 ? 0.02 : 0.25,
-      join: chant ? ramp(fr, s5f.from + 34, s5f.from + 52) * 0.92 : 0,
-      rS: lookDoor ? -54 - priestRms(fr) * 12 : lookRight ? -34 : -46 + 9 * offer,
-      rE: lookDoor ? -52 : -68 + 7 * Math.cos(fr * 0.085),
-      rHand: chant ? "pranam" : "hold",
-      rProp: fr < cutC ? "flower" : "",
-      lS: wave1 || wave2 ? -48 + dismiss : lookDoor ? -30 : -30,
-      lE: wave1 || wave2 ? -62 + dismiss * 0.6 : -54,
-      lHand: chant ? "pranam" : wave1 || wave2 || lookDoor ? "open" : "relaxed",
+      rS: lookDoor ? -54 - priestRms(fr) * 12 + flick : lookRight ? -34 : R.rS + rCircleS,
+      rE: lookDoor ? -52 + flick * 0.6 : lookRight ? -60 : R.rE + rCircleE,
+      rHand: "hold",
+      rProp: lookDoor || lookRight ? "flower" : rPropAt(fr),
+      // far hand: rests on the knee through the puja, opens "where?" toward the door, waves on each "হুঁ হুঁ"
+      lS: wave1 || wave2 ? -48 + dismiss : lookDoor ? -30 - 6 * priestRms(fr) : 6 + 4 * atHead,
+      lE: wave1 || wave2 ? -62 + dismiss * 0.6 : lookDoor ? -54 : -10,
+      lHand: wave1 || wave2 || lookDoor ? "open" : "relaxed",
     });
     if (away <= 0.001) return base;
-    // AG7: turned to the khat, the bell raised in the near (left) hand and rung
+    // AG7: turned to the khat, the bell raised in the near (left) hand and rung; the right hand joined in pranam
     return {
       ...base,
-      join: base.join * (1 - away),
       lS: lerp(base.lS, 58 + ring, away),
       lE: lerp(base.lE, -96 + ring * 0.6, away),
       lHand: away > 0.4 ? "hold" : base.lHand,
@@ -668,8 +887,13 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
       rS: lerp(base.rS, -20, away),
       rE: lerp(base.rE, -70, away),
       rHand: away > 0.4 ? "pranam" : base.rHand,
+      rProp: away > 0.4 ? "" : base.rProp,
     };
   };
+  // the priest's live wrists (filled by his Puppet each frame; the kushi water is drawn from the near wrist)
+  const priestAnchors: { a?: PuppetAnchors } = {};
+  // the two offered flowers: from the hand at the top of the throw to the floor before the khat
+  const TOSS_FROM = { x: SHRINE.priestX - 118, y: SHRINE.priestY - 196 };
 
   /* ---------------- Balak ---------------- */
   const balakRms = ep04gSpeakRms(SCENE_ID, ["05c_Balak_AskDhoop.wav", "05e_Balak_AskSit.wav"], f);
@@ -730,13 +954,20 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   let face: SeatedChildProps["face"] = { lookX: 0.32, smile: 0.5 };
   let sigh: ((fr: number) => number) | undefined;
 
-  if (f < S05.reach) {
+  let blinkAtF: number | undefined;
+  // the pose being left is solved with ITS OWN target and held object (rig: prevReachAt / prevHolding / prevReachFor)
+  let prevReachAt: { x: number; y: number } | undefined;
+  let prevHolding: HeldObject | undefined;
+  let prevReachFor: HeldObject | undefined;
+  const DHOOP_V_REACH = { x: (DHOOP_V.x - VERANDA_OUT.x) / VERANDA_OUT.s, y: (DHOOP_V.y - VERANDA_OUT.y) / VERANDA_OUT.s };
+  const CARRY_AT = { x: 62, y: -98 };
+  if (f < S05.fold) {
     // AG6 / Shot 20 / Shot 21 / P9: obediently outside, watching the puja
     pose = "sitCross";
-    const watchThk = f < S05.thkRiseEnd;
+    const watchThk = f < S05.thkRiseEnd + 10;
     const atSill = f >= S05.glanceSill && f < S05.glanceSill + 46;
     face = watchThk
-      ? { lookX: 0.22, eyesDown: 0.45, smile: 0.55 }
+      ? { lookX: 0.22, eyesDown: 0.45, smile: 0.6 }
       : atSill
         ? { lookX: 0.4, eyesDown: 0.62, smile: 0.3 }
         : f >= s5b.from && f < p9.to
@@ -744,47 +975,84 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
           : { lookX: 0.36, smile: 0.52 };
     expr = atSill ? "thoughtful" : f >= s5b.from + 50 ? "playful" : "serene";
     sigh = sighCurve(S05.sigh, 12, 26, 2);
-  } else if (f < S05.lift) {
-    // Shot 22: kneels up, both hands on the dhoop-dani's handle, asks politely (does not lift it yet)
-    pose = "kneelReach";
+    // "ধূপ!": the call makes him look up quickly
+    if (f >= s5b.from) blinkAtF = s5b.from + 3;
+  } else if (f < S05.reach) {
+    // Shot 22: up on his knees at the threshold, hands folded politely: "ঠাকুরমশায়, আমি ধূপ দেব?"
+    pose = "bowHands";
     prevPose = "sitCross";
+    poseStart = S05.fold;
+    kneel = 1.5 * ramp(f, S05.fold, S05.fold + 16);
+    expr = "playful";
+    prevExpr = "serene";
+    exprStart = S05.fold;
+    face = { lookX: 0.42, smile: 0.62 };
+  } else if (f < S05.lift) {
+    // "হুঁ হুঁ, দে—": both hands to the dhoop-dani, round its cup and handle
+    pose = "kneelReach";
+    prevPose = "bowHands";
+    prevPoseStart = S05.fold;
     poseStart = S05.reach;
-    reachAt = { x: (DHOOP_V.x - VERANDA_OUT.x) / VERANDA_OUT.s, y: (DHOOP_V.y - VERANDA_OUT.y) / VERANDA_OUT.s };
+    reachAt = DHOOP_V_REACH;
     if (f >= S05.reach + KNEEL_REACH_T.grip) holding = "incense";
     else reachFor = "incense";
     kneel = 1.5;
-    expr = "playful";
-    face = { lookX: 0.42, smile: 0.66 };
+    expr = "joyful";
+    prevExpr = "playful";
+    exprStart = S05.reach;
+    face = { lookX: 0.36, smile: 0.72 };
   } else if (f < S05.set) {
-    // "হুঁ হুঁ, দে—": lifts it and knee-walks it in, quickly ("তাড়াতাড়ি দে")
+    // "তাড়াতাড়ি দে।": lifts it in both hands and knee-walks it in, carefully, his eyes on the smoking cup
     pose = "offerUp";
     prevPose = "kneelReach";
     prevPoseStart = S05.reach;
     poseStart = S05.lift;
     holding = "incense";
-    reachAt = { x: 66, y: -100 };
+    reachAt = CARRY_AT;
+    prevReachAt = DHOOP_V_REACH;
+    prevHolding = "incense";
     kneel = 1.5;
     expr = "serene";
-  } else if (f < S05.point) {
+    prevExpr = "joyful";
+    exprStart = S05.lift;
+  } else if (f < S05.fold2) {
     // sets it down right beside the priest
     pose = "kneelReach";
     prevPose = "offerUp";
     prevPoseStart = S05.lift;
     poseStart = S05.set;
     reachAt = DHOOP_REACH;
+    prevReachAt = CARRY_AT;
+    prevHolding = "incense";
+    // in his hands until it touches the floor; then his hands stay round it (reachFor keeps the grip pose, no jump)
     if (f < S05_DHOOP_CONTACT) holding = "incense";
+    else reachFor = "incense";
     kneel = 1.5;
     expr = "serene";
-  } else if (f < S05.backFrom) {
-    // "ঠাকুরমশায়, আমি একটু ঘরে বসব?": up on his knees beside the priest, a small open hand to the floor
-    pose = "pointIn";
+  } else if (f < S05.point) {
+    // "ঠাকুরমশায়, …": up on his knees beside the priest, hands folded again
+    pose = "bowHands";
     prevPose = "kneelReach";
     prevPoseStart = S05.set;
-    poseStart = S05.point;
-    pointAt = { x: 64, y: -18 };
+    poseStart = S05.fold2;
+    prevReachAt = DHOOP_REACH;
+    prevReachFor = "incense"; // the blend starts from the hands round the dhoop-dani
     kneel = 1.5;
     expr = "playful";
+    prevExpr = "serene";
+    exprStart = S05.fold2;
     face = { lookX: 0.4, smile: 0.62 };
+  } else if (f < S05.backFrom) {
+    // "…আমি একটু ঘরে বসব?": a small open hand to the floor before the khat
+    pose = "pointIn";
+    prevPose = "bowHands";
+    prevPoseStart = S05.fold2;
+    poseStart = S05.point;
+    pointAt = { x: 92, y: -36 };
+    kneel = 1.5;
+    expr = "playful";
+    // eyes to the floor he means, then back up to the priest for the answer
+    face = f < S05.point + 22 ? { lookX: 0.3, eyesDown: 0.55, smile: 0.62 } : { lookX: 0.4, smile: 0.66 };
   } else if (f < S05.drink) {
     // "হুঁ হুঁ, বোস…": shuffles back to the khat and sits down cross-legged; then the brimming bowl catches his eye
     pose = "sitCross";
@@ -793,10 +1061,11 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     poseStart = S05.backFrom;
     kneel = 1.5 * (1 - ramp(f, S05.backTo - 4, S05.sitEnd));
     const eyeing = f >= S05.eyeBowl;
-    expr = f >= S05.widen ? "surprised" : eyeing ? "playful" : "serene";
+    expr = f >= S05.widen ? "surprised" : eyeing ? "playful" : "joyful";
     prevExpr = f >= S05.widen ? "playful" : undefined;
     exprStart = f >= S05.widen ? S05.widen : undefined;
-    face = eyeing ? { lookX: 0.5, eyesDown: 0.62, smile: f >= S05.widen ? 0.5 : 0.7 } : { lookX: 0.28, smile: 0.58 };
+    face = eyeing ? { lookX: 0.5, eyesDown: 0.62, smile: f >= S05.widen ? 0.5 : 0.7 } : { lookX: 0.28, smile: 0.66 };
+    if (f >= S05.widen) blinkAtF = S05.widen + 2;
   } else if (f < S05.wipe) {
     // AG7: lifts the heavy stone bowl in both hands and drinks every drop; sets it back with the fopra in it
     pose = "drinkBowl";
@@ -823,7 +1092,7 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
   }
 
   // Outer living sway only while nothing he touches rests on the floor (contact stays exact, MOT-07)
-  const livingW = f < S05.reach - 12 ? 1 : f < S05.reach ? 1 - ramp(f, S05.reach - 12, S05.reach) : f >= S05.sitEnd && f < S05.drink - 12 ? ramp(f, S05.sitEnd, S05.sitEnd + 12) * (1 - ramp(f, S05.drink - 24, S05.drink - 12)) : 0;
+  const livingW = f < S05.fold ? 1 : f < S05.fold + 12 ? 1 - ramp(f, S05.fold, S05.fold + 12) : f >= S05.sitEnd && f < S05.drink - 12 ? ramp(f, S05.sitEnd, S05.sitEnd + 12) * (1 - ramp(f, S05.drink - 24, S05.drink - 12)) : 0;
   const living = (() => {
     if (livingW <= 0.001) return undefined;
     const raw = balakLivingBodyTransform({ x: bx, y: by, f, facing: 1, speechRms: balakRms });
@@ -856,7 +1125,11 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     handTargets,
     handShapes: handTargets ? { near: "open" } : undefined,
     handTurns: handTargets ? { near: Math.PI } : undefined,
-    watchHeld: pose === "offerUp" ? 0.5 : undefined,
+    watchHeld: pose === "offerUp" ? 0.75 : undefined,
+    blinkAt: blinkAtF,
+    prevReachAt,
+    prevHolding,
+    prevReachFor,
     face,
     expression: expr,
     prevExpression: prevExpr,
@@ -864,12 +1137,13 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
     sigh,
     mouth: balakRms,
     talk: balakRms > 0.08 ? 1 : 0,
+    ...EP04_BALAK_LOOK,
   };
   const glowAnchor = seatedChildHands(balakProps).glowAnchor;
 
   // Dhoop-dani: Thakurma's hand -> veranda floor -> Balak's hands (rig) -> the floor beside the priest
   const dhoopOnVeranda = f < S05.reach + KNEEL_REACH_T.grip;
-  const dhoopBesidePriest = f >= S05_DHOOP_CONTACT;
+  const dhoopBesidePriest = f >= S05_DHOOP_RELEASE;
   const bowlFull = f < S05.drink;
   const bowlEmpty = f >= S05.drink + DRINK_BOWL_T.release;
   const bowlBig = f < cutHeist;
@@ -882,13 +1156,13 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
 
   const balakNode = (
     <>
-      <GhibliBalakGroundGlow x={bx} y={plantY + 5} rx={120 * (bs / 0.94)} ry={22 * (bs / 0.94)} level={onVeranda ? 0.3 : 0.42} />
+      <Ep04BalakGroundGlow x={bx} y={plantY + 5} rx={120 * (bs / 0.94)} ry={22 * (bs / 0.94)} level={onVeranda ? 0.3 : 0.42} />
       <g transform={living}>
         {/* the steady resting halo behind his head (BAL-06/11): restrained, below Scene 04's glow beat */}
-        <GhibliBalakAura cx={glowAnchor.cx} cy={glowAnchor.cy} r={glowAnchor.r * 0.5} glow={onVeranda ? 0.36 : 0.5} f={f} />
-        <g filter="url(#ghibli-char-ink)">
+        <Ep04BalakDivine cx={glowAnchor.cx} cy={glowAnchor.cy} r={glowAnchor.r * 0.5} glow={onVeranda ? 0.36 : 0.5} f={f} />
+        <g filter="url(#ep04-balak-ink)">
           <ContactShadow x={bx} y={plantY} rx={52 * (bs / 0.94)} ry={10 * (bs / 0.94)} opacity={0.3} sunDir={-1} />
-          <SeatedChild {...balakProps} />
+          <SeatedChild {...balakProps} inkZoom={cam.zoom} />
           {kneel < 0.35 && pose !== "drinkBowl" && <GhibliBalakLapDetails x={bx} y={by} s={bs} f={f} />}
         </g>
       </g>
@@ -904,6 +1178,8 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
       {/* Inside the shrine room (behind the doorway arch) */}
       <GhibliLayer depth={1.0}>
         <GhibliCharFilterDefs f={f} rimDir={-1} sunColor="#ffd088" bounceColor="#7c6e8c" />
+        {/* BAL-26f: Balak's own fine ink line (no thick whole-body outline from the shared char-ink filter) */}
+        <Ep04BalakInkDefs zoom={cam.zoom} rim={0.5} f={f} />
 
         {/* Stone bowl with the coconut water and the whole fopra, before the khat */}
         {/* (large on the floor until the heist cut; from that cut the rig's own size, so the pick-up matches) */}
@@ -936,8 +1212,16 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
             talk={priestTalk}
             acting={priestActing}
             props={PRIEST_PROPS}
+            anchors={(an) => {
+              priestAnchors.a = an;
+            }}
           />
+          {/* water running from the tipped kushi (from his live near wrist) onto the floor before him */}
+          {pouring(f) && priestAnchors.a && <PourDrops f={f} x={priestAnchors.a.rWrist.x - 30} y={priestAnchors.a.rWrist.y + 14} floorY={SHRINE.priestY - 2} />}
         </g>
+        {/* the marigolds he offers: tossed from the hand, they land on the floor before the khat and stay there */}
+        <OfferedFlower f={f} start={PJ.toss1} from={TOSS_FROM} to={OFFERED_FLOWERS[0]} />
+        <OfferedFlower f={f} start={PJ.toss2} from={TOSS_FROM} to={OFFERED_FLOWERS[1]} />
 
         {/* Dhoop-dani set down beside the priest */}
         {dhoopBesidePriest && (
@@ -980,7 +1264,7 @@ export const Scene05DhoopAndCoconutGhibli: React.FC = () => {
               lifeF={f}
               light={EP04G_SHRINE_LIGHT}
               acting={thakurmaActing}
-              reachAt={() => ({ x: DHOOP_V.x + 2, y: dhoopVY - 9 })}
+              reachAt={thkReachAt}
             />
           </g>
         )}
