@@ -157,6 +157,7 @@ session, with the date and the reason if one was given, and add a CHANGELOG line
 chat. If it changes a rule above, update this file too.
 
 ## Before you start a task
+0. Read the live handoff and next-work plan: `C:\Dipankar\Balak_Thakur_Production\PENDING_WORK.md` (keep it current).
 1. Check which tree you are in (main repo or worktree) and `git status`.
 2. Read the decision files and the episode's approved shot-and-pause plan and `src/episodeNN/`.
 3. Ask for, or collect, the protected-fix list for the files you will touch.

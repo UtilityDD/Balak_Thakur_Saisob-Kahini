@@ -95,3 +95,6 @@ Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as
 - 2026-11-25: Ghibli Episode 4 final render approved, started and paused by the director at ~09:45 (intro chunk done); resume with C:\Dipankar\Balak_Thakur_Production\RESUME_EP04G_FINAL_RENDER.md.
 - 2026-11-25: REN-GPU-01 renders use the GPU (--gl=angle): heaviest Ep4 Ghibli frames 33 s vs >608 s in software; resume script switched.
 - 2026-11-26: Ghibli Episode 4 full render done on the GPU (8,594 frames, 5:58.1, -16.5 LUFS, peak -3.2 dBFS, joins clean, 112 one-line captions) -> 03_Episodes/Episode_04_Idols_and_Coconut_Water/04_Video_Assembly/Ghibli_Test_Render/Episode04GhibliFull_2026-11-26.mp4 + _bn.srt. REN-GPU-01 amended: heavy scenes in ~320-frame GPU pieces.
+- 2026-11-26: STO-23 conversation-led Ghibli rewrites drafted from the original book (book.xlsx); Episode 5 blueprint started (book chapters 8 and 9 extracted), Episode 6 draft paused.
+- 2026-11-26: BAL-26f amended: natural chadar and body gestures for the new look (ref2, new episodes only); BalakRef2PoseQA sheet added.
+- 2026-11-26: Episode 5 rewrite prep and Balak ref2 rounds 3-5 committed (worktree 0c6d631); round 5 paused by the director; handoff plan in the worktree's PENDING_WORK.md.

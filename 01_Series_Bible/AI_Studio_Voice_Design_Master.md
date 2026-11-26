@@ -1,9 +1,26 @@
 # Google AI Studio - Series Voice Design Master
 
 - **URL:** https://aistudio.google.com/generate-speech
-- **Model:** `gemini-3.8-flash-tts`
-- **Rule:** Always select the SAME Project at the top so your saved Custom Voices stay available.
-- **Tip:** Put permanent traits in **Voice Design** (Speaker Settings), and keep the **Style** box short for scene emotion only.
+- **Primary Model:** `gemini-3.8-flash-tts` (or `gemini-3.8-flash-lite-tts`)
+- **Official Specification:** See [VOICE_SCRIPT_AND_DASHBOARD_STANDARD.md](file:///C:/Dipankar/Balak_Thakur_AI_Studio/01_Series_Bible/VOICE_SCRIPT_AND_DASHBOARD_STANDARD.md)
+- **Dashboard Generator Tool:** `python scripts/generate_voice_dashboard.py --episode <N>`
+
+---
+
+## Google AI Studio Preset Voice Persona Mapping (Official)
+
+| Series Character | Internal ID | AI Studio Preset Voice | Pitch & Tone Attributes | Role Continuity |
+|---|---|---|---|---|
+| **Narrator (কথক)** | `01_Narrator_Kathak` | **`Enzo`** | Low pitch, crisp, warm, affectionate children's audiobook storyteller | Series narrator across all 19 episodes |
+| **Balak Thakur (বীরু)** | `12_Balak_Thakur_Child` | **`Sola`** | High pitch, gentle, sweet, innocent, fearless calm smile in voice | Protagonist (ages 5–6) |
+| **Charu (মা চারুশীলা দেবী)** | `05_Charu` | **`Cleo`** | Mid-high pitch, soft, delicate, emotional rural Bengali mother | Mother, recurring |
+| **Surendra (বাবা সুরেনবাবু)** | `04_Babukaka` | **`Achird`** | Warm resonant baritone, kind, patient father | Father, recurring |
+| **Teen / Youth (বিনয়, কিশোর)** | `15_Binoy_Teen` | **`Puck`** | Middle pitch, upbeat, energetic, excitable teenage boy | Binoy (Ep 5), playmates |
+| **Rustic / Angry Hand (হরিচরণ)** | `17_Haricharan` | **`Fenrir`** | Low pitch, earthy village accent, quick-tempered, blustering & comic | Haricharan (Ep 5), village hands |
+| **Elder Clerks / Scholars (বড়বাবু)**| `10_Grumpy_Relative` | **`Charon`** | Low pitch, dry, slightly nasal, fussy elderly Bengali man | Senior clerk (Ep 5), conservative elders |
+| **Theatrical Clerks / Muhuri** | `18_Kachari_Muhuri` | **`Zephyr`** | Middle pitch, sharp-tongued, dramatic, rapid-talking conclusions | Junior clerk (Ep 5), gossips |
+| **Maternal Elders (জেঠিমা / মা)** | `06_Manorama_Devi` | **`Tova`** | Warm, mature maternal, grounded East Bengal tone | Manorama Devi, neighbor aunts |
+| **Head Priests (পুরোহিত ঠাকুর)** | `07_Bhagabati_Thakur` | **`Orus`** | Deep, dignified elder priest voice, traditional scholarly cadence | Head priest (Ep 4, Ep 16) |
 
 ---
 

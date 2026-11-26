@@ -273,3 +273,43 @@ under the same licence.
 
 Optional (no credit required): ducks by Zandtekenaar, waves lapping by guyburns, village rooster by Garuda1982, pigeon
 wings by Kinoton, Indian village crickets by hungryrj, wind in trees by 37735i6 (all CC0).
+
+---
+
+## Ghibli Episode 5 rewrite
+
+Added 2026-11-26 for the Ghibli rewrite of Episode 5 (blueprint section 6, "Complete Audio Architecture", list B
+items 1 to 5, plus real replacements for the generated `ep02/clay_thud`, `ep02/footsteps_mud` and `ep02/birds_village`
+it cues). Files in `remotion_studio/public/audio/sfx/ep05_rewrite/` (production worktree); trims, filters, levels,
+suggested volumes, stand-ins and rejected candidates in that folder's `README.md`; the downloaded originals (each with
+a `meta.json`) and the build recipe (`build_ep05_rewrite_sfx.py`, reproduces every file bit for bit) in its
+`_source/` folder. 48 kHz mono 16-bit WAV, sample peak at most -6 dBFS; calls and beds -28 to -32 LUFS, the shell
+knock and the step runs peak-levelled. Freesound files were fetched as Freesound's public HQ previews (192 kbps OGG of
+the original). Not yet placed in code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| `adults_murmur_laugh.wav` | "Family Meal Babbling 2.wav" (Freesound 32368) | https://freesound.org/people/Walter_Odington/sounds/32368/ | 58.60 to 72.10 s, low-passed 1.4 kHz, 12 s loop | Walter_Odington | CC0 |
+| `run_barefoot_pair.wav`, `run_barefoot_single.wav` | "Running barefoot, Foley" (Freesound 850273) | https://freesound.org/people/Wigglesworth/sounds/850273/ | 0.95 to 3.35 s (0.94x) + 4.95 to 7.35 s (1.06x); 7.70 to 9.75 s (0.92x) | Wigglesworth | CC0 |
+| `shell_knock.wav` | "Coconut Shell Galloping 02" (Freesound 879311) | https://freesound.org/people/loganzsound/sounds/879311/ | clicks at 4.33 and 4.64 s, 0.75x | loganzsound | CC0 |
+| `tortoise_scrabble.wav` | "Hand digging dirt, leaves crunch.wav" (Freesound 260130) | https://freesound.org/people/SpliceSound/sounds/260130/ | 0.10 to 2.30 s, 1.1x | SpliceSound | CC0 |
+| `tortoise_hiss_soft.wav` | "Reptiles - Snake; Mexican Black Kingsnake, Short Hiss and Lunge" (Freesound 846337) | https://freesound.org/people/TheKingOfGeeks360/sounds/846337/ | 0.07 to 0.43 s, 0.6x | TheKingOfGeeks360 | CC0 |
+| `chil_kite_call.wav` | "Black kite song recorded in March 2022 at Pune.wav" | https://commons.wikimedia.org/wiki/File:Black_kite_song_recorded_in_March_2022_at_Pune.wav | 6.00 to 9.50 s (two calls) | Sharadapte | CC BY-SA 4.0 |
+| `afternoon_birds_loop.wav` | "Nasik Ambience.wav" (Freesound 584126; afternoon, Nasik, India) | https://freesound.org/people/seventhsamurai/sounds/584126/ | 43.0 to 75.0 s, 30 s loop | seventhsamurai | CC0 |
+| `quill_scratch.wav` | "Quill pen writing on hard paper various speed.wav" (Freesound 194905) | https://freesound.org/people/marcoman89/sounds/194905/ | 5.40 to 10.10 s | marcoman89 | CC0 |
+| `palm_fan_flap.wav` | "Fluttering Chinese Fan 01" (Freesound 508674) | https://freesound.org/people/leonelmail/sounds/508674/ | six single flaps (4.83 to 5.90 s), 0.6x, set 0.45 s apart | leonelmail | CC0 |
+
+Stand-ins (no free recording of the real thing): `shell_knock` is a coconut shell (no tortoise shell),
+`tortoise_scrabble` a hand scratching earth (no tortoise claws), `tortoise_hiss_soft` a kingsnake's hiss slowed (no
+tortoise hiss), `palm_fan_flap` single flaps of a paper fan slowed and spaced out (no palm-leaf or slow hand fanning),
+the runs a barefoot foley run low-passed for earth (no outdoor barefoot run), `adults_murmur_laugh` a restaurant family
+meal low-passed until no language can be heard (no Bengali domestic chat). Changed versions of the CC BY-SA sound
+must be shared under the same licence.
+
+**Suggested credit line** (only if `chil_kite_call` is cued):
+
+> 'Black kite song recorded in March 2022 at Pune' by Sharadapte (CC BY-SA 4.0), via Wikimedia Commons.
+
+Optional (no credit required): family meal talk by Walter_Odington, barefoot running by Wigglesworth, coconut shells
+by loganzsound, digging in earth by SpliceSound, kingsnake hiss by TheKingOfGeeks360, Nasik afternoon by
+seventhsamurai, quill writing by marcoman89, fluttering fan by leonelmail (all CC0, via Freesound).

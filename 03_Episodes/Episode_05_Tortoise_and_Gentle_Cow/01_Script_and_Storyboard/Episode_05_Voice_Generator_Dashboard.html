@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Episode 5 — Voice Generation Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #1e293b;
+      --bg-card-hover: #24344d;
+      --border-color: #334155;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-gold: #f59e0b;
+      --accent-green: #10b981;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --bengali-font: 'Baloo Da 2', 'Noto Sans Bengali', sans-serif;
+      --ui-font: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--ui-font);
+      line-height: 1.5;
+      padding: 24px 20px 80px;
+    }
+    .container { max-width: 1280px; margin: 0 auto; }
+    header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .badge-episode {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-gold);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h1 span.bn {
+      font-family: var(--bengali-font);
+      font-weight: 600;
+      color: #cbd5e1;
+      font-size: 1.5rem;
+    }
+    .header-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+    .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+    .btn-secondary:hover { background: #475569; }
+    .progress-section {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #334155;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .voice-ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .voice-chip {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .voice-chip-info .char-name { font-weight: 600; font-size: 0.9rem; color: #f1f5f9; }
+    .voice-chip-info .voice-id { font-size: 0.8rem; color: var(--accent-gold); font-weight: 600; }
+    .voice-chip-info .voice-desc { font-size: 0.75rem; color: var(--text-muted); }
+    .filters-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding: 14px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+    .filter-label { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-right: 4px; }
+    .filter-btn {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-btn:hover { background: #1e293b; color: #fff; }
+    .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .scene-heading {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 32px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #e2e8f0;
+    }
+    .scene-heading span.badge {
+      font-size: 0.8rem;
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .cards-list { display: flex; flex-direction: column; gap: 14px; }
+    .voice-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: 48px 1fr 140px;
+      gap: 16px;
+      align-items: start;
+      transition: all 0.2s ease;
+    }
+    @media (max-width: 860px) {
+      .voice-card { grid-template-columns: 40px 1fr; }
+      .card-actions { grid-column: 1 / -1; flex-direction: row !important; justify-content: flex-end; }
+    }
+    .voice-card:hover { background: var(--bg-card-hover); border-color: #475569; }
+    .voice-card.completed {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.04);
+    }
+    .voice-card.completed .card-filename { color: var(--accent-green); }
+    .card-check { padding-top: 4px; }
+    .custom-checkbox {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid #475569;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+      color: transparent;
+    }
+    .custom-checkbox:hover { border-color: var(--accent); }
+    .voice-card.completed .custom-checkbox {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #fff;
+    }
+    .card-content { display: flex; flex-direction: column; gap: 10px; }
+    .card-header-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .card-filename {
+      font-family: monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #60a5fa;
+      background: rgba(15, 23, 42, 0.8);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .badge-speaker {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .speaker-Enzo { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .speaker-Sola { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .speaker-Cleo { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); }
+    .speaker-Achird { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); }
+    .speaker-Puck { background: rgba(20, 184, 166, 0.2); color: #5eead4; border: 1px solid rgba(20, 184, 166, 0.4); }
+    .speaker-Fenrir { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .speaker-Charon { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.4); }
+    .speaker-Zephyr { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .speaker-Tova { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+    .speaker-Orus { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; border: 1px solid rgba(100, 116, 139, 0.4); }
+    .box-container {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      position: relative;
+    }
+    .box-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .box-text { font-size: 0.9rem; color: #e2e8f0; word-break: break-word; }
+    .box-text.bengali {
+      font-family: var(--bengali-font);
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: #f8fafc;
+      font-weight: 500;
+    }
+    .box-copy-btn {
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .box-copy-btn:hover { background: var(--accent); color: #fff; }
+    .card-actions { display: flex; flex-direction: column; gap: 8px; }
+    .action-btn {
+      width: 100%;
+      background: #334155;
+      border: 1px solid var(--border-color);
+      color: #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .action-btn:hover { background: #475569; color: #fff; }
+    .action-btn.copy-all {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: #93c5fd;
+    }
+    .action-btn.copy-all:hover { background: var(--accent); color: #fff; }
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid var(--accent);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="badge-episode">Episode 05 • Voice Generator Dashboard</div>
+        <h1>
+          <span>Google AI Studio Manual Voice Generation Master Guide</span>
+          <span class="bn">পর্ব ৫: কচ্ছপ খেলা ও গাভী রক্ষা</span>
+        </h1>
+        <p style="color: var(--text-secondary); margin-top: 6px; font-size: 0.9rem;">
+          One-click copy workflow for Google AI Studio Speech (<code style="color: var(--accent-gold);">gemini-3.8-flash-tts</code>).
+        </p>
+      </div>
+      <div class="header-actions">
+        <a href="https://aistudio.google.com/generate-speech" target="_blank" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          Open AI Studio Speech
+        </a>
+        <button id="resetProgressBtn" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          Reset Checked
+        </button>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-labels">
+        <span>Recorded Progress: <strong id="progressCount">0 / 40</strong> clips completed</span>
+        <span id="progressPercent" style="color: var(--accent-green);">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="progressBar" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filters Bar -->
+  <div class="filters-bar" id="filtersBar">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" data-filter="all">All (40)</button>
+    <button class="filter-btn" data-filter="Enzo">Enzo (8)</button>
+    <button class="filter-btn" data-filter="Cleo">Cleo (5)</button>
+    <button class="filter-btn" data-filter="Achird">Achird (5)</button>
+    <button class="filter-btn" data-filter="Puck">Puck (5)</button>
+    <button class="filter-btn" data-filter="Sola">Sola (7)</button>
+    <button class="filter-btn" data-filter="Fenrir">Fenrir (7)</button>
+    <button class="filter-btn" data-filter="Charon">Charon (2)</button>
+    <button class="filter-btn" data-filter="Zephyr">Zephyr (1)</button>
+    
+    <span class="filter-label" style="margin-left: 12px;">Status:</span>
+    <button class="filter-btn" data-status="pending">Pending</button>
+    <button class="filter-btn" data-status="done">Completed</button>
+  </div>
+
+  <!-- Cards Container -->
+  <div id="cardsList" class="cards-list"></div>
+</div>
+
+<div id="toast">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  <span id="toastMsg">Copied to clipboard!</span>
+</div>
+
+<script>
+const CLIPS_DATA = [
+  {
+    "id": 1,
+    "scene": "Block 00 — Series Intro Card",
+    "filename": "00_Intro.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Cheerful, bright, welcoming Bengali children's show announcer.",
+    "speech": "ছোটদের বালক ঠাকুরের গল্প। <short pause> পর্ব পাঁচ: কচ্ছপ খেলা ও গাভী রক্ষা।"
+  },
+  {
+    "id": 2,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01a_Narrator_Kachari.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Warm, gentle Bengali storyteller, a playful smile on the last sentence.",
+    "speech": "উজানচরের কৃষ্ণনগর কাছারি—বীরুর বাবা সুরেনবাবু এখানেই কাজ করেন। <short pause> আর ছোট্ট বীরু? সে এখন বেশ একটু দুষ্টুমি শিখে উঠেছে!"
+  },
+  {
+    "id": 3,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01b_Charu_EyeOnHim.wav",
+    "charName": "Charu (Mother)",
+    "voice": "Cleo",
+    "style": "Fond, half-exasperated young mother chatting on the veranda, light laugh in the voice.",
+    "speech": "আজকাল ওকে একদণ্ড চোখের আড়াল করার জো নেই! <short pause> একটু ফাঁক পেলেই—সবার চোখ এড়িয়ে টুক করে বেরিয়ে যায়।"
+  },
+  {
+    "id": 4,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01c_Surendra_Chuckle.wav",
+    "charName": "Surendra (Father)",
+    "voice": "Achird",
+    "style": "Warm, amused father, chuckling softly, relaxed.",
+    "speech": "দুষ্টুমি শিখেছে তাহলে! <short pause> তবে তো ওকে চোখে চোখেই রাখতে হবে।"
+  },
+  {
+    "id": 5,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01d_Narrator_Slip.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Hushed, playful storyteller, like sharing a secret with the children.",
+    "speech": "সেদিন সবাই মিলে বেশ গল্পগুজব করছে। <short pause> কখন যে বীরু টুক করে বেরিয়ে গেছে—কেউ টেরই পেল না!"
+  },
+  {
+    "id": 6,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01e_Binoy_Shout.wav",
+    "charName": "Binoy (Teenager)",
+    "voice": "Puck",
+    "style": "Sudden panicked teenage shout from the next house, loud, off-screen.",
+    "speech": "হায় হায়, গেল গেল—হাতটা গেল!"
+  },
+  {
+    "id": 7,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01f_Charu_Alarm.wav",
+    "charName": "Charu (Mother)",
+    "voice": "Cleo",
+    "style": "Startled, then a rising fear as she realises her son is gone.",
+    "speech": "ও কী! বিনয়ের গলা না? <short pause> বীরু... বীরু কোথায় গেল?!"
+  },
+  {
+    "id": 8,
+    "scene": "01 — কাছারি চত্বর ও বারান্দা (Kachari & Family Veranda)",
+    "filename": "01g_Surendra_Run.wav",
+    "charName": "Surendra (Father)",
+    "voice": "Achird",
+    "style": "Urgent, already getting up to run.",
+    "speech": "পাশের বাড়ি থেকে! চলো, শিগগির চলো!"
+  },
+  {
+    "id": 9,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02a_Surendra_Bitten.wav",
+    "charName": "Surendra (Father)",
+    "voice": "Achird",
+    "style": "Shocked gasp, breathless from running.",
+    "speech": "সর্বনাশ! কচ্ছপে হাত কামড়ে ধরেছে!"
+  },
+  {
+    "id": 10,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02b_Charu_FreeHand.wav",
+    "charName": "Charu (Mother)",
+    "voice": "Cleo",
+    "style": "Frantic, breathless mother rushing in.",
+    "speech": "ছাড়াও, ছাড়াও—শিগগির হাতটা ছাড়িয়ে দাও!"
+  },
+  {
+    "id": 11,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02c_Charu_NoMark.wav",
+    "charName": "Charu (Mother)",
+    "voice": "Cleo",
+    "style": "Breathless worry melting into astonished relief, very tender.",
+    "speech": "দেখি বাবা, দেখি হাতটা... <short pause> ওমা! কোথাও তো একটা দাগও নেই! <short pause> একটা আঁচড়ও না!"
+  },
+  {
+    "id": 12,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02d_Surendra_AskBinoy.wav",
+    "charName": "Surendra (Father)",
+    "voice": "Achird",
+    "style": "Puzzled and gentle, turning to the teenage boy.",
+    "speech": "আশ্চর্য তো! <short pause> বিনয়, কী হয়েছিল রে? খুলে বল তো।"
+  },
+  {
+    "id": 13,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02e_Binoy_Account1.wav",
+    "charName": "Binoy (Teenager)",
+    "voice": "Puck",
+    "style": "Still out of breath, wide-eyed, eager to tell the story.",
+    "speech": "আমি বাইরে থেকে ফিরছিলাম, কাকা। <short pause> হঠাৎ শুনি, কোণের ঘরের দিকে খুটখাট শব্দ! <short pause> গিয়ে দেখি—"
+  },
+  {
+    "id": 14,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02f_Binoy_Account2.wav",
+    "charName": "Binoy (Teenager)",
+    "voice": "Puck",
+    "style": "Storytelling teenager, amazed, a little laugh in the voice.",
+    "speech": "বীরু কালকের কেনা কচ্ছপগুলো—একটা একটা করে উল্টে দিচ্ছে! <short pause> এইটুকু ছেলের কাণ্ড দেখে আমি তো অবাক। চুপ করে দাঁড়িয়ে দেখতে লাগলাম, ও কী করে।"
+  },
+  {
+    "id": 15,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02g_Binoy_Account3.wav",
+    "charName": "Binoy (Teenager)",
+    "voice": "Puck",
+    "style": "Building suspense, slowing down, then a sudden jolt on the bite.",
+    "speech": "লেজ ধরে, পাশ ধরে—নানাভাবে উল্টে দিচ্ছে। <short pause> তারপর একবার লেজ ভেবে যেই না শুঁড়টা ধরেছে— <short pause> অমনি কচ্ছপটা খপ করে হাত কামড়ে ধরল!"
+  },
+  {
+    "id": 16,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02h_Balak_Tortoise.wav",
+    "charName": "Balak Thakur (Biru)",
+    "voice": "Sola",
+    "style": "Playful, unafraid six-year-old gently teasing the tortoise, no pain, a smile in the voice.",
+    "speech": "ছাড়লি না, ছাড়লি না— <short pause> দাঁড়া, দেখাচ্ছি মজা!"
+  },
+  {
+    "id": 17,
+    "scene": "02 — কচ্ছপের কামড় ও বিনয়ের বিবরণ (Tortoise Bite & Flashback)",
+    "filename": "02i_Binoy_Shouted.wav",
+    "charName": "Binoy (Teenager)",
+    "voice": "Puck",
+    "style": "Sheepish teenager, half laughing at himself.",
+    "speech": "আর ওই দেখেই তো আমি চেঁচিয়ে উঠলাম!"
+  },
+  {
+    "id": 18,
+    "scene": "03 — ছয় বছর ও নির্জনতা (Six and Alone - Montage)",
+    "filename": "03a_Narrator_Six.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Tender, thoughtful storyteller, slower pace.",
+    "speech": "বীরু সবে পাঁচ পেরিয়ে ছয়ে পা দিয়েছে। <short pause> কিন্তু ওর চলন-বলন, ওর চুপচাপ ভাব—আশপাশের কারো সাথেই ঠিক মেলে না।"
+  },
+  {
+    "id": 19,
+    "scene": "03 — ছয় বছর ও নির্জনতা (Six and Alone - Montage)",
+    "filename": "03b_Surendra_Scold.wav",
+    "charName": "Surendra (Father)",
+    "voice": "Achird",
+    "style": "Impatient father scolding across the yard, stern but not raging.",
+    "speech": "এই বীরু! ডাকলে সাড়া নেই, কাজের কথায় মন নেই— <short pause> খালি খেয়াল আর দুষ্টুমি!"
+  },
+  {
+    "id": 20,
+    "scene": "03 — ছয় বছর ও নির্জনতা (Six and Alone - Montage)",
+    "filename": "03c_Narrator_Alone.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Gentle, a little wistful, soft on the second phrase.",
+    "speech": "বকুনি তো লেগেই থাকত, <short pause> কখনো কখনো মারও জুটত। <short pause> তাই বীরু আরও চুপচাপ, আরও একা হয়ে গেল।"
+  },
+  {
+    "id": 21,
+    "scene": "03 — ছয় বছর ও নির্জনতা (Six and Alone - Montage)",
+    "filename": "03d_Narrator_Places.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Soft, unhurried, painting three quiet pictures.",
+    "speech": "ওকে পাওয়া যেত কখনো কলাবাগিচায়, <short pause> কখনো মাঠের শেষে দেবদারু গাছের নীচে, <short pause> কখনো নদীর ধারে জামগাছতলায়—একা, চুপটি করে বসে।"
+  },
+  {
+    "id": 22,
+    "scene": "03 — ছয় বছর ও নির্জনতা (Six and Alone - Montage)",
+    "filename": "03e_Charu_Relief.wav",
+    "charName": "Charu (Mother)",
+    "voice": "Cleo",
+    "style": "Tired, relieved sigh, half to herself while working.",
+    "speech": "যাক, চুপচাপ এক কোণে বসে আছে— <short pause> নতুন কোনো কাণ্ড তো বাধাচ্ছে না। তাতেই রক্ষে!"
+  },
+  {
+    "id": 23,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04a_Narrator_ThatDay.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Warm, calm, setting a peaceful scene.",
+    "speech": "সেদিন দুপুরে বীরু কাছারি ঘরের পেছনে, কলাবাগিচায় বসে আপন মনে খেলছিল।"
+  },
+  {
+    "id": 24,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04b_Haricharan_Q1.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Out of breath, hot-tempered village man, bamboo in hand.",
+    "speech": "এই বীরু! <short pause> গরুটা কোন দিকে গেছে, দেখেছিস?"
+  },
+  {
+    "id": 25,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04c_Balak_WhatHappened.wav",
+    "charName": "Balak Thakur (Biru)",
+    "voice": "Sola",
+    "style": "Calm, innocent, curious six-year-old.",
+    "speech": "হরিচরণদা, কী হয়েছে?"
+  },
+  {
+    "id": 26,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04d_Haricharan_Cucumber.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Indignant and aggrieved, comically exaggerated grief over his cucumbers.",
+    "speech": "কী হয়েছে? <short pause> আমার অত বড় শশা গাছটা—গোটা ঝাঁকা জুড়ে লতিয়ে উঠেছিল! <short pause> ডগায় ডগায় কচি কচি শশা! <short pause> হতচ্ছাড়া গরু সব খেয়ে গেছে— <short pause> শুধু খায়নি, গাছটা গোড়াসুদ্ধ উপড়ে দিয়েছে!"
+  },
+  {
+    "id": 27,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04e_Balak_Inner1.wav",
+    "charName": "Balak Thakur (Inner Voice)",
+    "voice": "Sola",
+    "style": "Soft whispered inner thought, very calm, close to the microphone.",
+    "speech": "এখন যদি বলে দিই— <short pause> ওর তো একেবারে দফা রফা হয়ে যাবে।"
+  },
+  {
+    "id": 28,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04f_Haricharan_Q2.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Impatient and more heated, leaning down.",
+    "speech": "কী রে, চুপ করে আছিস কেন? <short pause> তাড়াতাড়ি বল, কোন দিকে গেছে?"
+  },
+  {
+    "id": 29,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04g_Balak_Inner2.wav",
+    "charName": "Balak Thakur (Inner Voice)",
+    "voice": "Sola",
+    "style": "Whispered inner thought, slow, weighing two things, then quietly decided.",
+    "speech": "'জানি' বললে, গরুটা ভীষণ মার খাবে। <short pause> 'জানি না' বললে, সত্যটা যাবে। <short pause> না—গরুও থাকবে, সত্যও থাকবে।"
+  },
+  {
+    "id": 30,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04h_Balak_Truth1.wav",
+    "charName": "Balak Thakur (Biru)",
+    "voice": "Sola",
+    "style": "Calm, gentle, completely firm and respectful six-year-old.",
+    "speech": "দেখলেও বলব না। <short pause> কারণ বলে দিলে আপনি তো আর রক্ষা রাখবেন না। <short pause> আমি কিছুতেই বলব না।"
+  },
+  {
+    "id": 31,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04i_Haricharan_Sputter.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Flabbergasted splutter, eyes popping wide.",
+    "speech": "অ্যাঁ! বলবি না মানে?!"
+  },
+  {
+    "id": 32,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04j_Balak_Truth2.wav",
+    "charName": "Balak Thakur (Biru)",
+    "voice": "Sola",
+    "style": "Simple, earnest, compassionate, never preachy.",
+    "speech": "আমি বলে দিই, আর অমনি আপনি গিয়ে ওকে ধরে লাগান! <short pause> ও যে শশা গাছ খেয়েছে— <short pause> তা আপনার গাছ, কি আমার গাছ—ও কি বুঝে খেয়েছে?"
+  },
+  {
+    "id": 33,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04k_Balak_Truth3.wav",
+    "charName": "Balak Thakur (Biru)",
+    "voice": "Sola",
+    "style": "Softer and tender, settling; the last sentence quiet and final.",
+    "speech": "ওর খাওয়া দরকার, তাই খেয়েছে। <short pause> ও কি আর বুঝেছিল, আপনি ওর জন্য বাঁশ নিয়ে আসবেন? <short pause> আমি ওর খবর বলতে পারব না।"
+  },
+  {
+    "id": 34,
+    "scene": "04 — শশা গাছ ও শান্ত গাভী (Cucumber Trellis & Cow Rescue)",
+    "filename": "04l_Haricharan_Storm.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Exploding in comic exasperation, turning to stomp away.",
+    "speech": "বাঃ! খুব ভালো! গরুর হয়ে ওকালতি হচ্ছে! <short pause> যত্তসব অদ্ভুত কাণ্ড!"
+  },
+  {
+    "id": 35,
+    "scene": "05 — কাছারির সেরেস্তায় জল্পনা (Kachari Gossip)",
+    "filename": "05a_Haricharan_Report.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Still fuming, gossiping to the clerks; mimics a child's voice on the quote.",
+    "speech": "শুনেছেন বাবুরা? <short pause> সুরেনবাবুর ছেলে ঠিক জানে গরুটা কোথায়— <short pause> অথচ কিছুতেই বলবে না! <short pause> উল্টে বলে কিনা, 'ও কি বুঝে খেয়েছে!'"
+  },
+  {
+    "id": 36,
+    "scene": "05 — কাছারির সেরেস্তায় জল্পনা (Kachari Gossip)",
+    "filename": "05b_ClerkA_SawEat.wav",
+    "charName": "Senior Clerk (বড়বাবু)",
+    "voice": "Charon",
+    "style": "Dry, knowing, slow; peering over his spectacles.",
+    "speech": "হুঁ... <short pause> মনে হয়, ও খেতেও দেখেছে।"
+  },
+  {
+    "id": 37,
+    "scene": "05 — কাছারির সেরেস্তায় জল্পনা (Kachari Gossip)",
+    "filename": "05c_ClerkB_FedIt.wav",
+    "charName": "Junior Clerk (মুহুরিবাবু)",
+    "voice": "Zephyr",
+    "style": "Theatrical, leaning in, dramatic conspiratorial certainty.",
+    "speech": "আরে মশাই, শুধু দেখা কেন? <short pause> ও নিজে ধরে নিয়েও খাইয়ে আসতে পারে!"
+  },
+  {
+    "id": 38,
+    "scene": "05 — কাছারির সেরেস্তায় জল্পনা (Kachari Gossip)",
+    "filename": "05d_ClerkA_Verdict.wav",
+    "charName": "Senior Clerk (বড়বাবু)",
+    "voice": "Charon",
+    "style": "Shaking his head, a dry and gently comic verdict.",
+    "speech": "যাই বলো, সুরেনবাবুর এই ছেলেটির— <short pause> বিষয়বুদ্ধি বলে কিচ্ছু নেই! <short pause> একটা অদ্ভুত পদার্থ!"
+  },
+  {
+    "id": 39,
+    "scene": "05 — কাছারির সেরেস্তায় জল্পনা (Kachari Gossip)",
+    "filename": "05e_Haricharan_Agree.wav",
+    "charName": "Haricharan",
+    "voice": "Fenrir",
+    "style": "Emphatic, vindicated, nodding firmly.",
+    "speech": "ঠিক বলেছেন! একদম ঠিক!"
+  },
+  {
+    "id": 40,
+    "scene": "Block 99 — সমাপনী ও পরবর্তী পর্বের ঝলক (Closing & Episode 6 Teaser)",
+    "filename": "99_Outro_Sequential.wav",
+    "charName": "Narrator",
+    "voice": "Enzo",
+    "style": "Serene, warm, gently smiling storyteller; then warm curiosity for the teaser.",
+    "speech": "কাছারির বাবুরা ভাবলেন, ছেলেটার বিষয়বুদ্ধি নেই। <short pause> কিন্তু ছোট্ট বীরু সেদিন দুটোকেই বাঁচিয়েছিল— <short pause> অবলা গাভীটিকে, আর সত্যকে। <short pause> ছোটদের বালক ঠাকুরের গল্প— <short pause> আসছে পরের পর্ব: জ্যেষ্ঠ ভ্রাতাকে উদ্ধার ও খেলার সাথী! <short pause> বড় ভাইয়ের মার খেয়েও ছোট্ট ঠাকুর— <short pause> কীভাবে দাদাকে বাবার হাত থেকে বাঁচালেন? <short pause> দেখুন পরের পর্বে!"
+  }
+];
+const STORAGE_KEY = "balak_thakur_ep05_voices_progress";
+let checkedIds = new Set([1, 2]);
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) checkedIds = new Set(JSON.parse(saved));
+  } catch (e) { console.warn("Storage load failed", e); }
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...checkedIds]));
+  } catch (e) { console.warn("Storage save failed", e); }
+  updateProgressBar();
+}
+
+function updateProgressBar() {
+  const count = checkedIds.size;
+  const total = CLIPS_DATA.length;
+  const pct = Math.round((count / total) * 100);
+  document.getElementById("progressCount").textContent = `${count} / ${total}`;
+  document.getElementById("progressPercent").textContent = `${pct}%`;
+  document.getElementById("progressBar").style.width = `${pct}%`;
+}
+
+function renderCards(filter = "all", statusFilter = "all") {
+  const container = document.getElementById("cardsList");
+  container.innerHTML = "";
+  let currentScene = "";
+
+  CLIPS_DATA.forEach(clip => {
+    const isCompleted = checkedIds.has(clip.id);
+    if (statusFilter === "pending" && isCompleted) return;
+    if (statusFilter === "done" && !isCompleted) return;
+    if (filter !== "all" && clip.voice !== filter) return;
+
+    if (clip.scene !== currentScene) {
+      currentScene = clip.scene;
+      const heading = document.createElement("div");
+      heading.className = "scene-heading";
+      heading.innerHTML = `<span>${currentScene}</span>`;
+      container.appendChild(heading);
+    }
+
+    const card = document.createElement("div");
+    card.className = `voice-card ${isCompleted ? 'completed' : ''}`;
+    card.id = `card-${clip.id}`;
+    card.innerHTML = `
+      <div class="card-check">
+        <div class="custom-checkbox" onclick="toggleClip(${clip.id})">
+          ${isCompleted ? '✓' : ''}
+        </div>
+      </div>
+      <div class="card-content">
+        <div class="card-header-row">
+          <span class="card-filename">${clip.filename}</span>
+          <span class="badge-speaker speaker-${clip.voice}">
+            <span>${clip.charName}</span> • <strong>${clip.voice}</strong>
+          </span>
+          <button class="box-copy-btn" onclick="copyClipVoice(${clip.id})">Copy Voice</button>
+          <button class="box-copy-btn" onclick="copyClipFilename(${clip.id})">Copy Filename</button>
+        </div>
+        <div class="box-container">
+          <div class="box-label">
+            <span>Style Instructions Box</span>
+            <button class="box-copy-btn" onclick="copyClipStyle(${clip.id})">Copy Style</button>
+          </div>
+          <div class="box-text">${clip.style}</div>
+        </div>
+        <div class="box-container">
+          <div class="box-label">
+            <span>Speech Box (Bengali)</span>
+            <button class="box-copy-btn" onclick="copyClipSpeech(${clip.id})">Copy Bengali</button>
+          </div>
+          <div class="box-text bengali">${clip.speech}</div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn copy-all" onclick="copyClipAll(${clip.id})">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copy All
+        </button>
+        <button class="action-btn" onclick="toggleClip(${clip.id})">
+          ${isCompleted ? 'Mark Pending' : 'Mark Done ✓'}
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleClip(id) {
+  if (checkedIds.has(id)) {
+    checkedIds.delete(id);
+  } else {
+    checkedIds.add(id);
+    showToast(`Clip ${id} marked as completed!`);
+  }
+  saveProgress();
+  const card = document.getElementById(`card-${id}`);
+  if (card) {
+    const isCompleted = checkedIds.has(id);
+    card.classList.toggle("completed", isCompleted);
+    card.querySelector(".custom-checkbox").innerHTML = isCompleted ? '✓' : '';
+    const markBtn = card.querySelector(".card-actions .action-btn:last-child");
+    if (markBtn) markBtn.textContent = isCompleted ? 'Mark Pending' : 'Mark Done ✓';
+  }
+}
+
+function copyText(text, label = "Text") {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(`Copied ${label}!`);
+  }).catch(err => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    showToast(`Copied ${label}!`);
+  });
+}
+
+function copyClipVoice(id) {
+  const c = CLIPS_DATA.find(x => x.id === id);
+  if (c) copyText(c.voice, 'Voice ' + c.voice);
+}
+function copyClipFilename(id) {
+  const c = CLIPS_DATA.find(x => x.id === id);
+  if (c) copyText(c.filename, 'Filename ' + c.filename);
+}
+function copyClipStyle(id) {
+  const c = CLIPS_DATA.find(x => x.id === id);
+  if (c) copyText(c.style, 'Style instructions');
+}
+function copyClipSpeech(id) {
+  const c = CLIPS_DATA.find(x => x.id === id);
+  if (c) copyText(c.speech, 'Bengali speech');
+}
+
+function copyClipAll(id) {
+  const clip = CLIPS_DATA.find(c => c.id === id);
+  if (!clip) return;
+  const fullText = `VOICE: ${clip.voice}\n\nSTYLE:\n${clip.style}\n\nSPEECH:\n${clip.speech}`;
+  copyText(fullText, `Clip ${id} info`);
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  const msgEl = document.getElementById("toastMsg");
+  msgEl.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove("show"); }, 2200);
+}
+
+let currentFilter = "all";
+let currentStatus = "all";
+
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.filter !== undefined) {
+      document.querySelectorAll(".filter-btn[data-filter]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+    } else if (btn.dataset.status !== undefined) {
+      if (btn.classList.contains("active")) {
+        btn.classList.remove("active");
+        currentStatus = "all";
+      } else {
+        document.querySelectorAll(".filter-btn[data-status]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentStatus = btn.dataset.status;
+      }
+    }
+    renderCards(currentFilter, currentStatus);
+  });
+});
+
+document.getElementById("resetProgressBtn").addEventListener("click", () => {
+  if (confirm("Reset your completed checks back to initial state?")) {
+    checkedIds = new Set([1, 2]);
+    saveProgress();
+    renderCards(currentFilter, currentStatus);
+    showToast("Progress reset");
+  }
+});
+
+loadProgress();
+updateProgressBar();
+renderCards();
+</script>
+</body>
+</html>
