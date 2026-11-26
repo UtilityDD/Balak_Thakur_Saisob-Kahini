@@ -23,7 +23,8 @@ child saint Balak Thakur, based on "Sri Sri Balak Brahmachari's Childhood Storie
   field (STO-21, CHR-08/08a, AUD-08): the elder brother saved, the treasurer and the ten rupees.
 - Episodes 7 to 19: scripts, manifests, SRTs and draft voices only. Planned rework: `05_Rework/` (Balak painted-look library, not started).
 - From Episode 5 on Balak follows the director's reference plates (`01_Series_Bible/Thakur_Reference_Plates/`, BAL-26); every
-  episode gets a music cue sheet with Indian instruments (AUD-07; library in `remotion_studio/public/audio/music/ep05/`).
+  episode gets a music cue sheet with Indian instruments (AUD-07); the `remotion_studio/public/audio/music/ep05/` library
+  (tanpura, bansuri, tabla, plucks) is the series score for every episode (AUD-09; Ghibli Episode 4 first).
 Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 
 ## Where things live
@@ -58,7 +59,7 @@ Details and pending work: [03_Episodes/README.md](03_Episodes/README.md).
 
 ## Golden rules
 1. Divine rules for Balak. Divine to devotees, never Krishna-like: no tilak, bangles, anklets, jewellery or sacred
-   thread; curly dark hair. Divine light is his alone and restrained: soft warm-white halo behind the head that fades
+   thread; curly dark hair (the new reference look, short straight side-parted hair, in Ghibli Episode 4: BAL-26f). Divine light is his alone and restrained: soft warm-white halo behind the head that fades
    out (no hard, dashed or bursting rings or rays), warm golden rim light, faint ground glow, a few slow motes; it
    brightens gently only on key beats and does not pulse with breathing (BAL-01 to BAL-14, MOT-20).
 2. One baby face. Baby Balak has one face design in every scene; the newborn BabyThakur face in
@@ -120,6 +121,7 @@ Remotion commands run from `remotion_studio` in the production worktree, `script
 - Agents' renders go through the shared lock so only one runs at a time (REN-LOCK-01):
   `bash ../scripts/render_locked.sh still Episode02 ../out/f.png --frame=N` or
   `bash ../scripts/render_locked.sh render Episode02 ../out/clip.mp4 --frames=A-B --codec=h264`
+- Always add `--gl=angle` to renders and stills: the GPU path is about 18x faster on this laptop, keep `--concurrency=2` (REN-GPU-01).
 - Full render, only after approval (render-episode skill): parallel chunks of about 2,000 frames, e.g.
   `NODE_OPTIONS=--max-old-space-size=8192 node node_modules/@remotion/cli/remotion-cli.js render src/index.ts Episode02 ../chunks/part_00.mp4 --codec=h264 --crf=16 --concurrency=2 --frames=0-1999`,
   join with `ffmpeg -f concat -safe 0 -i list.txt -c copy out.mp4`, check duration and blank frames at each join,

@@ -128,8 +128,8 @@ Every prop actively picked up, rolled, handed off, or drunk from is coded as a *
 
 ### Story 1 — মাটির শিবলিঙ্গ ও কাঠের পুতুল (Scene 01)
 
-- **01a_Narrator_Morning.wav** | `01_Narrator_Kathak` | Style: `Warm, gentle, light storybook morning tone.`
-  > মেদিনীমণ্ডলের বৈদিক বাড়ি। রোজ সকালে মা চারুশীলা মাটির শিবলিঙ্গ গড়ে পূজো করেন—আর পাঁচ বছরের বীরু অবাক হয়ে দেখে।
+- **01a_Narrator_Morning.wav** | `01_Narrator_Kathak` | Style: `Warm, gentle Bengali children's storybook narrator, building playful curiosity and a mischievous smile at the end.`
+  > মেদিনীমণ্ডলের বৈদিক বাড়ি। রোজ সকালে মা চারুশীলা মাটির শিবলিঙ্গ গড়ে পূজো করেন—আর পাঁচ বছরের বীরু অবাক হয়ে দেখে। <short pause> কিন্তু একদিন হলো কী…
 
 - **01b_Charu_Shock.wav** | `05_Charu` | Style: `Startled gasp turning into flustered, scolding motherly alarm.`
   > অ্যাঁ! একি কাণ্ড! আমার মাটির শিব কোথায় গেল? <short pause> থালায় ওটা কী—গলৈয়ার কাঠের পুতুল?! ওরে বীরু! বীরু কোথায় গেলি?

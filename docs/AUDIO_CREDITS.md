@@ -228,3 +228,48 @@ writing-slate recording was found on Commons or Freesound (2026-11-23).
 Optional (no credit required): hens leaving coop by alys and house sparrow by Gypsypkd (public domain); pigeon wings and
 goat by Kinoton, village dog by Balaram_Mahalder, brass bowl by FOSSarts, brick by vintage2005, chalk tap by joedeshon,
 heartbeat by Athletearrhythmia (all CC0).
+
+---
+
+## Ghibli life kit
+
+Added 2026-11-25 (STO-22b, the immersive Ghibli world layer; shared by all episodes). Files in
+`remotion_studio/public/audio/sfx/ghibli_life/` (production worktree); trims, filters, levels, suggested volumes and
+rejected candidates in that folder's `README.md`; the downloaded originals (each with a `meta.json`) and the build
+recipe (`build_ghibli_life_sfx.py`, reproduces every file bit for bit) in its `_source/` folder. 48 kHz mono 16-bit
+WAV, sample peak at most -6 dBFS; calls -25 to -32 LUFS, loops -27 to -30 LUFS, transients peak-levelled. Freesound
+files were fetched as Freesound's public HQ previews (192 kbps OGG of the original). Not yet placed in code.
+
+| File | Source recording | Source URL | Part used | Author | Licence |
+|---|---|---|---|---|---|
+| `ducks_quack.wav` | "Ducks" (Freesound 416519) | https://freesound.org/people/Zandtekenaar/sounds/416519/ | quacks 6.98 to 7.46, 15.40 to 15.85 (0.93x), 8.06 to 8.52 s | Zandtekenaar | CC0 |
+| `water_glide.wav` | "Slow Quiet Water Ripples (remix of 338345)" (Freesound 634753) | https://freesound.org/people/Thimblerig/sounds/634753/ | 8.60 to 32.60 s, 24 s loop | Thimblerig | CC BY 4.0 |
+| `water_glide.wav` | "Splashing Water by Oars.wav" (Freesound 338345; the original of the remix above) | https://freesound.org/people/Lubini/sounds/338345/ | (via the remix) | Lubini | CC BY 4.0 |
+| `fish_plop.wav` | "Järven ranta, kalat pulahtelevat / Lakeside ... small fish plopping" (Freesound 272366) | https://freesound.org/people/YleArkisto/sounds/272366/ | the plop at 52.78 to 53.28 s | YleArkisto (Yle archive) | CC BY 4.0 |
+| `kingfisher_call.wav` | "White-throated kingfisher song recorded in April 2022 at Haripur, Sangli.wav" | https://commons.wikimedia.org/wiki/File:White-throated_kingfisher_song_recorded_in_April_2022_at_Haripur,_Sangli.wav | 2.10 to 3.75 s (two trills) | Sharadapte | CC BY-SA 4.0 |
+| `small_splash.wav` | "Splash, Small, A.wav" (Freesound 416710) | https://freesound.org/people/InspectorJ/sounds/416710/ | 0.40 to 1.40 s, 1.08x | InspectorJ | CC BY 4.0 |
+| `frog_croak.wav` | "Frog croaking after rain, Kerala.wav" | https://commons.wikimedia.org/wiki/File:Frog_croaking_after_rain,_Kerala.wav | croaks 19.30 to 20.05 and 21.18 to 22.02 s | Vis M | CC BY-SA 4.0 |
+| `pond_lapping_loop.wav` | "Tiny waves lapping #3" (Freesound 464801) | https://freesound.org/people/guyburns/sounds/464801/ | 6.0 to 36.0 s, 28 s loop | guyburns | CC0 |
+| `rooster_crow.wav` | "rooster crows in the village" (Freesound 627335) | https://freesound.org/people/Garuda1982/sounds/627335/ | the crow at 31.95 to 34.35 s | Garuda1982 | CC0 |
+| `dawn_birds_loop.wav` | "2025-04-28_Birbhum_Birdsong_EarlyMorning_SB" (Freesound 804625; Birbhum, West Bengal) | https://freesound.org/people/amuzix/sounds/804625/ | 4.0 to 36.0 s, 30 s loop | amuzix | CC BY 4.0 |
+| `pigeons_coo.wav` | "Blue rock pigeon song recorded in May 2012 at Sangli.wav" | https://commons.wikimedia.org/wiki/File:Blue_rock_pigeon_song_recorded_in_May_2012_at_Sangli.wav | coos 1.30 to 2.15 and 3.45 to 4.35 s | Sharadapte | CC BY-SA 4.0 |
+| `pigeon_flutter.wav` | "Pigeon, Flies Away, Flapping Wings" (Freesound 689998) | https://freesound.org/people/Kinoton/sounds/689998/ | 0.80 to 3.00 s | Kinoton | CC0 |
+| `gecko_tiktiki.wav` | "HouseGeckoChirp.ogg" (Hemidactylus frenatus) | https://commons.wikimedia.org/wiki/File:HouseGeckoChirp.ogg | 0.60 to 3.20 s (nine chirps) | Glueball | CC BY-SA 3.0 |
+| `squirrel_chirp.wav` | "Indian palm squirrel sound.wav" (Kerala) | https://commons.wikimedia.org/wiki/File:Indian_palm_squirrel_sound.wav | 4.40 to 6.60 s | Ganesh Mohan T | CC BY-SA 4.0 |
+| `night_crickets_loop.wav` | "Crickets at Night" (Freesound 502907; a village in Western India) | https://freesound.org/people/hungryrj/sounds/502907/ | 4.0 to 36.0 s, 30 s loop | hungryrj | CC0 |
+| `moth_flutter.wav` | "Moth flies in nocturnal polder 0149 240802_0877" (Freesound 806457) | https://freesound.org/people/klankbeeld/sounds/806457/ | 0.00 to 2.50 s | klankbeeld | CC BY 4.0 |
+| `cow_bell_distant.wav` | "Cowbells from Karnataka being played at Janapada Loka.oga" | https://commons.wikimedia.org/wiki/File:Cowbells_from_Karnataka_being_played_at_Janapada_Loka.oga | single strokes at 10.61, 11.35, 12.05 s | Subhashish Panigrahi | CC BY-SA 4.0 |
+| `wind_leaves.wav` | "the rush in the trees" (Freesound 706661) | https://freesound.org/people/37735i6/sounds/706661/ | 0.30 to 16.00 s, 14 s loop | 37735i6 | CC0 |
+
+Stand-ins: `small_splash` is a small water-filled toy thrown into a pool (no free recording of a kingfisher's dive),
+`water_glide` is soft oar ripples (no duck paddling), `pond_lapping_loop` is small lake waves (no ghat steps). Not
+found under a free licence: an Indian bullfrog (the Kerala pond frog stands in), a Bengal rooster, a dragonfly buzz
+(optional; not made, `moth_flutter` at 0.15 is the nearest). Changed versions of the CC BY-SA sounds must be shared
+under the same licence.
+
+**Suggested credit line** (keep only what is cued):
+
+> 'White-throated kingfisher song ... Haripur, Sangli' and 'Blue rock pigeon song ... Sangli' by Sharadapte, 'Frog croaking after rain, Kerala' by Vis M, 'Indian palm squirrel sound' by Ganesh Mohan T and 'Cowbells from Karnataka being played at Janapada Loka' by Subhashish Panigrahi (CC BY-SA 4.0), 'HouseGeckoChirp' by Glueball (CC BY-SA 3.0), via Wikimedia Commons; 'Birbhum Birdsong Early Morning' by amuzix, 'Slow Quiet Water Ripples' by Thimblerig (from 'Splashing Water by Oars' by Lubini), 'Lakeside, small fish plopping' by YleArkisto, 'Splash, Small, A' by InspectorJ and 'Moth flies in nocturnal polder' by klankbeeld (CC BY 4.0), via Freesound.
+
+Optional (no credit required): ducks by Zandtekenaar, waves lapping by guyburns, village rooster by Garuda1982, pigeon
+wings by Kinoton, Indian village crickets by hungryrj, wind in trees by 37735i6 (all CC0).
