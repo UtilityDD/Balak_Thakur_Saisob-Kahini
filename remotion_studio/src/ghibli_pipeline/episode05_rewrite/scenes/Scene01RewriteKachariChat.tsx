@@ -23,9 +23,10 @@ import {
 import { mouthFromRms } from "../../episode04/Ep04GhibliShared";
 import { EP05R_CAST, EP05R_GESTURES, EP05R_LIGHT, EP05R_SCALE, Ep05Person, Ep05SeatedBalak, Ep05StandingBalak, ep05SeatedProps } from "../Ep05RewriteCast";
 import { Ep05MangoLeaf, Ep05PalmFan, Ep05Tortoise, makePalmFanInHand } from "../Ep05RewriteProps";
+import { useS01VerandaMarks } from "../layoutMarks";
 import { ep05rPhraseLocal } from "../subtitles";
 import { ep05rScene } from "../timing";
-import { camAt, FigureDefs, frameOn, PLATE_RECT, PaintedPlate, plateKeep, ramp, roleMouth, type Shot, shotAt, SkeletonTag, span } from "./RewriteKit";
+import { camAt, CuDetailScreen, cuDetailActive, FigureDefs, frameOn, PLATE_RECT, PaintedPlate, plateKeep, ramp, roleMouth, type Shot, shotAt, SkeletonTag, span } from "./RewriteKit";
 
 /**
  * Scene 01 `01_kachari_chat_and_slip` (blueprint section 5; book chapter 8, first lines). Late morning.
@@ -63,7 +64,14 @@ import { camAt, FigureDefs, frameOn, PLATE_RECT, PaintedPlate, plateKeep, ramp, 
 
 const SCENE_ID = "01_kachari_chat_and_slip";
 
-const PRELOAD = ["images/ghibli_ep06/ujanchar_veranda_back.png", "images/ghibli_ep04/madur_mat_veranda_sketch.png"] as const;
+const PRELOAD = [
+  "images/ghibli_ep06/ujanchar_veranda_back.png",
+  "images/ghibli_ep04/madur_mat_veranda_sketch.png",
+  "images/ghibli_ep05r/cu/s01_shot2_charu.png",
+  "images/ghibli_ep05r/cu/s01_shot3_suren.png",
+  "images/ghibli_ep05r/cu/s01_shot6_charu_cu.png",
+  "images/ghibli_ep05r/cu/s01_shot7_suren.png",
+] as const;
 const PLATE = "images/ghibli_ep06/ujanchar_veranda_back.png";
 
 /* ------------------------------------------------------------------ */
@@ -71,27 +79,26 @@ const PLATE = "images/ghibli_ep06/ujanchar_veranda_back.png";
 /* ------------------------------------------------------------------ */
 
 const K = 0.78; // adult Puppet scale on the veranda floor
-// The kept veranda plate: plank floor sits at about y 770, the front lip at about y 802.
-// Left post x 312, the next post x 749, the door opens around x 885. Binoy's house is off left.
-const PORCH = 786;
-const CHARU = { x: 560, y: PORCH };
-const SUREN = { x: 720, y: PORCH };
-const BALAK = { x: 420, y: PORCH };
-const MAT = { x: 600, y: 762, h: 100 }; // lies on the planks; the near edge meets the lip
 const SEAT_S = EP05R_SCALE.seatedBalak.s * K;
 const STAND_S = EP05R_SCALE.standingBalak.s * K;
-const LEAF_REST = { x: BALAK.x + 36, y: PORCH + 6 };
-const FAN_REST = { x: SUREN.x + 48, y: PORCH + 8 };
-const NEXT_DOOR = { x: 180, y: 620 }; // along the porch, toward the neighbour on the left
-const PORCH_EXIT = 300; // he leaves at the left post, still on the planks, clear of the flower bed
+// Kept-house plate: marks live in public/ep05r_layout/s01_veranda.json (Ep05RLayoutEditor).
+// Left post x 312, the next post x 749, the door opens around x 885. Binoy's house is off left.
 
 /** Veranda posts redrawn over the figures (rects on the plate, world px). */
 const POST_OCCLUDERS = [
-  { x: 298, y: 520, w: 28, h: 280 },
-  { x: 736, y: 530, w: 26, h: 270 },
+  { x: 298, y: 520, w: 28, h: 380 },
+  { x: 736, y: 530, w: 26, h: 370 },
 ];
 
-const VERANDA_WIDE: Cam = frameOn(860, 610, 1.0);
+/** Exact-match CU plates (bake_ep05r_cu_plates.py) — full-bleed screen swaps for soft zooms. */
+const S01_CU_DETAILS: Array<{ match: (name: string) => boolean; href: string; zoom: number }> = [
+  { match: (n) => n.startsWith("Shot 2"), href: "images/ghibli_ep05r/cu/s01_shot2_charu.png", zoom: 2.7 },
+  { match: (n) => n.startsWith("Shot 3"), href: "images/ghibli_ep05r/cu/s01_shot3_suren.png", zoom: 2.6 },
+  { match: (n) => n.startsWith("Shot 6"), href: "images/ghibli_ep05r/cu/s01_shot6_charu_cu.png", zoom: 3.0 },
+  { match: (n) => n.startsWith("Shot 7"), href: "images/ghibli_ep05r/cu/s01_shot7_suren.png", zoom: 2.55 },
+];
+
+const VERANDA_WIDE: Cam = frameOn(860, 682, 1.0);
 
 /* ------------------------------------------------------------------ */
 /* Small helpers                                                        */
@@ -139,6 +146,17 @@ const laughMouth = (fr: number, k: number): MouthState =>
 
 export const Scene01RewriteKachariChat: React.FC = () => {
   const f = useCurrentFrame();
+  const marks = useS01VerandaMarks();
+  const PORCH = marks.porch;
+  const CHARU = marks.charu;
+  const SUREN = marks.suren;
+  const BALAK = marks.balak;
+  const MAT = marks.mat;
+  const NEXT_DOOR = marks.nextDoor;
+  const PORCH_EXIT = marks.porchExit;
+  const PORCH_EDGE = PORCH - 6;
+  const LEAF_REST = { x: BALAK.x + 36, y: PORCH + 6 };
+  const FAN_REST = { x: SUREN.x + 48, y: PORCH + 8 };
   const dur = ep05rScene(SCENE_ID).durationFrames;
   const ag1 = span(SCENE_ID, "AG1_world_open");
   const l1a = span(SCENE_ID, "01a_Narrator_Kachari.wav");
@@ -167,10 +185,11 @@ export const Scene01RewriteKachariChat: React.FC = () => {
   const biru = ep05rPhraseLocal(SCENE_ID, "বীরু... বীরু", l1f.from + 55);
   const cholo = ep05rPhraseLocal(SCENE_ID, "চলো, শিগগির", l1g.from + 26);
 
-  /* ---------------- camera ---------------- */
+  /* ---------------- camera (Y keyed off porch sit marks so CUs track the brick) ---------------- */
   const SHOT2 = l1b.from - 6;
   const SHOT6 = l1f.from - 6;
-  const CHARU_CU: Cam = frameOn(CHARU.x + 18, 650, 3.0);
+  const headY = (footY: number, zoom: number) => footY - Math.round(148 / Math.max(1, zoom * 0.55));
+  const CHARU_CU: Cam = frameOn(CHARU.x + 18, headY(CHARU.y, 3.0), 3.0);
   const SHOTS: Shot[] = [
     {
       name: "AG1",
@@ -184,34 +203,34 @@ export const Scene01RewriteKachariChat: React.FC = () => {
       name: "Shot 1",
       from: l1a.from,
       view: "veranda",
-      cam: { ...VERANDA_WIDE, x: VERANDA_WIDE.x - 22 },
-      push: { to: VERANDA_WIDE, a: l1a.from, b: l1a.from + 36 },
+      cam: { ...VERANDA_WIDE, x: VERANDA_WIDE.x - 22, y: VERANDA_WIDE.y + (PORCH - 858) * 0.35 },
+      push: { to: { ...VERANDA_WIDE, y: VERANDA_WIDE.y + (PORCH - 858) * 0.35 }, a: l1a.from, b: l1a.from + 36 },
       note: "medium wide, the truck settles",
     },
     {
       name: "Shot 1 push",
       from: chotto - 4,
       view: "veranda",
-      cam: VERANDA_WIDE,
-      push: { to: frameOn(640, 650, 1.32), a: chotto - 4, b: chotto + 44 },
+      cam: { ...VERANDA_WIDE, y: VERANDA_WIDE.y + (PORCH - 858) * 0.35 },
+      push: { to: frameOn(640, headY(PORCH, 1.32), 1.32), a: chotto - 4, b: chotto + 44 },
       note: "push toward Balak on 'আর ছোট্ট বীরু?'",
     },
-    { name: "Shot 2 · Charu", from: SHOT2, view: "veranda", cam: frameOn(CHARU.x + 8, 640, 2.7), note: "close on Ma as she starts" },
-    { name: "Shot 3 · Surendra", from: l1c.from - 7, view: "veranda", cam: frameOn(SUREN.x, 636, 2.6), note: "close on Baba" },
-    { name: "P1", from: p1.from - 4, view: "veranda", cam: frameOn(640, 660, 1.75), note: "two-shot while they laugh, backs to Biru" },
-    { name: "AG2 · the slip", from: ag2.from, view: "veranda", cam: frameOn(BALAK.x, 680, 1.9), note: "on Biru as he rises and slips along the porch" },
-    { name: "Shot 4 · P2", from: l1d.from - 6, view: "veranda", cam: frameOn(MAT.x, 690, 1.6), note: "the empty mat and the leaf" },
-    { name: "AG3", from: ag3.from, view: "veranda", cam: VERANDA_WIDE, note: "held wide, time passes" },
-    { name: "Shot 5", from: l1e.from, view: "veranda", cam: frameOn(640, 640, 2.35), note: "cut on the shout: heads snap left" },
+    { name: "Shot 2 · Charu", from: SHOT2, view: "veranda", cam: frameOn(CHARU.x + 8, headY(CHARU.y, 2.7), 2.7), note: "close on Ma as she starts" },
+    { name: "Shot 3 · Surendra", from: l1c.from - 7, view: "veranda", cam: frameOn(SUREN.x, headY(SUREN.y, 2.6), 2.6), note: "close on Baba" },
+    { name: "P1", from: p1.from - 4, view: "veranda", cam: frameOn(640, headY(PORCH, 1.75), 1.75), note: "two-shot while they laugh, backs to Biru" },
+    { name: "AG2 · the slip", from: ag2.from, view: "veranda", cam: frameOn(BALAK.x, headY(BALAK.y, 1.9), 1.9), note: "on Biru as he rises and slips along the porch" },
+    { name: "Shot 4 · P2", from: l1d.from - 6, view: "veranda", cam: frameOn(MAT.x, headY(PORCH, 1.6), 1.6), note: "the empty mat and the leaf" },
+    { name: "AG3", from: ag3.from, view: "veranda", cam: { ...VERANDA_WIDE, y: VERANDA_WIDE.y + (PORCH - 858) * 0.35 }, note: "held wide, time passes" },
+    { name: "Shot 5", from: l1e.from, view: "veranda", cam: frameOn(640, headY(PORCH, 2.35), 2.35), note: "cut on the shout: heads snap left" },
     { name: "Shot 6", from: SHOT6, view: "veranda", cam: CHARU_CU, note: "close-up Charu" },
-    { name: "Shot 7", from: l1g.from - 4, view: "veranda", cam: frameOn(SUREN.x, 620, 2.55), note: "close on Surendra rising" },
+    { name: "Shot 7", from: l1g.from - 4, view: "veranda", cam: frameOn(SUREN.x, headY(SUREN.y, 2.55), 2.55), note: "close on Surendra rising" },
     {
       name: "AG4",
       from: ag4.from - 6,
       view: "veranda",
-      cam: frameOn(800, 640, 1.4),
-      push: { to: frameOn(470, 650, 1.4), a: ag4.from - 2, b: dur },
-      note: "pan left with the run",
+      cam: frameOn(800, headY(PORCH, 1.4), 1.4),
+      push: { to: frameOn(470, headY(PORCH, 1.4), 1.4), a: ag4.from - 2, b: dur },
+      note: "pan left with the run (stay on porch planks)",
     },
   ];
   const shot = shotAt(f, SHOTS);
@@ -524,11 +543,12 @@ export const Scene01RewriteKachariChat: React.FC = () => {
       [SET_DOWN.b + 10, 0, "inOut"],
     ]);
   const charuRise = { a: cholo - 10, b: cholo + 16 };
+  // Run only as far as the left porch post — past that the plate is bamboo / jungle, not a path.
   const charuRun: WalkOpts = {
     start: ag4.from - 6,
     dur: 80,
     fromX: 0,
-    toX: -980,
+    toX: -(CHARU.x - (PORCH_EXIT - 40)),
     scale: K,
     height: EP05R_CAST.charu.height,
     seed: EP05R_CAST.charu.seed,
@@ -624,6 +644,7 @@ export const Scene01RewriteKachariChat: React.FC = () => {
     return w > 0 ? mouthFromRms(w, fr) : MOUTH_REST;
   };
   const charuX = CHARU.x + (f >= charuRun.start ? walkTravel(f, charuRun).bodyX : 0);
+  const charuOnPorch = charuX > PORCH_EXIT;
 
   /* ---------------- Surendra ---------------- */
   const FAN_DROP = l1f.from + 30;
@@ -632,7 +653,7 @@ export const Scene01RewriteKachariChat: React.FC = () => {
     start: ag4.from - 2,
     dur: 84,
     fromX: 0,
-    toX: -1260,
+    toX: -(SUREN.x - (PORCH_EXIT - 40)),
     scale: K,
     height: EP05R_CAST.surendra.height,
     seed: EP05R_CAST.surendra.seed,
@@ -735,6 +756,7 @@ export const Scene01RewriteKachariChat: React.FC = () => {
     return w > 0 ? mouthFromRms(w, fr) : MOUTH_REST;
   };
   const surenX = SUREN.x + (f >= surenRun.start ? walkTravel(f, surenRun).bodyX : 0);
+  const surenOnPorch = surenX > PORCH_EXIT;
   const fanProps = { palmFan: makePalmFanInHand((fr) => fanAmp(fr) * (16 * Math.sin(fr * 0.42) + 3 * noise1(fr * 0.05, 4))) };
 
   /* ---------------- figures ---------------- */
@@ -791,10 +813,10 @@ export const Scene01RewriteKachariChat: React.FC = () => {
       seed={5}
       variant={1}
       path={[
-        { f: l1b.from - 30, x: 1040, y: 800 },
-        { f: l1b.from + 70, x: 900, y: 800 },
-        { f: l1b.to + 10, x: 860, y: 802 },
-        { f: l1c.to, x: 1100, y: 800 },
+        { f: l1b.from - 30, x: 1040, y: PORCH_EDGE },
+        { f: l1b.from + 70, x: 900, y: PORCH_EDGE },
+        { f: l1b.to + 10, x: 860, y: PORCH_EDGE + 2 },
+        { f: l1c.to, x: 1100, y: PORCH_EDGE },
       ]}
       peckAt={[l1b.from + 80, l1b.from + 120, l1b.from + 168]}
       autoCluck={false}
@@ -803,7 +825,7 @@ export const Scene01RewriteKachariChat: React.FC = () => {
   const henB = (
     <Hen
       x={1080}
-      y={802}
+      y={PORCH_EDGE + 2}
       s={K * 0.95}
       lifeF={f}
       seed={8}
@@ -839,18 +861,20 @@ export const Scene01RewriteKachariChat: React.FC = () => {
   );
 
   const figureBlur = 2.2 * rack;
+  const cu = S01_CU_DETAILS.find((d) => d.match(shot.name) && cuDetailActive(cam.zoom, d.zoom));
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "#e9d6b4", overflow: "hidden" }}>
-      <GhibliStage cam={cam} background="#e9d6b4">
+      <GhibliStage cam={cam} background="#e9d6b4" stable={Boolean(cu)}>
         <GhibliPreload files={PRELOAD} />
-        <PaintedPlate href={PLATE} />
-        {/* sky life: a few birds over the bamboo (Shot 1) */}
-        <GhibliLayer depth={1}>
-          <GhibliBirdFlock f={f} start={l1a.from + 10} dur={170} from={{ x: 1520, y: 150 }} to={{ x: 2250, y: 70 }} count={5} s={0.8} lifeF={f} />
-          {/* time passes: slow cloud shadows over the yard and the veranda */}
-          <GhibliCloudShadows region={{ x: -240, y: 760, w: 2400, h: 460 }} lifeF={f} speed={0.9} opacity={f >= ag3.from - 40 && f < l1e.from + 40 ? 0.16 : 0.08} />
-        </GhibliLayer>
+        {cu ? <CuDetailScreen href={cu.href} /> : <PaintedPlate href={PLATE} />}
+        {/* sky life: a few birds over the bamboo (Shot 1) — skip over CU so soft flock art doesn't muddy the plate */}
+        {!cu && (
+          <GhibliLayer depth={1}>
+            <GhibliBirdFlock f={f} start={l1a.from + 10} dur={170} from={{ x: 1520, y: 150 }} to={{ x: 2250, y: 70 }} count={5} s={0.8} lifeF={f} />
+            <GhibliCloudShadows region={{ x: -240, y: PORCH - 40, w: 2400, h: 460 }} lifeF={f} speed={0.9} opacity={f >= ag3.from - 40 && f < l1e.from + 40 ? 0.16 : 0.08} />
+          </GhibliLayer>
+        )}
         <GhibliLayer depth={1}>
           <FigureDefs f={f} zoom={cam.zoom} />
           <GhibliCutout
@@ -867,7 +891,7 @@ export const Scene01RewriteKachariChat: React.FC = () => {
           {/* a sparrow hops on the veranda edge by Balak (01a) and flies at the hen */}
           <Sparrow
             x={390}
-            y={800}
+            y={PORCH_EDGE}
             s={K}
             lifeF={f}
             seed={6}
@@ -893,12 +917,12 @@ export const Scene01RewriteKachariChat: React.FC = () => {
         <GhibliLayer depth={1} extraBlur={figureBlur}>
           <FigureDefs f={f} zoom={cam.zoom} />
           {henA}
-          {surenEl}
-          <Kula x={kula.x} y={kula.y} s={K} rot={f < SET_DOWN.a ? -6 : -2} />
-          {charuEl}
+          {surenOnPorch && surenEl}
+          {charuOnPorch && <Kula x={kula.x} y={kula.y} s={K} rot={f < SET_DOWN.a ? -6 : -2} />}
+          {charuOnPorch && charuEl}
           {henB}
         </GhibliLayer>
-        <GhibliLayer depth={1}>{occluders}</GhibliLayer>
+        {!cu && <GhibliLayer depth={1}>{occluders}</GhibliLayer>}
         <GhibliGrade warmth={0.14} vignette={0.24} paperOpacity={0.08} />
       </GhibliStage>
       <SkeletonTag sceneId={SCENE_ID} shot={shot} f={f} />

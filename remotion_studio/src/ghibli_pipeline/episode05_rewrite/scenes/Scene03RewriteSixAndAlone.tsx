@@ -21,8 +21,9 @@ import {
 } from "../../episode05/GhibliKachariSet";
 import { EP05R_CAST, EP05R_LIGHT, EP05R_SCALE, Ep05Person, Ep05SeatedBalak, Ep05StandingBalak } from "../Ep05RewriteCast";
 import { Ep05MangoLeaf } from "../Ep05RewriteProps";
+import { useS03YardMarks } from "../layoutMarks";
 import { ep05rPhraseLocal } from "../subtitles";
-import { camAt, frameOn, PaintedPlate, PLATE_RECT, plateKeep, ramp, roleMouth, type Shot, shotAt, SkeletonTag, span, WarmWash } from "./RewriteKit";
+import { camAt, CuDetailScreen, cuDetailActive, frameOn, PaintedPlate, PLATE_RECT, plateKeep, ramp, roleMouth, type Shot, shotAt, SkeletonTag, span, WarmWash } from "./RewriteKit";
 
 /**
  * Scene 03 `03_six_and_alone` (blueprint section 5; chapter নয়, opening): Ujanchar, the family yard in afternoon light,
@@ -63,12 +64,7 @@ const LIGHT = EP05R_LIGHT.afternoon;
 /* ---------------- yard layout (world px of the veranda plate, PLATE_RECT) ---------------- */
 const K_VER = 0.78; // adult scale on the veranda plinth
 const K_YARD = 0.9; // adult scale in the near yard
-const STEP = { x: 1200, y: 798 }; // Balak seated on the porch lip, right of the door
-const STAND = { x: 1200, y: 798 }; // he stands on the same planks
-const SUREN = { x: 700, y: 1000 }; // Surendra in the grass yard, calling across it
-const CHARU_VER = { x: 1100, y: 786 }; // Charu kneeling on the porch, clear of the doorway
-const THALI = { x: 1168, y: 800 };
-const DOOR_X = 900;
+// Marks live in public/ep05r_layout/s03_yard.json (Ep05RLayoutEditor).
 const BALAK_SEAT_S = EP05R_SCALE.seatedBalak.s * K_VER;
 const BALAK_STAND_S = EP05R_SCALE.standingBalak.s * K_VER;
 
@@ -97,7 +93,14 @@ const PRELOAD = [
   "images/ghibli_ep06/prop_brass_thali.png",
   "images/ghibli_ep05/card_outro_padma_sketch.png",
   "images/ghibli_ep05/grove_floor_sketch.png",
+  "images/ghibli_ep05r/cu/s03_shot18_suren.png",
+  "images/ghibli_ep05r/cu/s03_shot21_charu.png",
 ] as const;
+
+const S03_CU_DETAILS: Array<{ match: (name: string) => boolean; href: string; zoom: number }> = [
+  { match: (n) => n === "Shot 18", href: "images/ghibli_ep05r/cu/s03_shot18_suren.png", zoom: 2.6 },
+  { match: (n) => n.startsWith("Shot 21"), href: "images/ghibli_ep05r/cu/s03_shot21_charu.png", zoom: 2.6 },
+];
 
 const smooth = (t: number) => {
   const u = clamp(t);
@@ -317,6 +320,13 @@ interface Shot3 extends Shot {
 export const Scene03RewriteSixAndAlone: React.FC = () => {
   const f = useCurrentFrame();
   const lf = f;
+  const marks = useS03YardMarks();
+  const STEP = marks.balakSeat;
+  const STAND = marks.balakStand;
+  const SUREN = marks.suren;
+  const CHARU_VER = marks.charu;
+  const THALI = marks.thali;
+  const DOOR_X = marks.doorX;
   const ag8 = span(SCENE_ID, "AG8_world_open");
   const l3a = span(SCENE_ID, "03a_Narrator_Six.wav");
   const l3b = span(SCENE_ID, "03b_Surendra_Scold.wav");
@@ -345,20 +355,21 @@ export const Scene03RewriteSixAndAlone: React.FC = () => {
   const exitWalk: ChildWalk = { start: turnA + 16, steps: 14, stepF: 12, stepLen: 74, swing: 7, lift: 8 };
   const laneWalk: ChildWalk = { start: maro - 6, steps: 40, stepF: 13, stepLen: 80, swing: 8, lift: 9 };
 
+  const porchHead = (footY: number, zoom: number) => footY - Math.round(148 / Math.max(1, zoom * 0.55));
   const SHOTS: Shot3[] = [
-    { name: "AG8", from: ag8.from, view: "yard", cam: frameOn(960, 600, 1.0), note: "held wide, the yard in afternoon light" },
+    { name: "AG8", from: ag8.from, view: "yard", cam: frameOn(960, 620, 1.0), note: "held wide, the yard in afternoon light" },
     {
       name: "Shot 17",
       from: l3a.from,
       view: "yard",
-      cam: frameOn(960, 600, 1.0),
-      push: { to: frameOn(STEP.x - 30, 700, 2.15), a: chupchap - 8, b: chupchap + 70 },
+      cam: frameOn(960, 620, 1.0),
+      push: { to: frameOn(STEP.x - 30, porchHead(STEP.y, 2.15), 2.15), a: chupchap - 8, b: chupchap + 70 },
       note: "one slow push to Balak on 'চুপচাপ ভাব'",
     },
-    { name: "Shot 18", from: l3b.from - 6, view: "yard", cam: frameOn(SUREN.x + 80, 720, 2.6), note: "close on Surendra calling across the yard" },
-    { name: "Shot 18 · reaction", from: khali - 2, view: "yard", cam: frameOn(STEP.x - 10, 728, 2.3), note: "Balak's eyes lower" },
-    { name: "Shot 18 · he goes", from: standCut, view: "yard", cam: frameOn(980, 620, 1.08), note: "he turns and walks off along the veranda" },
-    { name: "Shot 18 · the scolding", from: Math.max(l3c.from - 7, standCut + 12), view: "yard", cam: frameOn(STEP.x - 20, 700, 2.35), note: "close on Biru as the scolding is named" },
+    { name: "Shot 18", from: l3b.from - 6, view: "yard", cam: frameOn(SUREN.x + 80, porchHead(SUREN.y, 2.6), 2.6), note: "close on Surendra calling across the yard" },
+    { name: "Shot 18 · reaction", from: khali - 2, view: "yard", cam: frameOn(STEP.x - 10, porchHead(STEP.y, 2.3), 2.3), note: "Balak's eyes lower" },
+    { name: "Shot 18 · he goes", from: standCut, view: "yard", cam: frameOn(980, 640, 1.08), note: "he turns and walks off along the veranda" },
+    { name: "Shot 18 · the scolding", from: Math.max(l3c.from - 7, standCut + 12), view: "yard", cam: frameOn(STEP.x - 20, porchHead(STEP.y, 2.35), 2.35), note: "close on Biru as the scolding is named" },
     {
       name: "Shot 19",
       from: maro - 8,
@@ -395,7 +406,7 @@ export const Scene03RewriteSixAndAlone: React.FC = () => {
       push: { to: frameOn(RIVER_SEAT.x - 30, 760, 1.75), a: Math.max(ekaBose - 8, jam + 12), b: p5.to },
       note: "(c) the jam tree by the river; P5 holds",
     },
-    { name: "Shot 21 · P6", from: l3e.from - 6, view: "yard", cam: frameOn(CHARU_VER.x + 20, 680, 2.6), note: "close on Charu over the thali" },
+    { name: "Shot 21 · P6", from: l3e.from - 6, view: "yard", cam: frameOn(CHARU_VER.x + 20, porchHead(CHARU_VER.y, 2.6), 2.6), note: "close on Charu over the thali" },
   ];
 
   /* ---------------------------------------------------------------- characters ---------------------------------------------------------------- */
@@ -484,7 +495,7 @@ export const Scene03RewriteSixAndAlone: React.FC = () => {
 
   /* ---------------------------------------------------------------- views ---------------------------------------------------------------- */
 
-  const drawYard = (fr: number, cam: Cam) => {
+  const drawYard = (fr: number, cam: Cam, shotName: string) => {
     const balakSeated = fr < standCut;
     const lookUpPose = fr < l3b.from - 2;
     const toFather = smooth((fr - (l3b.from + 2)) / 10);
@@ -500,13 +511,14 @@ export const Scene03RewriteSixAndAlone: React.FC = () => {
     const surX = fr < surWalk.start + surWalk.dur ? walkTravel(fr, surWalk).bodyX : SUREN.x;
     const showCharuWalk = fr < charuInDoor + 6;
     const showCharuThali = fr >= l3e.from - 6;
+    const cuOn = S03_CU_DETAILS.some((d) => d.match(shotName) && cuDetailActive(cam.zoom, d.zoom));
     return (
       <>
-        <PaintedPlate href="images/ghibli_ep06/ujanchar_veranda_back.png" />
+        {!cuOn && <PaintedPlate href="images/ghibli_ep06/ujanchar_veranda_back.png" />}
         <GhibliLayer depth={1}>
           <GhibliCharFilterDefs f={fr} />
-          <GhibliCloudShadows region={{ x: -240, y: 880, w: 2400, h: 340 }} lifeF={lf} speed={0.35} count={2} opacity={0.1} />
-          <WashingLine lf={lf} />
+          {!cuOn && <GhibliCloudShadows region={{ x: -240, y: marks.porch - 10, w: 2400, h: 340 }} lifeF={lf} speed={0.35} count={2} opacity={0.1} />}
+          {!cuOn && <WashingLine lf={lf} />}
           {/* Charu on the veranda with the kolshi, going in at the door */}
           {showCharuWalk && (
             <Ep05Person
@@ -622,8 +634,8 @@ export const Scene03RewriteSixAndAlone: React.FC = () => {
               { f: 1600, x: 1080, y: 1010 },
             ]}
           />}
-          <GhibliGroundCover x={1540} y={846} w={140} lifeF={lf} s={0.8} preset="courtyard" part="all" />
-          <GhibliGroundCover x={120} y={900} w={260} lifeF={lf} s={1} preset="garden" part="all" />
+          <GhibliGroundCover x={1540} y={marks.porch + 18} w={140} lifeF={lf} s={0.8} preset="courtyard" part="all" />
+          <GhibliGroundCover x={120} y={marks.porch + 30} w={260} lifeF={lf} s={1} preset="garden" part="all" />
         </GhibliLayer>
         <GhibliLayer depth={1}>
           <GhibliBirdFlock f={fr} start={ag8.from + 4} dur={190} from={{ x: 2050, y: 150 }} to={{ x: 700, y: 70 }} count={5} s={0.55} lifeF={lf} />
@@ -796,12 +808,20 @@ export const Scene03RewriteSixAndAlone: React.FC = () => {
     const raw = camAt(fr, shot);
     if (shot.view === "grove") return drawGrove(fr, raw);
     const cam = plateKeep({ ...raw, focus: 1, dof: 0 }, PLATE_RECT);
+    const cu = shot.view === "yard" ? S03_CU_DETAILS.find((d) => d.match(shot.name) && cuDetailActive(cam.zoom, d.zoom)) : undefined;
     const body =
-      shot.view === "yard" ? drawYard(fr, cam) : shot.view === "path" ? drawPath(fr, cam) : shot.view === "field" ? drawField(fr, cam) : drawRiver(fr, cam);
+      shot.view === "yard"
+        ? drawYard(fr, cam, shot.name)
+        : shot.view === "path"
+          ? drawPath(fr, cam)
+          : shot.view === "field"
+            ? drawField(fr, cam)
+            : drawRiver(fr, cam);
     return (
       <AbsoluteFill style={{ background: "#e6cfa4", overflow: "hidden" }}>
-        <GhibliStage cam={cam} background="#e6cfa4">
+        <GhibliStage cam={cam} background="#e6cfa4" stable={Boolean(cu)}>
           <GhibliPreload files={PRELOAD} />
+          {cu ? <CuDetailScreen href={cu.href} /> : null}
           {body}
         </GhibliStage>
         {(shot.view === "yard" || shot.view === "path") && <WarmWash amount={0.08} />}

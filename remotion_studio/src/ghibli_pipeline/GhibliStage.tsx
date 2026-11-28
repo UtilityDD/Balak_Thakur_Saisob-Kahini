@@ -15,12 +15,14 @@ export const GhibliStage: React.FC<{
   background?: string;
   children: React.ReactNode;
   opacity?: number;
-}> = ({ cam, background = "#ead8be", children, opacity = 1 }) => {
+  /** Freeze micro-gimbal (for baked CU screen plates that must stay locked to puppets). */
+  stable?: boolean;
+}> = ({ cam, background = "#ead8be", children, opacity = 1, stable = false }) => {
   const f = useCurrentFrame();
-  const sh = cam.shake ?? 0;
-  const gimbalX = (noise1(f * 0.08, 3) + 0.4 * noise1(f * 0.21, 13)) * sh * 1.1 + noise1(f * 0.045, 9) * 1.6;
-  const gimbalY = (noise1(f * 0.075, 7) + 0.4 * noise1(f * 0.19, 17)) * sh * 0.95 + noise1(f * 0.038, 5) * 1.2;
-  const roll = (cam.rot ?? 0) + noise1(f * 0.035, 29) * 0.14;
+  const sh = stable ? 0 : (cam.shake ?? 0);
+  const gimbalX = stable ? 0 : (noise1(f * 0.08, 3) + 0.4 * noise1(f * 0.21, 13)) * sh * 1.1 + noise1(f * 0.045, 9) * 1.6;
+  const gimbalY = stable ? 0 : (noise1(f * 0.075, 7) + 0.4 * noise1(f * 0.19, 17)) * sh * 0.95 + noise1(f * 0.038, 5) * 1.2;
+  const roll = stable ? (cam.rot ?? 0) : (cam.rot ?? 0) + noise1(f * 0.035, 29) * 0.14;
   const c: Cam = {
     ...cam,
     x: cam.x + gimbalX,
@@ -110,7 +112,7 @@ export const GhibliLayer: React.FC<{
 export const GhibliPreload: React.FC<{ files: readonly string[] }> = ({ files }) => (
   <div style={{ position: "absolute", left: -16, top: -16, width: 8, height: 8, overflow: "hidden", opacity: 0.01, pointerEvents: "none" }}>
     {files.map((file) => (
-      <Img key={file} src={staticFile(file)} style={{ width: 2, height: 2 }} />
+      <Img key={file} src={staticFile(file)} style={{ width: 2, height: 2 }} hidden />
     ))}
   </div>
 );

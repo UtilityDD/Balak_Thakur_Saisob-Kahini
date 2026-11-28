@@ -1,5 +1,5 @@
 import React from "react";
-import { staticFile } from "remotion";
+import { AbsoluteFill, Img, staticFile } from "remotion";
 import { clamp, EASE, lerp } from "../../../cinematic/core/anim";
 import type { Cam } from "../../../cinematic/core/Stage";
 import { CAST } from "../../../cinematic/rig/cast";
@@ -129,6 +129,29 @@ export const PaintedPlate: React.FC<{ href: string; rect?: PlateRect; depth?: nu
     <image href={staticFile(href)} x={rect.x} y={rect.y} width={rect.w} height={rect.h} preserveAspectRatio="xMidYMid slice" />
   </GhibliLayer>
 );
+
+/**
+ * Exact-match CU background as a full-bleed screen image (NOT inside GhibliLayer).
+ * GhibliLayer CSS-scales the SVG after rasterizing it, which would throw away CU plate pixels.
+ * Place as the first child of GhibliStage (or behind a transparent stage) so grade/ink still apply.
+ */
+export const CuDetailScreen: React.FC<{ href: string }> = ({ href }) => (
+  <AbsoluteFill style={{ zIndex: 0, pointerEvents: "none" }}>
+    <Img
+      src={staticFile(href)}
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "fill",
+        imageRendering: "auto",
+      }}
+    />
+  </AbsoluteFill>
+);
+
+/** True when the live cam matches a baked CU plate zoom. */
+export const cuDetailActive = (zoom: number, bakedZoom: number, minZoom = 2.4): boolean =>
+  zoom >= minZoom && Math.abs(zoom - bakedZoom) <= 0.2;
 
 /**
  * Riverbank STAND-IN (riverbank_jam_back, riverbank_floor_sketch and tree_jamun_sketch are not painted yet): the Padma
