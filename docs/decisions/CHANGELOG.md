@@ -8,6 +8,11 @@ A dated log of the director's decisions. Newest entry first. Each entry points t
 
 ---
 
+## 2026-11-28: Episode 5 Ghibli rewrite, Bengal ground and the kachari
+- Director: the soil and surroundings must look like Bengal, which is thick and green, and the poor ruined houses must match the script.
+- The kachari is a kept lime-washed estate office (front veranda and the back wall onto the banana grove). Yards, the grove floor and the field's end are living green, with a damp earth path.
+- The director said the houses still looked too poor. The book’s poor tin hut is a later chapter (about age ten). In this episode the family is at Krishnanagar kachari, and the village houses sit high. The family veranda, Binoy’s house and the lane houses are now kept homes: smooth plaster, sound thatch, a high brick plinth.
+
 ## 2026-11-21: decision documents created
 
 Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as 87 creative rules and 35 pipeline rules, with `docs/QA_CHECKLIST.md` derived from them. Conflicts with the older bible files are listed at the end of each decisions file.
@@ -98,3 +103,4 @@ Rules gathered from the director's sessions for Episodes 1 to 3 were recorded as
 - 2026-11-26: STO-23 conversation-led Ghibli rewrites drafted from the original book (book.xlsx); Episode 5 blueprint started (book chapters 8 and 9 extracted), Episode 6 draft paused.
 - 2026-11-26: BAL-26f amended: natural chadar and body gestures for the new look (ref2, new episodes only); BalakRef2PoseQA sheet added.
 - 2026-11-26: Episode 5 rewrite prep and Balak ref2 rounds 3-5 committed (worktree 0c6d631); round 5 paused by the director; handoff plan in the worktree's PENDING_WORK.md.
+- 2026-11-28: Ghibli Episode 5 rewrite build started: all 40 voices in and levelled, timing rebuilt on real voices (9,870 frames, 6:51); six agents (five scene files + sound); open blueprint questions built to their recommended answers pending the director's review.
