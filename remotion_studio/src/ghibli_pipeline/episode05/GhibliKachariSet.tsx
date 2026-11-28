@@ -697,10 +697,10 @@ export const GhibliKachariForegroundAndGrade: React.FC<{
       </GhibliLayer>
     )}
     <GhibliGrade
-      warmth={view === "grove" ? 0.34 : 0.26}
-      vignette={0.34}
+      warmth={view === "grove" ? 0.2 : 0.14}
+      vignette={0.28}
       bloomAt={view === "grove" ? [76, 22] : [68, 28]}
-      paperOpacity={0.22}
+      paperOpacity={0.1}
     />
   </>
 );

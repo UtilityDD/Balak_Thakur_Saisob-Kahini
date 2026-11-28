@@ -35,7 +35,17 @@ Rules that changed this week (details in the decision files):
 
 ## Next work, in order
 
-### 1. Ghibli Episode 5 rewrite: BLOCKED on the director's voices and answers
+### 1. Ghibli Episode 5 rewrite: BUILD IN PROGRESS (2026-11-28)
+- UPDATE 2026-11-28 (review fixes): the compound tortoises sit on the grass; the flashback shows one Biru and the overturn lands on the line; talking shots in scenes 2 to 5 come in closer; the outro glimpse no longer keeps the riverbank child, and the series-name caption no longer doubles the lockup.
+- UPDATE 2026-11-28 (staging fix): scene 1 people, mat, leaf and the slip now sit on the new porch and he leaves along the planks. Talking lines cut closer in scenes 1 to 5. The field's end is a debdaru and the riverbank tree is a jamun. The lane walk is on the path. Stills `check_ep05r/fix_*.png`.
+- UPDATE 2026-11-28 (houses): the director said the houses still looked too poor. Rebuilt from the book: this chapter is the kachari, not the later poor tin hut. Family veranda, Binoy’s two houses and the village lane are now kept homes (smooth plaster, sound thatch, high brick plinth). Stills `check_ep05r/house_*.png`.
+- UPDATE 2026-11-28 (Bengal ground): the director said the soil looked dry and the houses too poor. The yard and grove floors are now thick green grass, the field's end is a green village with thatched houses, and the kachari (front and back) is a kept lime-washed office instead of a ruined brick shed. The family and Binoy's houses stay humble thatch, which is what the story says. Stills in `check_ep05r/green_*.png`. Refresh the studio to see the new plates.
+- UPDATE 2026-11-28 (picture pass): the acting pass is in all six scenes. Checked stills across the episode.
+  Fixed this session: the tortoise jaws now close on the fingertips (present shout and the flashback "খপ"), Balak is
+  out of the veranda shot while the narrator says he slipped away, and the riverbank fades under the Episode 6 glimpse
+  so only one Balak shows. No new paintings (stand-in plates). Not rendered. Next: the director looks in the studio
+  (`Episode05GhibliRewrite`), then sound re-sync if a cue is late, then approval, then the GPU render. The notes
+  below are the earlier state.
 - The director is generating the 40 voice WAVs into main repo
   `03_Episodes/Episode_05_Tortoise_and_Gentle_Cow/02_Audio/Voice_WAVs_Full_Rewrite/`. 2 of 40 are there
   (`00_Intro`, `01a_Narrator_Kachari`). File names are in the blueprint's section 10.

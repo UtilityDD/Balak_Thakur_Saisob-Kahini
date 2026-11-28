@@ -27,7 +27,7 @@ import { EP05R_SPANS, ep05rRoleRms, ep05rSpan, ep05rTalking } from "../timing";
  */
 
 /** Turn the top-left skeleton tag off for the acting pass / final renders. */
-export const SKELETON_LABELS = true;
+export const SKELETON_LABELS = false;
 
 export const SUN_MORNING: Lighting = EP04G_MORNING_LIGHT;
 export const SUN_AFTERNOON: Lighting = EP04G_AFTERNOON_LIGHT;
